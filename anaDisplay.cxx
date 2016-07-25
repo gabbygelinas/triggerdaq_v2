@@ -169,13 +169,15 @@ struct FileWire
    int chan1;
    int chan2;
 
+   int max_write;
    int count;
 
-   FileWire() // ctor
+   FileWire(int x_max_write) // ctor
    {
       chan1 = 0;
       chan2 = 1;
       count = 0;
+      max_write = x_max_write;
    }
 
    void Open(int runno)
@@ -220,9 +222,17 @@ struct FileWire
       PrintWave(fp1, chan1, e->chan[chan1]->w);
       PrintWave(fp2, chan2, e->chan[chan2]->w);
       count++;
+
+      if (max_write)
+         if (count > max_write) {
+            Close();
+            exit(1);
+         }
    }
 
 };
+
+int doWrite = 0;
 
 class Alpha16Canvas: public TCanvasHandleBase {
 public:
@@ -247,8 +257,11 @@ public:
       fPlotA16 = plotA16;
       fPlotWire = plotWire;
       fLastEvent = NULL;
-
-      fFileWire = new FileWire();
+      fFileWire = NULL;
+      
+      if (doWrite) {
+         fFileWire = new FileWire(doWrite);
+      }
    };
    
    ~Alpha16Canvas() // dtor
@@ -449,15 +462,22 @@ public:
 
 }; 
 
-
-
-
-
-
 int main(int argc, char *argv[])
 {
-  MyTestLoop::CreateSingleton<MyTestLoop>();  
-  return MyTestLoop::Get().ExecuteLoop(argc, argv);
+   for (int i=0; i<argc; i++) {
+      if (strcmp(argv[i], "--wire") == 0) {
+         doWrite = atoi(argv[i+1]);
+         printf("Will write %d events for 1-wire TPC prototype\n", doWrite);
+         argc = i;
+         break;
+         //argv[i] = "";
+         //argv[i+1] = "";
+         i++;
+      }
+   }
+   
+   MyTestLoop::CreateSingleton<MyTestLoop>();  
+   return MyTestLoop::Get().ExecuteLoop(argc, argv);
 }
 
 /* emacs
