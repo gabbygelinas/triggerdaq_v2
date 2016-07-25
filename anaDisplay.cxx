@@ -165,9 +165,11 @@ struct FileWire
 {
    FILE *fp1;
    FILE *fp2;
+   FILE *fp3;
 
    int chan1;
    int chan2;
+   int chan3;
 
    int max_write;
    int count;
@@ -176,6 +178,7 @@ struct FileWire
    {
       chan1 = 0;
       chan2 = 1;
+      chan3 = 2;
       count = 0;
       max_write = x_max_write;
    }
@@ -195,6 +198,11 @@ struct FileWire
       fp2 = fopen(buf, "w");
       assert(fp2);
 
+      sprintf(buf, "%s/run%05dchan%02d.txt", dir, runno, chan3);
+
+      fp3 = fopen(buf, "w");
+      assert(fp3);
+
       count = 0;
    }
 
@@ -202,9 +210,11 @@ struct FileWire
    {
       fclose(fp1);
       fclose(fp2);
+      fclose(fp3);
 
-      fp1 = 0;
-      fp2 = 0;
+      fp1 = NULL;
+      fp2 = NULL;
+      fp3 = NULL;
 
       printf("Write %d events\n", count);
    }
@@ -221,6 +231,7 @@ struct FileWire
    {
       PrintWave(fp1, chan1, e->chan[chan1]->w);
       PrintWave(fp2, chan2, e->chan[chan2]->w);
+      PrintWave(fp3, chan3, e->chan[chan3]->w);
       count++;
 
       if (max_write)
