@@ -8,6 +8,8 @@
 
 #include "Alpha16.h"
 
+static int x = 0;
+
 struct PlotA16
 {
    TCanvas* fCanvas;
@@ -51,7 +53,7 @@ struct PlotA16
          
          if (!fH[i]) {
             char name[256];
-            sprintf(name, "a16ch%02d", i);
+            sprintf(name, "a16ch%02d_x%d", i, x++);
             fH[i] = new TH1D(name, name, adc->chan[i]->w->nsamples, 0, adc->chan[i]->w->nsamples);
 
             fH[i]->Draw();
@@ -60,8 +62,8 @@ struct PlotA16
             fH[i]->SetLineColor(color);
          }
 
-	 for (int s=0; s<adc->chan[i]->w->nsamples; s++)
-	   fH[i]->SetBinContent(s+1, adc->chan[i]->w->samples[s]);
+         for (int s=0; s<adc->chan[i]->w->nsamples; s++)
+            fH[i]->SetBinContent(s+1, adc->chan[i]->w->samples[s]);
       }
 
       fCanvas->Modified();
@@ -243,8 +245,6 @@ struct FileWire
 
 };
 
-int doWrite = 0;
-
 class Alpha16Canvas: public TCanvasHandleBase {
 public:
    
@@ -260,8 +260,8 @@ public:
    
    Alpha16Event* fLastEvent;
    
-   Alpha16Canvas(const char* bankname, PlotA16* plotA16, PlotWire* plotWire) // ctor
-      : TCanvasHandleBase("ALPHA16")
+   Alpha16Canvas(const char* tab_title, const char* bankname, PlotA16* plotA16, PlotWire* plotWire, int fileWrite) // ctor
+      : TCanvasHandleBase(tab_title)
    {
       fBankName = bankname;
       fEvb = new Alpha16EVB;
@@ -270,8 +270,8 @@ public:
       fLastEvent = NULL;
       fFileWire = NULL;
       
-      if (doWrite) {
-         fFileWire = new FileWire(doWrite);
+      if (fileWrite) {
+         fFileWire = new FileWire(fileWrite);
       }
    };
    
@@ -282,7 +282,7 @@ public:
    
    void BeginRun(int transition,int run,int time)
    {
-      printf("Alpha16Canvas::BeginRun()\n");
+      printf("Alpha16Canvas::BeginRun() for bank %s\n", fBankName.c_str());
       
       fRunNo = run;
 
@@ -402,11 +402,10 @@ public:
 
   void PlotCanvas(TDataContainer& dataContainer, TRootEmbeddedCanvas *embedCanvas)
   {
-    printf("Alpha16Canvas::PlotCanvas()\n");
+     printf("Alpha16Canvas::PlotCanvas() for bank %s\n", fBankName.c_str());
 
     if (!fLastEvent)
       return;
-
 
     printf("plotting:   "); fLastEvent->Print();
 
@@ -419,6 +418,8 @@ public:
     }
   }
 };
+
+int doWrite = 0;
 
 class MyTestLoop: public TRootanaDisplay { 
 
@@ -446,31 +447,46 @@ public:
     PlotA16* plotA16 = new PlotA16(NULL);
     PlotWire* plotWire = new PlotWire(NULL);
     //AddSingleCanvas(new Alpha16Canvas("WIRE", plotA16, plotWire));
-    AddSingleCanvas(new Alpha16Canvas("AZ", plotA16, plotWire));
+    AddSingleCanvas(new Alpha16Canvas("WIRE", "AZ", plotA16, plotWire, doWrite));
+
+    TCanvas *c1 = new TCanvas("ALPHA16 ADC1", "ALPHA16 ADC1", 900, 650);
+    PlotA16* plotA16_ADC1 = new PlotA16(c1);
+    AddSingleCanvas(new Alpha16Canvas("ADC1", "A1", plotA16_ADC1, NULL, 0));
+
+    TCanvas *c2 = new TCanvas("ALPHA16 ADC2", "ALPHA16 ADC2", 900, 650);
+    PlotA16* plotA16_ADC2 = new PlotA16(c2);
+    AddSingleCanvas(new Alpha16Canvas("ADC2", "A2", plotA16_ADC2, NULL, 0));
+
+    TCanvas *c3 = new TCanvas("ALPHA16 ADC3", "ALPHA16 ADC3", 900, 650);
+    PlotA16* plotA16_ADC3 = new PlotA16(c3);
+    AddSingleCanvas(new Alpha16Canvas("ADC3", "A3", plotA16_ADC3, NULL, 0));
 
     SetDisplayName("Example Display");
   };
 
-  virtual ~MyTestLoop() {};
+   virtual ~MyTestLoop() {};
 
-  void BeginRun(int transition,int run,int time) {
-    std::cout << "User BOR method" << std::endl;
-  }
+   void BeginRun(int transition,int run,int time)
+   {
+      std::cout << "User BOR method" << std::endl;
+   }
 
-  void EndRun(int transition,int run,int time) {
-    std::cout << "User EOR method" << std::endl;
-  }
+   void EndRun(int transition,int run,int time)
+   {
+      std::cout << "User EOR method" << std::endl;
+   }
 
-  void ResetHistograms(){}
+   void ResetHistograms()
+   {
+   }
 
-  void UpdateHistograms(TDataContainer& dataContainer){
-    
-    //anaManager->ProcessMidasEvent(dataContainer);
-  }
-
-  void PlotCanvas(TDataContainer& dataContainer){}
-
-
+   void UpdateHistograms(TDataContainer& dataContainer)
+   {
+   }
+   
+   void PlotCanvas(TDataContainer& dataContainer)
+   {
+   }
 }; 
 
 int main(int argc, char *argv[])
