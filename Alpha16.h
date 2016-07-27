@@ -127,7 +127,7 @@ struct Alpha16Packet
     hardwareId = getUint32(ptr, 4);
     buildTimestamp = getUint32(ptr, 10);
     //int zero = getUint16(ptr, 14);
-    eventTimestamp = getUint32(ptr, 16);
+    eventTimestamp = getUint32(ptr, 18);
     triggerOffset = getUint32(ptr, 22);
     moduleId = getUint8(ptr, 26);
     int chanX = getUint8(ptr, 27);
