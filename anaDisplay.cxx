@@ -461,6 +461,14 @@ public:
     PlotA16* plotA16_ADC3 = new PlotA16(c3);
     AddSingleCanvas(new Alpha16Canvas("ADC3", "A3", plotA16_ADC3, NULL, 0));
 
+    TCanvas *c4 = new TCanvas("ALPHA16 ADC4", "ALPHA16 ADC4", 900, 650);
+    PlotA16* plotA16_ADC4 = new PlotA16(c4);
+    AddSingleCanvas(new Alpha16Canvas("ADC4", "A4", plotA16_ADC4, NULL, 0));
+
+    TCanvas *c5 = new TCanvas("ALPHA16 ADC5", "ALPHA16 ADC5", 900, 650);
+    PlotA16* plotA16_ADC5 = new PlotA16(c5);
+    AddSingleCanvas(new Alpha16Canvas("ADC5", "A5", plotA16_ADC5, NULL, 0));
+
     SetDisplayName("Example Display");
   };
 
