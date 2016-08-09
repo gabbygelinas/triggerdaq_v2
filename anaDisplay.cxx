@@ -8,6 +8,78 @@
 
 #include "Alpha16.h"
 
+#include "Waveform.h"
+
+Waveform* NewWaveform(const Alpha16Waveform* a, double scale)
+{
+   Waveform* w = new Waveform(a->size());
+   for (unsigned s=0; s<a->size(); s++) {
+      w->samples[s] = (*a)[s] * scale;
+   }
+   return w;
+}
+
+struct PlotHistograms
+{
+   TCanvas* fCanvas;
+
+   TH1D* fHbaseline;
+   TH1D* fHbaselineRms;
+   TH1D* fHph;
+   TH1D* fHle;
+   TH1D* fHlex;
+   TH1D* fHocc;
+
+   PlotHistograms(TCanvas* c) // ctor
+   {
+      if (!c) {
+         c = new TCanvas("Histograms", "Histograms", 900, 650);
+         if (!(c->GetShowEventStatus()))
+            c->ToggleEventStatus();
+         if (!(c->GetShowToolBar()))
+            c->ToggleToolBar();
+      }
+
+      fCanvas = c;
+
+      fCanvas->cd();
+      fCanvas->Divide(2,3);
+
+      fCanvas->cd(1);
+      fHbaseline = new TH1D("baseline", "baseline", 100, -1000, 1000);
+      fHbaseline->Draw();
+
+      fCanvas->cd(2);
+      fHbaselineRms = new TH1D("baseline_rms", "baseline_rms", 50, 0, 50);
+      fHbaselineRms->Draw();
+
+      fCanvas->cd(3);
+      fHph = new TH1D("pulse_height", "pulse_height", 100, 0, 8000);
+      fHph->Draw();
+
+      fCanvas->cd(4);
+      fHle = new TH1D("pulse_time", "pulse_time", 100, 0, 1000);
+      fHle->Draw();
+
+      fCanvas->cd(5);
+      fHlex = new TH1D("pulse_time_expanded", "pulse_time_expanded", 100, 100, 200);
+      fHlex->Draw();
+
+      fCanvas->cd(6);
+      fHocc = new TH1D("channel_occupancy", "channel_occupancy", MAX_ALPHA16*NUM_CHAN_ALPHA16, 0, MAX_ALPHA16*NUM_CHAN_ALPHA16-1);
+      fHocc->Draw();
+
+      Draw();
+   }
+
+   void Draw()
+   {
+      fCanvas->Modified();
+      fCanvas->Draw();
+      fCanvas->Update();
+   }
+};
+
 static int x = 0;
 
 struct PlotA16
@@ -443,10 +515,14 @@ public:
    PlotA16* fPlotA16[MAX_ALPHA16];
    
    Alpha16Event* fLastEvent;
+
+   PlotHistograms* fH;
    
    AlphaTpcCanvas() // ctor
       : TCanvasHandleBase("ALPHA TPC")
    {
+      fH = new PlotHistograms(NULL);
+
       fEvb = new Alpha16EVB(NUM_CHAN_ALPHA16, 512);
 
       for (int i=0; i<MAX_ALPHA16; i++) {
@@ -456,7 +532,7 @@ public:
             continue;
          char title[256];
          sprintf(title, "ADC %2d", i+1);
-         TCanvas *c = new TCanvas(title, title, 900, 650);
+         TCanvas *c = new TCanvas(title, title, 900, 400);
          fPlotA16[i] = new PlotA16(c, i*NUM_CHAN_ALPHA16);
       }
          
@@ -546,9 +622,62 @@ public:
       
       bool force_plot = false;
       
-      //printf("next event: "); e->Print();
+      printf("analyzing: "); e->Print();
       
       // analyze the event
+
+      int nhits = 0;
+
+      for (int i=0; i<MAX_ALPHA16*NUM_CHAN_ALPHA16; i++)
+         if (e->udpPresent[i]) {
+            Waveform* w = NewWaveform(&e->waveform[i], 1.0/4.0);
+
+            double b, brms;
+            b = baseline(w, 100, NULL, &brms);
+
+            double wmin = min(w);
+            double wmax = max(w);
+
+            double ph = b - wmin;
+
+            fH->fHbaseline->Fill(b);
+            fH->fHbaselineRms->Fill(brms);
+
+            if (ph > 100)
+               fH->fHph->Fill(ph);
+
+            if (ph < 20) {
+               delete w;
+               continue;
+            }
+
+            int le = led(w, b, -1.0, ph/2.0);
+
+            if (ph > 100) {
+               fH->fHle->Fill(le);
+               fH->fHlex->Fill(le);
+               fH->fHocc->Fill(i);
+            }
+
+            if (ph > 2000) {
+               nhits++;
+               //printf("samples %d %d, ", e->waveform[i].size(), w->nsamples);
+               printf("chan %4d: baseline %8.1f, rms %4.1f, range %8.1f %6.1f, pulse %6.1f, le %4d\n", i, b, brms, wmin, wmax, ph, le);
+            }
+
+            delete w;
+         }
+
+      printf("Found %d hits\n", nhits);
+
+      if (nhits > 2)
+         force_plot = true;
+
+      TInterestingEventManager::instance()->Reset();
+      if (force_plot) {
+         printf("INTERESTING!\n");
+         TInterestingEventManager::instance()->SetInteresting();
+      }
    };
 
    void PlotCanvas(TDataContainer& dataContainer, TRootEmbeddedCanvas *embedCanvas)
@@ -564,6 +693,9 @@ public:
          if (fPlotA16[i])
             fPlotA16[i]->Draw(fLastEvent);
       }
+
+      if (fH)
+         fH->Draw();
 
       printf("plotting: done!\n");
    }
@@ -667,6 +799,8 @@ int main(int argc, char *argv[])
          i++;
       }
    }
+
+   TInterestingEventManager::instance()->Enable();
    
    MyTestLoop::CreateSingleton<MyTestLoop>();  
    return MyTestLoop::Get().ExecuteLoop(argc, argv);
