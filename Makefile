@@ -60,6 +60,11 @@ all:: $(OBJS)
 all:: anaDisplay.exe
 #all:: midas2root.exe
 
+Alpha16.o: Alpha16.h Alpha16.cxx
+anaDisplay.o: Alpha16.o
+
+OBJS += Alpha16.o
+
 ana.exe: ana.cxx $(OBJS) 
 	$(CXX) -o $@ $(CXXFLAGS) $(ROOTANAINC) $^ $(ROOTANALIBS) $(MIDASLIBS) $(ROOTGLIBS) -lm -lz -lpthread $(RPATH) -lssl $(RTLIB) -lutil
 

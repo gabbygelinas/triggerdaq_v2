@@ -14,8 +14,9 @@ struct PlotA16
 {
    TCanvas* fCanvas;
    TH1D* fH[16];
+   int fFirstChan;
 
-   PlotA16(TCanvas* c) // ctor
+   PlotA16(TCanvas* c, int first_chan) // ctor
    {
       if (!c) {
          c = new TCanvas("ALPHA16 ADC", "ALPHA16 ADC", 900, 650);
@@ -29,6 +30,8 @@ struct PlotA16
 
       fCanvas->cd();
       fCanvas->Divide(4,4);
+
+      fFirstChan = first_chan;
 
       for (int i=0; i<16; i++)
          fH[i] = NULL;
@@ -48,13 +51,18 @@ struct PlotA16
          
          int color = 1;
 
-         if (!adc->chan[i])
+         int ichan = fFirstChan + i;
+
+         if (!adc->udpPresent[ichan])
             continue;
          
          if (!fH[i]) {
             char name[256];
             sprintf(name, "a16ch%02d_x%d", i, x++);
-            fH[i] = new TH1D(name, name, adc->chan[i]->w->nsamples, 0, adc->chan[i]->w->nsamples);
+
+            printf("size %d\n", adc->waveform[ichan].size());
+
+            fH[i] = new TH1D(name, name, adc->waveform[ichan].size(), 0, adc->waveform[ichan].size());
 
             fH[i]->Draw();
             fH[i]->SetMinimum(-(1<<15));
@@ -62,8 +70,11 @@ struct PlotA16
             fH[i]->SetLineColor(color);
          }
 
-         for (int s=0; s<adc->chan[i]->w->nsamples; s++)
-            fH[i]->SetBinContent(s+1, adc->chan[i]->w->samples[s]);
+         for (unsigned s=0; s<adc->waveform[ichan].size(); s++) {
+            int v = adc->waveform[ichan][s];
+            printf("bin %d, v %d\n", i, v);
+            fH[i]->SetBinContent(s+1, v);
+         }
       }
 
       fCanvas->Modified();
@@ -123,7 +134,7 @@ struct PlotWire
             if (!hh[i]) {
                char name[256];
                sprintf(name, "hh%d", i);
-               hh[i] = new TH1D(name, name, e->chan[ch]->w->nsamples, 0, e->chan[ch]->w->nsamples);
+               hh[i] = new TH1D(name, name, e->waveform[ch].size(), 0, e->waveform[ch].size());
 
                if (color == 1)
                   hh[i]->Draw();
@@ -134,8 +145,8 @@ struct PlotWire
                hh[i]->SetLineColor(color);
             }
                
-            for (int s=0; s<e->chan[ch]->w->nsamples; s++)
-               hh[i]->SetBinContent(s+1, e->chan[ch]->w->samples[s]);
+            for (unsigned s=0; s<e->waveform[ch].size(); s++)
+               hh[i]->SetBinContent(s+1, e->waveform[ch][s]);
          }
       }
 
@@ -221,19 +232,19 @@ struct FileWire
       printf("Write %d events\n", count);
    }
 
-   void PrintWave(FILE* fp, int chan, const Waveform* w)
+   void PrintWave(FILE* fp, int chan, const Alpha16Waveform* w)
    {
       fprintf(fp, "%d", chan);
-      for (int s=0; s<w->nsamples; s++)
-         fprintf(fp, ",%d", (int)w->samples[s]);
+      for (unsigned s=0; s<w->size(); s++)
+         fprintf(fp, ",%d", (int)((*w)[s]));
       fprintf(fp, "\n");
    }
 
    void Fill(const Alpha16Event* e)
    {
-      PrintWave(fp1, chan1, e->chan[chan1]->w);
-      PrintWave(fp2, chan2, e->chan[chan2]->w);
-      PrintWave(fp3, chan3, e->chan[chan3]->w);
+      PrintWave(fp1, chan1, &e->waveform[chan1]);
+      PrintWave(fp2, chan2, &e->waveform[chan2]);
+      PrintWave(fp3, chan3, &e->waveform[chan3]);
       count++;
 
       if (max_write)
@@ -264,12 +275,14 @@ public:
       : TCanvasHandleBase(tab_title)
    {
       fBankName = bankname;
-      fEvb = new Alpha16EVB;
+      fEvb = new Alpha16EVB(NUM_CHAN_ALPHA16);
+
       fPlotA16 = plotA16;
       fPlotWire = plotWire;
-      fLastEvent = NULL;
       fFileWire = NULL;
-      
+
+      fLastEvent = NULL;
+
       if (fileWrite) {
          fFileWire = new FileWire(fileWrite);
       }
@@ -310,7 +323,7 @@ public:
       const TMidasEvent& me = dataContainer.GetMidasEvent();
       
       void *ptr;
-      int bklen,bktype;
+      int bklen, bktype;
       int status;
       
       status = me.FindBank(fBankName.c_str(), &bklen, &bktype, &ptr);
@@ -319,8 +332,8 @@ public:
       
          // print header
          
-         int packetType = getUint8(ptr, 0);
-         int packetVersion = getUint8(ptr, 1);
+         int packetType = Alpha16Packet::PacketType(ptr, bklen);
+         int packetVersion = Alpha16Packet::PacketVersion(ptr, bklen);
          
          if (0) {
             printf("Header:\n");
@@ -329,16 +342,17 @@ public:
          }
          
          if (packetType == 1 && packetVersion == 1) {
-            Alpha16Packet* p = new Alpha16Packet(ptr, bklen*4);
-            //p->Print();
-            //printf("trig %d, ts 0x%08x, chan %d\n", p->acceptedTrigger, p->eventTimestamp, p->channelId);
-            fEvb->AddPacket(p);
+            uint32_t ts = Alpha16Packet::PacketTimestamp(ptr, bklen);
+            Alpha16Event *e = fEvb->FindEvent(0, ts);
+            if (e)
+               fEvb->AddBank(e, 0, ptr, bklen);
          } else {
             printf("unknown packet type %d, version %d\n", packetType, packetVersion);
             return;
          }
       } else {
-         for (int i=0; i<16; i++) {
+         int imodule = 0;
+         for (int i=0; i<NUM_CHAN_ALPHA16; i++) {
             char bname[5];
             sprintf(bname, "%2s%02d", fBankName.c_str(), i);
 
@@ -348,8 +362,8 @@ public:
       
                // print header
                
-               int packetType = getUint8(ptr, 0);
-               int packetVersion = getUint8(ptr, 1);
+               int packetType = Alpha16Packet::PacketType(ptr, bklen);
+               int packetVersion = Alpha16Packet::PacketVersion(ptr, bklen);
                
                if (0) {
                   printf("Header:\n");
@@ -358,10 +372,10 @@ public:
                }
                
                if (packetType == 1 && packetVersion == 1) {
-                  Alpha16Packet* p = new Alpha16Packet(ptr, bklen*4);
-                  //p->Print();
-                  //printf("trig %d, ts 0x%08x, chan %d\n", p->acceptedTrigger, p->eventTimestamp, p->channelId);
-                  fEvb->AddPacket(p);
+                  uint32_t ts = Alpha16Packet::PacketTimestamp(ptr, bklen);
+                  Alpha16Event *e = fEvb->FindEvent(imodule, ts);
+                  if (e)
+                     fEvb->AddBank(e, imodule, ptr, bklen);
                } else {
                   printf("unknown packet type %d, version %d\n", packetType, packetVersion);
                   return;
@@ -425,52 +439,53 @@ class MyTestLoop: public TRootanaDisplay {
 
 public:
 	
-  // An analysis manager.  Define and fill histograms in 
-  // analysis manager.
-  //TAnaManager *anaManager;
-
-  MyTestLoop() {
-    SetOutputFilename("example_output");
-    DisableRootOutput(false);
-    // Number of events to skip before plotting one.
-    //SetNumberSkipEvent(10);
-    // Choose to use functionality to update after X seconds
-    SetOnlineUpdatingBasedSeconds();
-    // Uncomment this to enable the 'interesting event' functionality.
-    //iem_t::instance()->Enable();
-  }
-
-  void AddAllCanvases(){
-
-    // Set up tabbed canvases
-
-    PlotA16* plotA16 = new PlotA16(NULL);
-    PlotWire* plotWire = new PlotWire(NULL);
-    //AddSingleCanvas(new Alpha16Canvas("WIRE", plotA16, plotWire));
-    AddSingleCanvas(new Alpha16Canvas("WIRE", "AZ", plotA16, plotWire, doWrite));
-
-    TCanvas *c1 = new TCanvas("ALPHA16 ADC1", "ALPHA16 ADC1", 900, 650);
-    PlotA16* plotA16_ADC1 = new PlotA16(c1);
-    AddSingleCanvas(new Alpha16Canvas("ADC1", "A1", plotA16_ADC1, NULL, 0));
-
-    TCanvas *c2 = new TCanvas("ALPHA16 ADC2", "ALPHA16 ADC2", 900, 650);
-    PlotA16* plotA16_ADC2 = new PlotA16(c2);
-    AddSingleCanvas(new Alpha16Canvas("ADC2", "A2", plotA16_ADC2, NULL, 0));
-
-    TCanvas *c3 = new TCanvas("ALPHA16 ADC3", "ALPHA16 ADC3", 900, 650);
-    PlotA16* plotA16_ADC3 = new PlotA16(c3);
-    AddSingleCanvas(new Alpha16Canvas("ADC3", "A3", plotA16_ADC3, NULL, 0));
-
-    TCanvas *c4 = new TCanvas("ALPHA16 ADC4", "ALPHA16 ADC4", 900, 650);
-    PlotA16* plotA16_ADC4 = new PlotA16(c4);
-    AddSingleCanvas(new Alpha16Canvas("ADC4", "A4", plotA16_ADC4, NULL, 0));
-
-    TCanvas *c5 = new TCanvas("ALPHA16 ADC5", "ALPHA16 ADC5", 900, 650);
-    PlotA16* plotA16_ADC5 = new PlotA16(c5);
-    AddSingleCanvas(new Alpha16Canvas("ADC5", "A5", plotA16_ADC5, NULL, 0));
-
-    SetDisplayName("Example Display");
-  };
+   // An analysis manager.  Define and fill histograms in 
+   // analysis manager.
+   //TAnaManager *anaManager;
+   
+   MyTestLoop()
+   {
+      SetOutputFilename("example_output");
+      DisableRootOutput(false);
+      // Number of events to skip before plotting one.
+      //SetNumberSkipEvent(10);
+      // Choose to use functionality to update after X seconds
+      SetOnlineUpdatingBasedSeconds();
+      // Uncomment this to enable the 'interesting event' functionality.
+      //iem_t::instance()->Enable();
+   }
+   
+   void AddAllCanvases()
+   {
+      // Set up tabbed canvases
+      
+      PlotA16* plotA16 = new PlotA16(NULL, 0);
+      PlotWire* plotWire = new PlotWire(NULL);
+      //AddSingleCanvas(new Alpha16Canvas("WIRE", plotA16, plotWire));
+      AddSingleCanvas(new Alpha16Canvas("WIRE", "AZ", plotA16, plotWire, doWrite));
+      
+      TCanvas *c1 = new TCanvas("ALPHA16 ADC1", "ALPHA16 ADC1", 900, 650);
+      PlotA16* plotA16_ADC1 = new PlotA16(c1, 0*NUM_CHAN_ALPHA16);
+      AddSingleCanvas(new Alpha16Canvas("ADC1", "A1", plotA16_ADC1, NULL, 0));
+      
+      TCanvas *c2 = new TCanvas("ALPHA16 ADC2", "ALPHA16 ADC2", 900, 650);
+      PlotA16* plotA16_ADC2 = new PlotA16(c2, 1*NUM_CHAN_ALPHA16);
+      AddSingleCanvas(new Alpha16Canvas("ADC2", "A2", plotA16_ADC2, NULL, 0));
+      
+      TCanvas *c3 = new TCanvas("ALPHA16 ADC3", "ALPHA16 ADC3", 900, 650);
+      PlotA16* plotA16_ADC3 = new PlotA16(c3, 2*NUM_CHAN_ALPHA16);
+      AddSingleCanvas(new Alpha16Canvas("ADC3", "A3", plotA16_ADC3, NULL, 0));
+      
+      TCanvas *c4 = new TCanvas("ALPHA16 ADC4", "ALPHA16 ADC4", 900, 650);
+      PlotA16* plotA16_ADC4 = new PlotA16(c4, 3*NUM_CHAN_ALPHA16);
+      AddSingleCanvas(new Alpha16Canvas("ADC4", "A4", plotA16_ADC4, NULL, 0));
+      
+      TCanvas *c5 = new TCanvas("ALPHA16 ADC5", "ALPHA16 ADC5", 900, 650);
+      PlotA16* plotA16_ADC5 = new PlotA16(c5, 4*NUM_CHAN_ALPHA16);
+      AddSingleCanvas(new Alpha16Canvas("ADC5", "A5", plotA16_ADC5, NULL, 0));
+      
+      SetDisplayName("Example Display");
+   };
 
    virtual ~MyTestLoop() {};
 
