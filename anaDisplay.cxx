@@ -60,8 +60,6 @@ struct PlotA16
             char name[256];
             sprintf(name, "a16ch%02d_x%d", i, x++);
 
-            printf("size %d\n", adc->waveform[ichan].size());
-
             fH[i] = new TH1D(name, name, adc->waveform[ichan].size(), 0, adc->waveform[ichan].size());
 
             fH[i]->Draw();
@@ -72,7 +70,7 @@ struct PlotA16
 
          for (unsigned s=0; s<adc->waveform[ichan].size(); s++) {
             int v = adc->waveform[ichan][s];
-            printf("bin %d, v %d\n", i, v);
+            //printf("bin %d, v %d\n", i, v);
             fH[i]->SetBinContent(s+1, v);
          }
       }
@@ -433,6 +431,146 @@ public:
   }
 };
 
+class AlphaTpcCanvas: public TCanvasHandleBase {
+public:
+   
+   int fRunNo;
+   
+   Alpha16EVB* fEvb;
+   
+   PlotA16* fPlotA16[MAX_ALPHA16];
+   
+   Alpha16Event* fLastEvent;
+   
+   AlphaTpcCanvas() // ctor
+      : TCanvasHandleBase("ALPHA TPC")
+   {
+      fEvb = new Alpha16EVB(NUM_CHAN_ALPHA16);
+
+      for (int i=0; i<MAX_ALPHA16; i++) {
+         if (i == 3)
+            continue;
+         if (i == 5)
+            continue;
+         char title[256];
+         sprintf(title, "ADC %2d", i+1);
+         TCanvas *c = new TCanvas(title, title, 900, 650);
+         fPlotA16[i] = new PlotA16(c, i*NUM_CHAN_ALPHA16);
+      }
+         
+      fLastEvent = NULL;
+   };
+   
+   ~AlphaTpcCanvas() // dtor
+   {
+      printf("AlphaTpcCanvas dtor!\n");
+   };
+   
+   void BeginRun(int transition,int run,int time)
+   {
+      printf("AlphaTpcCanvas::BeginRun()\n");
+      
+      fRunNo = run;
+      
+      fEvb->Reset();
+   };
+   
+   void EndRun(int transition,int run,int time)
+   {
+   };
+   
+   void ResetCanvasHistograms()
+   {
+      printf("AlphaTpcCanvas::ResetCanvasHistograms()\n");
+   };
+   
+   void UpdateCanvasHistograms(TDataContainer& dataContainer)
+   {
+      //printf("AlphaTpcCanvas::UpdateCanvasHistograms()\n");
+      
+      const TMidasEvent& me = dataContainer.GetMidasEvent();
+      
+      void *ptr;
+      int bklen, bktype;
+      int status;
+      
+      for (int imodule = 0; imodule < MAX_ALPHA16; imodule++) {
+         for (int i=0; i<NUM_CHAN_ALPHA16; i++) {
+            char bname[5];
+            sprintf(bname, "A%01d%02d", 1+imodule, i);
+
+            status = me.FindBank(bname, &bklen, &bktype, &ptr);
+            if (status == 1) {
+               //printf("ALPHA16 bname %s, pointer: %p, status %d, len %d, type %d\n", bname, ptr, status, bklen, bktype);
+      
+               // print header
+               
+               int packetType = Alpha16Packet::PacketType(ptr, bklen);
+               int packetVersion = Alpha16Packet::PacketVersion(ptr, bklen);
+               
+               if (0) {
+                  printf("Header:\n");
+                  printf("  packet type:    0x%02x (%d)\n", packetType, packetType);
+                  printf("  packet version: 0x%02x (%d)\n", packetVersion, packetVersion);
+               }
+               
+               if (packetType == 1 && packetVersion == 1) {
+                  uint32_t ts = Alpha16Packet::PacketTimestamp(ptr, bklen);
+                  Alpha16Event *e = fEvb->FindEvent(imodule, ts);
+                  if (e)
+                     fEvb->AddBank(e, imodule, ptr, bklen);
+               } else {
+                  printf("unknown packet type %d, version %d\n", packetType, packetVersion);
+                  return;
+               }
+            }
+         }
+      }
+
+      //fEvb->Print();
+
+      Alpha16Event* e = fEvb->GetNextEvent();
+      
+      if (!e)
+         return;
+      
+      if (!e->complete)
+         return;
+      
+      printf("event: "); e->Print();
+      
+      if (fLastEvent) {
+         delete fLastEvent;
+         fLastEvent = NULL;
+      }
+      
+      fLastEvent = e;
+      
+      bool force_plot = false;
+      
+      //printf("next event: "); e->Print();
+      
+      // analyze the event
+   };
+
+   void PlotCanvas(TDataContainer& dataContainer, TRootEmbeddedCanvas *embedCanvas)
+   {
+      printf("AlphaTpcCanvas::PlotCanvas()\n");
+      
+      if (!fLastEvent)
+         return;
+      
+      printf("plotting:   "); fLastEvent->Print();
+      
+      for (int i=0; i<MAX_ALPHA16; i++) {
+         if (fPlotA16[i])
+            fPlotA16[i]->Draw(fLastEvent);
+      }
+
+      printf("plotting: done!\n");
+   }
+};
+
 int doWrite = 0;
 
 class MyTestLoop: public TRootanaDisplay { 
@@ -458,12 +596,17 @@ public:
    void AddAllCanvases()
    {
       // Set up tabbed canvases
-      
+
+      AddSingleCanvas(new AlphaTpcCanvas());
+
+#if 0      
       PlotA16* plotA16 = new PlotA16(NULL, 0);
       PlotWire* plotWire = new PlotWire(NULL);
       //AddSingleCanvas(new Alpha16Canvas("WIRE", plotA16, plotWire));
       AddSingleCanvas(new Alpha16Canvas("WIRE", "AZ", plotA16, plotWire, doWrite));
-      
+#endif
+
+#if 0      
       TCanvas *c1 = new TCanvas("ALPHA16 ADC1", "ALPHA16 ADC1", 900, 650);
       PlotA16* plotA16_ADC1 = new PlotA16(c1, 0*NUM_CHAN_ALPHA16);
       AddSingleCanvas(new Alpha16Canvas("ADC1", "A1", plotA16_ADC1, NULL, 0));
@@ -483,7 +626,8 @@ public:
       TCanvas *c5 = new TCanvas("ALPHA16 ADC5", "ALPHA16 ADC5", 900, 650);
       PlotA16* plotA16_ADC5 = new PlotA16(c5, 4*NUM_CHAN_ALPHA16);
       AddSingleCanvas(new Alpha16Canvas("ADC5", "A5", plotA16_ADC5, NULL, 0));
-      
+#endif
+
       SetDisplayName("Example Display");
    };
 

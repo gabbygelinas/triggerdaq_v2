@@ -181,7 +181,7 @@ void Alpha16Waveform::Unpack(const void* bkptr, int bklen8)
    //printf("Unpacking: "); Print();
    for (int i=0; i<nsamples; i++) {
       int16_t v = getUint16(bkptr, 30 + i*2);
-      printf("sample %d: 0x%02x (%d)\n", i, v, v);
+      //printf("sample %d: 0x%02x (%d)\n", i, v, v);
       this->push_back(v);
    }
 };
@@ -214,14 +214,23 @@ void Alpha16Event::Print() const
 void Alpha16EVB::Reset()
 {
    fEventCount = 0;
-   fFirstEventTs = 0;
-   fLastEventTs = 0;
+   MEMZERO(fFirstEventTs);
+   MEMZERO(fLastEventTs);
    
    while (fEvents.size() > 0) {
       Alpha16Event* e = fEvents.back();
       fEvents.pop_back();
       if (e)
          delete e;
+   }
+}
+
+void Alpha16EVB::Print() const
+{
+   printf("EVB contents:\n");
+   for (unsigned i=0; i<fEvents.size(); i++) {
+      printf("Entry %d: ", i);
+      fEvents[i]->Print();
    }
 }
 
@@ -264,14 +273,14 @@ Alpha16Event* Alpha16EVB::FindEvent(int imodule, uint32_t udpTs)
    fEventCount++;
    e->eventNo = fEventCount;
    e->udpEventTs[imodule] = udpTs;
-   if (fFirstEventTs == 0) {
-      fFirstEventTs = udpTs;
-      fLastEventTs = fFirstEventTs;
+   if (fFirstEventTs[imodule] == 0) {
+      fFirstEventTs[imodule] = udpTs;
+      fLastEventTs[imodule] = fFirstEventTs[imodule];
    }
-   e->eventTs = udpTs - fFirstEventTs;
-   e->prevEventTs = fLastEventTs - fFirstEventTs;
+   e->eventTs = udpTs - fFirstEventTs[imodule];
+   e->prevEventTs = fLastEventTs[imodule] - fFirstEventTs[imodule];
    
-   fLastEventTs = udpTs;
+   fLastEventTs[imodule] = udpTs;
    
    //printf("Event %d ts 0x%08x: new!\n", e->eventNo, e->eventTs);
    

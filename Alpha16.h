@@ -77,8 +77,8 @@ struct Alpha16Event
 struct Alpha16EVB
 {
    int fEventCount; // event counter
-   uint32_t fFirstEventTs; // udp timestamp of first event
-   uint32_t fLastEventTs;  // udp timestamp of last seen event
+   uint32_t fFirstEventTs[MAX_ALPHA16]; // udp timestamp of first event
+   uint32_t fLastEventTs[MAX_ALPHA16];  // udp timestamp of last seen event
    std::deque<Alpha16Event*> fEvents;
 
    int fConfNumChan;
@@ -90,6 +90,7 @@ struct Alpha16EVB
    }
    
    void Reset();
+   void Print() const;
    Alpha16Event* FindEvent(int imodule, uint32_t udpTs);
    void AddBank(Alpha16Event* e, int imodule, const void* bkptr, int bklen);
 
