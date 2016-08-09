@@ -254,6 +254,7 @@ struct FileWire
 
 };
 
+#if 0
 class Alpha16Canvas: public TCanvasHandleBase {
 public:
    
@@ -273,7 +274,7 @@ public:
       : TCanvasHandleBase(tab_title)
    {
       fBankName = bankname;
-      fEvb = new Alpha16EVB(NUM_CHAN_ALPHA16);
+      fEvb = new Alpha16EVB(NUM_CHAN_ALPHA16, 512);
 
       fPlotA16 = plotA16;
       fPlotWire = plotWire;
@@ -430,6 +431,7 @@ public:
     }
   }
 };
+#endif
 
 class AlphaTpcCanvas: public TCanvasHandleBase {
 public:
@@ -445,7 +447,7 @@ public:
    AlphaTpcCanvas() // ctor
       : TCanvasHandleBase("ALPHA TPC")
    {
-      fEvb = new Alpha16EVB(NUM_CHAN_ALPHA16);
+      fEvb = new Alpha16EVB(NUM_CHAN_ALPHA16, 512);
 
       for (int i=0; i<MAX_ALPHA16; i++) {
          if (i == 3)
@@ -489,13 +491,15 @@ public:
       //printf("AlphaTpcCanvas::UpdateCanvasHistograms()\n");
       
       const TMidasEvent& me = dataContainer.GetMidasEvent();
-      
-      void *ptr;
-      int bklen, bktype;
-      int status;
+
+      Alpha16Event* e = fEvb->NewEvent();
       
       for (int imodule = 0; imodule < MAX_ALPHA16; imodule++) {
          for (int i=0; i<NUM_CHAN_ALPHA16; i++) {
+            void *ptr;
+            int bklen, bktype;
+            int status;
+
             char bname[5];
             sprintf(bname, "A%01d%02d", 1+imodule, i);
 
@@ -515,23 +519,17 @@ public:
                }
                
                if (packetType == 1 && packetVersion == 1) {
-                  uint32_t ts = Alpha16Packet::PacketTimestamp(ptr, bklen);
-                  Alpha16Event *e = fEvb->FindEvent(imodule, ts);
-                  if (e)
-                     fEvb->AddBank(e, imodule, ptr, bklen);
+                  fEvb->AddBank(e, imodule, ptr, bklen);
                } else {
                   printf("unknown packet type %d, version %d\n", packetType, packetVersion);
-                  return;
                }
             }
          }
       }
 
-      //fEvb->Print();
-
-      Alpha16Event* e = fEvb->GetNextEvent();
+      fEvb->CheckEvent(e);
       
-      if (!e)
+      if (e->error)
          return;
       
       if (!e->complete)

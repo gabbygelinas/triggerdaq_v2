@@ -149,7 +149,7 @@ uint32_t Alpha16Packet::PacketTimestamp(const void*ptr, int bklen8)
 int Alpha16Packet::PacketChannel(const void*ptr, int bklen8)
 {
    int chanX = getUint8(ptr, 27);
-   int channelType = chanX & 0x80;
+   //int channelType = chanX & 0x80;
    int channelId = chanX & 0x7F;
    return channelId;
 }
@@ -194,11 +194,12 @@ Alpha16Event::Alpha16Event() // ctor
 void Alpha16Event::Reset()
 {
    eventNo = 0;
-   eventTs = 0;
-   prevEventTs = 0;
+   eventTime = 0;
+   prevEventTime = 0;
    MEMZERO(udpPresent);
    MEMZERO(udpEventTs);
    numChan = 0;
+   error    = false;
    complete = false;
 }
    
@@ -208,7 +209,7 @@ Alpha16Event::~Alpha16Event() // dtor
 
 void Alpha16Event::Print() const
 {
-   printf("ALPHA16 event: %d, ts 0x%08x (incr 0x%08x), channels: %d, complete %d\n", eventNo, eventTs, eventTs - prevEventTs, numChan, complete);
+   printf("ALPHA16 event: %d, time %.0f (incr %.0f), channels: %d, error %d, complete %d\n", eventNo, eventTime, eventTime - prevEventTime, numChan, error, complete);
 }
 
 void Alpha16EVB::Reset()
@@ -216,15 +217,9 @@ void Alpha16EVB::Reset()
    fEventCount = 0;
    MEMZERO(fFirstEventTs);
    MEMZERO(fLastEventTs);
-   
-   while (fEvents.size() > 0) {
-      Alpha16Event* e = fEvents.back();
-      fEvents.pop_back();
-      if (e)
-         delete e;
-   }
 }
 
+#if 0
 void Alpha16EVB::Print() const
 {
    printf("EVB contents:\n");
@@ -233,22 +228,32 @@ void Alpha16EVB::Print() const
       fEvents[i]->Print();
    }
 }
+#endif
 
+#if 0
 bool Alpha16EVB::Match(const Alpha16Event* e, int imodule, uint32_t udpTs)
 {
    return (e->udpEventTs[imodule] == udpTs);
 }
+#endif
 
 void Alpha16EVB::AddBank(Alpha16Event* e, int imodule, const void* bkptr, int bklen)
 {
    int xchan = Alpha16Packet::PacketChannel(bkptr, bklen);
 
-   assert(xchan>=0);
-   assert(xchan<NUM_CHAN_ALPHA16);
+   if (xchan<0 || xchan >= NUM_CHAN_ALPHA16) {
+      // invalid channel number
+      e->error = true;
+      return;
+   }
 
    int chan = imodule*NUM_CHAN_ALPHA16 + xchan;
-   
-   assert(!e->udpPresent[chan]);
+
+   if (e->udpPresent[chan]) {
+      // duplicate udp packet
+      e->error = true;
+      return;
+   }
    
    e->udpPacket[chan].Unpack(bkptr, bklen);
    e->waveform[chan].Unpack(bkptr, bklen);
@@ -259,6 +264,37 @@ void Alpha16EVB::AddBank(Alpha16Event* e, int imodule, const void* bkptr, int bk
       e->complete = true;
 }
 
+Alpha16Event* Alpha16EVB::NewEvent()
+{
+   Alpha16Event *e = new Alpha16Event();
+   fEventCount++;
+   e->eventNo = fEventCount;
+   return e;
+}
+
+void Alpha16EVB::CheckEvent(Alpha16Event* e)
+{
+   int count = 0;
+   unsigned num_samples = 0;
+
+   for (int i=0; i<MAX_ALPHA16 * NUM_CHAN_ALPHA16; i++) {
+      if (e->udpPresent[i]) {
+         count++;
+         if (num_samples == 0)
+            num_samples = e->waveform[i].size();
+         if (e->waveform[i].size() != num_samples) {
+            // wrong number of ADC samples
+            e->error = true;
+         }
+      }
+   }
+
+   if (count == fConfNumChan && e->numChan == fConfNumChan) {
+      e->complete = true;
+   }
+}
+
+#if 0
 Alpha16Event* Alpha16EVB::FindEvent(int imodule, uint32_t udpTs)
 {
    // loop over buffered events, look for match
@@ -288,7 +324,9 @@ Alpha16Event* Alpha16EVB::FindEvent(int imodule, uint32_t udpTs)
 
    return e;
 }
+#endif
 
+#if 0
 Alpha16Event* Alpha16EVB::GetNextEvent()
 {
    if (fEvents.size() < 1)
@@ -303,6 +341,7 @@ Alpha16Event* Alpha16EVB::GetNextEvent()
   
    return NULL;
 }
+#endif
 
 /* emacs
  * Local Variables:

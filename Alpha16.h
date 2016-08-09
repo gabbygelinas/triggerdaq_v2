@@ -52,17 +52,19 @@ class Alpha16Waveform: public Alpha16WaveformVector
 
 struct Alpha16Event
 {
-   uint16_t eventNo;
-   uint32_t eventTs; // syncronized timestamp
-   uint32_t prevEventTs; // same from previous event
+   int      eventNo; // event counter, starting from 1
+   double   eventTime; // event time stamp, in ns, time of first event is zero
+   double   prevEventTime; // time of previous event, in ns, zero for first event
 
    bool     udpPresent[MAX_ALPHA16*NUM_CHAN_ALPHA16];  // udp packet received
-   uint32_t udpEventTs[MAX_ALPHA16];  // timestamp from udp packet
+   uint32_t udpEventTs[MAX_ALPHA16*NUM_CHAN_ALPHA16];  // timestamp from udp packet
 
-   Alpha16Packet udpPacket[MAX_ALPHA16*NUM_CHAN_ALPHA16];
+   Alpha16Packet  udpPacket[MAX_ALPHA16*NUM_CHAN_ALPHA16];
    Alpha16Waveform waveform[MAX_ALPHA16*NUM_CHAN_ALPHA16];
 
    int  numChan;  // count of received channels
+
+   bool error;    // event has an error
    bool complete; // event is complete
    
    Alpha16Event(); // ctor
@@ -72,31 +74,33 @@ struct Alpha16Event
    void Print() const;
 };
 
-#include <deque>
-
 struct Alpha16EVB
 {
    int fEventCount; // event counter
-   uint32_t fFirstEventTs[MAX_ALPHA16]; // udp timestamp of first event
-   uint32_t fLastEventTs[MAX_ALPHA16];  // udp timestamp of last seen event
-   std::deque<Alpha16Event*> fEvents;
+
+   uint32_t fFirstEventTs[MAX_ALPHA16*NUM_CHAN_ALPHA16]; // udp timestamp of first event
+   uint32_t fLastEventTs[MAX_ALPHA16*NUM_CHAN_ALPHA16];  // udp timestamp of last seen event
 
    int fConfNumChan;
+   int fConfNumSamples;
    
-   Alpha16EVB(int numChan) // ctor
+   Alpha16EVB(int numChan, int numSamples) // ctor
    {
       Reset();
       fConfNumChan = numChan;
+      fConfNumSamples = numSamples;
    }
    
    void Reset();
-   void Print() const;
-   Alpha16Event* FindEvent(int imodule, uint32_t udpTs);
-   void AddBank(Alpha16Event* e, int imodule, const void* bkptr, int bklen);
+   //void Print() const;
 
-   Alpha16Event* GetNextEvent();
-   
-   static bool Match(const Alpha16Event* e, int imodule, uint32_t udpTs);
+   Alpha16Event* NewEvent();
+   void AddBank(Alpha16Event* e, int imodule, const void* bkptr, int bklen);
+   void CheckEvent(Alpha16Event* e);
+
+   //Alpha16Event* FindEvent(int imodule, uint32_t udpTs);
+   //Alpha16Event* GetNextEvent();
+   //static bool Match(const Alpha16Event* e, int imodule, uint32_t udpTs);
 };
 
 #endif
