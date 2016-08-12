@@ -3,6 +3,7 @@
 
 #include "TRootanaDisplay.hxx"
 #include "TH1D.h"
+#include "TH2D.h"
 
 #include "TInterestingEventManager.hxx"
 
@@ -30,10 +31,18 @@ struct PlotHistograms
    TH1D* fHlex;
    TH1D* fHocc;
 
+   TH1D* fHocc1;
+   TH1D* fHocc2;
+
+   TH1D* fHph1;
+   TH1D* fHph2;
+
+   TH2D* fHph3;
+
    PlotHistograms(TCanvas* c) // ctor
    {
       if (!c) {
-         c = new TCanvas("Histograms", "Histograms", 900, 650);
+         c = new TCanvas("Histograms", "Histograms", 1100, 850);
          if (!(c->GetShowEventStatus()))
             c->ToggleEventStatus();
          if (!(c->GetShowToolBar()))
@@ -43,7 +52,7 @@ struct PlotHistograms
       fCanvas = c;
 
       fCanvas->cd();
-      fCanvas->Divide(2,3);
+      fCanvas->Divide(3,4);
 
       fCanvas->cd(1);
       fHbaseline = new TH1D("baseline", "baseline", 100, -1000, 1000);
@@ -68,6 +77,115 @@ struct PlotHistograms
       fCanvas->cd(6);
       fHocc = new TH1D("channel_occupancy", "channel_occupancy", MAX_ALPHA16*NUM_CHAN_ALPHA16, 0, MAX_ALPHA16*NUM_CHAN_ALPHA16-1);
       fHocc->Draw();
+
+      fCanvas->cd(7);
+      fHph1 = new TH1D("pulse_height_pc", "pulse_height_pc", 100, 0, 8000);
+      fHph1->Draw();
+
+      fCanvas->cd(8);
+      fHph2 = new TH1D("pulse_height_drift", "pulse_height_drift", 100, 0, 8000);
+      fHph2->Draw();
+
+      fCanvas->cd(9);
+      fHph3 = new TH2D("pulse_height_vs_drift", "pulse_height_vs_drift", 50, 0, 1000, 50, 0, 8000);
+      fHph3->Draw();
+
+      fCanvas->cd(10);
+      fHocc1 = new TH1D("channel_occupancy_pc", "channel_occupancy_pc", MAX_ALPHA16*NUM_CHAN_ALPHA16, 0, MAX_ALPHA16*NUM_CHAN_ALPHA16-1);
+      fHocc1->Draw();
+
+      fCanvas->cd(11);
+      fHocc2 = new TH1D("channel_occupancy_drift", "channel_occupancy_drift", MAX_ALPHA16*NUM_CHAN_ALPHA16, 0, MAX_ALPHA16*NUM_CHAN_ALPHA16-1);
+      fHocc2->Draw();
+
+      Draw();
+   }
+
+   void Draw()
+   {
+      fCanvas->Modified();
+      fCanvas->Draw();
+      fCanvas->Update();
+   }
+};
+
+struct PlotHistogramsPads
+{
+   TCanvas* fCanvas;
+
+   TH1D* fHbaseline;
+   TH1D* fHbaselineRms;
+   TH1D* fHph;
+   TH1D* fHle;
+   TH1D* fHlex;
+   TH1D* fHocc;
+
+   TH1D* fHocc1;
+   TH1D* fHocc2;
+
+   TH1D* fHph1;
+   TH1D* fHph2;
+
+   TH2D* fHph3;
+
+   PlotHistogramsPads(TCanvas* c) // ctor
+   {
+      if (!c) {
+         c = new TCanvas("HistogramsPads", "HistogramsPads", 1100, 850);
+         if (!(c->GetShowEventStatus()))
+            c->ToggleEventStatus();
+         if (!(c->GetShowToolBar()))
+            c->ToggleToolBar();
+      }
+
+      fCanvas = c;
+
+      fCanvas->cd();
+      fCanvas->Divide(3,4);
+
+      fCanvas->cd(1);
+      fHbaseline = new TH1D("pads_baseline", "baseline", 100, -1000, 1000);
+      fHbaseline->Draw();
+
+      fCanvas->cd(2);
+      fHbaselineRms = new TH1D("pads_baseline_rms", "baseline_rms", 50, 0, 50);
+      fHbaselineRms->Draw();
+
+      fCanvas->cd(3);
+      fHph = new TH1D("pads_pulse_height", "pulse_height", 100, 0, 500);
+      fHph->Draw();
+
+      fCanvas->cd(4);
+      fHle = new TH1D("pads_pulse_time", "pulse_time", 100, 0, 1000);
+      fHle->Draw();
+
+      fCanvas->cd(5);
+      fHlex = new TH1D("pads_pulse_time_expanded", "pulse_time_expanded", 100, 100, 200);
+      fHlex->Draw();
+
+      fCanvas->cd(6);
+      fHocc = new TH1D("pads_channel_occupancy", "channel_occupancy", MAX_ALPHA16*NUM_CHAN_ALPHA16, 0, MAX_ALPHA16*NUM_CHAN_ALPHA16-1);
+      fHocc->Draw();
+
+      fCanvas->cd(7);
+      fHph1 = new TH1D("pads_pulse_height_pc", "pulse_height_pc", 100, 0, 500);
+      fHph1->Draw();
+
+      fCanvas->cd(8);
+      fHph2 = new TH1D("pads_pulse_height_drift", "pulse_height_drift", 100, 0, 500);
+      fHph2->Draw();
+
+      fCanvas->cd(9);
+      fHph3 = new TH2D("pads_pulse_height_vs_drift", "pulse_height_vs_drift", 50, 0, 1000, 50, 0, 500);
+      fHph3->Draw();
+
+      fCanvas->cd(10);
+      fHocc1 = new TH1D("pads_channel_occupancy_pc", "channel_occupancy_pc", MAX_ALPHA16*NUM_CHAN_ALPHA16, 0, MAX_ALPHA16*NUM_CHAN_ALPHA16-1);
+      fHocc1->Draw();
+
+      fCanvas->cd(11);
+      fHocc2 = new TH1D("pads_channel_occupancy_drift", "channel_occupancy_drift", MAX_ALPHA16*NUM_CHAN_ALPHA16, 0, MAX_ALPHA16*NUM_CHAN_ALPHA16-1);
+      fHocc2->Draw();
 
       Draw();
    }
@@ -135,8 +253,8 @@ struct PlotA16
             fH[i] = new TH1D(name, name, adc->waveform[ichan].size(), 0, adc->waveform[ichan].size());
 
             fH[i]->Draw();
-            fH[i]->SetMinimum(-(1<<15));
-            fH[i]->SetMaximum(1<<15);
+            //fH[i]->SetMinimum(-(1<<15));
+            //fH[i]->SetMaximum(1<<15);
             fH[i]->SetLineColor(color);
          }
 
@@ -517,19 +635,17 @@ public:
    Alpha16Event* fLastEvent;
 
    PlotHistograms* fH;
+   PlotHistogramsPads* fP;
    
    AlphaTpcCanvas() // ctor
       : TCanvasHandleBase("ALPHA TPC")
    {
       fH = new PlotHistograms(NULL);
+      fP = new PlotHistogramsPads(NULL);
 
       fEvb = new Alpha16EVB(NUM_CHAN_ALPHA16, 512);
 
-      for (int i=0; i<MAX_ALPHA16; i++) {
-         if (i == 3)
-            continue;
-         if (i == 5)
-            continue;
+      for (int i=0; i<4 /*MAX_ALPHA16*/; i++) {
          char title[256];
          sprintf(title, "ADC %2d", i+1);
          TCanvas *c = new TCanvas(title, title, 900, 400);
@@ -638,10 +754,48 @@ public:
             double wmin = min(w);
             double wmax = max(w);
 
-            double ph = b - wmin;
+            if (i>=0 && i<32) {
+               fP->fHbaseline->Fill(b);
+               fP->fHbaselineRms->Fill(brms);
+
+               int pph = wmax - b;
+
+               if (pph > 30) {
+
+                  fP->fHph->Fill(pph);
+
+                  if (pph > 100)
+                     force_plot = true;
+
+                  int ple = led(w, b, 1.0, pph/2.0);
+                  
+                  if (1 || pph > 100) {
+                     fP->fHle->Fill(ple);
+                     fP->fHlex->Fill(ple);
+                     fP->fHocc->Fill(i);
+                     
+                     if (ple > 150 && ple < 170) {
+                        fP->fHocc1->Fill(i);
+                        fP->fHph1->Fill(pph);
+                     }
+                     
+                     if (ple > 170 && ple < 580) {
+                        fP->fHocc2->Fill(i);
+                        fP->fHph2->Fill(pph);
+                     }
+                     
+                     fP->fHph3->Fill(ple, pph);
+                  }
+               }
+                  
+               delete w;
+               continue;
+            }
 
             fH->fHbaseline->Fill(b);
             fH->fHbaselineRms->Fill(brms);
+
+            double ph = b - wmin;
 
             if (ph > 100)
                fH->fHph->Fill(ph);
@@ -657,9 +811,21 @@ public:
                fH->fHle->Fill(le);
                fH->fHlex->Fill(le);
                fH->fHocc->Fill(i);
+
+               if (le > 150 && le < 170) {
+                  fH->fHocc1->Fill(i);
+                  fH->fHph1->Fill(ph);
+               }
+
+               if (le > 170 && le < 580) {
+                  fH->fHocc2->Fill(i);
+                  fH->fHph2->Fill(ph);
+               }
+
+               fH->fHph3->Fill(le, ph);
             }
 
-            if (ph > 2000) {
+            if (ph > 4000) {
                nhits++;
                //printf("samples %d %d, ", e->waveform[i].size(), w->nsamples);
                printf("chan %4d: baseline %8.1f, rms %4.1f, range %8.1f %6.1f, pulse %6.1f, le %4d\n", i, b, brms, wmin, wmax, ph, le);
@@ -670,8 +836,8 @@ public:
 
       printf("Found %d hits\n", nhits);
 
-      if (nhits > 2)
-         force_plot = true;
+      //if (nhits >= 2)
+      //force_plot = true;
 
       TInterestingEventManager::instance()->Reset();
       if (force_plot) {
@@ -686,18 +852,35 @@ public:
       
       if (!fLastEvent)
          return;
+
+      time_t tstart = time(NULL);
       
       printf("plotting:   "); fLastEvent->Print();
       
       for (int i=0; i<MAX_ALPHA16; i++) {
-         if (fPlotA16[i])
+         if (fPlotA16[i]) {
+            printf("plot %d start\n", i);
             fPlotA16[i]->Draw(fLastEvent);
+            printf("plot %d done\n", i);
+         }
       }
 
-      if (fH)
+      if (fH) {
+         printf("plot H start\n");
          fH->Draw();
+         printf("plot H done\n");
+      }
 
-      printf("plotting: done!\n");
+      if (fP) {
+         printf("plot P start\n");
+         fP->Draw();
+         printf("plot P done\n");
+      }
+
+      time_t tend = time(NULL);
+      int elapsed = tend-tstart;
+
+      printf("plotting: done, %d sec!\n", elapsed);
    }
 };
 
