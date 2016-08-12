@@ -47,7 +47,7 @@ class Alpha16Waveform: public Alpha16WaveformVector
    void Unpack(const void* bkptr, int bklen8);
 };
 
-#define MAX_ALPHA16 6
+#define MAX_ALPHA16 32
 #define NUM_CHAN_ALPHA16 16
 
 struct Alpha16Event

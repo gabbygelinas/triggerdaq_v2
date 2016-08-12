@@ -9,6 +9,8 @@
 
 #include "Alpha16.h"
 
+#define SHOW_ALPHA16 6
+
 #include "Waveform.h"
 
 Waveform* NewWaveform(const Alpha16Waveform* a, double scale)
@@ -75,7 +77,7 @@ struct PlotHistograms
       fHlex->Draw();
 
       fCanvas->cd(6);
-      fHocc = new TH1D("channel_occupancy", "channel_occupancy", MAX_ALPHA16*NUM_CHAN_ALPHA16, 0, MAX_ALPHA16*NUM_CHAN_ALPHA16-1);
+      fHocc = new TH1D("channel_occupancy", "channel_occupancy", SHOW_ALPHA16*NUM_CHAN_ALPHA16, 0, SHOW_ALPHA16*NUM_CHAN_ALPHA16-1);
       fHocc->Draw();
 
       fCanvas->cd(7);
@@ -91,11 +93,11 @@ struct PlotHistograms
       fHph3->Draw();
 
       fCanvas->cd(10);
-      fHocc1 = new TH1D("channel_occupancy_pc", "channel_occupancy_pc", MAX_ALPHA16*NUM_CHAN_ALPHA16, 0, MAX_ALPHA16*NUM_CHAN_ALPHA16-1);
+      fHocc1 = new TH1D("channel_occupancy_pc", "channel_occupancy_pc", SHOW_ALPHA16*NUM_CHAN_ALPHA16, 0, SHOW_ALPHA16*NUM_CHAN_ALPHA16-1);
       fHocc1->Draw();
 
       fCanvas->cd(11);
-      fHocc2 = new TH1D("channel_occupancy_drift", "channel_occupancy_drift", MAX_ALPHA16*NUM_CHAN_ALPHA16, 0, MAX_ALPHA16*NUM_CHAN_ALPHA16-1);
+      fHocc2 = new TH1D("channel_occupancy_drift", "channel_occupancy_drift", SHOW_ALPHA16*NUM_CHAN_ALPHA16, 0, SHOW_ALPHA16*NUM_CHAN_ALPHA16-1);
       fHocc2->Draw();
 
       Draw();
@@ -164,7 +166,7 @@ struct PlotHistogramsPads
       fHlex->Draw();
 
       fCanvas->cd(6);
-      fHocc = new TH1D("pads_channel_occupancy", "channel_occupancy", MAX_ALPHA16*NUM_CHAN_ALPHA16, 0, MAX_ALPHA16*NUM_CHAN_ALPHA16-1);
+      fHocc = new TH1D("pads_channel_occupancy", "channel_occupancy", SHOW_ALPHA16*NUM_CHAN_ALPHA16, 0, SHOW_ALPHA16*NUM_CHAN_ALPHA16-1);
       fHocc->Draw();
 
       fCanvas->cd(7);
@@ -180,11 +182,11 @@ struct PlotHistogramsPads
       fHph3->Draw();
 
       fCanvas->cd(10);
-      fHocc1 = new TH1D("pads_channel_occupancy_pc", "channel_occupancy_pc", MAX_ALPHA16*NUM_CHAN_ALPHA16, 0, MAX_ALPHA16*NUM_CHAN_ALPHA16-1);
+      fHocc1 = new TH1D("pads_channel_occupancy_pc", "channel_occupancy_pc", SHOW_ALPHA16*NUM_CHAN_ALPHA16, 0, SHOW_ALPHA16*NUM_CHAN_ALPHA16-1);
       fHocc1->Draw();
 
       fCanvas->cd(11);
-      fHocc2 = new TH1D("pads_channel_occupancy_drift", "channel_occupancy_drift", MAX_ALPHA16*NUM_CHAN_ALPHA16, 0, MAX_ALPHA16*NUM_CHAN_ALPHA16-1);
+      fHocc2 = new TH1D("pads_channel_occupancy_drift", "channel_occupancy_drift", SHOW_ALPHA16*NUM_CHAN_ALPHA16, 0, SHOW_ALPHA16*NUM_CHAN_ALPHA16-1);
       fHocc2->Draw();
 
       Draw();
@@ -630,7 +632,7 @@ public:
    
    Alpha16EVB* fEvb;
    
-   PlotA16* fPlotA16[MAX_ALPHA16];
+   PlotA16* fPlotA16[SHOW_ALPHA16];
    
    Alpha16Event* fLastEvent;
 
@@ -645,7 +647,7 @@ public:
 
       fEvb = new Alpha16EVB(NUM_CHAN_ALPHA16, 512);
 
-      for (int i=0; i<4 /*MAX_ALPHA16*/; i++) {
+      for (int i=0; i<SHOW_ALPHA16; i++) {
          char title[256];
          sprintf(title, "ADC %2d", i+1);
          TCanvas *c = new TCanvas(title, title, 900, 400);
@@ -686,7 +688,7 @@ public:
 
       Alpha16Event* e = fEvb->NewEvent();
       
-      for (int imodule = 0; imodule < MAX_ALPHA16; imodule++) {
+      for (int imodule = 0; imodule < SHOW_ALPHA16; imodule++) {
          for (int i=0; i<NUM_CHAN_ALPHA16; i++) {
             void *ptr;
             int bklen, bktype;
@@ -744,7 +746,7 @@ public:
 
       int nhits = 0;
 
-      for (int i=0; i<MAX_ALPHA16*NUM_CHAN_ALPHA16; i++)
+      for (int i=0; i<SHOW_ALPHA16*NUM_CHAN_ALPHA16; i++)
          if (e->udpPresent[i]) {
             Waveform* w = NewWaveform(&e->waveform[i], 1.0/4.0);
 
@@ -857,7 +859,7 @@ public:
       
       printf("plotting:   "); fLastEvent->Print();
       
-      for (int i=0; i<MAX_ALPHA16; i++) {
+      for (int i=0; i<SHOW_ALPHA16; i++) {
          if (fPlotA16[i]) {
             printf("plot %d start\n", i);
             fPlotA16[i]->Draw(fLastEvent);
