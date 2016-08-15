@@ -756,7 +756,7 @@ public:
             double wmin = min(w);
             double wmax = max(w);
 
-            if (i>=0 && i<32) {
+            if (0 && i>=0 && i<32) {
                fP->fHbaseline->Fill(b);
                fP->fHbaselineRms->Fill(brms);
 
