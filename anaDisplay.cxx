@@ -8,6 +8,7 @@
 #include "TInterestingEventManager.hxx"
 
 #include "Alpha16.h"
+#include "Unpack.h"
 
 #define SHOW_ALPHA16 6
 
@@ -683,7 +684,10 @@ public:
    void UpdateCanvasHistograms(TDataContainer& dataContainer)
    {
       //printf("AlphaTpcCanvas::UpdateCanvasHistograms()\n");
-      
+
+      Alpha16Event* e = UnpackAlpha16Event(fEvb, &dataContainer.GetMidasEvent());
+
+#if 0      
       const TMidasEvent& me = dataContainer.GetMidasEvent();
 
       Alpha16Event* e = fEvb->NewEvent();
@@ -722,6 +726,8 @@ public:
       }
 
       fEvb->CheckEvent(e);
+#endif
+      printf("new event: "); e->Print();
       
       if (e->error)
          return;

@@ -57,15 +57,21 @@ OBJS:=
 
 all:: $(OBJS)
 #all:: ana.exe
+all:: analyzer.exe
 all:: anaDisplay.exe
 #all:: midas2root.exe
 
 Alpha16.o: Alpha16.h Alpha16.cxx
+Unpack.o: Unpack.h Alpha16.h
 anaDisplay.o: Alpha16.o
 
 OBJS += Alpha16.o
+OBJS += Unpack.o
 
 ana.exe: ana.cxx $(OBJS) 
+	$(CXX) -o $@ $(CXXFLAGS) $(ROOTANAINC) $^ $(ROOTANALIBS) $(MIDASLIBS) $(ROOTGLIBS) -lm -lz -lpthread $(RPATH) -lssl $(RTLIB) -lutil
+
+analyzer.exe: analyzer.cxx $(OBJS) 
 	$(CXX) -o $@ $(CXXFLAGS) $(ROOTANAINC) $^ $(ROOTANALIBS) $(MIDASLIBS) $(ROOTGLIBS) -lm -lz -lpthread $(RPATH) -lssl $(RTLIB) -lutil
 
 anaDisplay.exe: anaDisplay.cxx $(OBJS) 
