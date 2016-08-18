@@ -4,6 +4,7 @@
 #include "TRootanaDisplay.hxx"
 #include "TH1D.h"
 #include "TH2D.h"
+#include "TProfile.h"
 
 #include "TInterestingEventManager.hxx"
 
@@ -29,6 +30,7 @@ struct PlotHistograms
 
    TH1D* fHbaseline;
    TH1D* fHbaselineRms;
+   TProfile* fHbaselineRmsVsChan;
    TH1D* fHph;
    TH1D* fHle;
    TH1D* fHlex;
@@ -57,47 +59,56 @@ struct PlotHistograms
       fCanvas->cd();
       fCanvas->Divide(3,4);
 
-      fCanvas->cd(1);
+      //int max_adc = 8000;
+      int max_adc = 1000;
+
+      int i=1;
+
+      fCanvas->cd(i++);
       fHbaseline = new TH1D("baseline", "baseline", 100, -1000, 1000);
       fHbaseline->Draw();
 
-      fCanvas->cd(2);
+      fCanvas->cd(i++);
       fHbaselineRms = new TH1D("baseline_rms", "baseline_rms", 50, 0, 50);
       fHbaselineRms->Draw();
 
-      fCanvas->cd(3);
-      fHph = new TH1D("pulse_height", "pulse_height", 100, 0, 8000);
+      fCanvas->cd(i++);
+      fHbaselineRmsVsChan = new TProfile("baseline_rms_vs_chan", "baseline_rms_vs_chan", SHOW_ALPHA16*NUM_CHAN_ALPHA16, 0, SHOW_ALPHA16*NUM_CHAN_ALPHA16-1);
+      fHbaselineRmsVsChan->Draw();
+
+      fCanvas->cd(i++);
+      fHph = new TH1D("pulse_height", "pulse_height", 100, 0, max_adc);
       fHph->Draw();
 
-      fCanvas->cd(4);
+      fCanvas->cd(i++);
       fHle = new TH1D("pulse_time", "pulse_time", 100, 0, 1000);
       fHle->Draw();
 
-      fCanvas->cd(5);
+      fCanvas->cd(i++);
       fHlex = new TH1D("pulse_time_expanded", "pulse_time_expanded", 100, 100, 200);
       fHlex->Draw();
 
-      fCanvas->cd(6);
+      fCanvas->cd(i++);
       fHocc = new TH1D("channel_occupancy", "channel_occupancy", SHOW_ALPHA16*NUM_CHAN_ALPHA16, 0, SHOW_ALPHA16*NUM_CHAN_ALPHA16-1);
       fHocc->Draw();
 
-      fCanvas->cd(7);
-      fHph1 = new TH1D("pulse_height_pc", "pulse_height_pc", 100, 0, 8000);
+      fCanvas->cd(i++);
+      fHph1 = new TH1D("pulse_height_pc", "pulse_height_pc", 100, 0, max_adc);
       fHph1->Draw();
 
-      fCanvas->cd(8);
-      fHph2 = new TH1D("pulse_height_drift", "pulse_height_drift", 100, 0, 8000);
+      fCanvas->cd(i++);
+      fHph2 = new TH1D("pulse_height_drift", "pulse_height_drift", 100, 0, max_adc);
       fHph2->Draw();
 
-      fCanvas->cd(9);
-      fHph3 = new TH2D("pulse_height_vs_drift", "pulse_height_vs_drift", 50, 0, 1000, 50, 0, 8000);
+      fCanvas->cd(i++);
+      fHph3 = new TH2D("pulse_height_vs_drift", "pulse_height_vs_drift", 50, 0, 1000, 50, 0, max_adc);
       fHph3->Draw();
 
-      fCanvas->cd(10);
+      fCanvas->cd(i++);
       fHocc1 = new TH1D("channel_occupancy_pc", "channel_occupancy_pc", SHOW_ALPHA16*NUM_CHAN_ALPHA16, 0, SHOW_ALPHA16*NUM_CHAN_ALPHA16-1);
       fHocc1->Draw();
 
-      fCanvas->cd(11);
+      fCanvas->cd(i++);
       fHocc2 = new TH1D("channel_occupancy_drift", "channel_occupancy_drift", SHOW_ALPHA16*NUM_CHAN_ALPHA16, 0, SHOW_ALPHA16*NUM_CHAN_ALPHA16-1);
       fHocc2->Draw();
 
@@ -258,6 +269,9 @@ struct PlotA16
             fH[i]->Draw();
             //fH[i]->SetMinimum(-(1<<15));
             //fH[i]->SetMaximum(1<<15);
+            fH[i]->SetMinimum(-2000);
+            fH[i]->SetMaximum(2000);
+            fH[i]->GetYaxis()->SetLabelSize(0.10);
             fH[i]->SetLineColor(color);
          }
 
@@ -800,22 +814,22 @@ public:
                continue;
             }
 
-            fH->fHbaseline->Fill(b);
-            fH->fHbaselineRms->Fill(brms);
-
-            double ph = b - wmin;
-
-            if (ph > 100)
-               fH->fHph->Fill(ph);
-
-            if (ph < 20) {
+            if (0 && i < 48) {
                delete w;
                continue;
             }
 
-            int le = led(w, b, -1.0, ph/2.0);
+            fH->fHbaseline->Fill(b);
+            fH->fHbaselineRms->Fill(brms);
+            fH->fHbaselineRmsVsChan->Fill(i, brms);
 
-            if (ph > 100) {
+            double ph = b - wmin;
+
+            if (ph > 120) {
+               fH->fHph->Fill(ph);
+
+               int le = led(w, b, -1.0, ph/2.0);
+
                fH->fHle->Fill(le);
                fH->fHlex->Fill(le);
                fH->fHocc->Fill(i);
@@ -831,12 +845,12 @@ public:
                }
 
                fH->fHph3->Fill(le, ph);
-            }
 
-            if (ph > 4000) {
-               nhits++;
-               //printf("samples %d %d, ", e->waveform[i].size(), w->nsamples);
-               printf("chan %4d: baseline %8.1f, rms %4.1f, range %8.1f %6.1f, pulse %6.1f, le %4d\n", i, b, brms, wmin, wmax, ph, le);
+               if (ph > 4000) {
+                  nhits++;
+                  //printf("samples %d %d, ", e->waveform[i].size(), w->nsamples);
+                  printf("chan %4d: baseline %8.1f, rms %4.1f, range %8.1f %6.1f, pulse %6.1f, le %4d\n", i, b, brms, wmin, wmax, ph, le);
+               }
             }
 
             delete w;
