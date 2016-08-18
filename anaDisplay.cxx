@@ -924,6 +924,7 @@ public:
       //SetNumberSkipEvent(10);
       // Choose to use functionality to update after X seconds
       SetOnlineUpdatingBasedSeconds();
+      SetSecondsBeforeUpdating(15);
       // Uncomment this to enable the 'interesting event' functionality.
       //iem_t::instance()->Enable();
    }
