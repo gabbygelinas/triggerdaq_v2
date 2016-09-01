@@ -7,6 +7,59 @@ Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, const TMidasEvent* me)
 {
    Alpha16Event* e = evb->NewEvent();
 
+   for (int imodule = 1; imodule <= 20; imodule++) {
+      for (int i=0; i<NUM_CHAN_ALPHA16; i++) {
+         void *ptr;
+         int bklen, bktype;
+         int status;
+
+         char c = 0;
+         if (i<=9)
+            c = '0' + i;
+         else
+            c = 'A' + i - 10;
+         
+         char bname[5];
+         sprintf(bname, "B%02d%c", imodule, c);
+         
+         status = me->FindBank(bname, &bklen, &bktype, &ptr);
+         if (status == 1) {
+            //printf("ALPHA16 bname %s, pointer: %p, status %d, len %d, type %d\n", bname, ptr, status, bklen, bktype);
+            
+            // print header
+            
+            int packetType = Alpha16Packet::PacketType(ptr, bklen);
+            int packetVersion = Alpha16Packet::PacketVersion(ptr, bklen);
+
+            const int xmap[] = { 4, 10, 13, 15, 1, 16, 17, 2, 0 };
+
+            int xmodule = -1;
+
+            for (int x=0; xmap[x]; x++)
+               if (xmap[x] == imodule) {
+                  xmodule = x;
+                  break;
+               }
+
+            if (xmodule < 0)
+               continue;
+            
+            if (0) {
+               printf("Header:\n");
+               printf("  packet type:    0x%02x (%d)\n", packetType, packetType);
+               printf("  packet version: 0x%02x (%d)\n", packetVersion, packetVersion);
+            }
+            
+            if (packetType == 1 && packetVersion == 1) {
+               evb->AddBank(e, xmodule, ptr, bklen);
+            } else {
+               printf("unknown packet type %d, version %d\n", packetType, packetVersion);
+            }
+         }
+      }
+   }
+
+#if 0
    for (int imodule = 0; imodule < 9; imodule++) {
       for (int i=0; i<NUM_CHAN_ALPHA16; i++) {
          void *ptr;
@@ -39,6 +92,7 @@ Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, const TMidasEvent* me)
          }
       }
    }
+#endif
 
    evb->CheckEvent(e);
 
