@@ -11,7 +11,7 @@
 #include "Alpha16.h"
 #include "Unpack.h"
 
-#define SHOW_ALPHA16 6
+#define SHOW_ALPHA16 8
 
 #include "Waveform.h"
 
@@ -59,8 +59,7 @@ struct PlotHistograms
       fCanvas->cd();
       fCanvas->Divide(3,4);
 
-      //int max_adc = 8000;
-      int max_adc = 1000;
+      int max_adc = 8000;
 
       int i=1;
 
@@ -73,7 +72,7 @@ struct PlotHistograms
       fHbaselineRms->Draw();
 
       fCanvas->cd(i++);
-      fHbaselineRmsVsChan = new TProfile("baseline_rms_vs_chan", "baseline_rms_vs_chan", SHOW_ALPHA16*NUM_CHAN_ALPHA16, 0, SHOW_ALPHA16*NUM_CHAN_ALPHA16-1);
+      fHbaselineRmsVsChan = new TProfile("baseline_rms_vs_chan", "baseline_rms_vs_chan", SHOW_ALPHA16*NUM_CHAN_ALPHA16, -0.5, SHOW_ALPHA16*NUM_CHAN_ALPHA16-0.5);
       fHbaselineRmsVsChan->Draw();
 
       fCanvas->cd(i++);
@@ -89,7 +88,7 @@ struct PlotHistograms
       fHlex->Draw();
 
       fCanvas->cd(i++);
-      fHocc = new TH1D("channel_occupancy", "channel_occupancy", SHOW_ALPHA16*NUM_CHAN_ALPHA16, 0, SHOW_ALPHA16*NUM_CHAN_ALPHA16-1);
+      fHocc = new TH1D("channel_occupancy", "channel_occupancy", SHOW_ALPHA16*NUM_CHAN_ALPHA16, -0.5, SHOW_ALPHA16*NUM_CHAN_ALPHA16-0.5);
       fHocc->Draw();
 
       fCanvas->cd(i++);
@@ -105,11 +104,11 @@ struct PlotHistograms
       fHph3->Draw();
 
       fCanvas->cd(i++);
-      fHocc1 = new TH1D("channel_occupancy_pc", "channel_occupancy_pc", SHOW_ALPHA16*NUM_CHAN_ALPHA16, 0, SHOW_ALPHA16*NUM_CHAN_ALPHA16-1);
+      fHocc1 = new TH1D("channel_occupancy_pc", "channel_occupancy_pc", SHOW_ALPHA16*NUM_CHAN_ALPHA16, -0.5, SHOW_ALPHA16*NUM_CHAN_ALPHA16-0.5);
       fHocc1->Draw();
 
       fCanvas->cd(i++);
-      fHocc2 = new TH1D("channel_occupancy_drift", "channel_occupancy_drift", SHOW_ALPHA16*NUM_CHAN_ALPHA16, 0, SHOW_ALPHA16*NUM_CHAN_ALPHA16-1);
+      fHocc2 = new TH1D("channel_occupancy_drift", "channel_occupancy_drift", SHOW_ALPHA16*NUM_CHAN_ALPHA16, -0.5, SHOW_ALPHA16*NUM_CHAN_ALPHA16-0.5);
       fHocc2->Draw();
 
       Draw();
@@ -267,10 +266,10 @@ struct PlotA16
             fH[i] = new TH1D(name, name, adc->waveform[ichan].size(), 0, adc->waveform[ichan].size());
 
             fH[i]->Draw();
-            //fH[i]->SetMinimum(-(1<<15));
-            //fH[i]->SetMaximum(1<<15);
-            fH[i]->SetMinimum(-2000);
-            fH[i]->SetMaximum(2000);
+            fH[i]->SetMinimum(-(1<<15));
+            fH[i]->SetMaximum(1<<15);
+            //fH[i]->SetMinimum(-2000);
+            //fH[i]->SetMaximum(2000);
             fH[i]->GetYaxis()->SetLabelSize(0.10);
             fH[i]->SetLineColor(color);
          }
@@ -658,7 +657,7 @@ public:
       : TCanvasHandleBase("ALPHA TPC")
    {
       fH = new PlotHistograms(NULL);
-      fP = new PlotHistogramsPads(NULL);
+      fP = NULL; // new PlotHistogramsPads(NULL);
 
       fEvb = new Alpha16EVB(NUM_CHAN_ALPHA16, 512);
 
@@ -796,12 +795,12 @@ public:
                      fP->fHlex->Fill(ple);
                      fP->fHocc->Fill(i);
                      
-                     if (ple > 150 && ple < 170) {
+                     if (ple > 150 && ple < 180) {
                         fP->fHocc1->Fill(i);
                         fP->fHph1->Fill(pph);
                      }
                      
-                     if (ple > 170 && ple < 580) {
+                     if (ple > 180 && ple < 580) {
                         fP->fHocc2->Fill(i);
                         fP->fHph2->Fill(pph);
                      }
@@ -834,12 +833,12 @@ public:
                fH->fHlex->Fill(le);
                fH->fHocc->Fill(i);
 
-               if (le > 150 && le < 170) {
+               if (le > 150 && le < 180) {
                   fH->fHocc1->Fill(i);
                   fH->fHph1->Fill(ph);
                }
 
-               if (le > 170 && le < 580) {
+               if (le > 180 && le < 580) {
                   fH->fHocc2->Fill(i);
                   fH->fHph2->Fill(ph);
                }
