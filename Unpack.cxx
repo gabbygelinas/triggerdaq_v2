@@ -31,7 +31,13 @@ Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, const TMidasEvent* me)
             int packetType = Alpha16Packet::PacketType(ptr, bklen);
             int packetVersion = Alpha16Packet::PacketVersion(ptr, bklen);
 
-            const int xmap[] = { 4, 10, 13, 15, 1, 16, 17, 2, 0 };
+            const int xmap_140[] = { 4, 10, 13, 15, 1, 16, 17, 2, 0 };
+            const int xmap_147[] = { 1, 2, 3, 4, 6, 7, 8, 16, 0 };
+            const int xmap_151[] = { 1, 2, 4, 7, 8, 10, 15, 16, 0 };
+
+            const int *xmap = NULL;
+
+            xmap = xmap_151;
 
             int xmodule = -1;
 
