@@ -44,6 +44,10 @@ struct PlotHistograms
 
    TH2D* fHph3;
 
+   TH1D* fHleCal;
+   TH1D* fHoccCal;
+   TProfile* fHleVsChanCal;
+
    PlotHistograms(TCanvas* c) // ctor
    {
       if (!c) {
@@ -57,9 +61,9 @@ struct PlotHistograms
       fCanvas = c;
 
       fCanvas->cd();
-      fCanvas->Divide(3,4);
+      fCanvas->Divide(3,5);
 
-      int max_adc = 8000;
+      int max_adc = 9000;
 
       int i=1;
 
@@ -68,11 +72,12 @@ struct PlotHistograms
       fHbaseline->Draw();
 
       fCanvas->cd(i++);
-      fHbaselineRms = new TH1D("baseline_rms", "baseline_rms", 50, 0, 50);
+      fHbaselineRms = new TH1D("baseline_rms", "baseline_rms", 100, 0, 100);
       fHbaselineRms->Draw();
 
       fCanvas->cd(i++);
       fHbaselineRmsVsChan = new TProfile("baseline_rms_vs_chan", "baseline_rms_vs_chan", SHOW_ALPHA16*NUM_CHAN_ALPHA16, -0.5, SHOW_ALPHA16*NUM_CHAN_ALPHA16-0.5);
+      fHbaselineRmsVsChan->SetMinimum(0);
       fHbaselineRmsVsChan->Draw();
 
       fCanvas->cd(i++);
@@ -89,6 +94,7 @@ struct PlotHistograms
 
       fCanvas->cd(i++);
       fHocc = new TH1D("channel_occupancy", "channel_occupancy", SHOW_ALPHA16*NUM_CHAN_ALPHA16, -0.5, SHOW_ALPHA16*NUM_CHAN_ALPHA16-0.5);
+      fHocc->SetMinimum(0);
       fHocc->Draw();
 
       fCanvas->cd(i++);
@@ -105,11 +111,26 @@ struct PlotHistograms
 
       fCanvas->cd(i++);
       fHocc1 = new TH1D("channel_occupancy_pc", "channel_occupancy_pc", SHOW_ALPHA16*NUM_CHAN_ALPHA16, -0.5, SHOW_ALPHA16*NUM_CHAN_ALPHA16-0.5);
+      fHocc1->SetMinimum(0);
       fHocc1->Draw();
 
       fCanvas->cd(i++);
       fHocc2 = new TH1D("channel_occupancy_drift", "channel_occupancy_drift", SHOW_ALPHA16*NUM_CHAN_ALPHA16, -0.5, SHOW_ALPHA16*NUM_CHAN_ALPHA16-0.5);
+      fHocc2->SetMinimum(0);
       fHocc2->Draw();
+
+      fCanvas->cd(i++);
+      fHleCal = new TH1D("pulse_time_cal", "pulse_time_cal", 100, 100, 120);
+      fHleCal->Draw();
+
+      fCanvas->cd(i++);
+      fHoccCal = new TH1D("channel_occupancy_cal", "channel_occupancy_cal", SHOW_ALPHA16*NUM_CHAN_ALPHA16, -0.5, SHOW_ALPHA16*NUM_CHAN_ALPHA16-0.5);
+      fHoccCal->SetMinimum(0);
+      fHoccCal->Draw();
+
+      fCanvas->cd(i++);
+      fHleVsChanCal = new TProfile("pulse_time_vs_chan_cal", "pulse_time_vs_chan_cal", SHOW_ALPHA16*NUM_CHAN_ALPHA16, -0.5, SHOW_ALPHA16*NUM_CHAN_ALPHA16-0.5);
+      fHleVsChanCal->Draw();
 
       Draw();
    }
@@ -824,7 +845,8 @@ public:
 
             double ph = b - wmin;
 
-            if (ph > 120) {
+            //if (ph > 120) {
+            if (ph > 250) {
                fH->fHph->Fill(ph);
 
                int le = led(w, b, -1.0, ph/2.0);
@@ -844,6 +866,12 @@ public:
                }
 
                fH->fHph3->Fill(le, ph);
+
+               if (le > 100 && le < 120) {
+                  fH->fHleCal->Fill(le);
+                  fH->fHoccCal->Fill(i);
+                  fH->fHleVsChanCal->Fill(i, le);
+               }
 
                if (ph > 4000) {
                   nhits++;
