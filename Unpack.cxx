@@ -56,23 +56,6 @@ Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, const TMidasEvent* me)
                }
 #endif
 
-            int xmodule = -1;
-            int top_bot = 0;
-
-            for (unsigned x=0; x<evb->fConfModMap.size(); x++)
-               if (evb->fConfModMap[x] == imodule) {
-                  xmodule = x;
-                  top_bot = 1;
-                  break;
-               } else if (evb->fConfModMap[x] == -imodule) {
-                  xmodule = x;
-                  top_bot = -1;
-                  break;
-               }
-            
-            if (xmodule < 0)
-               continue;
-            
             if (0) {
                printf("Header:\n");
                printf("  packet type:    0x%02x (%d)\n", packetType, packetType);
@@ -80,7 +63,7 @@ Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, const TMidasEvent* me)
             }
             
             if (packetType == 1 && packetVersion == 1) {
-               evb->AddBank(e, xmodule, ptr, bklen, top_bot);
+               evb->AddBank(e, imodule, ptr, bklen);
             } else {
                printf("unknown packet type %d, version %d\n", packetType, packetVersion);
             }
