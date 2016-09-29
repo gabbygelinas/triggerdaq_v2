@@ -217,6 +217,7 @@ void Alpha16EVB::Reset()
    fEventCount = 0;
    MEMZERO(fFirstEventTs);
    MEMZERO(fLastEventTs);
+   fConfModMap.clear();
 }
 
 #if 0
@@ -237,7 +238,12 @@ bool Alpha16EVB::Match(const Alpha16Event* e, int imodule, uint32_t udpTs)
 }
 #endif
 
-void Alpha16EVB::AddBank(Alpha16Event* e, int imodule, const void* bkptr, int bklen)
+//static const int chanmap_top[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+//static const int chanmap_top[] = { 0, 8, 1, 9, 2, 10, 3, 11, 4, 12, 5, 13, 6, 14, 7, 15 };
+static const int chanmap_top[] = { 7, 15, 6, 14, 5, 13, 4, 12, 3, 11, 2, 10, 1, 9, 0, 8 };
+static const int chanmap_bot[] = { 8, 0, 9, 1, 10, 2, 11, 3, 12, 4, 13, 5, 14, 6, 15, 7 };
+
+void Alpha16EVB::AddBank(Alpha16Event* e, int imodule, const void* bkptr, int bklen, int top_bot)
 {
    int xchan = Alpha16Packet::PacketChannel(bkptr, bklen);
 
@@ -247,7 +253,25 @@ void Alpha16EVB::AddBank(Alpha16Event* e, int imodule, const void* bkptr, int bk
       return;
    }
 
-   int chan = imodule*NUM_CHAN_ALPHA16 + xchan;
+   int ychan = -1; 
+
+   if (top_bot < 0)
+      for (int i=0; i<16; i++)
+         if (chanmap_bot[i] == xchan) {
+            ychan = i;
+            break;
+         }
+
+   if (top_bot > 0)
+      for (int i=0; i<16; i++)
+         if (chanmap_top[i] == xchan) {
+            ychan = i;
+            break;
+         }
+
+   assert(ychan>=0);
+
+   int chan = imodule*NUM_CHAN_ALPHA16 + ychan;
 
    if (e->udpPresent[chan]) {
       // duplicate udp packet

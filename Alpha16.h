@@ -83,6 +83,8 @@ struct Alpha16EVB
 
    int fConfNumChan;
    int fConfNumSamples;
+
+   std::vector<int> fConfModMap;
    
    Alpha16EVB(int numChan, int numSamples) // ctor
    {
@@ -95,7 +97,7 @@ struct Alpha16EVB
    //void Print() const;
 
    Alpha16Event* NewEvent();
-   void AddBank(Alpha16Event* e, int imodule, const void* bkptr, int bklen);
+   void AddBank(Alpha16Event* e, int imodule, const void* bkptr, int bklen, int top_bot);
    void CheckEvent(Alpha16Event* e);
 
    //Alpha16Event* FindEvent(int imodule, uint32_t udpTs);

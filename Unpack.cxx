@@ -31,13 +31,21 @@ Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, const TMidasEvent* me)
             int packetType = Alpha16Packet::PacketType(ptr, bklen);
             int packetVersion = Alpha16Packet::PacketVersion(ptr, bklen);
 
+#if 0
             const int xmap_140[] = { 4, 10, 13, 15, 1, 16, 17, 2, 0 };
             const int xmap_147[] = { 1, 2, 3, 4, 6, 7, 8, 16, 0 };
             const int xmap_151[] = { 1, 2, 4, 7, 8, 10, 15, 16, 0 };
+            const int xmap_171[] = { 9, 12, 4, 19, 8, 10, 15, 16, 0 };
+            const int xmap_173[] = { 9, 12, 4, 6, 8, 10, 15, 16, 0 };
+            const int xmap_177[] = { 9, 12, 4, 7, 8, 10, 15, 16, 0 };
+            const int xmap_183[] = { 9, 12, 4, 11, 14, 10, 15, 18, 0 };
+            const int xmap_184[] = { 9, 12, 4, 11, 10, 15, 17, 18, 0 };
+            const int xmap_186[] = { 1, 2, 12, 4,  10, 15, 17, 18, 0 };
+            const int xmap_194[] = { 1, 2, 13, 4,  9, 10, 11, 12, 0 };
 
             const int *xmap = NULL;
 
-            xmap = xmap_151;
+            xmap = xmap_194;
 
             int xmodule = -1;
 
@@ -46,7 +54,22 @@ Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, const TMidasEvent* me)
                   xmodule = x;
                   break;
                }
+#endif
 
+            int xmodule = -1;
+            int top_bot = 0;
+
+            for (unsigned x=0; x<evb->fConfModMap.size(); x++)
+               if (evb->fConfModMap[x] == imodule) {
+                  xmodule = x;
+                  top_bot = 1;
+                  break;
+               } else if (evb->fConfModMap[x] == -imodule) {
+                  xmodule = x;
+                  top_bot = -1;
+                  break;
+               }
+            
             if (xmodule < 0)
                continue;
             
@@ -57,7 +80,7 @@ Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, const TMidasEvent* me)
             }
             
             if (packetType == 1 && packetVersion == 1) {
-               evb->AddBank(e, xmodule, ptr, bklen);
+               evb->AddBank(e, xmodule, ptr, bklen, top_bot);
             } else {
                printf("unknown packet type %d, version %d\n", packetType, packetVersion);
             }

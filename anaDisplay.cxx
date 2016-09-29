@@ -660,6 +660,15 @@ public:
 };
 #endif
 
+void SetModMap(Alpha16EVB* evb, const int* map)
+{
+   evb->fConfModMap.clear();
+   while (*map) {
+      evb->fConfModMap.push_back(*map);
+      map++;
+   }
+}
+
 class AlphaTpcCanvas: public TCanvasHandleBase {
 public:
    
@@ -704,6 +713,48 @@ public:
       fRunNo = run;
       
       fEvb->Reset();
+
+      const int xmap_140[] = { 4, 10, 13, 15, 1, 16, 17, 2, 0 };
+      const int xmap_147[] = { 1, 2, 3, 4, 6, 7, 8, 16, 0 };
+      const int xmap_151[] = { 1, 2, 4, 7, 8, 10, 15, 16, 0 };
+      const int xmap_154[] = { -1, -2, -4, -7, -8, -10, -15, -16, 0 };
+      const int xmap_158[] = { 1, 2, 4, 7, -8, -10, -15, -16, 0 };
+      const int xmap_171[] = { 9, 12, 4, 19, 8, 10, 15, 16, 0 };
+      const int xmap_173[] = { 9, 12, 4, 6, 8, 10, 15, 16, 0 };
+      const int xmap_177[] = { 9, 12, 4, 7, 8, 10, 15, 16, 0 };
+      const int xmap_180[] = { -9, -12, -4, -7, -8, -10, -15, -16, 0 };
+      const int xmap_183[] = { -9, -12, -4, -11, -14, -10, -15, -18, 0 };
+      const int xmap_184[] = { -9, -12, -4, -11, -10, -15, -17, -18, 0 };
+      const int xmap_186[] = { 1, 2, 12, 4,  -10, -15, -17, -18, 0 };
+      const int xmap_194[] = { 1, 2, 13, 4,  -9, -10, -11, -12, 0 };
+      
+      if (fRunNo >= 194)
+         SetModMap(fEvb, xmap_194);
+      else if (fRunNo >= 186)
+         SetModMap(fEvb, xmap_186);
+      else if (fRunNo >= 184)
+         SetModMap(fEvb, xmap_184);
+      else if (fRunNo >= 183)
+         SetModMap(fEvb, xmap_183);
+      else if (fRunNo >= 180)
+         SetModMap(fEvb, xmap_180);
+      else if (fRunNo >= 177)
+         SetModMap(fEvb, xmap_177);
+      else if (fRunNo >= 173)
+         SetModMap(fEvb, xmap_173);
+      else if (fRunNo >= 171)
+         SetModMap(fEvb, xmap_171);
+      else if (fRunNo >= 158)
+         SetModMap(fEvb, xmap_158);
+      else if (fRunNo >= 154)
+         SetModMap(fEvb, xmap_154);
+      else if (fRunNo >= 151)
+         SetModMap(fEvb, xmap_151);
+      else if (fRunNo >= 147)
+         SetModMap(fEvb, xmap_147);
+      else if (fRunNo >= 140)
+         SetModMap(fEvb, xmap_140);
+      else {};
    };
    
    void EndRun(int transition,int run,int time)
@@ -788,6 +839,10 @@ public:
 
       for (int i=0; i<SHOW_ALPHA16*NUM_CHAN_ALPHA16; i++)
          if (e->udpPresent[i]) {
+
+            //if (i != 76)
+            //   continue;
+            
             Waveform* w = NewWaveform(&e->waveform[i], 1.0/4.0);
 
             double b, brms;
@@ -905,7 +960,8 @@ public:
       time_t tstart = time(NULL);
       
       printf("plotting:   "); fLastEvent->Print();
-      
+
+#if 0
       for (int i=0; i<SHOW_ALPHA16; i++) {
          if (fPlotA16[i]) {
             printf("plot %d start\n", i);
@@ -913,6 +969,7 @@ public:
             printf("plot %d done\n", i);
          }
       }
+#endif
 
       if (fH) {
          printf("plot H start\n");
