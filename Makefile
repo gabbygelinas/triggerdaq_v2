@@ -9,7 +9,7 @@ CXXFLAGS += -DHAVE_ZLIB
 # ROOT libraries
 
 ifdef ROOTSYS
-ROOTGLIBS = -L$(ROOTSYS)/lib $(shell $(ROOTSYS)/bin/root-config --glibs) -lXMLParser -lThread
+ROOTGLIBS = -L$(ROOTSYS)/lib $(shell $(ROOTSYS)/bin/root-config --glibs) -lXMLParser -lXMLIO -lThread
 HAVE_RHTTP = $(shell $(ROOTSYS)/bin/root-config --has-http)
 ifeq ($(HAVE_RHTTP),yes)
 ROOTGLIBS += -lRHTTP
@@ -60,10 +60,14 @@ all:: $(OBJS)
 all:: analyzer.exe
 all:: anaDisplay.exe
 #all:: midas2root.exe
+all:: agana.exe
 
 Alpha16.o: Alpha16.h Alpha16.cxx
 Unpack.o: Unpack.h Alpha16.h
 anaDisplay.o: Alpha16.o
+
+anaDisplay.o: anaCommon.cxx
+a16module.o: anaCommon.cxx
 
 OBJS += Alpha16.o
 OBJS += Unpack.o
@@ -76,6 +80,9 @@ analyzer.exe: analyzer.cxx $(OBJS)
 
 anaDisplay.exe: anaDisplay.cxx $(OBJS) 
 	$(CXX) -o $@ $(CXXFLAGS) $(ROOTANAINC) $^ $(ROOTANALIBS) $(MIDASLIBS) $(ROOTGLIBS) -lm -lz -lpthread $(RPATH) -lssl $(RTLIB) -lutil
+
+agana.exe: $(OBJS) a16module.o
+	$(CXX) -o $@ $(CXXFLAGS) $(ROOTANAINC) $^ $(ROOTANALIBS) $(MIDASLIBS) $(ROOTGLIBS) -lm -lz -lpthread -lssl -lutil
 
 midas2root.exe: midas2root.cxx $(OBJS) 
 	$(CXX) -o $@ $(CXXFLAGS) $(ROOTANAINC) $^ $(ROOTANALIBS) $(MIDASLIBS) $(ROOTGLIBS) -lm -lz -lpthread $(RPATH) -lssl $(RTLIB) -lutil
