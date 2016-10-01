@@ -15,6 +15,7 @@
 #include "TProfile.h"
 
 #include "Alpha16.h"
+#include "Unpack.h"
 
 #include "anaCommon.cxx"
 
@@ -26,6 +27,7 @@ public:
    TARunInterface* NewRun(TARunInfo* runinfo);
 
    int fTotalEventCounter;
+   bool fPlotWF;
 };
 
 struct A16Run: public TARunInterface
@@ -40,6 +42,8 @@ struct A16Run: public TARunInterface
       printf("A16Run::ctor!\n");
       fModule = m;
       fATX = new AlphaTpcX();
+      if (m->fPlotWF)
+         fATX->CreateA16Canvas();
    }
 
    ~A16Run()
@@ -66,6 +70,9 @@ struct A16Run: public TARunInterface
       time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
       printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
       fATX->EndRun();
+      char fname[1024];
+      sprintf(fname, "output%05d.pdf", runinfo->fRunNo);
+      fATX->fH->fCanvas->SaveAs(fname);
    }
 
    void PauseRun(TARunInfo* runinfo)
@@ -89,25 +96,22 @@ struct A16Run: public TARunInterface
 
       int force_plot = fATX->Event(e);
 
-      //TInterestingEventManager::instance()->Reset();
-      //if (force_plot) {
-      //   printf("INTERESTING!\n");
-      //   TInterestingEventManager::instance()->SetInteresting();
-      //}
+      time_t now = time(NULL);
 
-#if 0
-      TMBank* bslow = event->FindBank("SLOW");
-      if (!bslow)
-         return flow;
+      if (force_plot) {
+         static time_t plot_next = 0;
+         if (now > plot_next) {
+            fATX->PlotA16Canvas();
+            plot_next = time(NULL) + 15;
+         }
+      }
 
-      float* dslow = (float*)event->GetBankData(bslow);
-      if (!dslow)
-         return flow;
+      static time_t t = 0;
 
-      double v = *dslow;
-
-      printf("event %d, slow %f\n", event->serial_number, v);
-#endif
+      if (now - t > 15) {
+         t = now;
+         fATX->Plot();
+      }
 
       fCounter++;
       fModule->fTotalEventCounter++;
@@ -124,6 +128,14 @@ struct A16Run: public TARunInterface
 void A16Module::Init(const std::vector<std::string> &args)
 {
    printf("Init!\n");
+
+   fPlotWF = false;
+
+   for (unsigned i=0; i<args.size(); i++) {
+      if (args[i] == "--wf")
+         fPlotWF = true;
+   }
+
    fTotalEventCounter = 0;
    TARootHelper::fgDir->cd(); // select correct ROOT directory
 }

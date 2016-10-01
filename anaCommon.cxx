@@ -248,6 +248,12 @@ struct PlotA16
          fH[i] = NULL;
    }
 
+   ~PlotA16()
+   {
+      delete fCanvas;
+      fCanvas = NULL;
+   }
+
    void Draw(const Alpha16Event* adc)
    {
       // colors:
@@ -498,14 +504,50 @@ public:
 
       fEvb = new Alpha16EVB(NUM_CHAN_ALPHA16, 512);
 
+      for (int i=0; i<SHOW_ALPHA16; i++)
+         fPlotA16[i] = NULL;
+
+      fLastEvent = NULL;
+   }
+
+   ~AlphaTpcX()
+   {
+      if (fEvb) {
+         delete fEvb;
+         fEvb = NULL;
+      }
+
+      for (int i=0; i<SHOW_ALPHA16; i++) {
+         if (fPlotA16[i]) {
+            delete fPlotA16[i];
+            fPlotA16[i] = NULL;
+         }
+      }
+
+      if (fLastEvent) {
+         delete fLastEvent;
+         fLastEvent = NULL;
+      }
+
+      if (fH) {
+         delete fH;
+         fH = NULL;
+      }
+         
+      if (fP) {
+         delete fP;
+         fP = NULL;
+      }
+   }
+
+   void CreateA16Canvas()
+   {
       for (int i=0; i<SHOW_ALPHA16; i++) {
          char title[256];
          sprintf(title, "ADC %2d", i+1);
          TCanvas *c = new TCanvas(title, title, 900, 400);
          fPlotA16[i] = new PlotA16(c, i*NUM_CHAN_ALPHA16);
       }
-         
-      fLastEvent = NULL;
    }
 
    void BeginRun(int run)
@@ -699,31 +741,16 @@ public:
 
       printf("Found %d hits\n", nhits);
 
-      //if (nhits >= 2)
-      //force_plot = true;
+      if (nhits >= 5)
+         force_plot = true;
 
       return force_plot;
    }
       
    void Plot()
    {
-      if (!fLastEvent)
-         return;
-
       time_t tstart = time(NULL);
       
-      printf("plotting:   "); fLastEvent->Print();
-
-#if 0
-      for (int i=0; i<SHOW_ALPHA16; i++) {
-         if (fPlotA16[i]) {
-            printf("plot %d start\n", i);
-            fPlotA16[i]->Draw(fLastEvent);
-            printf("plot %d done\n", i);
-         }
-      }
-#endif
-
       if (fH) {
          printf("plot H start\n");
          fH->Draw();
@@ -734,6 +761,29 @@ public:
          printf("plot P start\n");
          fP->Draw();
          printf("plot P done\n");
+      }
+
+      time_t tend = time(NULL);
+      int elapsed = tend-tstart;
+
+      printf("plotting: done, %d sec!\n", elapsed);
+   }
+
+   void PlotA16Canvas()
+   {
+      if (!fLastEvent)
+         return;
+
+      time_t tstart = time(NULL);
+      
+      printf("plotting:   "); fLastEvent->Print();
+
+      for (int i=0; i<SHOW_ALPHA16; i++) {
+         if (fPlotA16[i]) {
+            printf("plot %d start\n", i);
+            fPlotA16[i]->Draw(fLastEvent);
+            printf("plot %d done\n", i);
+         }
       }
 
       time_t tend = time(NULL);

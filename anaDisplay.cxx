@@ -22,13 +22,16 @@ public:
       : TCanvasHandleBase("ALPHA TPC")
    {
       fATX = new AlphaTpcX();
+      //fATX->CreateA16Canvas();
    };
    
    ~AlphaTpcCanvas() // dtor
    {
       printf("AlphaTpcCanvas dtor!\n");
-      if (fATX)
+      if (fATX) {
          delete fATX;
+         fATX = NULL;
+      }
    };
    
    void BeginRun(int transition,int run,int time)
@@ -66,6 +69,7 @@ public:
    {
       printf("AlphaTpcCanvas::PlotCanvas()\n");
       fATX->Plot();
+      fATX->PlotA16Canvas();
    }
 };
 

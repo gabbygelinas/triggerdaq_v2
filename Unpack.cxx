@@ -111,6 +111,57 @@ Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, const TMidasEvent* me)
    return e;
 };
 
+Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, TMEvent* me)
+{
+   Alpha16Event* e = evb->NewEvent();
+
+   for (int imodule = 1; imodule <= 20; imodule++) {
+      for (int i=0; i<NUM_CHAN_ALPHA16; i++) {
+
+         char c = 0;
+         if (i<=9)
+            c = '0' + i;
+         else
+            c = 'A' + i - 10;
+         
+         char bname[5];
+         sprintf(bname, "B%02d%c", imodule, c);
+
+         TMBank* b = me->FindBank(bname);
+
+         if (b) {
+            int bklen = b->data_size;
+            //printf("ALPHA16 bname %s, bank %p, len %d\n", bname, b, bklen);
+            // print header
+
+            const char* ptr = me->GetBankData(b);
+
+            if (!ptr)
+               continue;
+            
+            int packetType = Alpha16Packet::PacketType(ptr, bklen);
+            int packetVersion = Alpha16Packet::PacketVersion(ptr, bklen);
+
+            if (0) {
+               printf("Header:\n");
+               printf("  packet type:    0x%02x (%d)\n", packetType, packetType);
+               printf("  packet version: 0x%02x (%d)\n", packetVersion, packetVersion);
+            }
+            
+            if (packetType == 1 && packetVersion == 1) {
+               evb->AddBank(e, imodule, ptr, bklen);
+            } else {
+               printf("unknown packet type %d, version %d\n", packetType, packetVersion);
+            }
+         }
+      }
+   }
+
+   evb->CheckEvent(e);
+
+   return e;
+};
+
 /* emacs
  * Local Variables:
  * tab-width: 8

@@ -10,8 +10,10 @@
 
 #include "Alpha16.h"
 #include "TMidasEvent.h"
+#include "midasio.h"
 
 Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, const TMidasEvent* me);
+Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, TMEvent* me);
 
 #endif
 
