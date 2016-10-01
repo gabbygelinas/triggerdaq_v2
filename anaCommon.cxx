@@ -1,3 +1,7 @@
+// ALPHA-g common analysis code
+
+#include "TROOT.h"
+
 #define SHOW_ALPHA16 8
 
 #include "Waveform.h"
@@ -23,13 +27,16 @@ struct PlotHistograms
    TH1D* fHlex;
    TH1D* fHocc;
 
-   TH1D* fHocc1;
-   TH1D* fHocc2;
-
    TH1D* fHph1;
    TH1D* fHph2;
 
    TH2D* fHph3;
+
+   TH1D* fHocc1;
+   TH1D* fHocc2;
+
+   TProfile* fHph2occ1;
+   TProfile* fHph2occ2;
 
    TH1D* fHleCal;
    TH1D* fHoccCal;
@@ -48,7 +55,7 @@ struct PlotHistograms
       fCanvas = c;
 
       fCanvas->cd();
-      fCanvas->Divide(3,5);
+      fCanvas->Divide(3,6);
 
       int max_adc = 9000;
 
@@ -107,6 +114,19 @@ struct PlotHistograms
       fHocc2->Draw();
 
       fCanvas->cd(i++);
+      // empty slot
+
+      fCanvas->cd(i++);
+      fHph2occ1 = new TProfile("pulse_height_profile_pc", "pulse_height_profile_pc", SHOW_ALPHA16*NUM_CHAN_ALPHA16, -0.5, SHOW_ALPHA16*NUM_CHAN_ALPHA16-0.5);
+      fHph2occ1->SetMinimum(0);
+      fHph2occ1->Draw();
+
+      fCanvas->cd(i++);
+      fHph2occ2 = new TProfile("pulse_height_profile_drift", "pulse_height_profile_drift", SHOW_ALPHA16*NUM_CHAN_ALPHA16, -0.5, SHOW_ALPHA16*NUM_CHAN_ALPHA16-0.5);
+      fHph2occ2->SetMinimum(0);
+      fHph2occ2->Draw();
+
+      fCanvas->cd(i++);
       fHleCal = new TH1D("pulse_time_cal", "pulse_time_cal", 100, 100, 120);
       fHleCal->Draw();
 
@@ -120,6 +140,12 @@ struct PlotHistograms
       fHleVsChanCal->Draw();
 
       Draw();
+   }
+
+   ~PlotHistograms() // dtor
+   {
+      if (fCanvas)
+         delete fCanvas;
    }
 
    void Draw()
@@ -211,6 +237,12 @@ struct PlotHistogramsPads
       Draw();
    }
 
+   ~PlotHistogramsPads() // dtor
+   {
+      if (fCanvas)
+         delete fCanvas;
+   }
+
    void Draw()
    {
       fCanvas->Modified();
@@ -250,8 +282,10 @@ struct PlotA16
 
    ~PlotA16()
    {
-      delete fCanvas;
-      fCanvas = NULL;
+      if (fCanvas) {
+         delete fCanvas;
+         fCanvas = NULL;
+      }
    }
 
    void Draw(const Alpha16Event* adc)
@@ -538,6 +572,10 @@ public:
          delete fP;
          fP = NULL;
       }
+
+      TSeqCollection* l = gROOT->GetListOfCanvases();
+      printf("List of canvases: %d\n", l->GetSize());
+
    }
 
    void CreateA16Canvas()
@@ -714,11 +752,17 @@ public:
                if (le > 150 && le < 180) {
                   fH->fHocc1->Fill(i);
                   fH->fHph1->Fill(ph);
+
+                  if (ph < 7000)
+                     fH->fHph2occ1->Fill(i, ph);
                }
 
                if (le > 180 && le < 580) {
                   fH->fHocc2->Fill(i);
                   fH->fHph2->Fill(ph);
+
+                  if (ph < 7000)
+                     fH->fHph2occ2->Fill(i, ph);
                }
 
                fH->fHph3->Fill(le, ph);
