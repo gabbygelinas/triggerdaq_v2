@@ -212,12 +212,67 @@ void Alpha16Event::Print() const
    printf("ALPHA16 event: %d, time %.0f (incr %.0f), channels: %d, error %d, complete %d\n", eventNo, eventTime, eventTime - prevEventTime, numChan, error, complete);
 }
 
+Alpha16EVB::Alpha16EVB() // ctor
+{
+   Reset();
+}
+   
 void Alpha16EVB::Reset()
 {
    fEventCount = 0;
    MEMZERO(fFirstEventTs);
    MEMZERO(fLastEventTs);
    fConfModMap.clear();
+   fConfNumChan = 0;
+   fConfNumSamples = 0;
+}
+
+void Alpha16EVB::Configure(int runno)
+{
+   const int modmap[][20] = {
+      { 220,  1,   2,   9,   4, -10,  -6,  -7,  -8, 0 },
+      { 218,  1,   2,   8,   4,  -9, -10, -11, -12, 0 },
+      { 194,  1,   2,  13,   4,  -9, -10, -11, -12, 0 },
+      { 186,  1,   2,  12,   4, -10, -15, -17, -18, 0 },
+      { 184, -9, -12,  -4, -11, -10, -15, -17, -18, 0 },
+      { 183, -9, -12,  -4, -11, -14, -10, -15, -18, 0 },
+      { 180, -9, -12,  -4,  -7,  -8, -10, -15, -16, 0 },
+      { 177,  9,  12,   4,   7,   8,  10,  15,  16, 0 },
+      { 173,  9,  12,   4,   6,   8,  10,  15,  16, 0 },
+      { 171,  9,  12,   4,  19,   8,  10,  15,  16, 0 },
+      { 158,  1,   2,   4,   7,  -8, -10, -15, -16, 0 },
+      { 154, -1,  -2,  -4,  -7,  -8, -10, -15, -16, 0 },
+      { 151,  1,   2,   4,   7,   8,  10,  15,  16, 0 },
+      { 147,  1,   2,   3,   4,   6,   7,   8,  16, 0 },
+      { 140,  4,  10,  13,  15,   1,  16,  17,   2, 0 },
+      { 0 }
+   };
+
+   // ensure modmap is sorted by run number in descending order
+
+   for (int i=0; modmap[i][0] != 0; i++) {
+      assert(modmap[i][0] > modmap[i+1][0]);
+   }
+
+   int imap = -1;
+   
+   for (int i=0; modmap[i][0] != 0; i++) {
+      if (runno >= modmap[i][0]) {
+         imap = i;
+         break;
+      }
+   }
+   
+   assert(imap >= 0);
+   
+   printf("Alpha16EVB::Configure: for run %d found map index %d for run %d\n", runno, imap, modmap[imap][0]);
+   
+   fConfModMap.clear();
+   for (int j=1; modmap[imap][j] != 0; j++) {
+      fConfModMap.push_back(modmap[imap][j]);
+   }
+   
+   fConfNumChan = NUM_CHAN_ALPHA16 * fConfModMap.size();
 }
 
 #if 0
@@ -299,9 +354,6 @@ void Alpha16EVB::AddBank(Alpha16Event* e, int xmodule, const void* bkptr, int bk
    e->waveform[chan].Unpack(bkptr, bklen);
    e->udpPresent[chan] = true;
    e->numChan++;
-
-   if (e->numChan == fConfNumChan)
-      e->complete = true;
 }
 
 Alpha16Event* Alpha16EVB::NewEvent()
@@ -329,7 +381,15 @@ void Alpha16EVB::CheckEvent(Alpha16Event* e)
       }
    }
 
-   if (count == fConfNumChan && e->numChan == fConfNumChan) {
+   if (fConfNumSamples == 0)
+      fConfNumSamples = num_samples;
+
+   if ((int)num_samples != fConfNumSamples) {
+      // wrong number of ADC samples
+      e->error = true;
+   }
+
+   if ((count == fConfNumChan) && (e->numChan == fConfNumChan)) {
       e->complete = true;
    }
 }

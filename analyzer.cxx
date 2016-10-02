@@ -132,7 +132,7 @@ void startRun(int transition,int run,int time)
   //printf("gOutputFile: %p, isOpen %d\n", gOutputFile, gOutputFile->IsOpen());
 
   if (!gA16Evb)
-    gA16Evb = new Alpha16EVB(80, 512);
+    gA16Evb = new Alpha16EVB();
 
   gA16Evb->Reset();
 

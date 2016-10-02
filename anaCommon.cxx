@@ -1,7 +1,5 @@
 // ALPHA-g common analysis code
 
-#include "TROOT.h"
-
 #define SHOW_ALPHA16 8
 
 #include "Waveform.h"
@@ -508,15 +506,6 @@ struct FileWire
 
 };
 
-void SetModMap(Alpha16EVB* evb, const int* map)
-{
-   evb->fConfModMap.clear();
-   while (*map) {
-      evb->fConfModMap.push_back(*map);
-      map++;
-   }
-}
-
 class AlphaTpcX
 {
 public:
@@ -531,17 +520,25 @@ public:
    PlotHistograms* fH;
    PlotHistogramsPads* fP;
 
+   int fCountEarlyBad;
+   int fCountGood;
+   int fCountBad;
+
    AlphaTpcX()
    {
       fH = new PlotHistograms(NULL);
       fP = NULL; // new PlotHistogramsPads(NULL);
 
-      fEvb = new Alpha16EVB(NUM_CHAN_ALPHA16, 512);
+      fEvb = new Alpha16EVB();
 
       for (int i=0; i<SHOW_ALPHA16; i++)
          fPlotA16[i] = NULL;
 
       fLastEvent = NULL;
+
+      fCountEarlyBad = 0;
+      fCountGood = 0;
+      fCountBad = 0;
    }
 
    ~AlphaTpcX()
@@ -572,10 +569,6 @@ public:
          delete fP;
          fP = NULL;
       }
-
-      TSeqCollection* l = gROOT->GetListOfCanvases();
-      printf("List of canvases: %d\n", l->GetSize());
-
    }
 
    void CreateA16Canvas()
@@ -591,73 +584,28 @@ public:
    void BeginRun(int run)
    {
       fRunNo = run;
-      
       fEvb->Reset();
-
-      const int xmap_140[] = { 4, 10, 13, 15, 1, 16, 17, 2, 0 };
-      const int xmap_147[] = { 1, 2, 3, 4, 6, 7, 8, 16, 0 };
-      const int xmap_151[] = { 1, 2, 4, 7, 8, 10, 15, 16, 0 };
-      const int xmap_154[] = { -1, -2, -4, -7, -8, -10, -15, -16, 0 };
-      const int xmap_158[] = { 1, 2, 4, 7, -8, -10, -15, -16, 0 };
-      const int xmap_171[] = { 9, 12, 4, 19, 8, 10, 15, 16, 0 };
-      const int xmap_173[] = { 9, 12, 4, 6, 8, 10, 15, 16, 0 };
-      const int xmap_177[] = { 9, 12, 4, 7, 8, 10, 15, 16, 0 };
-      const int xmap_180[] = { -9, -12, -4, -7, -8, -10, -15, -16, 0 };
-      const int xmap_183[] = { -9, -12, -4, -11, -14, -10, -15, -18, 0 };
-      const int xmap_184[] = { -9, -12, -4, -11, -10, -15, -17, -18, 0 };
-      const int xmap_186[] = { 1, 2, 12, 4,  -10, -15, -17, -18, 0 };
-      const int xmap_194[] = { 1, 2, 13, 4,  -9, -10, -11, -12, 0 };
-      const int xmap_218[] = { 1, 2, 8, 4,  -9, -10, -11, -12, 0 };
-      const int xmap_220[] = { 1, 2, 9, 4,  -10, -6, -7, -8, 0 };
-
-      if (0) {}
-      else if (fRunNo >= 220)
-         SetModMap(fEvb, xmap_220);
-      else if (fRunNo >= 218)
-         SetModMap(fEvb, xmap_218);
-      else if (fRunNo >= 194)
-         SetModMap(fEvb, xmap_194);
-      else if (fRunNo >= 186)
-         SetModMap(fEvb, xmap_186);
-      else if (fRunNo >= 184)
-         SetModMap(fEvb, xmap_184);
-      else if (fRunNo >= 183)
-         SetModMap(fEvb, xmap_183);
-      else if (fRunNo >= 180)
-         SetModMap(fEvb, xmap_180);
-      else if (fRunNo >= 177)
-         SetModMap(fEvb, xmap_177);
-      else if (fRunNo >= 173)
-         SetModMap(fEvb, xmap_173);
-      else if (fRunNo >= 171)
-         SetModMap(fEvb, xmap_171);
-      else if (fRunNo >= 158)
-         SetModMap(fEvb, xmap_158);
-      else if (fRunNo >= 154)
-         SetModMap(fEvb, xmap_154);
-      else if (fRunNo >= 151)
-         SetModMap(fEvb, xmap_151);
-      else if (fRunNo >= 147)
-         SetModMap(fEvb, xmap_147);
-      else if (fRunNo >= 140)
-         SetModMap(fEvb, xmap_140);
-      else {};
+      fEvb->Configure(run);
    }
 
    void EndRun()
    {
-      // empty
+      printf("EndRun: early bad events: %d, good events: %d, bad events: %d, total %d events\n", fCountEarlyBad, fCountGood, fCountBad, fCountEarlyBad + fCountGood + fCountBad);
    }
 
    int Event(Alpha16Event* e)
    {
       printf("new event: "); e->Print();
       
-      if (e->error)
+      if (e->error || !e->complete) {
+         if (fCountGood)
+            fCountBad++;
+         else
+            fCountEarlyBad++;
          return 0;
-      
-      if (!e->complete)
-         return 0;
+      }
+
+      fCountGood++;
       
       printf("event: "); e->Print();
       

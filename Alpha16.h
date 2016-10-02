@@ -86,15 +86,12 @@ struct Alpha16EVB
 
    std::vector<int> fConfModMap;
    
-   Alpha16EVB(int numChan, int numSamples) // ctor
-   {
-      Reset();
-      fConfNumChan = numChan;
-      fConfNumSamples = numSamples;
-   }
+   Alpha16EVB(); // ctor
    
    void Reset();
    //void Print() const;
+
+   void Configure(int runno);
 
    Alpha16Event* NewEvent();
    void AddBank(Alpha16Event* e, int imodule, const void* bkptr, int bklen);
