@@ -78,8 +78,10 @@ struct Alpha16EVB
 {
    int fEventCount; // event counter
 
+   bool     fHaveEventTs;
    uint32_t fFirstEventTs[MAX_ALPHA16*NUM_CHAN_ALPHA16]; // udp timestamp of first event
-   uint32_t fLastEventTs[MAX_ALPHA16*NUM_CHAN_ALPHA16];  // udp timestamp of last seen event
+   //uint32_t fLastEventTs[MAX_ALPHA16*NUM_CHAN_ALPHA16];  // udp timestamp of last seen event
+   uint32_t fLastEventTs;
 
    int fConfNumChan;
    int fConfNumSamples;

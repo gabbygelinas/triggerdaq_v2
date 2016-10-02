@@ -220,8 +220,9 @@ Alpha16EVB::Alpha16EVB() // ctor
 void Alpha16EVB::Reset()
 {
    fEventCount = 0;
+   fHaveEventTs = false;
    MEMZERO(fFirstEventTs);
-   MEMZERO(fLastEventTs);
+   fLastEventTs = 0;
    fConfModMap.clear();
    fConfNumChan = 0;
    fConfNumSamples = 0;
@@ -353,6 +354,7 @@ void Alpha16EVB::AddBank(Alpha16Event* e, int xmodule, const void* bkptr, int bk
    e->udpPacket[chan].Unpack(bkptr, bklen);
    e->waveform[chan].Unpack(bkptr, bklen);
    e->udpPresent[chan] = true;
+   e->udpEventTs[chan] = e->udpPacket[chan].eventTimestamp;
    e->numChan++;
 }
 
@@ -363,6 +365,8 @@ Alpha16Event* Alpha16EVB::NewEvent()
    e->eventNo = fEventCount;
    return e;
 }
+
+const double TSCLK = 0.1; // GHz
 
 void Alpha16EVB::CheckEvent(Alpha16Event* e)
 {
@@ -391,6 +395,36 @@ void Alpha16EVB::CheckEvent(Alpha16Event* e)
 
    if ((count == fConfNumChan) && (e->numChan == fConfNumChan)) {
       e->complete = true;
+   }
+
+   if (!fHaveEventTs && e->complete) {
+      fHaveEventTs = true;
+      // set timestamp offsets from the first complete event
+      for (int i=0; i<MAX_ALPHA16 * NUM_CHAN_ALPHA16; i++) {
+         if (e->udpPresent[i]) {
+            fFirstEventTs[i] = e->udpEventTs[i];
+            printf("XXX %d -> 0x%08x\n", i, fFirstEventTs[i]);
+         }
+      }
+   }
+
+   if (fHaveEventTs) {
+      uint32_t ets = 0;
+      // check timestamps
+      for (int i=0; i<MAX_ALPHA16 * NUM_CHAN_ALPHA16; i++) {
+         if (e->udpPresent[i]) {
+            uint32_t ts = e->udpEventTs[i] - fFirstEventTs[i];
+            if (ets == 0)
+               ets = ts;
+            if (ts != ets && ts != ets+1 && ts+1 != ets) {
+               printf("ts mismatch %d: 0x%08x vs 0x%08x diff %d\n", i, ts, ets, ts-ets);
+               e->error = true;
+            }
+         }
+      }
+      e->eventTime = ets/TSCLK;
+      e->prevEventTime = fLastEventTs/TSCLK;
+      fLastEventTs = ets;
    }
 }
 
