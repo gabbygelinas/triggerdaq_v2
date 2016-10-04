@@ -219,6 +219,7 @@ Alpha16EVB::Alpha16EVB() // ctor
    
 void Alpha16EVB::Reset()
 {
+   //printf("Alpha16EVB::Reset!\n");
    fEventCount = 0;
    fHaveEventTs = false;
    MEMZERO(fFirstEventTs);
@@ -231,6 +232,9 @@ void Alpha16EVB::Reset()
 void Alpha16EVB::Configure(int runno)
 {
    const int modmap[][20] = {
+      { 245,  1,   2,   3,   4, -19,  -6,  -7,  -8, 9, 10, 11, 12, 18, 14, 15, 16, 0 },
+      { 238,  1,   2,   9,   4, -10,  -6, -14, -19, 0 },
+      { 227, 14,  19,   9,   4, -10,  -6,  -7,  -8, 0 },
       { 220,  1,   2,   9,   4, -10,  -6,  -7,  -8, 0 },
       { 218,  1,   2,   8,   4,  -9, -10, -11, -12, 0 },
       { 194,  1,   2,  13,   4,  -9, -10, -11, -12, 0 },
@@ -408,7 +412,7 @@ void Alpha16EVB::CheckEvent(Alpha16Event* e)
       }
    }
 
-   if (fHaveEventTs) {
+   if (fHaveEventTs && e->complete) {
       uint32_t ets = 0;
       // check timestamps
       for (int i=0; i<MAX_ALPHA16 * NUM_CHAN_ALPHA16; i++) {
