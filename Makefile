@@ -1,107 +1,90 @@
-# Makefile
+#
+# Makefile for the MIDAS analyzer component of ROOTANA
+#
+# Options:
+# make NO_ROOT=1 # build without ROOT support
+#
 
-CXXFLAGS = -g -O2 -Wall -Wuninitialized
+CXXFLAGS += -g -O2 -Wall -Wuninitialized -I.
 
-# optional ZLIB library
-
-CXXFLAGS += -DHAVE_ZLIB
-
-# ROOT libraries
-
-ifdef ROOTSYS
-ROOTGLIBS = -L$(ROOTSYS)/lib $(shell $(ROOTSYS)/bin/root-config --glibs) -lXMLParser -lXMLIO -lThread
-HAVE_RHTTP = $(shell $(ROOTSYS)/bin/root-config --has-http)
-ifeq ($(HAVE_RHTTP),yes)
-ROOTGLIBS += -lRHTTP
-endif
-CXXFLAGS += -DHAVE_ROOT $(shell $(ROOTSYS)/bin/root-config --cflags)
+ifndef ROOTANASYS
+norootanasys:
+	@echo Error: ROOTANASYS in not defined, please source thisrootana.{sh,csh}
 endif
 
-ifdef MIDASSYS
-MIDASLIBS = $(MIDASSYS)/linux/lib/libmidas.a -lutil -lrt
-CXXFLAGS += -DHAVE_MIDAS -DOS_LINUX -Dextname -I$(MIDASSYS)/include
+# check for ROOT
 
-UNAME=$(shell uname)
-RTLIB=
-ifeq ($(UNAME),Darwin)
-#CXXFLAGS += -DOS_LINUX -DOS_DARWIN
-MIDASLIBS = $(MIDASSYS)/darwin/lib/libmidas.a
-#RPATH=
-else
-RTLIB=-lrt
+ifdef NO_ROOT
+ROOTSYS:=
 endif
 
+ifneq ($(ROOTSYS),)
+HAVE_ROOT:=1
 endif
 
-ifdef ROOTSYS
-CXXFLAGS += -DHAVE_LIBNETDIRECTORY -IlibNetDirectory
+# get the rootana Makefile settings
+
+CXXFLAGS += -I$(ROOTANASYS)/include $(shell cat $(ROOTANASYS)/include/rootana_cflags.txt)
+LIBS     += -L$(ROOTANASYS)/lib -lrootana $(shell cat $(ROOTANASYS)/include/rootana_libs.txt)
+
+# select the main program - local custom main()
+# or standard main() from rootana
+
+#MAIN := manalyzer_main.o
+MAIN := $(ROOTANASYS)/obj/manalyzer_main.o
+
+# uncomment and define analyzer modules here
+
+MODULES += a16module.o Alpha16.o feam_module.o Unpack.o
+ALL     += agana.exe
+
+# examples
+
+EXAMPLE_ALL += manalyzer.exe
+EXAMPLE_ALL += manalyzer_example_cxx.exe
+EXAMPLE_ALL += manalyzer_example_flow.exe
+ifdef HAVE_ROOT
+EXAMPLE_ALL += manalyzer_example_root.exe
+EXAMPLE_ALL += manalyzer_example_root_graphics.exe
 endif
 
+all:: $(EXAMPLE_ALL)
+all:: $(MODULES)
+all:: $(ALL)
 
-# Check for ROOTANASYS env variable.
-ifdef ROOTANASYS
-ROOTANAINC = -I$(ROOTANASYS)/include
-ROOTANALIBS = $(ROOTANASYS)/lib/librootana.a
-else
-ROOTANAINC = -I../include
-ROOTANALIBS = ../lib/librootana.a
-endif
+%.exe: %.o manalyzer_main.o
+	$(CXX) -o $@ manalyzer_main.o $< $(CXXFLAGS) $(LIBS) -lm -lz -lpthread
 
-OBJS:=
-#OBJS += TV792Histogram.o TV1190Histogram.o
-#OBJS += TL2249Histogram.o TAgilentHistogram.o
-#OBJS += TV1720Waveform.o TDT724Waveform.o
-#OBJS += TV1730DppWaveform.o TV1730RawWaveform.o
-#OBJS += TV1720Correlations.o
-#OBJS += TAnaManager.o
+$(EXAMPLE_ALL): %.exe:
+	$(CXX) -o $@ $(ROOTANASYS)/obj/manalyzer_main.o $< $(CXXFLAGS) $(LIBS) -lm -lz -lpthread
 
-all:: $(OBJS)
-#all:: ana.exe
-all:: analyzer.exe
-all:: anaDisplay.exe
-#all:: midas2root.exe
-all:: agana.exe
-
-Alpha16.o: Alpha16.h Alpha16.cxx
-Unpack.o: Unpack.h Alpha16.h
-anaDisplay.o: Alpha16.o
-
-anaDisplay.o: anaCommon.cxx
-a16module.o: anaCommon.cxx
-
-OBJS += Alpha16.o
-OBJS += Unpack.o
-
-ana.exe: ana.cxx $(OBJS) 
-	$(CXX) -o $@ $(CXXFLAGS) $(ROOTANAINC) $^ $(ROOTANALIBS) $(MIDASLIBS) $(ROOTGLIBS) -lm -lz -lpthread $(RPATH) -lssl $(RTLIB) -lutil
-
-analyzer.exe: analyzer.cxx $(OBJS) 
-	$(CXX) -o $@ $(CXXFLAGS) $(ROOTANAINC) $^ $(ROOTANALIBS) $(MIDASLIBS) $(ROOTGLIBS) -lm -lz -lpthread $(RPATH) -lssl $(RTLIB) -lutil
-
-anaDisplay.exe: anaDisplay.cxx $(OBJS) 
-	$(CXX) -o $@ $(CXXFLAGS) $(ROOTANAINC) $^ $(ROOTANALIBS) $(MIDASLIBS) $(ROOTGLIBS) -lm -lz -lpthread $(RPATH) -lssl $(RTLIB) -lutil
-
-agana.exe: $(OBJS) a16module.o
-	$(CXX) -o $@ $(CXXFLAGS) $(ROOTANAINC) $^ $(ROOTANALIBS) $(MIDASLIBS) $(ROOTGLIBS) -lm -lz -lpthread -lssl -lutil
-
-midas2root.exe: midas2root.cxx $(OBJS) 
-	$(CXX) -o $@ $(CXXFLAGS) $(ROOTANAINC) $^ $(ROOTANALIBS) $(MIDASLIBS) $(ROOTGLIBS) -lm -lz -lpthread $(RPATH) -lssl $(RTLIB) -lutil
-
-%Dict.o: %Dict.cxx
-	$(CXX) $(CXXFLAGS) $(ROOTANAINC) -c $<
-
-%Dict.cxx: %.h %_LinkDef.h
-	LD_LIBRARY_PATH=$(ROOTSYS)/lib $(ROOTSYS)/bin/rootcint -f $@ -c -p $(CXXFLAGS) $(ROOTANAINC) $^
-
+%.exe: $(MAIN) $(MODULES)
+	$(CXX) -o $@ $(MAIN) $(MODULES) $(CXXFLAGS) $(LIBS) -lm -lz -lpthread
 
 %.o: %.cxx
-	$(CXX) $(CXXFLAGS) $(ROOTANAINC) -c $<
+	$(CXX) -o $@ $(CXXFLAGS) -c $<
+
+html/index.html:
+	-mkdir html
+	-make -k dox
+	touch html/index.html
 
 dox:
 	doxygen
 
 clean::
-	-rm -f *.o *.a *.exe 
+	-rm -f *.o *.a *.exe
+
+clean::
+	-rm -f $(ALL)
+
+clean::
+	-rm -f $(EXAMPLE_ALL)
+
+clean::
+	-rm -rf *.exe.dSYM
+
+clean::
+	-rm -rf html
 
 # end
-

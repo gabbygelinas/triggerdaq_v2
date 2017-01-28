@@ -24,7 +24,7 @@ struct Waveform
 
 #include "Avg.h"
 
-void smooth(Waveform* w)
+static void smooth(Waveform* w)
 {
   for (int i=1; i<w->nsamples-1; i++) {
     double s = 0.25*w->samples[i-1] + 0.5*w->samples[i] + 0.25*w->samples[i+1];
@@ -32,7 +32,7 @@ void smooth(Waveform* w)
   }
 }
 
-void add(Waveform* w, const Waveform* w1, const Waveform* w2, double weight1, double weight2)
+static void add(Waveform* w, const Waveform* w1, const Waveform* w2, double weight1, double weight2)
 {
   assert(w1->nsamples == w2->nsamples);
   assert(w->nsamples == w1->nsamples);
@@ -41,7 +41,7 @@ void add(Waveform* w, const Waveform* w1, const Waveform* w2, double weight1, do
   }
 }
 
-double max(const Waveform* w)
+static double max(const Waveform* w)
 {
   double max = w->samples[0];
   for (int i=1; i<w->nsamples; i++)
@@ -50,7 +50,7 @@ double max(const Waveform* w)
   return max;
 }
 
-double min(const Waveform* w)
+static double min(const Waveform* w)
 {
   double min = w->samples[0];
   for (int i=1; i<w->nsamples; i++)
@@ -59,7 +59,7 @@ double min(const Waveform* w)
   return min;
 }
 
-int maxbin(const Waveform* w)
+static int maxbin(const Waveform* w)
 {
   int m = 0;
   for (int i=1; i<w->nsamples; i++)
@@ -68,7 +68,7 @@ int maxbin(const Waveform* w)
   return m;
 }
 
-int minbin(const Waveform* w)
+static int minbin(const Waveform* w)
 {
   int m = 0;
   for (int i=1; i<w->nsamples; i++)
@@ -77,7 +77,7 @@ int minbin(const Waveform* w)
   return m;
 }
 
-double avgbins(const Waveform* w, int bin1, int bin2)
+static double avgbins(const Waveform* w, int bin1, int bin2)
 {
   if (bin1 < 0)
     bin1 = 0;
@@ -90,63 +90,68 @@ double avgbins(const Waveform* w, int bin1, int bin2)
   return a.Mean();
 }
 
-double avgmin(const Waveform* w)
+static double avgmin(const Waveform* w)
 {
   int b = minbin(w);
   return avgbins(w, b-2, b+2);
 }
 
-double avgmax(const Waveform* w)
+static double avgmax(const Waveform* w)
 {
   int b = maxbin(w);
   return avgbins(w, b-2, b+2);
 }
 
-double baseline(const Waveform* w, int n, double *varp = NULL, double *rmsp = NULL)
+static double baseline(const Waveform* w, int n1, int n2, double *varp = NULL, double *rmsp = NULL)
 {
-  if (n > w->nsamples)
-    n = w->nsamples;
-
-  double min = w->samples[0];
-  double max = w->samples[0];
-
-  double sum0 = 0;
-  double sum1 = 0;
-  double sum2 = 0;
-
-  for (int i=0; i<n; i++) {
-    double s = w->samples[i];
-    sum0 += 1.0;
-    sum1 += s;
-    sum2 += s*s;
-    if (s < min)
-      min = s;
-    if (s > max)
-      max = s;
-    //printf("%d %d %f %f %f %f %f\n", i, w->samples[i], sum0, sum1, sum2, min, max);
-  }
-
-  double mean = 0;
-  double var = 0;
-  double rms = 0;
-    
-  if (sum0 > 0) {
-    mean = sum1/sum0;
-    var = sum2/sum0 - mean*mean;
-    if (var>0)
-      rms = sqrt(var);
-  }
-
-  //printf("sum: %f %f %f, mean %f, var %f, rms %f\n", sum0, sum1, sum2, mean, var, sqrt(var));
-
-  if (varp)
-    *varp = var;
-  if (rmsp)
-    *rmsp = rms;
-  return mean;
+   if (n1 < 0)
+      n1 = 0;
+   if (n2 <= n1)
+      n2 = w->nsamples;
+   
+   if (n2 > w->nsamples)
+      n2 = w->nsamples;
+   
+   double min = w->samples[0];
+   double max = w->samples[0];
+   
+   double sum0 = 0;
+   double sum1 = 0;
+   double sum2 = 0;
+   
+   for (int i=n1; i<n2; i++) {
+      double s = w->samples[i];
+      sum0 += 1.0;
+      sum1 += s;
+      sum2 += s*s;
+      if (s < min)
+         min = s;
+      if (s > max)
+         max = s;
+      //printf("%d %d %f %f %f %f %f\n", i, w->samples[i], sum0, sum1, sum2, min, max);
+   }
+   
+   double mean = 0;
+   double var = 0;
+   double rms = 0;
+   
+   if (sum0 > 0) {
+      mean = sum1/sum0;
+      var = sum2/sum0 - mean*mean;
+      if (var>0)
+         rms = sqrt(var);
+   }
+   
+   //printf("sum: %f %f %f, mean %f, var %f, rms %f\n", sum0, sum1, sum2, mean, var, sqrt(var));
+   
+   if (varp)
+      *varp = var;
+   if (rmsp)
+      *rmsp = rms;
+   return mean;
 }
 
-void printbins(const Waveform*w, int bin1, int bin2)
+static void printbins(const Waveform*w, int bin1, int bin2)
 {
   if (bin1 < 0)
     bin1 = 0;
@@ -158,7 +163,7 @@ void printbins(const Waveform*w, int bin1, int bin2)
     printf(" %.1f", w->samples[i]);
 }
 
-void checkmonotony(const Waveform*w, int bin1, int bin2, double dir)
+static void checkmonotony(const Waveform*w, int bin1, int bin2, double dir)
 {
   if (bin1 < 0)
     bin1 = 0;
@@ -172,21 +177,21 @@ void checkmonotony(const Waveform*w, int bin1, int bin2, double dir)
   }
 }
 
-int led(const Waveform* w, double baseline, double gain, double threshold)
+static int led(const Waveform* w, double baseline, double gain, double threshold)
 {
-  for (int i=0; i<w->nsamples; i++)
-    if ((w->samples[i]-baseline)*gain > threshold) {
-      //printf("thr %.1f, bin %d: ", threshold, i);
-      //printbins(w, i-10, i+10);
-      //checkmonotony(w, i-10, i+10, gain);
-      //printf("\n");
-      return i;
-    }
-
-  return 0;
+   for (int i=0; i<w->nsamples; i++)
+      if ((w->samples[i]-baseline)*gain > threshold) {
+         //printf("thr %.1f, bin %d: ", threshold, i);
+         //printbins(w, i-10, i+10);
+         //checkmonotony(w, i-10, i+10, gain);
+         //printf("\n");
+         return i;
+      }
+   
+   return 0;
 }
 
-void fit(const Waveform* w, double baseline, double gain, double threshold, int le_bin, int nbins, double *posp, double *slopep, double *ampp)
+static void fit(const Waveform* w, double baseline, double gain, double threshold, int le_bin, int nbins, double *posp, double *slopep, double *ampp)
 {
   double sum0 = 0;
   double sum1x = 0;
@@ -224,7 +229,7 @@ void fit(const Waveform* w, double baseline, double gain, double threshold, int 
     *ampp = meany;
 }
 
-void zoom(Waveform* wz, const Waveform* w, int start, double baseline, double gain)
+static void zoom(Waveform* wz, const Waveform* w, int start, double baseline, double gain)
 {
   wz->offset = w->offset + start;
   for (int i=0, j=start; i<wz->nsamples && j<w->nsamples; i++, j++) {
@@ -235,7 +240,7 @@ void zoom(Waveform* wz, const Waveform* w, int start, double baseline, double ga
   }
 }
 
-void zoom0(Waveform* wz, const Waveform* w)
+static void zoom0(Waveform* wz, const Waveform* w)
 {
   int s = 0;
 
@@ -264,7 +269,7 @@ void zoom0(Waveform* wz, const Waveform* w)
     wz->samples[i] = offset - w->samples[j];
 }
 
-void diff(Waveform* wd, const Waveform* w)
+static void diff(Waveform* wd, const Waveform* w)
 {
   wd->samples[0] = 0;
   for (int i=1; i<wd->nsamples-1; i++)
