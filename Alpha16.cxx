@@ -232,6 +232,7 @@ void Alpha16EVB::Reset()
 void Alpha16EVB::Configure(int runno)
 {
    const int modmap[][20] = {
+      { 382,  1,   2,   3,   -4, -5,  -6,   7,  -8, 0 },
       { 368,  1,   2,   3,   4,   5,   0},
       { 269,  1,   2,   3,   4,   5,   6,   7,   8, 0 },
       { 264,  1,   2,   3,   4,  -5,  -6,  -7,  -8, 0 },

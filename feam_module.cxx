@@ -69,6 +69,9 @@ struct FeamRun: public TARunInterface
       printf("FeamRun::ctor!\n");
       fModule = m;
 
+      fC = NULL;
+      fin = NULL;
+
       if (!m->fDoPads)
          return;
       

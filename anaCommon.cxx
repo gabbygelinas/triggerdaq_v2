@@ -636,7 +636,7 @@ public:
             Waveform* w = NewWaveform(&e->waveform[i], 1.0/4.0);
 
             double b, brms;
-            b = baseline(w, 100, NULL, &brms);
+            b = baseline(w, 0, 100, NULL, &brms);
 
             double wmin = min(w);
             double wmax = max(w);

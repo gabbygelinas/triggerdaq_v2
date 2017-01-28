@@ -28,6 +28,7 @@ public:
 
    int fTotalEventCounter;
    bool fPlotWF;
+   bool fDoPlotAll;
 };
 
 struct A16Run: public TARunInterface
@@ -96,6 +97,9 @@ struct A16Run: public TARunInterface
 
       int force_plot = fATX->Event(e);
 
+      if (fModule->fDoPlotAll)
+         force_plot = true;
+      
       time_t now = time(NULL);
 
       if (force_plot) {
@@ -134,6 +138,10 @@ void A16Module::Init(const std::vector<std::string> &args)
    for (unsigned i=0; i<args.size(); i++) {
       if (args[i] == "--wf")
          fPlotWF = true;
+      if (args[i] == "--wfall") {
+         fDoPlotAll = true;
+         fPlotWF = true;
+      }
    }
 
    fTotalEventCounter = 0;
