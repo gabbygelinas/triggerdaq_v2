@@ -28,6 +28,8 @@ public:
    TARunInterface* NewRun(TARunInfo* runinfo);
 
    bool fDoPads;
+   int  fPlotPad;
+   TCanvas* fPlotPadCanvas;
 };
 
 #define MAX_CHAN 80
@@ -76,18 +78,28 @@ struct FeamRun: public TARunInterface
          return;
       
       fC = new TCanvas();
-      //fin = fopen("/pool8tb/agdaq/pads/yair1485457343.txt", "r");
-      //fin = fopen("/pool8tb/agdaq/pads/yair1485479547.txt", "r");
-      //fin = fopen("/pool8tb/agdaq/pads/yair1485479547.txt", "r"); // 400 events
-      //fin = fopen("/home/agdaq/online/src/yair1485563694.txt", "r");
-      //fin = fopen("/home/agdaq/online/src/yair1485564028.txt", "r");
-      //fin = fopen("/home/agdaq/online/src/yair1485564199.txt", "r");
-      //fin = fopen("/pool8tb/agdaq/pads/tpc01.1485570050.txt", "r");
-      //fin = fopen("/pool8tb/agdaq/pads/tpc01.1485570419.txt", "r");
-      //fin = fopen("/pool8tb/agdaq/pads/yair1485564199.txt", "r"); // 84 events
-      //fin = fopen("/pool8tb/agdaq/pads/tpc01.1485571153.txt", "r"); // ??? events
-      fin = fopen("/pool8tb/agdaq/pads/tpc02.1485571169.txt", "r"); // ??? events
-      assert(fin);
+
+      fin = NULL;
+
+      if (0) {
+         //fin = fopen("/pool8tb/agdaq/pads/yair1485457343.txt", "r");
+         //fin = fopen("/pool8tb/agdaq/pads/yair1485479547.txt", "r");
+         //fin = fopen("/pool8tb/agdaq/pads/yair1485479547.txt", "r"); // 400 events
+         //fin = fopen("/home/agdaq/online/src/yair1485563694.txt", "r");
+         //fin = fopen("/home/agdaq/online/src/yair1485564028.txt", "r");
+         //fin = fopen("/home/agdaq/online/src/yair1485564199.txt", "r");
+         //fin = fopen("/pool8tb/agdaq/pads/tpc01.1485570050.txt", "r");
+         //fin = fopen("/pool8tb/agdaq/pads/tpc01.1485570419.txt", "r");
+         //fin = fopen("/pool8tb/agdaq/pads/yair1485564199.txt", "r"); // 84 events
+         //fin = fopen("/pool8tb/agdaq/pads/tpc01.1485571153.txt", "r"); // ??? events
+         //fin = fopen("/pool8tb/agdaq/pads/tpc02.1485571169.txt", "r"); // ??? events
+         //fin = fopen("/pool8tb/agdaq/pads/tpc01.1485577866.txt", "r"); // 2700 events
+         //fin = fopen("/pool8tb/agdaq/pads/tpc02.1485577870.txt", "r"); // 2700 events
+         //fin = fopen("/home/agdaq/online/src/tpc01.1485825981.txt", "r");
+         //fin = fopen("/home/agdaq/online/src/tpc01.1485987366.txt", "r"); // delay 450, pulse at bin 60
+         fin = fopen("/home/agdaq/online/src/tpc01.1485989371.txt", "r"); // delay 350, pulse at bin 160
+         assert(fin);
+      }
    }
 
    ~FeamRun()
@@ -182,90 +194,130 @@ struct FeamRun: public TARunInterface
       if (!fModule->fDoPads)
          return flow;
       
-      if (event->event_id != 1)
+      if (event->event_id != 1 && event->event_id != 2)
          return flow;
 
       int force_plot = false;
 
-      // good stuff goes here
-
-      char buf[4*1024*1024];
-
-      char *s = fgets(buf, sizeof(buf), fin);
-      if (s == NULL) {
-         *flags |= TAFlag_QUIT;
-         return flow;
-      }
-      printf("read %d\n", (int)strlen(s));
-
-      int event_no = strtoul(s, &s, 0);
-      int t0 = strtoul(s, &s, 0);
-      int t1 = strtoul(s, &s, 0);
-      int t2 = strtoul(s, &s, 0);
-
-      printf("event %d, t %d %d %d\n", event_no, t0, t1, t2);
+      int adc[80][5120];
 
       const int xbins = 829;
       const int xchan = 79;
 
-      int adc[80][5120];
+      printf("event id %d\n", event->event_id);
 
-      int count = 0;
-      for (int ibin=0; ibin<xbins; ibin++) {
-         for (int ichan=0; ichan<xchan; ichan++) {
-            count++;
-            adc[ichan][ibin] = strtoul(s, &s, 0);
-         }
-      }
-
-      printf("got %d samples\n", count);
-
-      for (int i=0; ; i++) {
-         if (!*s)
-            break;
-         int v = strtoul(s, &s, 0);
-         if (v == 0)
-            break;
-         count++;
-      }
-
-      printf("total %d samples before zeros\n", count);
-
-      for (int i=0; ; i++) {
-         if (s[0]==0)
-            break;
-         if (s[0]=='\n')
-            break;
-         if (s[0]=='\r')
-            break;
-         int v = strtoul(s, &s, 0);
-         if (v != 0)
-            break;
-         count++;
-         if (*s == '+')
-            s++;
-      }
-
-      printf("total %d samples with zeros\n", count);
-
-      s[100] = 0;
-      printf("pads data: [%s]\n", s);
-
-      char buf1[1024];
-
-      char *s1 = fgets(buf1, sizeof(buf1), fin);
-      if (s1 == NULL) {
-         *flags |= TAFlag_QUIT;
+      if (event->event_id == 1) {
+         *flags |= TAFlag_SKIP;
          return flow;
       }
-      printf("read %d [%s]\n", (int)strlen(s1), s1);
 
-      //int event_no = strtoul(s, &s, 0);
-      //int t0 = strtoul(s, &s, 0);
-      //int t1 = strtoul(s, &s, 0);
-      //int t2 = strtoul(s, &s, 0);
-      //printf("event %d, t %d %d %d\n", event_no, t0, t1, t2);
+      if (event->event_id == 2) {
+         const char* banks[] = { "YP01", "YP02", NULL };
+         int itpc = -1;
+         unsigned short *samples = NULL;
 
+         for (int i=0; banks[i]; i++) {
+            TMBank* b = event->FindBank(banks[i]);
+            if (b) {
+               samples = (unsigned short*)event->GetBankData(b);
+               if (samples) {
+                  itpc = i;
+                  break;
+               }
+            }
+         }
+
+         printf("itpc %d, samples 0x%p\n", itpc, samples);
+         
+         if (itpc < 0 || samples == NULL) {
+            return flow;
+         }
+         
+         int count = 0;
+         for (int ibin=0; ibin<xbins; ibin++) {
+            for (int ichan=0; ichan<xchan; ichan++) {
+               adc[ichan][ibin] = samples[count];
+               count++;
+            }
+         }
+         printf("got %d samples\n", count);
+         
+      } else if (fin) {
+         // good stuff goes here
+
+         char buf[4*1024*1024];
+         
+         char *s = fgets(buf, sizeof(buf), fin);
+         if (s == NULL) {
+            *flags |= TAFlag_QUIT;
+            return flow;
+         }
+         printf("read %d\n", (int)strlen(s));
+         
+         int event_no = strtoul(s, &s, 0);
+         int t0 = strtoul(s, &s, 0);
+         int t1 = strtoul(s, &s, 0);
+         int t2 = strtoul(s, &s, 0);
+         
+         printf("event %d, t %d %d %d\n", event_no, t0, t1, t2);
+         
+         int count = 0;
+         for (int ibin=0; ibin<xbins; ibin++) {
+            for (int ichan=0; ichan<xchan; ichan++) {
+               count++;
+               adc[ichan][ibin] = strtoul(s, &s, 0);
+            }
+         }
+         
+         printf("got %d samples\n", count);
+         
+         for (int i=0; ; i++) {
+            if (!*s)
+               break;
+            int v = strtoul(s, &s, 0);
+            if (v == 0)
+               break;
+            count++;
+         }
+         
+         printf("total %d samples before zeros\n", count);
+         
+         for (int i=0; ; i++) {
+            if (s[0]==0)
+               break;
+            if (s[0]=='\n')
+               break;
+            if (s[0]=='\r')
+               break;
+            int v = strtoul(s, &s, 0);
+            if (v != 0)
+               break;
+            count++;
+            if (*s == '+')
+               s++;
+         }
+         
+         printf("total %d samples with zeros\n", count);
+
+         s[100] = 0;
+         printf("pads data: [%s]\n", s);
+         
+         char buf1[1024];
+         
+         char *s1 = fgets(buf1, sizeof(buf1), fin);
+         if (s1 == NULL) {
+            *flags |= TAFlag_QUIT;
+            return flow;
+         }
+         printf("read %d [%s]\n", (int)strlen(s1), s1);
+         
+         //int event_no = strtoul(s, &s, 0);
+         //int t0 = strtoul(s, &s, 0);
+         //int t1 = strtoul(s, &s, 0);
+         //int t2 = strtoul(s, &s, 0);
+         //printf("event %d, t %d %d %d\n", event_no, t0, t1, t2);
+      }
+         
       // got all the data here
 
       Waveform** ww;
@@ -391,7 +443,7 @@ struct FeamRun: public TARunInterface
             fC->cd(5);
             TH1D* h33 = new TH1D("h33", "h33", xbins, 0, xbins);
             for (int ibin=0; ibin<xbins; ibin++) {
-               h33->SetBinContent(ibin+1, ww[0]->samples[ibin]);
+               h33->SetBinContent(ibin+1, ww[33]->samples[ibin]);
             }
             h33->SetMinimum(0);
             h33->SetMaximum(17000);
@@ -402,7 +454,7 @@ struct FeamRun: public TARunInterface
             fC->cd(6);
             TH1D* h34 = new TH1D("h34", "h34", xbins, 0, xbins);
             for (int ibin=0; ibin<xbins; ibin++) {
-               h34->SetBinContent(ibin+1, ww[1]->samples[ibin]);
+               h34->SetBinContent(ibin+1, ww[34]->samples[ibin]);
             }
             h34->SetMinimum(0);
             h34->SetMaximum(17000);
@@ -412,6 +464,28 @@ struct FeamRun: public TARunInterface
          fC->Modified();
          fC->Draw();
          fC->Update();
+      }
+
+      if (fModule->fPlotPad >= 0) {
+         if (!fModule->fPlotPadCanvas)
+            fModule->fPlotPadCanvas = new TCanvas("FEAM PAD", "FEAM PAD", 900, 650);
+
+         TCanvas*c = fModule->fPlotPadCanvas;
+
+         c->cd();
+
+         TH1D* h = new TH1D("h", "h", xbins, 0, xbins);
+         for (int ibin=0; ibin<xbins; ibin++) {
+            h->SetBinContent(ibin+1, ww[fModule->fPlotPad]->samples[ibin]);
+         }
+
+         h->SetMinimum(0);
+         h->SetMaximum(17000);
+         h->Draw();
+         
+         c->Modified();
+         c->Draw();
+         c->Update();
       }
 
       time_t now = time(NULL);
@@ -445,16 +519,22 @@ void FeamModule::Init(const std::vector<std::string> &args)
    printf("Init!\n");
 
    fDoPads = true;
+   fPlotPad = -1;
+   fPlotPadCanvas = NULL;
 
    for (unsigned i=0; i<args.size(); i++) {
       if (args[i] == "--nopads")
          fDoPads = false;
+      if (args[i] == "--plot1")
+         fPlotPad = atoi(args[i+1].c_str());
    }
 }
    
 void FeamModule::Finish()
 {
    printf("Finish!\n");
+
+   DELETE(fPlotPadCanvas);
 }
    
 TARunInterface* FeamModule::NewRun(TARunInfo* runinfo)
