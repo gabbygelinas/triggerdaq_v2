@@ -2,6 +2,8 @@
 
 #define SHOW_ALPHA16 8
 
+#include <iostream>
+#include "TVirtualFFT.h"
 #include "Waveform.h"
 
 Waveform* NewWaveform(const Alpha16Waveform* a, double scale)
@@ -300,14 +302,14 @@ struct PlotA16
 
       for (int i=0; i<16; i++) {
          fCanvas->cd(i+1);
-         
+
          int color = 1;
 
          int ichan = fFirstChan + i;
 
          if (!adc->udpPresent[ichan])
             continue;
-         
+
          if (!fH[i]) {
             char name[256];
             sprintf(name, "a16ch%02d_x%d", i, x++);
@@ -397,7 +399,7 @@ struct PlotWire
                hh[i]->SetMaximum(1<<15);
                hh[i]->SetLineColor(color);
             }
-               
+
             for (unsigned s=0; s<e->waveform[ch].size(); s++)
                hh[i]->SetBinContent(s+1, e->waveform[ch][s]);
          }
@@ -453,7 +455,7 @@ struct FileWire
    {
       char buf[2560];
       const char* dir = "/pool8tb/agdaq/wire/text";
-      
+
       sprintf(buf, "%s/run%05dchan%02d.txt", dir, runno, chan1);
 
       fp1 = fopen(buf, "w");
@@ -513,11 +515,11 @@ class AlphaTpcX
 {
 public:
    int fRunNo;
-   
+
    Alpha16EVB* fEvb;
-   
+
    PlotA16* fPlotA16[SHOW_ALPHA16];
-   
+
    Alpha16Event* fLastEvent;
 
    PlotHistograms* fH;
@@ -527,12 +529,44 @@ public:
    int fCountGood;
    int fCountBad;
 
+   TCanvas *c;
+   TH1D *hwf0, *hwf1, *hfftsum0, *hfftsum1, *hbase0, *hbase1, *hRMS0, *hRMS1;
+   int entries = 0;
+
    AlphaTpcX()
    {
       fH = new PlotHistograms(NULL);
       fP = NULL; // new PlotHistogramsPads(NULL);
 
       fEvb = new Alpha16EVB();
+
+      c = new TCanvas("cnoise","noise analysis",800,1200);
+      c->Divide(1,6);
+      hwf0 = new TH1D("hwf0","waveform 0",701,0,701);
+      c->cd(1);
+      hwf0->Draw();
+      c->GetPad(2)->SetLogy();
+
+      hwf1 = new TH1D("hwf1","waveform 1",701,0,701);
+      c->cd(3);
+      hwf1->Draw();
+      c->GetPad(4)->SetLogy();
+
+      hfftsum0 = new TH1D("hfftsum0","FFT sum",701,0,701);
+      c->cd(5);
+      hfftsum0->Draw();
+      c->GetPad(5)->SetLogy();
+
+      hfftsum1 = new TH1D("hfftsum1","FFT sum",701,0,701);
+      c->cd(6);
+      hfftsum1->Draw();
+      c->GetPad(6)->SetLogy();
+
+      hbase0 = new TH1D("hbase0", "baseline 0", 2000, -1000, 1000);
+      hbase1 = new TH1D("hbase1", "baseline 1", 2000, -1000, 1000);
+
+      hRMS0 = new TH1D("hRMS0", "RMS 0", 1000, 0, 100);
+      hRMS1 = new TH1D("hRMS1", "RMS 1", 1000, 0, 100);
 
       for (int i=0; i<SHOW_ALPHA16; i++)
          fPlotA16[i] = NULL;
@@ -567,7 +601,7 @@ public:
          delete fH;
          fH = NULL;
       }
-         
+
       if (fP) {
          delete fP;
          fP = NULL;
@@ -594,12 +628,14 @@ public:
    void EndRun()
    {
       printf("EndRun: early bad events: %d, good events: %d, bad events: %d, total %d events\n", fCountEarlyBad, fCountGood, fCountBad, fCountEarlyBad + fCountGood + fCountBad);
+      hfftsum0->Scale(1./double(hbase0->GetEntries()*sqrt(701.)));
+      hfftsum1->Scale(1./double(hbase1->GetEntries()*sqrt(701.)));
    }
 
    int Event(Alpha16Event* e)
    {
       printf("new event: "); e->Print();
-      
+
       if (e->error || !e->complete) {
          if (fCountGood)
             fCountBad++;
@@ -609,20 +645,20 @@ public:
       }
 
       fCountGood++;
-      
+
       printf("event: "); e->Print();
-      
+
       if (fLastEvent) {
          delete fLastEvent;
          fLastEvent = NULL;
       }
-      
+
       fLastEvent = e;
-      
+
       bool force_plot = false;
-      
+
       printf("analyzing: "); e->Print();
-      
+
       // analyze the event
 
       int nhits = 0;
@@ -632,9 +668,10 @@ public:
 
             //if (i != 76)
             //   continue;
-            
-            Waveform* w = NewWaveform(&e->waveform[i], 1.0/4.0);
 
+            Waveform* w = NewWaveform(&e->waveform[i], 1.0/4.0);
+            if(i == 96 || i == 127)
+               AnalyzeNoise(w, i);
             double b, brms;
             b = baseline(w, 0, 100, NULL, &brms);
 
@@ -655,26 +692,26 @@ public:
                      force_plot = true;
 
                   int ple = led(w, b, 1.0, pph/2.0);
-                  
+
                   if (1 || pph > 100) {
                      fP->fHle->Fill(ple);
                      fP->fHlex->Fill(ple);
                      fP->fHocc->Fill(i);
-                     
+
                      if (ple > 150 && ple < 180) {
                         fP->fHocc1->Fill(i);
                         fP->fHph1->Fill(pph);
                      }
-                     
+
                      if (ple > 180 && ple < 580) {
                         fP->fHocc2->Fill(i);
                         fP->fHph2->Fill(pph);
                      }
-                     
+
                      fP->fHph3->Fill(ple, pph);
                   }
                }
-                  
+
                delete w;
                continue;
             }
@@ -745,11 +782,11 @@ public:
 
       return force_plot;
    }
-      
+
    void Plot()
    {
       time_t tstart = time(NULL);
-      
+
       if (fH) {
          printf("plot H start\n");
          fH->Draw();
@@ -774,7 +811,7 @@ public:
          return;
 
       time_t tstart = time(NULL);
-      
+
       printf("plotting:   "); fLastEvent->Print();
 
       for (int i=0; i<SHOW_ALPHA16; i++) {
@@ -789,6 +826,34 @@ public:
       int elapsed = tend-tstart;
 
       printf("plotting: done, %d sec!\n", elapsed);
+   }
+
+   void AnalyzeNoise(Waveform *w, short i){
+      TH1D *h, *hRMS, *hbase, *hfftsum;
+      short index;
+      switch(i){
+      case 96: h = hwf0; hbase = hbase0; hRMS = hRMS0; hfftsum = hfftsum0; index = 2; break;
+      case 127: h = hwf1; hbase = hbase1; hRMS = hRMS1; hfftsum = hfftsum1; index = 4; break;
+      default: std::cerr << "Something's wrong!" << std::endl;
+      }
+      for(int b = 0; b < w->nsamples; b++)
+         h->SetBinContent(b+1, w->samples[b]);
+
+      double b, brms;
+      b = baseline(w, 0, w->nsamples, NULL, &brms);
+      hbase->Fill(b);
+      hRMS->Fill(brms);
+
+      TH1 *hfft = 0;
+      TVirtualFFT::SetTransform(0);
+      hfft = h->FFT(hfft, "MAG");
+      c->cd(index);
+      hfft->Draw();
+      hfftsum->Add(hfft);
+      entries++;
+      for(int p = 1; p <= 6; p++)
+         c->GetPad(p)->Modified();
+      c->Update();
    }
 };
 
