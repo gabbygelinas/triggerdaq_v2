@@ -4,10 +4,15 @@
 // K.Olchanski
 //
 
+#include <stdio.h>
+
 #include "manalyzer.h"
 #include "midasio.h"
 
 #include <assert.h> // assert()
+
+#include <vector>
+#include <deque>
 
 #include "TCanvas.h"
 #include "TH1D.h"
@@ -19,6 +24,248 @@
 #include "Waveform.h"
 
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
+
+#define MEMZERO(p) memset((p), 0, sizeof(p))
+
+static uint8_t getUint8(const void* ptr, int offset)
+{
+   return *(uint8_t*)(((char*)ptr)+offset);
+}
+
+static uint16_t getUint16be(const void* ptr, int offset)
+{
+   uint8_t *ptr8 = (uint8_t*)(((char*)ptr)+offset);
+   return ((ptr8[0]<<8) | ptr8[1]);
+}
+
+static uint32_t getUint32be(const void* ptr, int offset)
+{
+   uint8_t *ptr8 = (uint8_t*)(((char*)ptr)+offset);
+   return (ptr8[0]<<24) | (ptr8[1]<<16) | (ptr8[2]<<8) | ptr8[3];
+}
+
+static uint16_t getUint16le(const void* ptr, int offset)
+{
+   uint8_t *ptr8 = (uint8_t*)(((char*)ptr)+offset);
+   return ((ptr8[1]<<8) | ptr8[0]);
+}
+
+static uint32_t getUint32le(const void* ptr, int offset)
+{
+   uint8_t *ptr8 = (uint8_t*)(((char*)ptr)+offset);
+   return (ptr8[3]<<24) | (ptr8[2]<<16) | (ptr8[1]<<8) | ptr8[0];
+}
+
+class FeamPacket
+{
+public:
+   uint32_t cnt;
+   uint16_t n;
+   uint16_t x511;
+   uint16_t buf_len;
+   uint32_t ts_start;
+   uint32_t ts_trig;
+   int off;
+   bool error;
+
+public:
+   FeamPacket(); // ctor
+   void Unpack(const char* data, int size);
+   void Print() const;
+};
+
+FeamPacket::FeamPacket()
+{
+   error = true;
+}
+
+void FeamPacket::Unpack(const char* data, int size)
+{
+   error = true;
+   
+   off = 0;
+   cnt = getUint32le(data, off); off += 4;
+   n   = getUint16le(data, off); off += 2;
+   x511 = getUint16le(data, off); off += 2;
+   buf_len = getUint16le(data, off); off += 2;
+   if (n == 0) {
+      ts_start = getUint32le(data, off); off += 8;
+      ts_trig  = getUint32le(data, off); off += 8;
+   } else {
+      ts_start = 0;
+      ts_trig  = 0;
+   }
+
+   error = false;
+}
+
+void FeamPacket::Print() const
+{
+   printf("decoded %2d bytes, ", off);
+   printf("cnt %6d, n %3d, x511 %3d, buf_len %4d, ts_start 0x%08x, ts_trig 0x%08x, ",
+          cnt,
+          n,
+          x511,
+          buf_len,
+          ts_start,
+          ts_trig);
+   printf("error %d", error);
+}
+
+class FeamAdcData
+{
+public:
+   uint32_t cnt;
+   uint32_t ts_start;
+   uint32_t ts_trig;
+
+   bool error;
+
+   uint32_t next_n;
+
+   int fSize;
+   char* fPtr;
+
+public:
+   FeamAdcData(const FeamPacket* p)
+   {
+      assert(p->n == 0);
+
+      cnt = p->cnt;
+      ts_start = p->ts_start;
+      ts_trig = p->ts_trig;
+
+      fSize = 0;
+      fPtr = NULL;
+
+      next_n = 0;
+
+      error = false;
+   }
+
+   ~FeamAdcData() // dtor
+   {
+      if (fPtr)
+         free(fPtr);
+      fPtr = NULL;
+      fSize = 0;
+   }
+
+   void AddData(const FeamPacket*p, const char* ptr, int size);
+   void Print() const;
+};
+
+void FeamAdcData::Print() const
+{
+   printf("cnt %6d, ts_start 0x%08x, ts_trig 0x%08x, ",
+          cnt,
+          ts_start,
+          ts_trig);
+   printf("next_n %d, ", next_n);
+   printf("size %d, ", fSize);
+   printf("error %d", error);
+}
+
+void FeamAdcData::AddData(const FeamPacket*p, const char* ptr, int size)
+{
+   //printf("add %d size %d\n", p->n, size);
+   if (p->n != next_n) {
+      printf("wrong packet sequence: expected %d, got %d!\n", next_n, p->n);
+      error = true;
+      return;
+   }
+
+   assert(size >= 0);
+   assert(size < 12000); // UDP packet size is 1500 bytes, jumbo frame up to 9000 bytes
+
+   int new_size = fSize + size;
+   char* new_ptr = (char*)realloc(fPtr, new_size);
+
+   if (!new_ptr) {
+      printf("cannot reallocate ADC buffer from %d to %d bytes!\n", fSize, new_size);
+      error = true;
+      return;
+   }
+
+   memcpy(new_ptr + fSize, ptr, size);
+
+   fPtr = new_ptr;
+   fSize = new_size;
+
+   next_n = p->n + 1;
+}
+
+class FeamEVB
+{
+public:
+   std::vector<FeamAdcData*> data;
+
+   std::deque<FeamAdcData*> buf;
+
+   FeamEVB()
+   {
+      data.push_back(NULL);
+      data.push_back(NULL);
+   }
+
+   void AddPacket(int ifeam, const FeamPacket* p, const char* ptr, int size)
+   {
+      if (p->n == 0) {
+         // 1st packet
+
+         if (data[ifeam]) {
+            printf("Complete event: FEAM %d: ", ifeam);
+            data[ifeam]->Print();
+            printf("\n");
+
+            FeamAdcData* a = data[ifeam];
+            data[ifeam] = NULL;
+
+            // xxx
+
+            buf.push_back(a);
+         }
+
+         printf("Start ew event: FEAM %d: ", ifeam);
+         p->Print();
+         printf("\n");
+
+         data[ifeam] = new FeamAdcData(p);
+      }
+
+      FeamAdcData* a = data[ifeam];
+
+      if (a == NULL) {
+         // did not see the first event yet, cannot unpack
+         delete p;
+         return;
+      }
+
+      a->AddData(p, ptr, size);
+
+      //a->Print();
+      //printf("\n");
+
+      delete p;
+   }
+
+   void Print() const
+   {
+      printf("FEAM evb status: %p %p, buffered %d\n", data[0], data[1], (int)buf.size());
+   }
+
+   FeamAdcData* Get()
+   {
+      if (buf.size() < 1)
+         return NULL;
+
+      FeamAdcData* a = buf.front();
+      buf.pop_front();
+      return a;
+   }
+};
+
+static FeamEVB* xevb = NULL;
 
 class FeamModule: public TAModuleInterface
 {
@@ -189,7 +436,7 @@ struct FeamRun: public TARunInterface
 
    TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
    {
-      printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
+      //printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
 
       if (!fModule->fDoPads)
          return flow;
@@ -204,14 +451,91 @@ struct FeamRun: public TARunInterface
       const int xbins = 829;
       const int xchan = 79;
 
-      printf("event id %d\n", event->event_id);
+      //printf("event id %d\n", event->event_id);
 
       if (event->event_id == 1) {
-         *flags |= TAFlag_SKIP;
-         return flow;
-      }
+         //*flags |= TAFlag_SKIP; // enable this to skip GRIF16 events
 
-      if (event->event_id == 2) {
+         const char* banks[] = { "BB01", "BB02", NULL };
+         char *data = NULL;
+         
+         for (int i=0; banks[i]; i++) {
+            TMBank* b = event->FindBank(banks[i]);
+            if (b) {
+               data = event->GetBankData(b);
+               if (data) {
+                  //printf("Have bank %s\n", banks[i]);
+                  //HandleFeam(i, data, b->data_size);
+
+                  if (b->data_size < 26) {
+                     printf("bad FEAM %d packet length %d\n", i, b->data_size);
+                     continue;
+                  }
+                  
+                  FeamPacket* p = new FeamPacket();
+                  
+                  p->Unpack(data, b->data_size);
+                  
+                  assert(!p->error);
+                  
+                  if (!xevb)
+                     xevb = new FeamEVB();
+                  
+                  xevb->AddPacket(i, p, data + p->off, p->buf_len);
+               }
+            }
+         }
+
+         //xevb->Print();
+
+         FeamAdcData *a = xevb->Get();
+
+         if (!a) {
+            return flow;
+         }
+
+         printf("ZZZZZZZZZZZZZZZZZZ Processing FEAM event: ");
+         a->Print();
+         printf("\n");
+
+         if (a->error) {
+            delete a;
+            return flow;
+         }
+
+         assert(a->next_n == 256);
+         assert(a->fSize == 310688);
+
+         const unsigned char* ptr = (const unsigned char*)a->fPtr;
+
+         MEMZERO(adc);
+
+         int count = 0;
+         for (int ibin = 0; ibin < 511; ibin++) {
+            for (int ichan = 0; ichan < 76; ichan++) {
+               for (int iasic = 0; iasic < 4; iasic++) {
+                  int v = ptr[0] | ((ptr[1])<<8);
+                  if (iasic == 0) {
+                     adc[ichan][ibin] = v;
+                  }
+                  ptr += 2;
+                  count += 2;
+               }
+            }
+         }
+
+         printf("count %d\n", count);
+
+         for (int ibin = 511; ibin < xbins; ibin++) {
+            for (int ichan = 0; ichan < 76; ichan++) {
+               adc[ichan][ibin] = adc[ichan][ibin-511];
+            }
+         }
+
+         delete a;
+
+      } else if (event->event_id == 2) {
+
          const char* banks[] = { "YP01", "YP02", NULL };
          int itpc = -1;
          unsigned short *samples = NULL;
