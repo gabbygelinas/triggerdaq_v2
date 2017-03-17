@@ -634,7 +634,7 @@ public:
 
    int Event(Alpha16Event* e)
    {
-      printf("new event: "); e->Print();
+      //printf("new event: "); e->Print();
 
       if (e->error || !e->complete) {
          if (fCountGood)
@@ -645,6 +645,12 @@ public:
       }
 
       fCountGood++;
+
+      if (1) {
+         //printf("event: "); e->Print();
+         printf("a16: ts %14.3f usec, ts_incr %14.3f usec\n", e->eventTime/1e3, (e->eventTime-e->prevEventTime)/1e3);
+         return 0;
+      }
 
       printf("event: "); e->Print();
 
