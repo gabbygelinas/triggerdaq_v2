@@ -412,7 +412,7 @@ void Alpha16EVB::CheckEvent(Alpha16Event* e)
       for (int i=0; i<MAX_ALPHA16 * NUM_CHAN_ALPHA16; i++) {
          if (e->udpPresent[i]) {
             fFirstEventTs[i] = e->udpEventTs[i];
-            printf("XXX %d -> 0x%08x\n", i, fFirstEventTs[i]);
+            //printf("XXX %d -> 0x%08x\n", i, fFirstEventTs[i]);
          }
       }
    }
