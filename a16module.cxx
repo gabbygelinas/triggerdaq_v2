@@ -997,6 +997,8 @@ struct A16Run: public TARunInterface
       fCounter++;
       fModule->fTotalEventCounter++;
 
+      delete e;
+
       return flow;
    }
 
