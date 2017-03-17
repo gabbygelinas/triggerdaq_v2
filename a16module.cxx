@@ -36,11 +36,14 @@ struct A16Run: public TARunInterface
    A16Module* fModule;
    int fCounter;
    AlphaTpcX* fATX;
+   bool fTrace;
    
    A16Run(TARunInfo* runinfo, A16Module* m)
       : TARunInterface(runinfo)
    {
-      printf("A16Run::ctor!\n");
+      fTrace = false;
+      if (fTrace)
+         printf("A16Run::ctor!\n");
       fModule = m;
       fATX = new AlphaTpcX();
       if (m->fPlotWF)
@@ -49,7 +52,8 @@ struct A16Run: public TARunInterface
 
    ~A16Run()
    {
-      printf("A16Run::dtor!\n");
+      if (fTrace)
+         printf("A16Run::dtor!\n");
       if (fATX)
          delete fATX;
       fATX = NULL;
@@ -88,7 +92,8 @@ struct A16Run: public TARunInterface
 
    TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
    {
-      printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
+      if (fTrace)
+         printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
 
       if (event->event_id != 1)
          return flow;
@@ -131,7 +136,7 @@ struct A16Run: public TARunInterface
 
 void A16Module::Init(const std::vector<std::string> &args)
 {
-   printf("Init!\n");
+   printf("A16Module::Init!\n");
 
    fPlotWF = false;
 
@@ -150,13 +155,13 @@ void A16Module::Init(const std::vector<std::string> &args)
    
 void A16Module::Finish()
 {
-   printf("Finish!\n");
+   printf("A16Module::Finish!\n");
    printf("Counted %d events grand total\n", fTotalEventCounter);
 }
    
 TARunInterface* A16Module::NewRun(TARunInfo* runinfo)
 {
-   printf("NewRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
+   printf("A16Module::NewRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
    return new A16Run(runinfo, this);
 }
 
