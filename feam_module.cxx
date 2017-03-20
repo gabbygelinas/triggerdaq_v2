@@ -260,6 +260,245 @@ void FeamAdcData::AddData(const FeamPacket*p, int xmodule, const char* ptr, int 
    next_n = p->n + 1;
 }
 
+struct TsSyncEntry
+{
+   uint32_t ts;
+   int epoch;
+   double time;
+
+   TsSyncEntry(uint32_t xts, int xepoch, double xtime) // ctor
+      : ts(xts), epoch(xepoch), time(xtime)
+   {
+   }
+};
+
+class TsSyncModule
+{
+public:
+   double   fFreqHz;
+   int      fEpoch;
+   uint32_t fFirstTs;
+   uint32_t fPrevTs;
+   uint32_t fLastTs;
+   double   fOffsetSec;
+   double   fPrevTimeSec;
+   double   fLastTimeSec;
+   double   fEps;
+   int      fSyncedWith;
+
+   std::vector<TsSyncEntry> fBuf;
+
+public:
+   TsSyncModule() // ctor
+   {
+      fFreqHz   = 0;
+      fEpoch    = 0;
+      fFirstTs  = 0;
+      fPrevTs   = 0;
+      fLastTs   = 0;
+      fOffsetSec   = 0;
+      fPrevTimeSec = 0;
+      fLastTimeSec = 0;
+      fEps = 200*1e-9; // 200ns
+      fSyncedWith  = -1;
+   }
+
+   void Print() const
+   {
+      printf("ts 0x%08x, prev 0x%08x, first 0x%08x, offset %f, time %f %f, diff %f, buf %d", fLastTs, fPrevTs, fFirstTs, fOffsetSec, fLastTimeSec, fPrevTimeSec, fLastTimeSec-fPrevTimeSec, (int)fBuf.size());
+   }
+
+   double GetTime(uint32_t ts, int epoch) const
+   {
+      // must do all computations in double precision to avoid trouble with 32-bit timestamp wraparound.
+      return ts/fFreqHz + fOffsetSec + epoch*2.0*0x80000000/fFreqHz;
+   }
+
+   void Add(uint32_t ts)
+   {
+      if (fFirstTs == 0) {
+         fFirstTs = ts;
+      }
+      fPrevTs = fLastTs;
+      fPrevTimeSec = fLastTimeSec;
+      fLastTs = ts;
+
+      if (ts < fPrevTs) {
+         fEpoch += 1;
+      }
+
+      // must do all computations in double precision to avoid trouble with 32-bit timestamp wraparound.
+      fLastTimeSec = GetTime(fLastTs, fEpoch); // fLastTs/fFreqHz + fOffsetSec + fEpoch*2.0*0x80000000/fFreqHz;
+
+      if (fBuf.size() < 10) {
+         fBuf.push_back(TsSyncEntry(fLastTs, fEpoch, fLastTimeSec));
+      }
+   }
+
+   void Retime()
+   {
+      for (unsigned i=0; i<fBuf.size(); i++) {
+         fBuf[i].time = GetTime(fBuf[i].ts, fBuf[i].epoch);
+      }
+   }
+
+   double GetDt(unsigned j)
+   {
+      //assert(j>0);
+      //assert(j<fBuf.size());
+      return fBuf[j].time - fBuf[j-1].time;
+   }
+
+   unsigned FindDt(double dt)
+   {
+      for (unsigned j=fBuf.size()-1; j>1; j--) {
+         double jdt = GetDt(j);
+         //printf("size %d, buf %d, jdt %f, dt %f\n", (int)fBuf.size(), j, jdt, dt);
+         if (fabs(dt - jdt) < fEps) {
+            //printf("found %d %f\n", j, jdt);
+            return j;
+         }
+      }
+      //printf("not found!\n");
+      return 0;
+   }
+};
+
+class TsSync
+{
+public:
+   std::vector<TsSyncModule> fModules;
+   bool fSyncOk;
+
+public:
+   TsSync() // ctor
+   {
+      fSyncOk = false;
+   }
+
+   ~TsSync() // dtor
+   {
+   }
+
+   void Configure(unsigned i, double freq_hz)
+   {
+      // grow the array if needed
+      TsSyncModule m;
+      for (unsigned j=fModules.size(); j<=i; j++)
+         fModules.push_back(m);
+
+      fModules[i].fFreqHz = freq_hz;
+   }
+
+   void CheckSync(unsigned ii, unsigned i)
+   {
+      unsigned ntry = 3;
+      unsigned jj = fModules[ii].fBuf.size()-1;
+
+      double tt = fModules[ii].GetDt(jj);
+
+      unsigned j = fModules[i].FindDt(tt);
+      if (j == 0)
+         return;
+
+      // demand a few more good matches
+      for (unsigned itry=1; itry<=ntry; itry++) {
+         if (jj-itry == 0)
+            return;
+         if (j-itry == 0)
+            return;
+         double xtt = fModules[ii].GetDt(jj-itry);
+         double xt  = fModules[i].GetDt(j-itry);
+
+         if (fabs(xt - xtt) > fModules[ii].fEps) {
+            return;
+         }
+      }
+
+      fModules[ii].fSyncedWith = i;
+
+      // check for sync loop
+      if (fModules[i].fSyncedWith >= 0)
+         fModules[ii].fSyncedWith = fModules[i].fSyncedWith;
+
+      double off = fModules[i].fBuf[j].time - fModules[ii].fBuf[jj].time;
+      fModules[ii].fOffsetSec = off;
+      fModules[ii].Retime();
+   }
+
+   void Check(unsigned inew)
+   {
+      unsigned min = 0;
+      unsigned max = 0;
+
+      for (unsigned i=0; i<fModules.size(); i++) {
+         unsigned s = fModules[i].fBuf.size();
+         if (s > 0) {
+            if (min == 0)
+               min = s;
+            if (s < min)
+               min = s;
+            if (s > max)
+               max = s;
+         }
+      }
+
+      printf("min %d, max %d\n", min, max);
+
+      if (min < 3)
+         return;
+
+      for (unsigned i=0; i<fModules.size(); i++) {
+         if (inew != i && fModules[inew].fSyncedWith < 0) {
+            CheckSync(inew, i);
+         }
+      }
+
+      for (unsigned j=1; j<max; j++) {
+         printf("buf %2d: ", j);
+         for (unsigned i=0; i<fModules.size(); i++) {
+            if (j<fModules[i].fBuf.size()) {
+               double dt = fModules[i].fBuf[j].time - fModules[i].fBuf[j-1].time;
+               printf(" %f", dt);
+            } else {
+               printf(" -");
+            }
+         }
+         printf("\n");
+      }
+
+      printf("buf %2d: ", 99);
+      for (unsigned i=0; i<fModules.size(); i++) {
+         printf(" %d", fModules[i].fSyncedWith);
+      }
+      printf("\n");
+
+      bool ok = true;
+      for (unsigned i=0; i<fModules.size(); i++) {
+         if (fModules[i].fSyncedWith < 0) {
+            // FIXME: if there is no data from this module, mark sync ok.
+            ok = false;
+         }
+      }
+      fSyncOk = ok;
+   }
+
+   void Add(unsigned i, uint32_t ts)
+   {
+      fModules[i].Add(ts);
+
+      if (1) {
+         printf("module %2d: ", i);
+         fModules[i].Print();
+         printf("\n");
+      }
+
+      if (!fSyncOk) {
+         Check(i);
+      }
+   }
+};
+
 //static const double TSNS = 16.0;
 static const double TSNS = 8.0/.99999821102751183809;
 
@@ -273,6 +512,8 @@ public:
 
    std::deque<FeamAdcData*> fBuf;
 
+   TsSync fSync;
+
    FeamEVB(int num_modules)
    {
       fNumModules = num_modules;
@@ -280,6 +521,8 @@ public:
          fData.push_back(NULL);
          fLastTs.push_back(0);
          fTsEpoch.push_back(0);
+
+         fSync.Configure(i, 1.0/TSNS*1e9);
       }
    }
 
@@ -295,6 +538,8 @@ public:
 
             FeamAdcData* a = fData[ifeam];
             fData[ifeam] = NULL;
+
+            fSync.Add(ifeam, a->ts_trig);
 
             if (a->ts_trig < fLastTs[ifeam]) {
                fTsEpoch[ifeam]++;
