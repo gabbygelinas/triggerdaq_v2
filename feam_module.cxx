@@ -1014,7 +1014,6 @@ public:
       int force_plot = false;
 
       FeamEvent *e = NULL;
-      FeamAdcData *aaa = NULL;
 
 #if 0
       int adc[80][5120];
@@ -1225,7 +1224,7 @@ public:
          
       // got all the data here
 
-      int nchan = e->adcs.size() * aaa->nsca * aaa->nchan;
+      int nchan = e->adcs.size() * e->adcs[0]->nsca * e->adcs[0]->nchan;
 
       printf("nchan %d\n", nchan);
 
@@ -1246,7 +1245,9 @@ public:
 
       // create histograms
 
-      CreateHistograms(runinfo, nchan, aaa->nbins);
+      int nbins = e->adcs[0]->nbins;
+
+      CreateHistograms(runinfo, nchan, nbins);
 
       int iplot = 0;
       double zmax = 0;
@@ -1285,7 +1286,7 @@ public:
 
          if (hwaveform[ichan]->GetEntries() == 0) {
             printf("saving waveform %d\n", ichan);
-            for (int i=0; i<aaa->nbins; i++)
+            for (int i=0; i<ww[ichan]->nsamples; i++)
                hwaveform[ichan]->SetBinContent(i+1, ww[ichan]->samples[i]);
          }
 
@@ -1328,8 +1329,8 @@ public:
          
          if (1) {
             fC->cd(1);
-            TH1D* hh = new TH1D("hh", "hh", aaa->nbins, 0, aaa->nbins);
-            for (int ibin=0; ibin<aaa->nbins; ibin++) {
+            TH1D* hh = new TH1D("hh", "hh", nbins, 0, nbins);
+            for (int ibin=0; ibin<nbins; ibin++) {
                hh->SetBinContent(ibin+1, e->adcs[0]->adc[0][0][ibin]);
             }
             hh->Draw();
@@ -1337,8 +1338,8 @@ public:
          
          if (1) {
             fC->cd(2);
-            TH1D* hhh = new TH1D("hhh", "hhh", aaa->nbins, 0, aaa->nbins);
-            for (int ibin=0; ibin<aaa->nbins; ibin++) {
+            TH1D* hhh = new TH1D("hhh", "hhh", nbins, 0, nbins);
+            for (int ibin=0; ibin<nbins; ibin++) {
                hhh->SetBinContent(ibin+1, e->adcs[0]->adc[0][0][ibin]);
             }
             hhh->SetMinimum(-33000);
@@ -1348,8 +1349,9 @@ public:
          
          if (1) {
             fC->cd(3);
-            TH1D* hhh = new TH1D("hhhh", "hhhh", aaa->nbins, 0, aaa->nbins);
-            for (int ibin=0; ibin<aaa->nbins; ibin++) {
+            int nbins = ww[39]->nsamples;
+            TH1D* hhh = new TH1D("hhhh", "hhhh", nbins, 0, nbins);
+            for (int ibin=0; ibin<nbins; ibin++) {
                hhh->SetBinContent(ibin+1, ww[39]->samples[ibin]);
             }
             hhh->SetMinimum(-9000);
@@ -1359,8 +1361,9 @@ public:
          
          if (1) {
             fC->cd(4);
-            TH1D* hhh = new TH1D("hhhhh", "hhhhh", aaa->nbins, 0, aaa->nbins);
-            for (int ibin=0; ibin<aaa->nbins; ibin++) {
+            int nbins = ww[iplot]->nsamples;
+            TH1D* hhh = new TH1D("hhhhh", "hhhhh", nbins, 0, nbins);
+            for (int ibin=0; ibin<nbins; ibin++) {
                hhh->SetBinContent(ibin+1, ww[iplot]->samples[ibin]);
             }
             hhh->SetMinimum(-9000);
@@ -1370,8 +1373,9 @@ public:
          
          if (1) {
             fC->cd(5);
-            TH1D* h33 = new TH1D("h33", "h33", aaa->nbins, 0, aaa->nbins);
-            for (int ibin=0; ibin<aaa->nbins; ibin++) {
+            int nbins = ww[33]->nsamples;
+            TH1D* h33 = new TH1D("h33", "h33", nbins, 0, nbins);
+            for (int ibin=0; ibin<nbins; ibin++) {
                h33->SetBinContent(ibin+1, ww[33]->samples[ibin]);
             }
             h33->SetMinimum(-9000);
@@ -1381,9 +1385,10 @@ public:
          
          if (1) {
             fC->cd(6);
-            TH1D* h34 = new TH1D("h34", "h34", aaa->nbins, 0, aaa->nbins);
-            for (int ibin=0; ibin<aaa->nbins; ibin++) {
-               h34->SetBinContent(ibin+1, ww[531]->samples[ibin]);
+            int nbins = ww[34]->nsamples;
+            TH1D* h34 = new TH1D("h34", "h34", nbins, 0, nbins);
+            for (int ibin=0; ibin<nbins; ibin++) {
+               h34->SetBinContent(ibin+1, ww[34]->samples[ibin]);
             }
             h34->SetMinimum(-9000);
             h34->SetMaximum(+9000);
