@@ -5,7 +5,7 @@
 
 Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, const TMidasEvent* me)
 {
-   Alpha16Event* e = evb->NewEvent();
+   Alpha16Event* e = NULL;
 
    for (int imodule = 1; imodule <= 20; imodule++) {
       for (int i=0; i<NUM_CHAN_ALPHA16; i++) {
@@ -63,6 +63,8 @@ Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, const TMidasEvent* me)
             }
             
             if (packetType == 1 && packetVersion == 1) {
+               if (!e)
+                  e = evb->NewEvent();
                evb->AddBank(e, imodule, ptr, bklen);
             } else {
                printf("unknown packet type %d, version %d\n", packetType, packetVersion);
@@ -106,14 +108,16 @@ Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, const TMidasEvent* me)
    }
 #endif
 
-   evb->CheckEvent(e);
+   if (e) {
+      evb->CheckEvent(e);
+   }
 
    return e;
 };
 
 Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, TMEvent* me)
 {
-   Alpha16Event* e = evb->NewEvent();
+   Alpha16Event* e = NULL;
 
    for (int imodule = 1; imodule <= 20; imodule++) {
       for (int i=0; i<NUM_CHAN_ALPHA16; i++) {
@@ -149,6 +153,9 @@ Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, TMEvent* me)
             }
             
             if (packetType == 1 && packetVersion == 1) {
+               if (!e) {
+                  e = evb->NewEvent();
+               }
                evb->AddBank(e, imodule, ptr, bklen);
             } else {
                printf("unknown packet type %d, version %d\n", packetType, packetVersion);
@@ -157,7 +164,9 @@ Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, TMEvent* me)
       }
    }
 
-   evb->CheckEvent(e);
+   if (e) {
+      evb->CheckEvent(e);
+   }
 
    return e;
 };
