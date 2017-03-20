@@ -142,10 +142,7 @@ public:
    char* fPtr;
 
    double   fTime;
-   double   fTsAbsNs;
-
-   uint32_t fTsIncr;
-   double   fTsIncrNs;
+   double   fTimeIncr;
 
 public:
    FeamModuleData(const FeamPacket* p, int xmodule)
@@ -210,8 +207,6 @@ void FeamModuleData::Finalize()
    ZZZ Processing FEAM event: module  3, cnt     62, ts_start 0xc8ef4a56, ts_trig 0xc8ef4cc6, next_n 256, size 310688, error 0
 */
 
-const unsigned xts[8] = { 0xc8f4713c, 0xc8f2d0f4, 0xc8f28b9c, 0xc8ef4cc6, 0xc8f311fa, 0xc8f6d844, 0xc8f91e24, 0xc8f5c94c };
-
 void FeamModuleData::Print() const
 {
    printf("module %2d, ", module);
@@ -221,8 +216,6 @@ void FeamModuleData::Print() const
           ts_trig);
    printf("next_n %d, ", next_n);
    printf("size %d, ", fSize);
-   printf("relts 0x%08x, ", ts_trig-xts[module]);
-   printf("ts_incr 0x%08x, ", fTsIncr);
    printf("error %d", error);
 }
 
@@ -587,7 +580,7 @@ static void Unpack(FeamAdcData* a, FeamModuleData* m)
       }
    }
    
-   printf("count %d\n", count);
+   //printf("count %d\n", count);
 }
 
 //static const double TSNS = 16.0;
@@ -632,8 +625,10 @@ public:
       e->counter = fCounter++;
       e->time = t;
 
-      for (unsigned i=0; i<fNumModules; i++)
+      for (unsigned i=0; i<fNumModules; i++) {
          e->modules.push_back(NULL);
+         e->adcs.push_back(NULL);
+      }
 
       fEvents.push_back(e);
 
@@ -714,9 +709,7 @@ public:
             fSync.Add(ifeam, m->ts_trig);
             
             m->fTime = fSync.fModules[ifeam].fLastTimeSec;
-
-            m->fTsAbsNs = fSync.fModules[ifeam].fLastTimeSec*1e9; // a->ts_trig*TSNS - xts[ifeam]*TSNS + fTsEpoch[ifeam]*(2.0*TSNS*0x80000000);
-            m->fTsIncrNs = (fSync.fModules[ifeam].fLastTimeSec - fSync.fModules[ifeam].fPrevTimeSec)*1e9; // a->ts_trig*TSNS - xts[ifeam]*TSNS + fTsEpoch[ifeam]*(2.0*TSNS*0x80000000);
+            m->fTimeIncr = fSync.fModules[ifeam].fLastTimeSec - fSync.fModules[ifeam].fPrevTimeSec;
 
             m->Finalize();
 
@@ -1080,7 +1073,7 @@ public:
                if (!e->modules[i])
                   break;
                FeamModuleData* m = e->modules[i];
-               printf("module %2d, cnt %4d, ts_trig: 0x%08x %14.3f usec, ts_incr %14.3f usec\n", m->module, m->cnt, m->ts_trig, m->fTsAbsNs/1e3, m->fTsIncrNs/1e3);
+               printf("module %2d, cnt %4d, ts_trig: 0x%08x %14.3f usec, ts_incr %14.3f usec\n", m->module, m->cnt, m->ts_trig, m->fTime*1e6, m->fTimeIncr*1e6);
                //a->Print();
                //printf("\n");
             }
