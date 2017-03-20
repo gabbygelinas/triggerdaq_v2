@@ -141,7 +141,7 @@ public:
    int fSize;
    char* fPtr;
 
-   uint32_t fCntAbs;
+   double   fTime;
    double   fTsAbsNs;
 
    uint32_t fTsIncr;
@@ -210,7 +210,6 @@ void FeamAdcData::Finalize()
    ZZZ Processing FEAM event: module  3, cnt     62, ts_start 0xc8ef4a56, ts_trig 0xc8ef4cc6, next_n 256, size 310688, error 0
 */
 
-const unsigned xcnt[8] = { 80, 1465, 63, 62, 84, 97, 93, 83 };
 const unsigned xts[8] = { 0xc8f4713c, 0xc8f2d0f4, 0xc8f28b9c, 0xc8ef4cc6, 0xc8f311fa, 0xc8f6d844, 0xc8f91e24, 0xc8f5c94c };
 
 void FeamAdcData::Print() const
@@ -222,7 +221,6 @@ void FeamAdcData::Print() const
           ts_trig);
    printf("next_n %d, ", next_n);
    printf("size %d, ", fSize);
-   printf("relcnt %6d, ", cnt-xcnt[module]);
    printf("relts 0x%08x, ", ts_trig-xts[module]);
    printf("ts_incr 0x%08x, ", fTsIncr);
    printf("error %d", error);
@@ -502,22 +500,147 @@ public:
 //static const double TSNS = 16.0;
 static const double TSNS = 8.0/.99999821102751183809;
 
+struct FeamData
+{
+   FeamAdcData *adc;
+
+   ~FeamData() // dtor
+   {
+      assert(adc);
+      delete adc;
+   }
+};
+
+struct FeamEvent
+{
+   bool   complete;
+   bool   error;
+   int    counter;
+   double time;
+   std::vector<FeamData*> modules;
+
+   FeamEvent(); // ctor
+   ~FeamEvent(); // dtor
+   void Print() const;
+};
+
+FeamEvent::FeamEvent() // ctor
+{
+   complete = false;
+   error = false;
+   counter = 0;
+   time = 0;
+}
+
+FeamEvent::~FeamEvent() // dtor
+{
+   for (unsigned i=0; i<modules.size(); i++)
+      if (modules[i]) {
+         delete modules[i];
+         modules[i] = NULL;
+      }
+}
+
+void FeamEvent::Print() const
+{
+   printf("FeamEvent %d, time %f, complete %d, error %d, modules: ", counter, time, complete, error);
+   for (unsigned i=0; i<modules.size(); i++) {
+      if (modules[i] == NULL) {
+            printf(" null");
+      } else {
+         printf(" %d", modules[i]->adc->cnt);
+      }
+   }
+}
+
 class FeamEVB
 {
 public:
-   int fNumModules;
+   unsigned fNumModules;
    std::vector<FeamAdcData*> fData;
 
    std::deque<FeamAdcData*> fBuf;
 
    TsSync fSync;
 
+   std::deque<FeamEvent*> fEvents;
+
+   int fCounter;
+
    FeamEVB(int num_modules)
    {
       fNumModules = num_modules;
-      for (int i=0; i<fNumModules; i++) {
+      fCounter = 0;
+      for (unsigned i=0; i<fNumModules; i++) {
          fData.push_back(NULL);
          fSync.Configure(i, 1.0/TSNS*1e9);
+      }
+   }
+
+   FeamEvent* FindEvent(double t)
+   {
+      for (unsigned i=0; i<fEvents.size(); i++) {
+         if (fabs(fEvents[i]->time - t) < 200.0/1e9) {
+            //printf("Found event for time %f\n", t);
+            return fEvents[i];
+         }
+      }
+
+      FeamEvent* e = new FeamEvent();
+      e->complete = false;
+      e->error = false;
+      e->counter = fCounter++;
+      e->time = t;
+
+      for (unsigned i=0; i<fNumModules; i++)
+         e->modules.push_back(NULL);
+
+      fEvents.push_back(e);
+
+      //printf("New event for time %f\n", t);
+
+      return e;
+   }
+
+   void CheckFeam(FeamEvent *e)
+   {
+      bool c = true;
+      for (unsigned i=0; i<e->modules.size(); i++) {
+         if (e->modules[i] == NULL) {
+            c = false;
+         } else {
+            if (e->modules[i]->adc->error)
+               e->error = true;
+         }
+      }
+      e->complete = c;
+
+      //PrintFeam(e);
+   }
+   
+   void AddFeam(int ifeam, FeamAdcData *a)
+   {
+      FeamEvent* e = FindEvent(a->fTime);
+
+      if (e->modules[ifeam]) {
+         // FIXME: duplicate data
+         printf("duplicate data!\n");
+         delete a;
+         return;
+      }
+
+      e->modules[ifeam] = new FeamData;
+      e->modules[ifeam]->adc = a;
+
+      CheckFeam(e);
+   }
+
+   void Build()
+   {
+      while (fBuf.size() > 0) {
+         FeamAdcData* a = fBuf.front();
+         fBuf.pop_front();
+         AddFeam(a->module, a);
       }
    }
 
@@ -536,7 +659,8 @@ public:
 
             fSync.Add(ifeam, a->ts_trig);
 
-            a->fCntAbs  = a->cnt - xcnt[ifeam];
+            a->fTime = fSync.fModules[ifeam].fLastTimeSec;
+
             a->fTsAbsNs = fSync.fModules[ifeam].fLastTimeSec*1e9; // a->ts_trig*TSNS - xts[ifeam]*TSNS + fTsEpoch[ifeam]*(2.0*TSNS*0x80000000);
             a->fTsIncrNs = (fSync.fModules[ifeam].fLastTimeSec - fSync.fModules[ifeam].fPrevTimeSec)*1e9; // a->ts_trig*TSNS - xts[ifeam]*TSNS + fTsEpoch[ifeam]*(2.0*TSNS*0x80000000);
 
@@ -575,14 +699,40 @@ public:
       //printf("FEAM evb status: %p %p, buffered %d\n", data[0], data[1], (int)buf.size());
    }
 
-   FeamAdcData* Get()
+   FeamEvent* Get()
    {
       if (fBuf.size() < 1)
          return NULL;
 
-      FeamAdcData* a = fBuf.front();
-      fBuf.pop_front();
-      return a;
+      if (fSync.fSyncOk)
+         Build();
+
+      if (fEvents.size() < 1)
+         return NULL;
+
+      // check if the oldest event is complete
+      if (!fEvents.front()->complete) {
+         // oldest event is incomplete,
+         // check if any newer events are completed,
+         // if they are, pop this incomplete event
+         bool c = false;
+         for (unsigned i=0; i<fEvents.size(); i++) {
+            if (fEvents[i]->complete) {
+               c = true;
+               break;
+            }
+         }
+         // if there are too many buffered events, all incomplete,
+         // something is wrong, push them out anyway
+         if (!c && fEvents.size() < 10)
+            return NULL;
+
+         printf("popping in incomplete event! have %d buffered events\n", (int)fEvents.size());
+      }
+
+      FeamEvent* e = fEvents.front();
+      fEvents.pop_front();
+      return e;
    }
 };
 
@@ -890,38 +1040,41 @@ public:
 
          //xevb->Print();
 
-         FeamAdcData *a = xevb->Get();
+         FeamEvent *e = xevb->Get();
 
-         if (!a) {
-            return flow;
-         }
-
-         if (0) {
-            printf("ZZZ Processing FEAM event: ");
-            a->Print();
-            printf("\n");
-         }
-
-         if (1 || a->module == 1) {
-            printf("module %2d, cnt %4d %4d, ts_trig: 0x%08x %14.3f usec, ts_incr %14.3f usec\n", a->module, a->cnt, a->fCntAbs, a->ts_trig, a->fTsAbsNs/1e3, a->fTsIncrNs/1e3);
-            //a->Print();
-            //printf("\n");
-         }
-
-         if (a->error) {
-            delete a;
+         if (!e) {
             return flow;
          }
 
          if (1) {
-            delete a;
+            printf("ZZZ Processing FEAM event: ");
+            e->Print();
+            printf("\n");
+         }
+
+         if (1) {
+            for (unsigned i=0; i<e->modules.size(); i++) {
+               if (!e->modules[i])
+                  break;
+               FeamAdcData* a = e->modules[i]->adc;
+               printf("module %2d, cnt %4d, ts_trig: 0x%08x %14.3f usec, ts_incr %14.3f usec\n", a->module, a->cnt, a->ts_trig, a->fTsAbsNs/1e3, a->fTsIncrNs/1e3);
+               //a->Print();
+               //printf("\n");
+            }
+         }
+
+         if (e->error) {
+            delete e;
             return flow;
          }
 
-         assert(a->next_n == 256);
-         assert(a->fSize == 310688);
+         if (1) {
+            delete e;
+            return flow;
+         }
 
-         const unsigned char* ptr = (const unsigned char*)a->fPtr;
+         //assert(a->next_n == 256);
+         //assert(a->fSize == 310688);
 
          if (!aaa)
             aaa = new AdcData;
@@ -929,31 +1082,35 @@ public:
          //MEMZERO(adc);
          MEMZERO(aaa->adc);
 
-         aaa->nfeam = 2;
+         aaa->nfeam = e->modules.size();
          aaa->nsca  = 4;
          aaa->nchan = 76;
          aaa->nbins = 511;
 
-         int count = 0;
-         int ifeam = a->module;
-         for (int ibin = 0; ibin < 511; ibin++) {
-            for (int ichan = 0; ichan < 76; ichan++) {
-               for (int isca = 0; isca < 4; isca++) {
-                  unsigned v = ptr[0] | ((ptr[1])<<8);
-                  // manual sign extension
-                  if (v & 0x8000)
-                     v |= 0xffff0000;
-                  //if (isca == 0) {
-                  //   adc[ichan][ibin] = v;
-                  //}
-                  aaa->adc[ifeam][isca][ichan][ibin] = v;
-                  ptr += 2;
-                  count += 2;
+         for (unsigned ifeam=0; ifeam<e->modules.size(); ifeam++) {
+            FeamAdcData* a = e->modules[ifeam]->adc;
+            const unsigned char* ptr = (const unsigned char*)a->fPtr;
+            int count = 0;
+
+            for (int ibin = 0; ibin < 511; ibin++) {
+               for (int ichan = 0; ichan < 76; ichan++) {
+                  for (int isca = 0; isca < 4; isca++) {
+                     unsigned v = ptr[0] | ((ptr[1])<<8);
+                     // manual sign extension
+                     if (v & 0x8000)
+                        v |= 0xffff0000;
+                     //if (isca == 0) {
+                     //   adc[ichan][ibin] = v;
+                     //}
+                     aaa->adc[ifeam][isca][ichan][ibin] = v;
+                     ptr += 2;
+                     count += 2;
+                  }
                }
             }
+            
+            printf("count %d\n", count);
          }
-
-         printf("count %d\n", count);
 
          //for (int ibin = 511; ibin < xbins; ibin++) {
          //   for (int ichan = 0; ichan < 76; ichan++) {
@@ -961,7 +1118,7 @@ public:
          //   }
          //}
 
-         delete a;
+         delete e;
 
       } else if (event->event_id == 2) {
 
