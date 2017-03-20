@@ -260,6 +260,9 @@ void FeamAdcData::AddData(const FeamPacket*p, int xmodule, const char* ptr, int 
    next_n = p->n + 1;
 }
 
+//static const double TSNS = 16.0;
+static const double TSNS = 8.0/.99999821102751183809;
+
 class FeamEVB
 {
 public:
@@ -299,13 +302,13 @@ public:
 
             bool wrap = (a->ts_trig < fLastTs[ifeam]);
             a->fTsIncr = a->ts_trig - fLastTs[ifeam];
-            a->fTsIncrNs = a->ts_trig*16.0 - fLastTs[ifeam]*16.0;
+            a->fTsIncrNs = a->ts_trig*TSNS - fLastTs[ifeam]*TSNS;
             if (wrap)
-               a->fTsIncrNs += (2.0*16.0*0x80000000);
+               a->fTsIncrNs += (2.0*TSNS*0x80000000);
             fLastTs[ifeam] = a->ts_trig;
 
             a->fCntAbs  = a->cnt - xcnt[ifeam];
-            a->fTsAbsNs = a->ts_trig*16.0 - xts[ifeam]*16.0 + fTsEpoch[ifeam]*(2.0*16.0*0x80000000);
+            a->fTsAbsNs = a->ts_trig*TSNS - xts[ifeam]*TSNS + fTsEpoch[ifeam]*(2.0*TSNS*0x80000000);
 
             a->Finalize();
 
@@ -669,8 +672,8 @@ public:
             printf("\n");
          }
 
-         if (a->module == 0) {
-            printf("module 0, cnt %4d %4d, ts_trig: 0x%08x %14.3f usec, ts_incr %14.3f usec\n", a->cnt, a->fCntAbs, a->ts_trig, a->fTsAbsNs/1e3, a->fTsIncrNs/1e3);
+         if (1 || a->module == 1) {
+            printf("module %2d, cnt %4d %4d, ts_trig: 0x%08x %14.3f usec, ts_incr %14.3f usec\n", a->module, a->cnt, a->fCntAbs, a->ts_trig, a->fTsAbsNs/1e3, a->fTsIncrNs/1e3);
             //a->Print();
             //printf("\n");
          }
