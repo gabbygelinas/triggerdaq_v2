@@ -223,7 +223,9 @@ void Alpha16EVB::Reset()
    fEventCount = 0;
    fHaveEventTs = false;
    MEMZERO(fFirstEventTs);
+   fTsEpoch = 0;
    fLastEventTs = 0;
+   fLastEventTime = 0;
    fConfModMap.clear();
    fConfNumChan = 0;
    fConfNumSamples = 0;
@@ -431,9 +433,24 @@ void Alpha16EVB::CheckEvent(Alpha16Event* e)
             }
          }
       }
-      e->eventTime = ets/TSCLK;
-      e->prevEventTime = fLastEventTs/TSCLK;
+
+      bool wrap = false;
+      if (ets < fLastEventTs) {
+         wrap = true;
+         //printf("wrap!\n");
+      }
+
+      if (wrap) {
+         fTsEpoch++;
+      }
+
+      double eventTime = ets/TSCLK + fTsEpoch*(2.0*0x80000000/TSCLK);
+
+      e->eventTime = eventTime;
+      e->prevEventTime = fLastEventTime;
+
       fLastEventTs = ets;
+      fLastEventTime = eventTime;
    }
 }
 
