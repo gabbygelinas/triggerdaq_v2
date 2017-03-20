@@ -311,7 +311,7 @@ public:
    double GetTime(uint32_t ts, int epoch) const
    {
       // must do all computations in double precision to avoid trouble with 32-bit timestamp wraparound.
-      return ts/fFreqHz + fOffsetSec + epoch*2.0*0x80000000/fFreqHz;
+      return ts/fFreqHz - fFirstTs/fFreqHz + fOffsetSec + epoch*2.0*0x80000000/fFreqHz;
    }
 
    void Add(uint32_t ts)
@@ -330,7 +330,7 @@ public:
       // must do all computations in double precision to avoid trouble with 32-bit timestamp wraparound.
       fLastTimeSec = GetTime(fLastTs, fEpoch); // fLastTs/fFreqHz + fOffsetSec + fEpoch*2.0*0x80000000/fFreqHz;
 
-      if (fBuf.size() < 10) {
+      if (fBuf.size() < 100) {
          fBuf.push_back(TsSyncEntry(fLastTs, fEpoch, fLastTimeSec));
       }
    }
@@ -443,7 +443,7 @@ public:
          }
       }
 
-      printf("min %d, max %d\n", min, max);
+      //printf("min %d, max %d\n", min, max);
 
       if (min < 3)
          return;
@@ -487,7 +487,7 @@ public:
    {
       fModules[i].Add(ts);
 
-      if (1) {
+      if (0) {
          printf("module %2d: ", i);
          fModules[i].Print();
          printf("\n");
@@ -507,8 +507,6 @@ class FeamEVB
 public:
    int fNumModules;
    std::vector<FeamAdcData*> fData;
-   std::vector<unsigned> fLastTs;
-   std::vector<unsigned> fTsEpoch;
 
    std::deque<FeamAdcData*> fBuf;
 
@@ -519,9 +517,6 @@ public:
       fNumModules = num_modules;
       for (int i=0; i<fNumModules; i++) {
          fData.push_back(NULL);
-         fLastTs.push_back(0);
-         fTsEpoch.push_back(0);
-
          fSync.Configure(i, 1.0/TSNS*1e9);
       }
    }
@@ -541,19 +536,9 @@ public:
 
             fSync.Add(ifeam, a->ts_trig);
 
-            if (a->ts_trig < fLastTs[ifeam]) {
-               fTsEpoch[ifeam]++;
-            }
-
-            bool wrap = (a->ts_trig < fLastTs[ifeam]);
-            a->fTsIncr = a->ts_trig - fLastTs[ifeam];
-            a->fTsIncrNs = a->ts_trig*TSNS - fLastTs[ifeam]*TSNS;
-            if (wrap)
-               a->fTsIncrNs += (2.0*TSNS*0x80000000);
-            fLastTs[ifeam] = a->ts_trig;
-
             a->fCntAbs  = a->cnt - xcnt[ifeam];
-            a->fTsAbsNs = a->ts_trig*TSNS - xts[ifeam]*TSNS + fTsEpoch[ifeam]*(2.0*TSNS*0x80000000);
+            a->fTsAbsNs = fSync.fModules[ifeam].fLastTimeSec*1e9; // a->ts_trig*TSNS - xts[ifeam]*TSNS + fTsEpoch[ifeam]*(2.0*TSNS*0x80000000);
+            a->fTsIncrNs = (fSync.fModules[ifeam].fLastTimeSec - fSync.fModules[ifeam].fPrevTimeSec)*1e9; // a->ts_trig*TSNS - xts[ifeam]*TSNS + fTsEpoch[ifeam]*(2.0*TSNS*0x80000000);
 
             a->Finalize();
 
