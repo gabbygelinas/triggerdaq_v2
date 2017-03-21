@@ -31,9 +31,9 @@ public:
    TsSync fSync;
    int fCounter;
    std::deque<AgEvbBuf*> fBuf[2];
-   //std::deque<Alpha16Event*> fBuf0;
-   //std::deque<FeamEvent*> fBuf1;
    std::deque<AgEvent*> fEvents;
+   double fLastA16Time;
+   double fLastFeamTime;
 
    AgEVB(double a16_ts_freq, double feam_ts_freq); // ctor
    void AddAlpha16Event(Alpha16Event *e);

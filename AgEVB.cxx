@@ -15,6 +15,8 @@ AgEVB::AgEVB(double a16_ts_freq, double feam_ts_freq)
    fCounter = 0;
    fSync.Configure(0, a16_ts_freq, 100);
    fSync.Configure(1, feam_ts_freq, 100);
+   fLastA16Time = 0;
+   fLastFeamTime = 0;
 }
 
 AgEvent* AgEVB::FindEvent(double t)
@@ -24,7 +26,7 @@ AgEvent* AgEVB::FindEvent(double t)
 
       if (fabs(fEvents[i]->time - t) < 5000.0/1e9) {
          //printf("Found event for time %f\n", t);
-         printf("find event for time %f: event %d, %f, diff %f\n", t, i, fEvents[i]->time, fEvents[i]->time - t);
+         //printf("find event for time %f: event %d, %f, diff %f\n", t, i, fEvents[i]->time, fEvents[i]->time - t);
          return fEvents[i];
       }
    }
@@ -69,9 +71,13 @@ void AgEVB::Build(int index, AgEvbBuf *m)
 
    AgEvent* e = FindEvent(m->time);
 
+   if (0 && index == 1) {
+      printf("offset: %f %f, index %d, ts 0x%08x, epoch %d, feam time %f\n", e->time, m->time, index, m->ts, m->epoch, m->feam->time);
+   }
+
    if (1) { // adjust offset for clock drift
       double off = e->time - m->time;
-      printf("offset: %f %f, diff %f\n", e->time, m->time, off);
+      //printf("offset: %f %f, diff %f, index %d\n", e->time, m->time, off, index);
       fSync.fModules[index].fOffsetSec += off/2.0;
    }
 
@@ -123,6 +129,12 @@ void AgEVB::Build()
 
 void AgEVB::AddAlpha16Event(Alpha16Event* e)
 {
+   if (e->eventTime <= fLastA16Time) {
+      printf("AgEVB::AddA16Event: Alpha16 event time did not increase: new time %f, last seen time %f\n", e->eventTime, fLastA16Time);
+      delete e;
+      return;
+   }
+   fLastA16Time = e->eventTime;
    uint32_t ts = e->eventTime*fSync.fModules[0].fFreqHz/1e9;
    //printf("Alpha16Event: t %f, ts 0x%08x", e->eventTime, ts);
    //e->Print();
@@ -140,6 +152,12 @@ void AgEVB::AddAlpha16Event(Alpha16Event* e)
 
 void AgEVB::AddFeamEvent(FeamEvent* e)
 {
+   if (e->time <= fLastFeamTime) {
+      printf("AgEVB::AddFeamEvent: FEAM event time did not increase: new time %f, last seen time %f\n", e->time, fLastFeamTime);
+      delete e;
+      return;
+   }
+   fLastFeamTime = e->time;
    uint32_t ts = e->time*fSync.fModules[1].fFreqHz;
    //printf("FeamEvent: t %f, ts 0x%08x", e->time, ts);
    //printf("\n");
