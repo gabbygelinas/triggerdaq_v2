@@ -109,14 +109,19 @@ void AgEVB::Build()
 
 void AgEVB::AddAlpha16Event(Alpha16Event* e)
 {
-   uint32_t ts = e->eventTime/fSync.fModules[0].fFreqHz*10.0;
+   uint32_t ts = e->eventTime*fSync.fModules[0].fFreqHz/1e9;
+   printf("Alpha16Event: t %f, ts 0x%08x", e->eventTime, ts);
+   e->Print();
+   printf("\n");
    fSync.Add(0, ts);
    fBuf0.push_back(e);
 }
 
 void AgEVB::AddFeamEvent(FeamEvent* e)
 {
-   uint32_t ts = e->time/fSync.fModules[1].fFreqHz*10.0;
+   uint32_t ts = e->time*fSync.fModules[1].fFreqHz;
+   printf("FeamEvent: t %f, ts 0x%08x", e->time, ts);
+   printf("\n");
    fSync.Add(1, ts);
    fBuf1.push_back(e);
 }

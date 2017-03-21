@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <assert.h> // assert()
 
 #include "TsSync.h"
 
@@ -69,13 +70,15 @@ void TsSyncModule::Retime()
 
 double TsSyncModule::GetDt(unsigned j)
 {
-   //assert(j>0);
-   //assert(j<fBuf.size());
+   assert(j>0);
+   assert(j<fBuf.size());
    return fBuf[j].time - fBuf[j-1].time;
 }
 
 unsigned TsSyncModule::FindDt(double dt)
 {
+   //printf("FindDt: fBuf.size %d\n", fBuf.size());
+   assert(fBuf.size() > 0);
    for (unsigned j=fBuf.size()-1; j>1; j--) {
       double jdt = GetDt(j);
       //printf("size %d, buf %d, jdt %f, dt %f\n", (int)fBuf.size(), j, jdt, dt);
@@ -91,6 +94,7 @@ unsigned TsSyncModule::FindDt(double dt)
 TsSync::TsSync() // ctor
 {
    fSyncOk = false;
+   fTrace = false;
 }
 
 TsSync::~TsSync() // dtor
@@ -159,36 +163,41 @@ void TsSync::Check(unsigned inew)
                max = s;
       }
    }
-   
-   //printf("min %d, max %d\n", min, max);
+
+   if (fTrace)
+      printf("min %d, max %d\n", min, max);
    
    if (min < 3)
       return;
    
    for (unsigned i=0; i<fModules.size(); i++) {
+      if (fModules[i].fBuf.size() < 1)
+         continue;
       if (inew != i && fModules[inew].fSyncedWith < 0) {
          CheckSync(inew, i);
       }
    }
-   
-   for (unsigned j=1; j<max; j++) {
-      printf("buf %2d: ", j);
-      for (unsigned i=0; i<fModules.size(); i++) {
-         if (j<fModules[i].fBuf.size()) {
-            double dt = fModules[i].fBuf[j].time - fModules[i].fBuf[j-1].time;
-            printf(" %f", dt);
-         } else {
-            printf(" -");
+
+   if (1 || fTrace) {
+      for (unsigned j=1; j<max; j++) {
+         printf("buf %2d: ", j);
+         for (unsigned i=0; i<fModules.size(); i++) {
+            if (j<fModules[i].fBuf.size()) {
+               double dt = fModules[i].fBuf[j].time - fModules[i].fBuf[j-1].time;
+               printf(" %f", dt);
+            } else {
+               printf(" -");
+            }
          }
+         printf("\n");
+      }
+   
+      printf("buf %2d: ", 99);
+      for (unsigned i=0; i<fModules.size(); i++) {
+         printf(" %d", fModules[i].fSyncedWith);
       }
       printf("\n");
    }
-   
-   printf("buf %2d: ", 99);
-   for (unsigned i=0; i<fModules.size(); i++) {
-      printf(" %d", fModules[i].fSyncedWith);
-   }
-   printf("\n");
    
    bool ok = true;
    for (unsigned i=0; i<fModules.size(); i++) {
@@ -202,9 +211,13 @@ void TsSync::Check(unsigned inew)
 
 void TsSync::Add(unsigned i, uint32_t ts)
 {
+   if (fTrace) {
+      printf("Add %d, ts 0x%08x\n", i, ts);
+   }
+
    fModules[i].Add(ts);
    
-   if (0) {
+   if (fTrace) {
       printf("module %2d: ", i);
       fModules[i].Print();
       printf("\n");

@@ -272,6 +272,11 @@ public:
          return flow;
       }
 
+      if (e && e->complete && !e->error) {
+         agevb_init();
+         agevb->AddFeamEvent(e);
+      }
+
       if (e) {
          if (1) {
             printf("ZZZ Processing FEAM event: ");

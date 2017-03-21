@@ -51,6 +51,7 @@ class TsSync
 public:
    std::vector<TsSyncModule> fModules;
    bool fSyncOk;
+   bool fTrace;
 
 public:
    TsSync(); // ctor

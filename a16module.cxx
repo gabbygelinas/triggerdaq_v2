@@ -668,7 +668,7 @@ public:
 
       if (1) {
          //printf("event: "); e->Print();
-         printf("a16: ts %14.3f usec, ts_incr %14.3f usec\n", e->eventTime/1e3, (e->eventTime-e->prevEventTime)/1e3);
+         printf("a16: event %4d, ts %14.3f usec, ts_incr %14.3f usec\n", e->eventNo, e->eventTime/1e3, (e->eventTime-e->prevEventTime)/1e3);
          return 0;
       }
 
@@ -971,6 +971,15 @@ struct A16Run: public TARunInterface
          return flow;
 
       Alpha16Event* e = UnpackAlpha16Event(fATX->fEvb, event);
+
+      if (!e) {
+         return flow;
+      }
+
+      if (e && e->complete) {
+         agevb_init();
+         agevb->AddAlpha16Event(e);
+      }
 
       int force_plot = fATX->Event(e);
 
