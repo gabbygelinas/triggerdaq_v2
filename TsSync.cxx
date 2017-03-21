@@ -164,7 +164,7 @@ void TsSync::Check(unsigned inew)
       }
    }
 
-   if (fTrace)
+   if (0 && fTrace)
       printf("min %d, max %d\n", min, max);
    
    if (min < 3)
@@ -199,25 +199,25 @@ void TsSync::Check(unsigned inew)
       printf("\n");
    }
    
-   bool ok = true;
+   int no_sync = 0;
    for (unsigned i=0; i<fModules.size(); i++) {
       if (fModules[i].fSyncedWith < 0) {
          // FIXME: if there is no data from this module, mark sync ok.
-         ok = false;
+         no_sync += 1;
       }
    }
-   fSyncOk = ok;
+   fSyncOk = (no_sync < 2);
 }
 
 void TsSync::Add(unsigned i, uint32_t ts)
 {
-   if (fTrace) {
+   if (0 && fTrace) {
       printf("Add %d, ts 0x%08x\n", i, ts);
    }
 
    fModules[i].Add(ts);
    
-   if (fTrace) {
+   if (0 && fTrace) {
       printf("module %2d: ", i);
       fModules[i].Print();
       printf("\n");

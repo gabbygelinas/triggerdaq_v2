@@ -110,9 +110,9 @@ void AgEVB::Build()
 void AgEVB::AddAlpha16Event(Alpha16Event* e)
 {
    uint32_t ts = e->eventTime*fSync.fModules[0].fFreqHz/1e9;
-   printf("Alpha16Event: t %f, ts 0x%08x", e->eventTime, ts);
-   e->Print();
-   printf("\n");
+   //printf("Alpha16Event: t %f, ts 0x%08x", e->eventTime, ts);
+   //e->Print();
+   //printf("\n");
    fSync.Add(0, ts);
    fBuf0.push_back(e);
 }
@@ -120,8 +120,8 @@ void AgEVB::AddAlpha16Event(Alpha16Event* e)
 void AgEVB::AddFeamEvent(FeamEvent* e)
 {
    uint32_t ts = e->time*fSync.fModules[1].fFreqHz;
-   printf("FeamEvent: t %f, ts 0x%08x", e->time, ts);
-   printf("\n");
+   //printf("FeamEvent: t %f, ts 0x%08x", e->time, ts);
+   //printf("\n");
    fSync.Add(1, ts);
    fBuf1.push_back(e);
 }
@@ -156,7 +156,7 @@ AgEvent* AgEVB::Get()
       if (!c && fEvents.size() < 10)
          return NULL;
       
-      printf("popping in incomplete event! have %d buffered events\n", (int)fEvents.size());
+      printf("AgEVB:: popping in incomplete event! have %d buffered events\n", (int)fEvents.size());
    }
    
    AgEvent* e = fEvents.front();

@@ -272,7 +272,7 @@ public:
          return flow;
       }
 
-      if (e && e->complete && !e->error) {
+      if (e) { // && e->complete && !e->error) {
          agevb_init();
          agevb->AddFeamEvent(e);
       }

@@ -221,7 +221,7 @@ void agevb_init()
 {
    if (!agevb) {
       agevb = new AgEVB(100.0*1e6/100.0, 125.0*1e6/100.0);
-      agevb->fSync.fTrace = true;
+      //agevb->fSync.fTrace = true;
    }
 }
 
