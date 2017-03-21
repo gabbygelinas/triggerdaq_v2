@@ -60,7 +60,7 @@ void AgEVB::CheckEvent(AgEvent *e)
    //e->Print();
 }
    
-void AgEVB::AddAlpha16(Alpha16Event *m)
+void AgEVB::BuildAlpha16(Alpha16Event *m)
 {
    AgEvent* e = FindEvent(m->eventTime);
    
@@ -76,7 +76,7 @@ void AgEVB::AddAlpha16(Alpha16Event *m)
    CheckEvent(e);
 }
 
-void AgEVB::AddFeam(FeamEvent *m)
+void AgEVB::BuildFeam(FeamEvent *m)
 {
    AgEvent* e = FindEvent(m->time);
    
@@ -94,60 +94,31 @@ void AgEVB::AddFeam(FeamEvent *m)
 
 void AgEVB::Build()
 {
-   while (fBuf.size() > 0) {
-      FeamModuleData* m = fBuf.front();
-      fBuf.pop_front();
-      AddFeam(m->module, m);
+   while (fBuf0.size() > 0) {
+      Alpha16Event* m = fBuf0.front();
+      fBuf0.pop_front();
+      BuildAlpha16(m);
+   }
+
+   while (fBuf1.size() > 0) {
+      FeamEvent* m = fBuf1.front();
+      fBuf1.pop_front();
+      BuildFeam(m);
    }
 }
 
-void FeamEVB::AddPacket(int ifeam, const FeamPacket* p, const char* ptr, int size)
+void AgEVB::AddAlpha16Event(Alpha16Event* e)
 {
-   if (p->n == 0) {
-      // 1st packet
-      
-      if (fData[ifeam]) {
-         //printf("Complete event: FEAM %d: ", ifeam);
-         //data[ifeam]->Print();
-         //printf("\n");
-         
-         FeamModuleData* m = fData[ifeam];
-         fData[ifeam] = NULL;
-         
-         fSync.Add(ifeam, m->ts_trig);
-         
-         m->fTime = fSync.fModules[ifeam].fLastTimeSec;
-         m->fTimeIncr = fSync.fModules[ifeam].fLastTimeSec - fSync.fModules[ifeam].fPrevTimeSec;
-         
-         m->Finalize();
-         
-         // xxx
-         
-         fBuf.push_back(m);
-      }
-      
-      //printf("Start ew event: FEAM %d: ", ifeam);
-      //p->Print();
-      //printf("\n");
-      
-      fData[ifeam] = new FeamModuleData(p, ifeam);
-   }
-   
-   FeamModuleData* m = fData[ifeam];
-   
-   if (m == NULL) {
-      // did not see the first event yet, cannot unpack
-      printf("dropped packet!\n");
-      delete p;
-      return;
-   }
-   
-   m->AddData(p, ifeam, ptr, size);
-   
-   //a->Print();
-   //printf("\n");
-   
-   delete p;
+   uint32_t ts = e->eventTime/fSync.fModules[0].fFreqHz*10.0;
+   fSync.Add(0, ts);
+   fBuf0.push_back(e);
+}
+
+void AgEVB::AddFeamEvent(FeamEvent* e)
+{
+   uint32_t ts = e->time/fSync.fModules[1].fFreqHz*10.0;
+   fSync.Add(1, ts);
+   fBuf1.push_back(e);
 }
 
 void AgEVB::Print() const
@@ -157,9 +128,6 @@ void AgEVB::Print() const
 
 AgEvent* AgEVB::Get()
 {
-   if (fBuf.size() < 1)
-      return NULL;
-   
    if (fSync.fSyncOk)
       Build();
    

@@ -19,16 +19,18 @@ class AgEVB
 public:
    TsSync fSync;
    int fCounter;
-   std::deque<FeamModuleData*> fBuf;
+   std::deque<Alpha16Event*> fBuf0;
+   std::deque<FeamEvent*> fBuf1;
    std::deque<AgEvent*> fEvents;
 
    AgEVB(double a16_ts_freq, double feam_ts_freq); // ctor
+   void AddAlpha16Event(Alpha16Event *e);
+   void AddFeamEvent(FeamEvent *e);
    AgEvent* FindEvent(double t);
    void CheckEvent(AgEvent *e);
-   void AddAlpha16(Alpha16Event *e);
-   void AddFeam(FeamEvent *e);
+   void BuildAlpha16(Alpha16Event *e);
+   void BuildFeam(FeamEvent *e);
    void Build();
-   void AddPacket(int ifeam, const FeamPacket* p, const char* ptr, int size);
    void Print() const;
    AgEvent* Get();
 };
