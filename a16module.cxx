@@ -16,8 +16,8 @@
 
 #include "Alpha16.h"
 #include "Unpack.h"
+#include "AgFlow.h"
 
-//#include "anaCommon.cxx"
 // ALPHA-g common analysis code
 
 #define SHOW_ALPHA16 8
@@ -967,6 +967,18 @@ struct A16Run: public TARunInterface
       if (fTrace)
          printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
 
+      AgEventFlow *ef = flow->Find<AgEventFlow>();
+
+      if (!ef || !ef->fEvent)
+         return flow;
+
+      Alpha16Event* e = ef->fEvent->a16;
+
+      if (!e) {
+         return flow;
+      }
+
+#if 0
       if (event->event_id != 1)
          return flow;
 
@@ -980,6 +992,7 @@ struct A16Run: public TARunInterface
          agevb_init();
          agevb->AddAlpha16Event(e);
       }
+#endif
 
       int force_plot = fATX->Event(e);
 
@@ -1006,7 +1019,9 @@ struct A16Run: public TARunInterface
       fCounter++;
       fModule->fTotalEventCounter++;
 
+#if 0
       delete e;
+#endif
 
       return flow;
    }
@@ -1048,7 +1063,7 @@ TARunInterface* A16Module::NewRun(TARunInfo* runinfo)
    return new A16Run(runinfo, this);
 }
 
-//static TARegisterModule tarm(new A16Module);
+static TARegisterModule tarm(new A16Module);
 
 /* emacs
  * Local Variables:

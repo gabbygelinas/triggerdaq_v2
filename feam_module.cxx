@@ -19,13 +19,10 @@
 #include "TH2D.h"
 #include "TProfile.h"
 
-//#include "Unpack.h"
-
 #include "Waveform.h"
-//#include "TsSync.h"
-//#include "Feam.h"
 #include "FeamEVB.h"
 #include "Unpack.h"
+#include "AgFlow.h"
 
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
 
@@ -251,15 +248,28 @@ public:
       if (!fModule->fDoPads)
          return flow;
       
-      if (event->event_id != 1 && event->event_id != 2)
+      AgEventFlow *ef = flow->Find<AgEventFlow>();
+
+      if (!ef || !ef->fEvent)
          return flow;
 
+      FeamEvent* e = ef->fEvent->feam;
+
+      if (!e) {
+         return flow;
+      }
+
       int force_plot = false;
+
+#if 0
+      if (event->event_id != 1 && event->event_id != 2)
+         return flow;
 
       if (!xevb)
          xevb = new FeamEVB(MAX_FEAM, 1.0/TSNS*1e9);
 
       FeamEvent *e = UnpackFeamEvent(xevb, event);
+#endif
 
 #if 0
       int adc[80][5120];
@@ -272,10 +282,12 @@ public:
          return flow;
       }
 
+#if 0
       if (e) { // && e->complete && !e->error) {
          agevb_init();
          agevb->AddFeamEvent(e);
       }
+#endif
 
       if (e) {
          if (1) {
@@ -296,12 +308,12 @@ public:
          }
 
          if (e->error) {
-            delete e;
+            //delete e;
             return flow;
          }
 
          if (1) {
-            delete e;
+            //delete e;
             return flow;
          }
 
@@ -317,7 +329,7 @@ public:
          //   }
          //}
 
-         delete e;
+         //delete e;
 
       } else if (event->event_id == 2) {
 
@@ -689,7 +701,7 @@ TARunInterface* FeamModule::NewRun(TARunInfo* runinfo)
    return new FeamRun(runinfo, this);
 }
 
-//static TARegisterModule tarm(new FeamModule);
+static TARegisterModule tarm(new FeamModule);
 
 /* emacs
  * Local Variables:

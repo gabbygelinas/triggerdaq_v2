@@ -9,25 +9,10 @@
 #include "manalyzer.h"
 #include "midasio.h"
 
-#include <assert.h> // assert()
-
-#include <vector>
-#include <deque>
-
-#include "TCanvas.h"
-#include "TH1D.h"
-#include "TH2D.h"
-#include "TProfile.h"
-
 #include "Unpack.h"
-
-//#include "Waveform.h"
-//#include "TsSync.h"
-//#include "Feam.h"
-
 #include "FeamEVB.h"
 #include "AgEVB.h"
-#include "Unpack.h"
+#include "AgFlow.h"
 
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
 
@@ -177,7 +162,7 @@ public:
                printf("incr %f %f sec, diff %f ns, count %d\n", ta, tf, (tf-ta)*1e9, e->counter);
             }
 
-            DELETE(e);
+            flow = new AgEventFlow(flow, e);
          }
       }
 
