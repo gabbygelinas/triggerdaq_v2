@@ -44,6 +44,8 @@ public:
    int fSize;
    char* fPtr;
 
+   uint32_t fTs;
+   int      fTsEpoch;
    double   fTime;
    double   fTimeIncr;
 
@@ -71,10 +73,11 @@ struct FeamAdcData
 
 struct FeamEvent
 {
-   bool   complete;
-   bool   error;
-   int    counter;
-   double time;
+   bool   complete; // event is complete
+   bool   error;    // event has an error
+   int    counter;  // event sequential counter
+   double time;     // event time, sec
+   double timeIncr; // time from previous event, sec
 
    std::vector<FeamModuleData*> modules;
    std::vector<FeamAdcData*> adcs;

@@ -662,7 +662,7 @@ public:
 
 void FeamModule::Init(const std::vector<std::string> &args)
 {
-   printf("Init!\n");
+   printf("FeamModule::Init!\n");
 
    fDoPads = true;
    fPlotPad = -1;
@@ -678,7 +678,7 @@ void FeamModule::Init(const std::vector<std::string> &args)
    
 void FeamModule::Finish()
 {
-   printf("Finish!\n");
+   printf("FeamModule::Finish!\n");
 
    DELETE(fPlotPadCanvas);
 }
@@ -689,7 +689,7 @@ TARunInterface* FeamModule::NewRun(TARunInfo* runinfo)
    return new FeamRun(runinfo, this);
 }
 
-static TARegisterModule tarm(new FeamModule);
+//static TARegisterModule tarm(new FeamModule);
 
 /* emacs
  * Local Variables:

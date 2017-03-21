@@ -179,6 +179,11 @@ FeamModuleData::FeamModuleData(const FeamPacket* p, int xmodule)
    next_n = 0;
    
    error = false;
+
+   fTs = 0;
+   fTsEpoch = 0;
+   fTime = 0;
+   fTimeIncr = 0;
 }
 
 FeamModuleData::~FeamModuleData() // dtor
@@ -196,6 +201,7 @@ FeamEvent::FeamEvent() // ctor
    error = false;
    counter = 0;
    time = 0;
+   timeIncr = 0;
 }
 
 FeamEvent::~FeamEvent() // dtor
@@ -215,7 +221,7 @@ FeamEvent::~FeamEvent() // dtor
 
 void FeamEvent::Print() const
 {
-   printf("FeamEvent %d, time %f, complete %d, error %d, modules: ", counter, time, complete, error);
+   printf("FeamEvent %d, time %f, incr %f, complete %d, error %d, modules: ", counter, time, timeIncr, complete, error);
    for (unsigned i=0; i<modules.size(); i++) {
       if (modules[i] == NULL) {
             printf(" null");

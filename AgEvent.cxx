@@ -32,6 +32,21 @@ AgEvent::~AgEvent() // dtor
    }
 }
 
+void AgEvent::Print() const
+{
+   printf("AgEvent: ");
+   if (a16)
+      a16->Print();
+   else
+      printf("A16Event: NULL");
+   printf(", ");
+   if (feam)
+      feam->Print();
+   else
+      printf("FeamEvent: NULL");
+   printf("\n");
+}
+
 /* emacs
  * Local Variables:
  * tab-width: 8

@@ -75,6 +75,10 @@ void FeamEVB::CheckFeam(FeamEvent *e)
    
 void FeamEVB::AddFeam(int ifeam, FeamModuleData *m)
 {
+   m->fTime = fSync.fModules[ifeam].GetTime(m->fTs, m->fTsEpoch);
+
+   //printf("FeamEVB::AddFeam: module %d, ts 0x%08x, epoch %d, time %f\n", ifeam, m->fTs, m->fTsEpoch, m->fTime);
+
    FeamEvent* e = FindEvent(m->fTime);
    
    if (e->modules[ifeam]) {
@@ -83,6 +87,12 @@ void FeamEVB::AddFeam(int ifeam, FeamModuleData *m)
       delete m;
       return;
    }
+
+   if (e->timeIncr == 0)
+      e->timeIncr = m->fTimeIncr;
+   // use smaller time, in case of missing packets or events
+   if (m->fTimeIncr < e->timeIncr)
+      e->timeIncr = m->fTimeIncr;
    
    e->modules[ifeam] = m;
    e->adcs[ifeam] = new FeamAdcData;
@@ -116,7 +126,9 @@ void FeamEVB::AddPacket(int ifeam, const FeamPacket* p, const char* ptr, int siz
          
          fSync.Add(ifeam, m->ts_trig);
          
-         m->fTime = fSync.fModules[ifeam].fLastTimeSec;
+         m->fTs = fSync.fModules[ifeam].fLastTs;
+         m->fTsEpoch = fSync.fModules[ifeam].fEpoch;
+         m->fTime = 0; // fSync.fModules[ifeam].fLastTimeSec;
          m->fTimeIncr = fSync.fModules[ifeam].fLastTimeSec - fSync.fModules[ifeam].fPrevTimeSec;
          
          m->Finalize();
@@ -183,7 +195,7 @@ FeamEvent* FeamEVB::Get()
       if (!c && fEvents.size() < 10)
          return NULL;
       
-      printf("popping in incomplete event! have %d buffered events\n", (int)fEvents.size());
+      printf("FeamEVB: popping in incomplete event! have %d buffered events\n", (int)fEvents.size());
    }
    
    FeamEvent* e = fEvents.front();

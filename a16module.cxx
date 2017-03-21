@@ -1048,7 +1048,7 @@ TARunInterface* A16Module::NewRun(TARunInfo* runinfo)
    return new A16Run(runinfo, this);
 }
 
-TARegisterModule tarm(new A16Module);
+//static TARegisterModule tarm(new A16Module);
 
 /* emacs
  * Local Variables:
