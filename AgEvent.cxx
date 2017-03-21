@@ -15,6 +15,7 @@ AgEvent::AgEvent() // ctor
    error = false;
    counter = 0;
    time = 0;
+   timeIncr = 0;
    a16 = NULL;
    feam = NULL;
 };
@@ -34,12 +35,13 @@ AgEvent::~AgEvent() // dtor
 
 void AgEvent::Print() const
 {
-   printf("AgEvent: ");
+   printf("AgEvent: complete %d, error %d, counter %d, time %f, incr %f\n", complete, error, counter, time, timeIncr);
+   printf("  ");
    if (a16)
       a16->Print();
    else
-      printf("A16Event: NULL");
-   printf(", ");
+      printf("A16Event:  NULL\n");
+   printf("  ");
    if (feam)
       feam->Print();
    else

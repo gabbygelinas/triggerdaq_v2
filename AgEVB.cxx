@@ -60,50 +60,55 @@ void AgEVB::CheckEvent(AgEvent *e)
    //e->Print();
 }
    
-void AgEVB::BuildAlpha16(Alpha16Event *m)
+void AgEVB::Build(int index, AgEvbBuf *m)
 {
-   AgEvent* e = FindEvent(m->eventTime);
-   
-   if (e->a16) {
-      // FIXME: duplicate data
-      printf("duplicate data!\n");
-      delete m;
-      return;
-   }
-   
-   e->a16 = m;
+   m->time = fSync.fModules[index].GetTime(m->ts, m->epoch);
 
-   CheckEvent(e);
-}
-
-void AgEVB::BuildFeam(FeamEvent *m)
-{
    AgEvent* e = FindEvent(m->time);
-   
-   if (e->feam) {
-      // FIXME: duplicate data
-      printf("duplicate data!\n");
-      delete m;
-      return;
+
+   if (m->a16) {
+      if (e->a16) {
+         // FIXME: duplicate data
+         printf("AgEVB: A16 duplicate data!\n");
+         // FIXME memory leak
+         delete m;
+         return;
+      }
+
+      e->a16 = m->a16;
+      m->a16 = NULL;
    }
-   
-   e->feam = m;
+
+   if (m->feam) {
+      if (e->feam) {
+         // FIXME: duplicate data
+         printf("AgEVB: FEAM duplicate data!\n");
+         // FIXME memory leak
+         delete m;
+         return;
+      }
+
+      e->feam = m->feam;
+      m->feam = NULL;
+   }
+
+   delete m;
 
    CheckEvent(e);
 }
 
 void AgEVB::Build()
 {
-   while (fBuf0.size() > 0) {
-      Alpha16Event* m = fBuf0.front();
-      fBuf0.pop_front();
-      BuildAlpha16(m);
+   while (fBuf[0].size() > 0) {
+      AgEvbBuf* m = fBuf[0].front();
+      fBuf[0].pop_front();
+      Build(0, m);
    }
 
-   while (fBuf1.size() > 0) {
-      FeamEvent* m = fBuf1.front();
-      fBuf1.pop_front();
-      BuildFeam(m);
+   while (fBuf[1].size() > 0) {
+      AgEvbBuf* m = fBuf[1].front();
+      fBuf[1].pop_front();
+      Build(1, m);
    }
 }
 
@@ -114,7 +119,14 @@ void AgEVB::AddAlpha16Event(Alpha16Event* e)
    //e->Print();
    //printf("\n");
    fSync.Add(0, ts);
-   fBuf0.push_back(e);
+   AgEvbBuf* m = new AgEvbBuf;
+   m->a16 = e;
+   m->feam = NULL;
+   m->ts = fSync.fModules[0].fLastTs;
+   m->epoch = fSync.fModules[0].fEpoch;
+   m->time = 0;
+   m->timeIncr = fSync.fModules[0].fLastTimeSec - fSync.fModules[0].fPrevTimeSec;
+   fBuf[0].push_back(m);
 }
 
 void AgEVB::AddFeamEvent(FeamEvent* e)
@@ -123,7 +135,14 @@ void AgEVB::AddFeamEvent(FeamEvent* e)
    //printf("FeamEvent: t %f, ts 0x%08x", e->time, ts);
    //printf("\n");
    fSync.Add(1, ts);
-   fBuf1.push_back(e);
+   AgEvbBuf* m = new AgEvbBuf;
+   m->a16 = NULL;
+   m->feam = e;
+   m->ts = fSync.fModules[1].fLastTs;
+   m->epoch = fSync.fModules[1].fEpoch;
+   m->time = 0;
+   m->timeIncr = fSync.fModules[1].fLastTimeSec - fSync.fModules[1].fPrevTimeSec;
+   fBuf[1].push_back(m);
 }
 
 void AgEVB::Print() const

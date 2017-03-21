@@ -17,6 +17,7 @@ struct AgEvent
    bool   error;
    int    counter;
    double time;
+   double timeIncr;
 
    Alpha16Event* a16;
    FeamEvent*    feam;

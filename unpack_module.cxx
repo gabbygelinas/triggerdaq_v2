@@ -115,6 +115,11 @@ public:
          Alpha16Event* e = UnpackAlpha16Event(fA16Evb, event);
 
          if (e) {
+            if (1) {
+               printf("Unpacked Alpha16 event: ");
+               e->Print();
+               printf("\n");
+            }
 
             if (e->complete) {
                if (fAgEvb) {
@@ -164,6 +169,13 @@ public:
             e->Print();
             printf("\n");
 
+            if (e->complete) {
+               double ta1 = e->a16->eventTime;
+               double ta2 = e->a16->prevEventTime;
+               double ta = (ta1-ta2)/1e9;
+               double tf = e->feam->timeIncr;
+               printf("incr %f %f sec, diff %f ns, count %d\n", ta, tf, (tf-ta)*1e9, e->counter);
+            }
 
             DELETE(e);
          }

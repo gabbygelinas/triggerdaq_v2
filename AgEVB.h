@@ -14,13 +14,25 @@
 #include <vector>
 #include <deque>
 
+struct AgEvbBuf
+{
+   Alpha16Event* a16;
+   FeamEvent* feam;
+
+   uint32_t ts;
+   int epoch;
+   double time;
+   double timeIncr;
+};
+
 class AgEVB
 {
 public:
    TsSync fSync;
    int fCounter;
-   std::deque<Alpha16Event*> fBuf0;
-   std::deque<FeamEvent*> fBuf1;
+   std::deque<AgEvbBuf*> fBuf[2];
+   //std::deque<Alpha16Event*> fBuf0;
+   //std::deque<FeamEvent*> fBuf1;
    std::deque<AgEvent*> fEvents;
 
    AgEVB(double a16_ts_freq, double feam_ts_freq); // ctor
@@ -28,8 +40,7 @@ public:
    void AddFeamEvent(FeamEvent *e);
    AgEvent* FindEvent(double t);
    void CheckEvent(AgEvent *e);
-   void BuildAlpha16(Alpha16Event *e);
-   void BuildFeam(FeamEvent *e);
+   void Build(int index, AgEvbBuf *m);
    void Build();
    void Print() const;
    AgEvent* Get();
