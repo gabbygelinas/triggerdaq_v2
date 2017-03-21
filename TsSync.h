@@ -33,6 +33,8 @@ public:
    double   fLastTimeSec;
    double   fEps;
    int      fSyncedWith;
+   bool     fOverflow;
+   unsigned fBufMax;
 
    std::vector<TsSyncEntry> fBuf;
 
@@ -51,15 +53,17 @@ class TsSync
 public:
    std::vector<TsSyncModule> fModules;
    bool fSyncOk;
+   bool fOverflow;
    bool fTrace;
 
 public:
    TsSync(); // ctor
    ~TsSync(); // dtor
-   void Configure(unsigned i, double freq_hz);
+   void Configure(unsigned i, double freq_hz, int buf_max);
    void CheckSync(unsigned ii, unsigned i);
    void Check(unsigned inew);
    void Add(unsigned i, uint32_t ts);
+   void Dump() const;
 };
 
 #endif

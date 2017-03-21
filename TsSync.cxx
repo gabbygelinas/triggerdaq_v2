@@ -25,8 +25,10 @@ TsSyncModule::TsSyncModule() // ctor
    fOffsetSec   = 0;
    fPrevTimeSec = 0;
    fLastTimeSec = 0;
-   fEps = 200*1e-9; // 200ns
+   fEps = 2000*1e-9; // in ns
    fSyncedWith  = -1;
+   fOverflow = false;
+   fBufMax = 100;
 }
 
 void TsSyncModule::Print() const
@@ -56,9 +58,12 @@ void TsSyncModule::Add(uint32_t ts)
    // must do all computations in double precision to avoid trouble with 32-bit timestamp wraparound.
    fLastTimeSec = GetTime(fLastTs, fEpoch); // fLastTs/fFreqHz + fOffsetSec + fEpoch*2.0*0x80000000/fFreqHz;
    
-   if (fBuf.size() < 100) {
-      fBuf.push_back(TsSyncEntry(fLastTs, fEpoch, fLastTimeSec));
+   if (fBuf.size() > fBufMax) {
+      fOverflow = true;
+      return;
    }
+
+   fBuf.push_back(TsSyncEntry(fLastTs, fEpoch, fLastTimeSec));
 }
 
 void TsSyncModule::Retime()
@@ -95,13 +100,14 @@ TsSync::TsSync() // ctor
 {
    fSyncOk = false;
    fTrace = false;
+   fOverflow = false;
 }
 
 TsSync::~TsSync() // dtor
 {
 }
 
-void TsSync::Configure(unsigned i, double freq_hz)
+void TsSync::Configure(unsigned i, double freq_hz, int buf_max)
 {
    // grow the array if needed
    TsSyncModule m;
@@ -109,6 +115,7 @@ void TsSync::Configure(unsigned i, double freq_hz)
       fModules.push_back(m);
    
    fModules[i].fFreqHz = freq_hz;
+   fModules[i].fBufMax = buf_max;
 }
 
 void TsSync::CheckSync(unsigned ii, unsigned i)
@@ -135,7 +142,7 @@ void TsSync::CheckSync(unsigned ii, unsigned i)
             return;
       }
    }
-   
+
    fModules[ii].fSyncedWith = i;
    
    // check for sync loop
@@ -145,6 +152,10 @@ void TsSync::CheckSync(unsigned ii, unsigned i)
    double off = fModules[i].fBuf[j].time - fModules[ii].fBuf[jj].time;
    fModules[ii].fOffsetSec = off;
    fModules[ii].Retime();
+
+   printf("TsSync: module %d buf %d synced with module %d buf %d, offset %f\n", ii, jj, i, j, off);
+
+   Dump();
 }
 
 void TsSync::Check(unsigned inew)
@@ -174,29 +185,14 @@ void TsSync::Check(unsigned inew)
       if (fModules[i].fBuf.size() < 1)
          continue;
       if (inew != i && fModules[inew].fSyncedWith < 0) {
-         CheckSync(inew, i);
+         if (i==1) { // kludge: only sync with module 1
+            CheckSync(inew, i);
+         }
       }
    }
 
-   if (1 || fTrace) {
-      for (unsigned j=1; j<max; j++) {
-         printf("buf %2d: ", j);
-         for (unsigned i=0; i<fModules.size(); i++) {
-            if (j<fModules[i].fBuf.size()) {
-               double dt = fModules[i].fBuf[j].time - fModules[i].fBuf[j-1].time;
-               printf(" %f", dt);
-            } else {
-               printf(" -");
-            }
-         }
-         printf("\n");
-      }
-   
-      printf("buf %2d: ", 99);
-      for (unsigned i=0; i<fModules.size(); i++) {
-         printf(" %d", fModules[i].fSyncedWith);
-      }
-      printf("\n");
+   if (fTrace) {
+      Dump();
    }
    
    int no_sync = 0;
@@ -211,11 +207,20 @@ void TsSync::Check(unsigned inew)
 
 void TsSync::Add(unsigned i, uint32_t ts)
 {
+   if (fOverflow)
+      return;
+
    if (0 && fTrace) {
       printf("Add %d, ts 0x%08x\n", i, ts);
    }
 
    fModules[i].Add(ts);
+
+   if (!fSyncOk && fModules[i].fOverflow) {
+      fOverflow = true;
+      printf("TsSync: module %d buffer overflow\n", i);
+      Dump();
+   }
    
    if (0 && fTrace) {
       printf("module %2d: ", i);
@@ -226,6 +231,43 @@ void TsSync::Add(unsigned i, uint32_t ts)
    if (!fSyncOk) {
       Check(i);
    }
+}
+
+void TsSync::Dump() const
+{
+   unsigned min = 0;
+   unsigned max = 0;
+   
+   for (unsigned i=0; i<fModules.size(); i++) {
+      unsigned s = fModules[i].fBuf.size();
+      if (s > 0) {
+         if (min == 0)
+            min = s;
+         if (s < min)
+            min = s;
+         if (s > max)
+               max = s;
+      }
+   }
+
+   for (unsigned j=1; j<max; j++) {
+      printf("buf %2d: ", j);
+      for (unsigned i=0; i<fModules.size(); i++) {
+         if (j<fModules[i].fBuf.size()) {
+            double dt = fModules[i].fBuf[j].time - fModules[i].fBuf[j-1].time;
+            printf(" %f", dt);
+         } else {
+            printf(" -");
+         }
+      }
+      printf("\n");
+      }
+   
+   printf("buf %2d: ", 99);
+   for (unsigned i=0; i<fModules.size(); i++) {
+      printf(" %d", fModules[i].fSyncedWith);
+   }
+   printf("\n");
 }
 
 /* emacs

@@ -14,7 +14,7 @@ FeamEVB::FeamEVB(int num_modules, double ts_freq)
    fCounter = 0;
    for (unsigned i=0; i<fNumModules; i++) {
       fData.push_back(NULL);
-      fSync.Configure(i, ts_freq); // 1.0/TSNS*1e9);
+      fSync.Configure(i, ts_freq, 50); // 1.0/TSNS*1e9);
    }
 }
 
@@ -195,7 +195,7 @@ FeamEvent* FeamEVB::Get()
       if (!c && fEvents.size() < 10)
          return NULL;
       
-      printf("FeamEVB: popping in incomplete event! have %d buffered events\n", (int)fEvents.size());
+      printf("FeamEVB: popping in incomplete event! have %d buffered events, have complete %d\n", (int)fEvents.size(), c);
    }
    
    FeamEvent* e = fEvents.front();

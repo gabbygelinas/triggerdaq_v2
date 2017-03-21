@@ -13,15 +13,18 @@
 AgEVB::AgEVB(double a16_ts_freq, double feam_ts_freq)
 {
    fCounter = 0;
-   fSync.Configure(0, a16_ts_freq);
-   fSync.Configure(1, feam_ts_freq);
+   fSync.Configure(0, a16_ts_freq, 100);
+   fSync.Configure(1, feam_ts_freq, 100);
 }
 
 AgEvent* AgEVB::FindEvent(double t)
 {
    for (unsigned i=0; i<fEvents.size(); i++) {
-      if (fabs(fEvents[i]->time - t) < 200.0/1e9) {
+      //printf("find event for time %f: event %d, %f, diff %f\n", t, i, fEvents[i]->time, fEvents[i]->time - t);
+
+      if (fabs(fEvents[i]->time - t) < 5000.0/1e9) {
          //printf("Found event for time %f\n", t);
+         printf("find event for time %f: event %d, %f, diff %f\n", t, i, fEvents[i]->time, fEvents[i]->time - t);
          return fEvents[i];
       }
    }
@@ -65,6 +68,12 @@ void AgEVB::Build(int index, AgEvbBuf *m)
    m->time = fSync.fModules[index].GetTime(m->ts, m->epoch);
 
    AgEvent* e = FindEvent(m->time);
+
+   if (1) { // adjust offset for clock drift
+      double off = e->time - m->time;
+      printf("offset: %f %f, diff %f\n", e->time, m->time, off);
+      fSync.fModules[index].fOffsetSec += off/2.0;
+   }
 
    if (m->a16) {
       if (e->a16) {
@@ -172,10 +181,10 @@ AgEvent* AgEVB::Get()
       }
       // if there are too many buffered events, all incomplete,
       // something is wrong, push them out anyway
-      if (!c && fEvents.size() < 10)
+      if (!c && fEvents.size() < 200)
          return NULL;
       
-      printf("AgEVB:: popping in incomplete event! have %d buffered events\n", (int)fEvents.size());
+      printf("AgEVB:: popping in incomplete event! have %d buffered events, have complete %d\n", (int)fEvents.size(), c);
    }
    
    AgEvent* e = fEvents.front();
