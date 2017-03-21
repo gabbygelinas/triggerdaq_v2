@@ -1,5 +1,11 @@
+//
+// Unpack.cxx
+// K.Olchanski
+//
+
 
 #include <stdio.h>
+#include <assert.h> // assert()
 
 #include "Unpack.h"
 
@@ -170,6 +176,44 @@ Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, TMEvent* me)
 
    return e;
 };
+
+
+FeamEvent* UnpackFeamEvent(FeamEVB* evb, TMEvent* event)
+{
+   //printf("event id %d\n", event->event_id);
+   
+   if (event->event_id != 1)
+      return NULL;
+      
+   const char* banks[] = { "BB01", "BB02", "BB03", "BB04", "BB05", "BB06", "BB07", "BB08", NULL };
+   char *data = NULL;
+   
+   for (int i=0; banks[i]; i++) {
+      TMBank* b = event->FindBank(banks[i]);
+      if (b) {
+         data = event->GetBankData(b);
+         if (data) {
+            //printf("Have bank %s\n", banks[i]);
+            //HandleFeam(i, data, b->data_size);
+            
+            if (b->data_size < 26) {
+               printf("bad FEAM %d packet length %d\n", i, b->data_size);
+               continue;
+            }
+            
+            FeamPacket* p = new FeamPacket();
+            
+            p->Unpack(data, b->data_size);
+               
+            assert(!p->error);
+            
+            evb->AddPacket(i, p, data + p->off, p->buf_len);
+         }
+      }
+   }
+   
+   return evb->Get();
+}
 
 /* emacs
  * Local Variables:

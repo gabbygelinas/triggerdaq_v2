@@ -22,9 +22,10 @@
 //#include "Unpack.h"
 
 #include "Waveform.h"
-#include "TsSync.h"
-#include "Feam.h"
+//#include "TsSync.h"
+//#include "Feam.h"
 #include "FeamEVB.h"
+#include "Unpack.h"
 
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
 
@@ -255,7 +256,10 @@ public:
 
       int force_plot = false;
 
-      FeamEvent *e = NULL;
+      if (!xevb)
+         xevb = new FeamEVB(MAX_FEAM, 1.0/TSNS*1e9);
+
+      FeamEvent *e = UnpackFeamEvent(xevb, event);
 
 #if 0
       int adc[80][5120];
@@ -264,53 +268,11 @@ public:
       const int xchan = 79;
 #endif
 
-      //printf("event id %d\n", event->event_id);
+      if (!e) {
+         return flow;
+      }
 
-      if (event->event_id == 1) {
-         //*flags |= TAFlag_SKIP; // enable this to skip GRIF16 events
-
-         const char* banks[] = { "BB01", "BB02", "BB03", "BB04", "BB05", "BB06", "BB07", "BB08", NULL };
-         char *data = NULL;
-         
-         for (int i=0; banks[i]; i++) {
-            TMBank* b = event->FindBank(banks[i]);
-            if (b) {
-               data = event->GetBankData(b);
-               if (data) {
-                  //printf("Have bank %s\n", banks[i]);
-                  //HandleFeam(i, data, b->data_size);
-
-                  if (b->data_size < 26) {
-                     printf("bad FEAM %d packet length %d\n", i, b->data_size);
-                     continue;
-                  }
-                  
-                  FeamPacket* p = new FeamPacket();
-                  
-                  p->Unpack(data, b->data_size);
-                  
-                  assert(!p->error);
-                  
-                  if (!xevb)
-                     xevb = new FeamEVB(MAX_FEAM, 1.0/TSNS*1e9);
-                  
-                  xevb->AddPacket(i, p, data + p->off, p->buf_len);
-               }
-            }
-         }
-
-         if (!xevb) {
-            return flow;
-         }
-
-         //xevb->Print();
-
-         FeamEvent *e = xevb->Get();
-
-         if (!e) {
-            return flow;
-         }
-
+      if (e) {
          if (1) {
             printf("ZZZ Processing FEAM event: ");
             e->Print();
