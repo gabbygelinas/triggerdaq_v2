@@ -88,7 +88,7 @@ struct PlotHistograms
       fHbaseline->Draw();
 
       fCanvas->cd(i++);
-      fHbaselineRms = new TH1D("baseline_rms", "baseline_rms", 100, 0, 100);
+      fHbaselineRms = new TH1D("baseline_rms", "baseline_rms", 100, 0, 200);
       fHbaselineRms->Draw();
 
       fCanvas->cd(i++);
@@ -540,7 +540,7 @@ public:
 
    PlotA16* fPlotA16[SHOW_ALPHA16];
 
-   Alpha16Event* fLastEvent;
+   //Alpha16Event* fLastEvent;
 
    PlotHistograms* fH;
    PlotHistogramsPads* fP;
@@ -591,7 +591,7 @@ public:
       for (int i=0; i<SHOW_ALPHA16; i++)
          fPlotA16[i] = NULL;
 
-      fLastEvent = NULL;
+      //fLastEvent = NULL;
 
       fCountEarlyBad = 0;
       fCountGood = 0;
@@ -612,10 +612,10 @@ public:
          }
       }
 
-      if (fLastEvent) {
-         delete fLastEvent;
-         fLastEvent = NULL;
-      }
+      //if (fLastEvent) {
+      //   delete fLastEvent;
+      //   fLastEvent = NULL;
+      //}
 
       if (fH) {
          delete fH;
@@ -652,7 +652,7 @@ public:
       hfftsum1->Scale(1./double(hbase1->GetEntries()*sqrt(701.)));
    }
 
-   int Event(Alpha16Event* e)
+   int Event(Alpha16Event* e, std::vector<AgAwHit>* hits)
    {
       //printf("new event: "); e->Print();
 
@@ -666,7 +666,7 @@ public:
 
       fCountGood++;
 
-      if (1) {
+      if (0) {
          //printf("event: "); e->Print();
          printf("a16: event %4d, ts %14.3f usec, ts_incr %14.3f usec\n", e->eventNo, e->eventTime/1e3, (e->eventTime-e->prevEventTime)/1e3);
          return 0;
@@ -674,12 +674,12 @@ public:
 
       printf("event: "); e->Print();
 
-      if (fLastEvent) {
-         delete fLastEvent;
-         fLastEvent = NULL;
-      }
-
-      fLastEvent = e;
+      //if (fLastEvent) {
+      //   delete fLastEvent;
+      //   fLastEvent = NULL;
+      //}
+      //
+      //fLastEvent = e;
 
       bool force_plot = false;
 
@@ -791,6 +791,12 @@ public:
                   nhits++;
                   //printf("samples %d %d, ", e->waveform[i].size(), w->nsamples);
                   printf("chan %4d: baseline %8.1f, rms %4.1f, range %8.1f %6.1f, pulse %6.1f, le %4d\n", i, b, brms, wmin, wmax, ph, le);
+
+                  AgAwHit h;
+                  h.chan = i;
+                  h.time = le;
+                  h.amp = ph;
+                  hits->push_back(h);
                }
             }
 
@@ -831,19 +837,16 @@ public:
       printf("plotting: done, %d sec!\n", elapsed);
    }
 
-   void PlotA16Canvas()
+   void PlotA16Canvas(Alpha16Event* e)
    {
-      if (!fLastEvent)
-         return;
-
       time_t tstart = time(NULL);
 
-      printf("plotting:   "); fLastEvent->Print();
+      printf("plotting:   "); e->Print();
 
       for (int i=0; i<SHOW_ALPHA16; i++) {
          if (fPlotA16[i]) {
             printf("plot %d start\n", i);
-            fPlotA16[i]->Draw(fLastEvent);
+            fPlotA16[i]->Draw(e);
             printf("plot %d done\n", i);
          }
       }
@@ -917,6 +920,11 @@ struct A16Run: public TARunInterface
       if (fTrace)
          printf("A16Run::ctor!\n");
       fModule = m;
+
+      runinfo->fRoot->fOutputFile->cd();
+      TDirectory* aw = gDirectory->mkdir("tpc_aw");
+      aw->cd(); // select correct ROOT directory
+
       fATX = new AlphaTpcX();
       if (m->fPlotWF)
          fATX->CreateA16Canvas();
@@ -994,7 +1002,10 @@ struct A16Run: public TARunInterface
       }
 #endif
 
-      int force_plot = fATX->Event(e);
+      AgAwHitsFlow* hits = new AgAwHitsFlow(flow);
+      flow = hits;
+
+      int force_plot = fATX->Event(e, &hits->fAwHits);
 
       if (fModule->fDoPlotAll)
          force_plot = true;
@@ -1004,7 +1015,7 @@ struct A16Run: public TARunInterface
       if (force_plot) {
          static time_t plot_next = 0;
          if (now > plot_next) {
-            fATX->PlotA16Canvas();
+            fATX->PlotA16Canvas(e);
             plot_next = time(NULL) + 15;
          }
       }

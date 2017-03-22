@@ -34,10 +34,10 @@ public:
    void Init(const std::vector<std::string> &args);
    void Finish();
    TARunInterface* NewRun(TARunInfo* runinfo);
-
-   bool fDoPads;
-   int  fPlotPad;
-   TCanvas* fPlotPadCanvas;
+   
+   //bool fDoPads;
+   //int  fPlotPad;
+   //TCanvas* fPlotPadCanvas;
 };
 
 class FinalRun: public TARunInterface
@@ -45,26 +45,17 @@ class FinalRun: public TARunInterface
 public:
    FinalModule* fModule;
 
-   FILE *fin;
    TCanvas* fC;
 
-   TH1D** hbmean;
-   TH1D** hbrms;
-   TH1D** hwaveform;
+   TH1D* h_num_aw_hits;
+   TH1D* h_num_pad_hits;
+   TH2D* h_num_aw_pad_hits;
 
-   TH1D** hamp;
-   TH1D** hled;
+   TH2D* h_aw_pad_hits;
 
-   
-   TH1D* hbmean_all;
-   TH1D* hbrms_all;
+   TH2D* h_aw_pad_time;
 
-   TH1D* hamp_all;
-   TH1D* hled_all;
-
-   TH1D* hled_all_cut;
-   TH1D* hamp_all_cut;
-
+#if 0
    TProfile* hbmean_prof;
    TProfile* hbrms_prof;
 
@@ -74,6 +65,7 @@ public:
    TH1D* hled_hit;
    TH1D* hamp_hit;
    TH1D* hamp_hit_pedestal;
+#endif
    
    FinalRun(TARunInfo* runinfo, FinalModule* m)
       : TARunInterface(runinfo)
@@ -81,37 +73,7 @@ public:
       printf("FinalRun::ctor!\n");
       fModule = m;
 
-      hbmean_all = NULL;
-
-      fC = NULL;
-      fin = NULL;
-
-      if (!m->fDoPads)
-         return;
-      
       fC = new TCanvas();
-
-      fin = NULL;
-
-      if (0) {
-         //fin = fopen("/pool8tb/agdaq/pads/yair1485457343.txt", "r");
-         //fin = fopen("/pool8tb/agdaq/pads/yair1485479547.txt", "r");
-         //fin = fopen("/pool8tb/agdaq/pads/yair1485479547.txt", "r"); // 400 events
-         //fin = fopen("/home/agdaq/online/src/yair1485563694.txt", "r");
-         //fin = fopen("/home/agdaq/online/src/yair1485564028.txt", "r");
-         //fin = fopen("/home/agdaq/online/src/yair1485564199.txt", "r");
-         //fin = fopen("/pool8tb/agdaq/pads/tpc01.1485570050.txt", "r");
-         //fin = fopen("/pool8tb/agdaq/pads/tpc01.1485570419.txt", "r");
-         //fin = fopen("/pool8tb/agdaq/pads/yair1485564199.txt", "r"); // 84 events
-         //fin = fopen("/pool8tb/agdaq/pads/tpc01.1485571153.txt", "r"); // ??? events
-         //fin = fopen("/pool8tb/agdaq/pads/tpc02.1485571169.txt", "r"); // ??? events
-         //fin = fopen("/pool8tb/agdaq/pads/tpc01.1485577866.txt", "r"); // 2700 events
-         //fin = fopen("/pool8tb/agdaq/pads/tpc02.1485577870.txt", "r"); // 2700 events
-         //fin = fopen("/home/agdaq/online/src/tpc01.1485825981.txt", "r");
-         //fin = fopen("/home/agdaq/online/src/tpc01.1485987366.txt", "r"); // delay 450, pulse at bin 60
-         fin = fopen("/home/agdaq/online/src/tpc01.1485989371.txt", "r"); // delay 350, pulse at bin 160
-         assert(fin);
-      }
    }
 
    ~FinalRun()
@@ -127,22 +89,21 @@ public:
       printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
 
-      if (!fModule->fDoPads)
-         return;
-   }
-
-   void CreateHistograms(TARunInfo* runinfo, int nchan, int nbins)
-   {
-      if (hbmean_all) // already created
-         return;
-      
       runinfo->fRoot->fOutputFile->cd();
-      TDirectory* pads = gDirectory->mkdir("pads");
-      pads->cd(); // select correct ROOT directory
+      TDirectory* dir = gDirectory->mkdir("final");
+      dir->cd(); // select correct ROOT directory
 
-      pads->mkdir("summary")->cd();
+      dir->mkdir("summary")->cd();
 
-      hbmean_all = new TH1D("hbmean", "baseline mean", 100, 0, 17000);
+      h_num_aw_hits = new TH1D("h_num_aw_hits", "number of anode wire hits", 100, 0, 100);
+      h_num_pad_hits = new TH1D("h_num_pad_hits", "number of cathode pad hits", 100, 0, 100);
+      h_num_aw_pad_hits = new TH2D("h_num_aw_pad_hits", "number of aw vs pad hits", 50, 0, 100, 100, 0, 50);
+
+      h_aw_pad_hits = new TH2D("h_aw_pad_hits", "hits in aw vs hits in pads", 2432, -0.5, 2432-0.5, 128, -0.5, 128-0.5);
+
+      h_aw_pad_time = new TH2D("h_aw_pad_time", "time of hits in aw vs pads", 50, 0, 500, 70, 0, 700);
+
+#if 0
       hbrms_all  = new TH1D("hbrms",  "baseline rms",  100, 0, 200);
 
       hbmean_prof = new TProfile("hbmean_prof", "baseline mean vs channel", nchan, -0.5, nchan-0.5);
@@ -217,6 +178,7 @@ public:
          sprintf(title, "chan %04d pulse leading edge, adc bins", i);
          hled[i] = new TH1D(name, title, 100, 0, 900);
       }
+#endif
    }
 
    void EndRun(TARunInfo* runinfo)
@@ -240,13 +202,16 @@ public:
    {
       //printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
 
-      if (!fModule->fDoPads)
-         return flow;
-      
       AgEventFlow *ef = flow->Find<AgEventFlow>();
 
       if (!ef || !ef->fEvent)
          return flow;
+
+      AgAwHitsFlow* eawh = flow->Find<AgAwHitsFlow>();
+
+      if (!eawh) {
+         return flow;
+      }
 
       AgPadHitsFlow* eph = flow->Find<AgPadHitsFlow>();
 
@@ -254,16 +219,23 @@ public:
          return flow;
       }
 
-      int force_plot = false;
+      //int force_plot = false;
 
       if (1) {
-         printf("UUU event %d, time %f, pad hits: %d\n", ef->fEvent->counter, ef->fEvent->time, (int)eph->fPadHits.size());
+         printf("UUU event %d, time %f, anode wire hits: %d, pad hits: %d\n", ef->fEvent->counter, ef->fEvent->time, (int)eawh->fAwHits.size(), (int)eph->fPadHits.size());
+      }
+
+      h_num_aw_hits->Fill(eawh->fAwHits.size());
+      h_num_pad_hits->Fill(eph->fPadHits.size());
+      h_num_aw_pad_hits->Fill(eph->fPadHits.size(), eawh->fAwHits.size());
+
+      for (unsigned i=0; i<eph->fPadHits.size(); i++) {
+         for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
+            h_aw_pad_hits->Fill(eph->fPadHits[i].chan, eawh->fAwHits[j].chan);
+            h_aw_pad_time->Fill(eph->fPadHits[i].time, eawh->fAwHits[j].time);
+         }
       }
          
-      // create histograms
-
-      //CreateHistograms(runinfo, nchan, nbins);
-
       //hamp[ichan]->Fill(wamp);
 
       bool do_plot = (runinfo->fRoot->fgApp != NULL);
@@ -408,15 +380,15 @@ void FinalModule::Init(const std::vector<std::string> &args)
 {
    printf("FinalModule::Init!\n");
 
-   fDoPads = true;
-   fPlotPad = -1;
-   fPlotPadCanvas = NULL;
+   //fDoPads = true;
+   //fPlotPad = -1;
+   //fPlotPadCanvas = NULL;
 
    for (unsigned i=0; i<args.size(); i++) {
-      if (args[i] == "--nopads")
-         fDoPads = false;
-      if (args[i] == "--plot1")
-         fPlotPad = atoi(args[i+1].c_str());
+      //if (args[i] == "--nopads")
+      //   fDoPads = false;
+      //if (args[i] == "--plot1")
+      //   fPlotPad = atoi(args[i+1].c_str());
    }
 }
    
@@ -424,7 +396,7 @@ void FinalModule::Finish()
 {
    printf("FinalModule::Finish!\n");
 
-   DELETE(fPlotPadCanvas);
+   //DELETE(fPlotPadCanvas);
 }
    
 TARunInterface* FinalModule::NewRun(TARunInfo* runinfo)

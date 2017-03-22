@@ -32,6 +32,25 @@ class AgEventFlow: public TAFlowEvent
       }
 };
 
+struct AgAwHit
+{
+   int chan; // anode wire seq number
+   double time; // hit time
+   double amp;  // hit amplitude
+};
+
+class AgAwHitsFlow: public TAFlowEvent
+{
+ public:
+   std::vector<AgAwHit> fAwHits;
+   
+ public:
+ AgAwHitsFlow(TAFlowEvent* flow) // ctor
+    : TAFlowEvent(flow)
+   {
+   }
+};
+
 struct AgPadHit
 {
    int chan; // pad channel number
