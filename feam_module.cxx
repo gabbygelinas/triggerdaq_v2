@@ -47,6 +47,39 @@ public:
    TCanvas* fPlotPadCanvas;
 };
 
+class FeamHistograms
+{
+public:
+   TProfile* hbmean_prof;
+   TProfile* hbrms_prof;
+   TH1D* hnhits;
+public:
+   FeamHistograms()
+   {
+      hbmean_prof = NULL;
+      hbrms_prof = NULL;
+      hnhits = NULL;
+   };
+
+   void CreateHistograms(int ifeam, int nchan, int nbins)
+   {
+      char name[256];
+      char title[256];
+
+      sprintf(name,  "feam%02d_bmean_prof", ifeam);
+      sprintf(title, "feam %2d baseline mean vs chan", ifeam);
+      hbmean_prof = new TProfile(name, title, nchan, -0.5, nchan-0.5);
+
+      sprintf(name,  "feam%02d_brms_prof", ifeam);
+      sprintf(title, "feam %2d baseline rms vs chan", ifeam);
+      hbrms_prof  = new TProfile(name, title,  nchan, -0.5, nchan-0.5);
+
+      sprintf(name,  "feam%02d_hit_map", ifeam);
+      sprintf(title, "feam %2d hits vs chan", ifeam);
+      hnhits      = new TH1D(name, title, nchan, -0.5, nchan-0.5);
+   }
+};
+
 class FeamRun: public TARunInterface
 {
 public:
@@ -81,6 +114,8 @@ public:
    TH1D* hled_hit;
    TH1D* hamp_hit;
    TH1D* hamp_hit_pedestal;
+
+   FeamHistograms fHF[MAX_FEAM];
    
    FeamRun(TARunInfo* runinfo, FeamModule* m)
       : TARunInterface(runinfo)
@@ -138,7 +173,7 @@ public:
          return;
    }
 
-   void CreateHistograms(TARunInfo* runinfo, int nchan, int nbins)
+   void CreateHistograms(TARunInfo* runinfo, int nfeam, int nchan_feam, int nchan, int nbins)
    {
       if (hbmean_all) // already created
          return;
@@ -167,6 +202,10 @@ public:
       hled_hit = new TH1D("hled_hit", "hit time, adc time bins", 100, 0, 900);
       hamp_hit = new TH1D("hamp_hit", "hit pulse height", 100, 0, 17000);
       hamp_hit_pedestal = new TH1D("hamp_hit_pedestal", "hit pulse height, zoom on pedestal", 100, 0, 300);
+
+      for (int i=0; i<nfeam; i++) {
+         fHF[i].CreateHistograms(i, nchan_feam, nbins);
+      }
 
       // FIXME: who deletes this?
       hbmean = new TH1D*[nchan];
@@ -451,9 +490,12 @@ public:
          
       // got all the data here
 
-      int nchan = e->adcs.size() * e->adcs[0]->nsca * e->adcs[0]->nchan;
+      int nfeam = e->adcs.size();
+      int nchan_feam = e->adcs[0]->nsca * e->adcs[0]->nchan;
 
-      printf("nchan %d\n", nchan);
+      int nchan = nfeam * nchan_feam;
+
+      int nbins = e->adcs[0]->nbins;
 
       Waveform** ww = new Waveform*[nchan];
 
@@ -477,9 +519,7 @@ public:
 
       // create histograms
 
-      int nbins = e->adcs[0]->nbins;
-
-      CreateHistograms(runinfo, nchan, nbins);
+      CreateHistograms(runinfo, nfeam, nchan_feam, nchan, nbins);
 
       int iplot = 0;
       double zmax = 0;
@@ -541,6 +581,12 @@ public:
          hbmean_prof->Fill(ichan, b);
          hbrms_prof->Fill(ichan, r);
 
+         int ifeam = ichan/nchan_feam;
+         int ichan_feam = ichan%nchan_feam;
+
+         fHF[ifeam].hbmean_prof->Fill(ichan_feam, b);
+         fHF[ifeam].hbrms_prof->Fill(ichan_feam, r);
+
          h2led2amp->Fill(xpos, wamp);
 
          if (wamp > 1000) {
@@ -556,6 +602,8 @@ public:
             hled_hit->Fill(xpos);
             hamp_hit->Fill(wamp);
             hamp_hit_pedestal->Fill(wamp);
+
+            fHF[ifeam].hnhits->Fill(ichan_feam);
          }
       }
 

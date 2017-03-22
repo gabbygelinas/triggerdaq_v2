@@ -55,6 +55,10 @@ public:
    TH1D* h_aw_amp;
    TH2D* h_aw_amp_time;
 
+   TH2D* h_aw_aw_hits;
+   TH2D* h_aw_aw_time;
+   TH2D* h_aw_aw_amp;
+
    TH1D* h_pad_time;
    TH1D* h_pad_amp;
    TH2D* h_pad_amp_time;
@@ -62,6 +66,9 @@ public:
    TH2D* h_aw_pad_hits;
 
    TH2D* h_aw_pad_time;
+
+   TH2D* h_aw_pad_time_drift;
+   TH2D* h_aw_pad_amp_pc;
 
 #if 0
    TProfile* hbmean_prof;
@@ -111,6 +118,10 @@ public:
       h_aw_amp = new TH1D("h_aw_amp", "aw hit pulse height", 100, 0, 17000);
       h_aw_amp_time = new TH2D("h_aw_amp_time", "aw p.h. vs time", 70, 0, 700, 50, 0, 17000);
 
+      h_aw_aw_hits = new TH2D("h_aw_aw_hits", "hits in aw vs aw", 128, -0.5, 128-0.5, 128, -0.5, 128-0.5);
+      h_aw_aw_time = new TH2D("h_aw_aw_time", "time in aw vs aw", 70, 0, 700, 70, 0, 700);
+      h_aw_aw_amp  = new TH2D("h_aw_aw_amp",  "p.h. in aw vs aw", 50, 0, 17000, 50, 0, 17000);
+
       h_pad_time = new TH1D("h_pad_time", "pad hit time", 50, 0, 500);
       h_pad_amp = new TH1D("h_pad_amp", "pad hit pulse height", 100, 0, 17000);
       h_pad_amp_time = new TH2D("h_pad_amp_time", "pad p.h vs time", 50, 0, 500, 50, 0, 17000);
@@ -118,6 +129,10 @@ public:
       h_aw_pad_hits = new TH2D("h_aw_pad_hits", "hits in aw vs hits in pads", 2432, -0.5, 2432-0.5, 128, -0.5, 128-0.5);
 
       h_aw_pad_time = new TH2D("h_aw_pad_time", "time of hits in aw vs pads", 50, 0, 500, 70, 0, 700);
+
+      h_aw_pad_time_drift = new TH2D("h_aw_pad_time_drift", "time of hits in aw vs pads, drift region", 50, 0, 500, 70, 0, 700);
+
+      h_aw_pad_amp_pc = new TH2D("h_aw_pad_amp_pc", "p.h. of hits in aw vs pads, pc region", 50, 0, 17000, 50, 0, 17000);
 
 #if 0
       hbrms_all  = new TH1D("hbrms",  "baseline rms",  100, 0, 200);
@@ -249,6 +264,12 @@ public:
          h_aw_time->Fill(eawh->fAwHits[j].time);
          h_aw_amp->Fill(eawh->fAwHits[j].amp);
          h_aw_amp_time->Fill(eawh->fAwHits[j].time, eawh->fAwHits[j].amp);
+
+         for (unsigned k=0; k<j; k++) {
+            h_aw_aw_hits->Fill(eawh->fAwHits[j].chan, eawh->fAwHits[k].chan);
+            h_aw_aw_time->Fill(eawh->fAwHits[j].time, eawh->fAwHits[k].time);
+            h_aw_aw_amp->Fill(eawh->fAwHits[j].amp, eawh->fAwHits[k].amp);
+         }
       }
 
       for (unsigned i=0; i<eph->fPadHits.size(); i++) {
@@ -261,6 +282,14 @@ public:
          for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
             h_aw_pad_hits->Fill(eph->fPadHits[i].chan, eawh->fAwHits[j].chan);
             h_aw_pad_time->Fill(eph->fPadHits[i].time, eawh->fAwHits[j].time);
+
+            if ((eawh->fAwHits[j].time > 200) && eph->fPadHits[i].time > 200) {
+               h_aw_pad_time_drift->Fill(eph->fPadHits[i].time, eawh->fAwHits[j].time);
+            }
+
+            if ((eawh->fAwHits[j].time < 200) && eph->fPadHits[i].time < 200) {
+               h_aw_pad_amp_pc->Fill(eph->fPadHits[i].amp, eawh->fAwHits[j].amp);
+            }
          }
       }
          
