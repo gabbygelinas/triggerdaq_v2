@@ -149,7 +149,7 @@ void FeamEVB::AddPacket(int ifeam, const FeamPacket* p, const char* ptr, int siz
    
    if (m == NULL) {
       // did not see the first event yet, cannot unpack
-      printf("dropped packet!\n");
+      printf("FeamEVB: dropped packet!\n");
       delete p;
       return;
    }

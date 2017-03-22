@@ -1,5 +1,7 @@
 //
-// MIDAS analyzer example 2: ROOT analyzer
+// final_module.cxx
+//
+// final analysis of TPC data
 //
 // K.Olchanski
 //
@@ -19,8 +21,6 @@
 #include "TH2D.h"
 #include "TProfile.h"
 
-#include "Waveform.h"
-#include "FeamEVB.h"
 #include "Unpack.h"
 #include "AgFlow.h"
 
@@ -28,14 +28,7 @@
 
 #define MEMZERO(p) memset((p), 0, sizeof(p))
 
-//static const double TSNS = 16.0;
-static const double TSNS = 8.0/.99999821102751183809;
-
-#if 0
-static FeamEVB* xevb = NULL;
-#endif
-
-class FeamModule: public TAModuleInterface
+class FinalModule: public TAModuleInterface
 {
 public:
    void Init(const std::vector<std::string> &args);
@@ -47,10 +40,10 @@ public:
    TCanvas* fPlotPadCanvas;
 };
 
-class FeamRun: public TARunInterface
+class FinalRun: public TARunInterface
 {
 public:
-   FeamModule* fModule;
+   FinalModule* fModule;
 
    FILE *fin;
    TCanvas* fC;
@@ -82,10 +75,10 @@ public:
    TH1D* hamp_hit;
    TH1D* hamp_hit_pedestal;
    
-   FeamRun(TARunInfo* runinfo, FeamModule* m)
+   FinalRun(TARunInfo* runinfo, FinalModule* m)
       : TARunInterface(runinfo)
    {
-      printf("FeamRun::ctor!\n");
+      printf("FinalRun::ctor!\n");
       fModule = m;
 
       hbmean_all = NULL;
@@ -121,9 +114,9 @@ public:
       }
    }
 
-   ~FeamRun()
+   ~FinalRun()
    {
-      printf("FeamRun::dtor!\n");
+      printf("FinalRun::dtor!\n");
       DELETE(fC);
    }
 
@@ -255,313 +248,28 @@ public:
       if (!ef || !ef->fEvent)
          return flow;
 
-      FeamEvent* e = ef->fEvent->feam;
+      AgPadHitsFlow* eph = flow->Find<AgPadHitsFlow>();
 
-      if (!e) {
+      if (!eph) {
          return flow;
       }
 
       int force_plot = false;
 
-#if 0
-      if (event->event_id != 1 && event->event_id != 2)
-         return flow;
-
-      if (!xevb)
-         xevb = new FeamEVB(MAX_FEAM, 1.0/TSNS*1e9);
-
-      FeamEvent *e = UnpackFeamEvent(xevb, event);
-#endif
-
-#if 0
-      int adc[80][5120];
-
-      const int xbins = 829;
-      const int xchan = 79;
-#endif
-
-      if (!e) {
-         return flow;
-      }
-
-#if 0
-      if (e) { // && e->complete && !e->error) {
-         agevb_init();
-         agevb->AddFeamEvent(e);
-      }
-#endif
-
-      if (e) {
-         if (1) {
-            printf("ZZZ Processing FEAM event: ");
-            e->Print();
-            printf("\n");
-         }
-
-         if (1) {
-            for (unsigned i=0; i<e->modules.size(); i++) {
-               if (!e->modules[i])
-                  break;
-               FeamModuleData* m = e->modules[i];
-               printf("module %2d, cnt %4d, ts_trig: 0x%08x %14.3f usec, ts_incr %14.3f usec\n", m->module, m->cnt, m->ts_trig, m->fTime*1e6, m->fTimeIncr*1e6);
-               //a->Print();
-               //printf("\n");
-            }
-         }
-
-         if (e->error) {
-            //delete e;
-            return flow;
-         }
-
-         if (0) {
-            //delete e;
-            return flow;
-         }
-
-         if (!e->complete) {
-            return flow;
-         }
-
-         //assert(a->next_n == 256);
-         //assert(a->fSize == 310688);
-
-         //MEMZERO(adc);
-
-
-         //for (int ibin = 511; ibin < xbins; ibin++) {
-         //   for (int ichan = 0; ichan < 76; ichan++) {
-         //      adc[ichan][ibin] = adc[ichan][ibin-511];
-         //   }
-         //}
-
-         //delete e;
-
-      } else if (event->event_id == 2) {
-
-         const char* banks[] = { "YP01", "YP02", NULL };
-         int itpc = -1;
-         unsigned short *samples = NULL;
-
-         for (int i=0; banks[i]; i++) {
-            TMBank* b = event->FindBank(banks[i]);
-            if (b) {
-               samples = (unsigned short*)event->GetBankData(b);
-               if (samples) {
-                  itpc = i;
-                  break;
-               }
-            }
-         }
-
-         printf("itpc %d, samples 0x%p\n", itpc, samples);
-         
-         if (itpc < 0 || samples == NULL) {
-            return flow;
-         }
-
-#if 0         
-         int count = 0;
-         for (int ibin=0; ibin<xbins; ibin++) {
-            for (int ichan=0; ichan<xchan; ichan++) {
-               adc[ichan][ibin] = samples[count];
-               count++;
-            }
-         }
-         printf("got %d samples\n", count);
-#endif
-         
-      } else if (fin) {
-         // good stuff goes here
-
-         char buf[4*1024*1024];
-         
-         char *s = fgets(buf, sizeof(buf), fin);
-         if (s == NULL) {
-            *flags |= TAFlag_QUIT;
-            return flow;
-         }
-         printf("read %d\n", (int)strlen(s));
-         
-         int event_no = strtoul(s, &s, 0);
-         int t0 = strtoul(s, &s, 0);
-         int t1 = strtoul(s, &s, 0);
-         int t2 = strtoul(s, &s, 0);
-         
-         printf("event %d, t %d %d %d\n", event_no, t0, t1, t2);
-
-#if 0         
-         int count = 0;
-         for (int ibin=0; ibin<xbins; ibin++) {
-            for (int ichan=0; ichan<xchan; ichan++) {
-               count++;
-               adc[ichan][ibin] = strtoul(s, &s, 0);
-            }
-         }
-         
-         printf("got %d samples\n", count);
-         
-         for (int i=0; ; i++) {
-            if (!*s)
-               break;
-            int v = strtoul(s, &s, 0);
-            if (v == 0)
-               break;
-            count++;
-         }
-         
-         printf("total %d samples before zeros\n", count);
-         
-         for (int i=0; ; i++) {
-            if (s[0]==0)
-               break;
-            if (s[0]=='\n')
-               break;
-            if (s[0]=='\r')
-               break;
-            int v = strtoul(s, &s, 0);
-            if (v != 0)
-               break;
-            count++;
-            if (*s == '+')
-               s++;
-         }
-         
-         printf("total %d samples with zeros\n", count);
-#endif
-
-         s[100] = 0;
-         printf("pads data: [%s]\n", s);
-         
-         char buf1[1024];
-         
-         char *s1 = fgets(buf1, sizeof(buf1), fin);
-         if (s1 == NULL) {
-            *flags |= TAFlag_QUIT;
-            return flow;
-         }
-         printf("read %d [%s]\n", (int)strlen(s1), s1);
-         
-         //int event_no = strtoul(s, &s, 0);
-         //int t0 = strtoul(s, &s, 0);
-         //int t1 = strtoul(s, &s, 0);
-         //int t2 = strtoul(s, &s, 0);
-         //printf("event %d, t %d %d %d\n", event_no, t0, t1, t2);
+      if (1) {
+         printf("UUU event %d, time %f, pad hits: %d\n", ef->fEvent->counter, ef->fEvent->time, (int)eph->fPadHits.size());
       }
          
-      // got all the data here
-
-      int nchan = e->adcs.size() * e->adcs[0]->nsca * e->adcs[0]->nchan;
-
-      printf("nchan %d\n", nchan);
-
-      Waveform** ww = new Waveform*[nchan];
-
-      for (unsigned ifeam=0; ifeam<e->adcs.size(); ifeam++) {
-         FeamAdcData* aaa = e->adcs[ifeam];
-         for (int isca=0; isca<aaa->nsca; isca++) {
-            for (int ichan=0; ichan<aaa->nchan; ichan++) {
-               int xchan = ifeam*(aaa->nsca*aaa->nchan) + isca*aaa->nchan + ichan;
-               ww[xchan] = new Waveform(aaa->nbins);
-               for (int ibin=0; ibin<aaa->nbins; ibin++) {
-                  ww[xchan]->samples[ibin] = (aaa->adc[isca][ichan][ibin])/4;
-               }
-            }
-         }
-      }
-
-      // create pad hits flow event
-
-      AgPadHitsFlow* hits = new AgPadHitsFlow(flow);
-      flow = hits;
-
       // create histograms
 
-      int nbins = e->adcs[0]->nbins;
+      //CreateHistograms(runinfo, nchan, nbins);
 
-      CreateHistograms(runinfo, nchan, nbins);
-
-      int iplot = 0;
-      double zmax = 0;
-
-      for (int ichan=0; ichan<nchan; ichan++) {
-         double r;
-         double b = baseline(ww[ichan], 10, 60, NULL, &r);
-         
-         if (b==0 && r==0)
-            continue;
-
-         double wmin = min(ww[ichan]);
-         double wmax = max(ww[ichan]);
-         double wamp = b - wmin;
-
-         int xpos = led(ww[ichan], b, -1, wamp/2.0);
-
-         bool hit = false;
-
-         if ((xpos > 0) && (xpos < 500) && (wamp > 200)) {
-            hit = true;
-         }
-
-         if (hit) {
-            AgPadHit h;
-            h.chan = ichan;
-            h.time = xpos;
-            h.amp  = wamp;
-            hits->fPadHits.push_back(h);
-         }
-
-         printf("chan %3d: baseline %8.1f, rms %8.1f, min %8.1f, max %8.1f, amp %8.1f, xpos %3d, hit %d\n", ichan, b, r, wmin, wmax, wamp, xpos, hit);
-
-         if (1 || (xpos > 0 && xpos < 4000 && wamp > 1000)) {
-            if (wamp > zmax) {
-               printf("plot this one.\n");
-               iplot = ichan;
-               zmax = wamp;
-            }
-         }
-
-         hbmean[ichan]->Fill(b);
-         hbrms[ichan]->Fill(r);
-
-         if (hwaveform[ichan]->GetEntries() == 0) {
-            printf("saving waveform %d\n", ichan);
-            for (int i=0; i<ww[ichan]->nsamples; i++)
-               hwaveform[ichan]->SetBinContent(i+1, ww[ichan]->samples[i]);
-         }
-
-         hamp[ichan]->Fill(wamp);
-         hled[ichan]->Fill(xpos);
-
-         hbmean_all->Fill(b);
-         hbrms_all->Fill(r);
-         hamp_all->Fill(wamp);
-         hled_all->Fill(xpos);
-
-         hbmean_prof->Fill(ichan, b);
-         hbrms_prof->Fill(ichan, r);
-
-         h2led2amp->Fill(xpos, wamp);
-
-         if (wamp > 1000) {
-            hled_all_cut->Fill(xpos);
-         }
-
-         if (xpos > 100 && xpos < 500) {
-            hamp_all_cut->Fill(wamp);
-         }
-
-         if (hit) {
-            hnhits->Fill(ichan);
-            hled_hit->Fill(xpos);
-            hamp_hit->Fill(wamp);
-            hamp_hit_pedestal->Fill(wamp);
-         }
-      }
+      //hamp[ichan]->Fill(wamp);
 
       bool do_plot = (runinfo->fRoot->fgApp != NULL);
 
       if (do_plot) {
+#if 0
          // plot waveforms
 
          fC->Clear();
@@ -638,8 +346,10 @@ public:
          fC->Modified();
          fC->Draw();
          fC->Update();
+#endif
       }
 
+#if 0
       if (fModule->fPlotPad >= 0) {
          if (!fModule->fPlotPadCanvas)
             fModule->fPlotPadCanvas = new TCanvas("FEAM PAD", "FEAM PAD", 900, 650);
@@ -662,7 +372,9 @@ public:
          c->Draw();
          c->Update();
       }
+#endif
 
+#if 0
       time_t now = time(NULL);
 
       if (force_plot) {
@@ -681,6 +393,7 @@ public:
       }
 
       *flags |= TAFlag_DISPLAY;
+#endif
 
       return flow;
    }
@@ -691,9 +404,9 @@ public:
    }
 };
 
-void FeamModule::Init(const std::vector<std::string> &args)
+void FinalModule::Init(const std::vector<std::string> &args)
 {
-   printf("FeamModule::Init!\n");
+   printf("FinalModule::Init!\n");
 
    fDoPads = true;
    fPlotPad = -1;
@@ -707,20 +420,20 @@ void FeamModule::Init(const std::vector<std::string> &args)
    }
 }
    
-void FeamModule::Finish()
+void FinalModule::Finish()
 {
-   printf("FeamModule::Finish!\n");
+   printf("FinalModule::Finish!\n");
 
    DELETE(fPlotPadCanvas);
 }
    
-TARunInterface* FeamModule::NewRun(TARunInfo* runinfo)
+TARunInterface* FinalModule::NewRun(TARunInfo* runinfo)
 {
-   printf("FeamModule::NewRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
-   return new FeamRun(runinfo, this);
+   printf("FinalModule::NewRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
+   return new FinalRun(runinfo, this);
 }
 
-static TARegisterModule tarm(new FeamModule);
+static TARegisterModule tarm(new FinalModule);
 
 /* emacs
  * Local Variables:

@@ -35,7 +35,7 @@ MAIN := $(ROOTANASYS)/obj/manalyzer_main.o
 
 # uncomment and define analyzer modules here
 
-MODULES += unpack_module.o a16module.o Alpha16.o feam_module.o TsSync.o Feam.o FeamEVB.o AgEvent.o AgEVB.o Unpack.o
+MODULES += unpack_module.o a16module.o Alpha16.o feam_module.o TsSync.o Feam.o FeamEVB.o AgEvent.o AgEVB.o Unpack.o final_module.o
 ALL     += agana.exe
 
 # examples

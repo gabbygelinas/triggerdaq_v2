@@ -22,7 +22,7 @@ class AgEventFlow: public TAFlowEvent
    {
       fEvent = e;
    }
-
+   
    ~AgEventFlow() // dtor
       {
          if (fEvent) {
@@ -30,6 +30,25 @@ class AgEventFlow: public TAFlowEvent
             fEvent = NULL;
          }
       }
+};
+
+struct AgPadHit
+{
+   int chan; // pad channel number
+   double time; // hit time
+   double amp;  // hit amplitude
+};
+
+class AgPadHitsFlow: public TAFlowEvent
+{
+ public:
+   std::vector<AgPadHit> fPadHits;
+   
+ public:
+ AgPadHitsFlow(TAFlowEvent* flow) // ctor
+    : TAFlowEvent(flow)
+   {
+   }
 };
 
 #endif
