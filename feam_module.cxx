@@ -443,7 +443,7 @@ public:
          printf("read %d [%s]\n", (int)strlen(s1), s1);
          
          //int event_no = strtoul(s, &s, 0);
-         //int t0 = strtoul(s, &s, 0);
+        //int t0 = strtoul(s, &s, 0);
          //int t1 = strtoul(s, &s, 0);
          //int t2 = strtoul(s, &s, 0);
          //printf("event %d, t %d %d %d\n", event_no, t0, t1, t2);
@@ -486,7 +486,7 @@ public:
 
       for (int ichan=0; ichan<nchan; ichan++) {
          double r;
-         double b = baseline(ww[ichan], 10, 60, NULL, &r);
+         double b = baseline(ww[ichan], 10, 100, NULL, &r);
          
          if (b==0 && r==0)
             continue;
@@ -499,7 +499,7 @@ public:
 
          bool hit = false;
 
-         if ((xpos > 0) && (xpos < 500) && (wamp > 200)) {
+         if ((xpos > 150) && (xpos < 450) && (wamp > 600)) {
             hit = true;
          }
 
@@ -670,6 +670,13 @@ public:
          if (now > plot_next) {
             //fATX->PlotA16Canvas();
             plot_next = time(NULL) + 15;
+         }
+      }
+
+      for (int i=0; i<nchan; i++) {
+         if (ww[i]) {
+            delete ww[i];
+            ww[i] = NULL;
          }
       }
 

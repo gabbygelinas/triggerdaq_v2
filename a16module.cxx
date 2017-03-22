@@ -696,8 +696,12 @@ public:
             //   continue;
 
             Waveform* w = NewWaveform(&e->waveform[i], 1.0/4.0);
+
+#if 0
             if(i == 96 || i == 127)
                AnalyzeNoise(w, i);
+#endif
+
             double b, brms;
             b = baseline(w, 0, 100, NULL, &brms);
 
@@ -791,7 +795,15 @@ public:
                   nhits++;
                   //printf("samples %d %d, ", e->waveform[i].size(), w->nsamples);
                   printf("chan %4d: baseline %8.1f, rms %4.1f, range %8.1f %6.1f, pulse %6.1f, le %4d\n", i, b, brms, wmin, wmax, ph, le);
+               }
 
+               bool hit = false;
+
+               if (le > 150 && le < 580 && ph > 600) {
+                  hit = true;
+               }
+
+               if (hit) {
                   AgAwHit h;
                   h.chan = i;
                   h.time = le;

@@ -51,6 +51,14 @@ public:
    TH1D* h_num_pad_hits;
    TH2D* h_num_aw_pad_hits;
 
+   TH1D* h_aw_time;
+   TH1D* h_aw_amp;
+   TH2D* h_aw_amp_time;
+
+   TH1D* h_pad_time;
+   TH1D* h_pad_amp;
+   TH2D* h_pad_amp_time;
+
    TH2D* h_aw_pad_hits;
 
    TH2D* h_aw_pad_time;
@@ -98,6 +106,14 @@ public:
       h_num_aw_hits = new TH1D("h_num_aw_hits", "number of anode wire hits", 100, 0, 100);
       h_num_pad_hits = new TH1D("h_num_pad_hits", "number of cathode pad hits", 100, 0, 100);
       h_num_aw_pad_hits = new TH2D("h_num_aw_pad_hits", "number of aw vs pad hits", 50, 0, 100, 100, 0, 50);
+
+      h_aw_time = new TH1D("h_aw_time", "aw hit time", 70, 0, 700);
+      h_aw_amp = new TH1D("h_aw_amp", "aw hit pulse height", 100, 0, 17000);
+      h_aw_amp_time = new TH2D("h_aw_amp_time", "aw p.h. vs time", 70, 0, 700, 50, 0, 17000);
+
+      h_pad_time = new TH1D("h_pad_time", "pad hit time", 50, 0, 500);
+      h_pad_amp = new TH1D("h_pad_amp", "pad hit pulse height", 100, 0, 17000);
+      h_pad_amp_time = new TH2D("h_pad_amp_time", "pad p.h vs time", 50, 0, 500, 50, 0, 17000);
 
       h_aw_pad_hits = new TH2D("h_aw_pad_hits", "hits in aw vs hits in pads", 2432, -0.5, 2432-0.5, 128, -0.5, 128-0.5);
 
@@ -228,6 +244,18 @@ public:
       h_num_aw_hits->Fill(eawh->fAwHits.size());
       h_num_pad_hits->Fill(eph->fPadHits.size());
       h_num_aw_pad_hits->Fill(eph->fPadHits.size(), eawh->fAwHits.size());
+
+      for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
+         h_aw_time->Fill(eawh->fAwHits[j].time);
+         h_aw_amp->Fill(eawh->fAwHits[j].amp);
+         h_aw_amp_time->Fill(eawh->fAwHits[j].time, eawh->fAwHits[j].amp);
+      }
+
+      for (unsigned i=0; i<eph->fPadHits.size(); i++) {
+         h_pad_time->Fill(eph->fPadHits[i].time);
+         h_pad_amp->Fill(eph->fPadHits[i].amp);
+         h_pad_amp_time->Fill(eph->fPadHits[i].time, eph->fPadHits[i].amp);
+      }
 
       for (unsigned i=0; i<eph->fPadHits.size(); i++) {
          for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
