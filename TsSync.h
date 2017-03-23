@@ -34,6 +34,7 @@ public:
    double   fEps;
    int      fSyncedWith;
    bool     fOverflow;
+   bool     fDead;
    unsigned fBufMax;
 
    std::vector<TsSyncEntry> fBuf;

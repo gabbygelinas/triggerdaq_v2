@@ -50,11 +50,13 @@ void FeamEVB::CheckFeam(FeamEvent *e)
    bool c = true;
    
    for (unsigned i=0; i<e->modules.size(); i++) {
-      if (e->modules[i] == NULL) {
-         c = false;
-      } else {
-         if (e->modules[i]->error)
-            e->error = true;
+      if (!fSync.fModules[i].fDead) {
+         if (e->modules[i] == NULL) {
+            c = false;
+         } else {
+            if (e->modules[i]->error)
+               e->error = true;
+         }
       }
    }
    
@@ -63,8 +65,10 @@ void FeamEVB::CheckFeam(FeamEvent *e)
    }
    
    for (unsigned i=0; i<e->adcs.size(); i++) {
-      if (e->adcs[i] == NULL) {
-         c = false;
+      if (!fSync.fModules[i].fDead) {
+         if (e->adcs[i] == NULL) {
+            c = false;
+         }
       }
    }
    

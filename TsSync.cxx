@@ -28,6 +28,7 @@ TsSyncModule::TsSyncModule() // ctor
    fEps = 2000*1e-9; // in ns
    fSyncedWith  = -1;
    fOverflow = false;
+   fDead = false;
    fBufMax = 100;
 }
 
@@ -224,7 +225,16 @@ void TsSync::Check(unsigned inew)
 
    if (modules_with_data > 1 && no_sync < 2) {
       fSyncOk = true;
-      printf("TsSync: synchronization completed.\n");
+
+      int count_dead = 0;
+      for (unsigned i=0; i<fModules.size(); i++) {
+         if ((fModules[i].fSyncedWith < 0) && (fModules[i].fBuf.size() == 0)) {
+            fModules[i].fDead = true;
+            count_dead += 1;
+         }
+      }
+
+      printf("TsSync: synchronization completed, %d dead modules.\n", count_dead);
    }
 }
 
