@@ -56,6 +56,7 @@ struct PlotHistograms
    TH1D* fHocc2;
 
    TH1D* fHtdiff;
+   TH1D* fHtdiff2;
 
    TProfile* fHph2occ1;
    TProfile* fHph2occ2;
@@ -137,7 +138,8 @@ struct PlotHistograms
 
       fCanvas->cd(i++);
       fHtdiff = new TH1D("time_between_events", "time_between_events", 2000, 0, 2.0);
-      fHtdiff->Draw();
+      fHtdiff2 = new TH1D("time_between_events_expanded", "time_between_events_expanded", 1000, 0, 10.0);
+      fHtdiff2->Draw();
 
       fCanvas->cd(i++);
       fHph2occ1 = new TProfile("pulse_height_profile_pc", "pulse_height_profile_pc", SHOW_ALPHA16*NUM_CHAN_ALPHA16, -0.5, SHOW_ALPHA16*NUM_CHAN_ALPHA16-0.5);
@@ -816,8 +818,10 @@ public:
          }
 
       double tdiff = (e->eventTime - e->prevEventTime)/1e9; // convert ns to sec
-      printf("time diff %f sec\n", tdiff);
+      //printf("time diff %f sec\n", tdiff);
+
       fH->fHtdiff->Fill(tdiff);
+      fH->fHtdiff2->Fill(tdiff);
 
       printf("Found %d hits\n", nhits);
 
