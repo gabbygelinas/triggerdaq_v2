@@ -337,14 +337,15 @@ public:
             printf("\n");
          }
 
-         if (1) {
+         if (0) {
             for (unsigned i=0; i<e->modules.size(); i++) {
-               if (!e->modules[i])
-                  break;
+               printf("FeamEvent slot %d: ", i);
+               if (!e->modules[i]) {
+                  printf("null\n");
+                  continue;
+               }
                FeamModuleData* m = e->modules[i];
                printf("module %2d, cnt %4d, ts_trig: 0x%08x %14.3f usec, ts_incr %14.3f usec\n", m->module, m->cnt, m->ts_trig, m->fTime*1e6, m->fTimeIncr*1e6);
-               //a->Print();
-               //printf("\n");
             }
          }
 
@@ -358,7 +359,7 @@ public:
             return flow;
          }
 
-         if (!e->complete) {
+         if (0 && !e->complete) {
             return flow;
          }
 
@@ -487,6 +488,10 @@ public:
          //int t2 = strtoul(s, &s, 0);
          //printf("event %d, t %d %d %d\n", event_no, t0, t1, t2);
       }
+
+      //
+
+      bool doPrint = false;
          
       // got all the data here
 
@@ -499,8 +504,13 @@ public:
 
       Waveform** ww = new Waveform*[nchan];
 
+      for (int i=0; i<nchan; i++)
+         ww[i] = NULL;
+
       for (unsigned ifeam=0; ifeam<e->adcs.size(); ifeam++) {
          FeamAdcData* aaa = e->adcs[ifeam];
+         if (!aaa)
+            continue;
          for (int isca=0; isca<aaa->nsca; isca++) {
             for (int ichan=0; ichan<aaa->nchan; ichan++) {
                int xchan = ifeam*(aaa->nsca*aaa->nchan) + isca*aaa->nchan + ichan;
@@ -525,6 +535,9 @@ public:
       double zmax = 0;
 
       for (int ichan=0; ichan<nchan; ichan++) {
+         if (!ww[ichan])
+            continue;
+
          double r;
          double b = baseline(ww[ichan], 10, 100, NULL, &r);
          
@@ -551,11 +564,14 @@ public:
             hits->fPadHits.push_back(h);
          }
 
-         printf("chan %3d: baseline %8.1f, rms %8.1f, min %8.1f, max %8.1f, amp %8.1f, xpos %3d, hit %d\n", ichan, b, r, wmin, wmax, wamp, xpos, hit);
+         if (doPrint) {
+            printf("chan %3d: baseline %8.1f, rms %8.1f, min %8.1f, max %8.1f, amp %8.1f, xpos %3d, hit %d\n", ichan, b, r, wmin, wmax, wamp, xpos, hit);
+         }
 
          if (1 || (xpos > 0 && xpos < 4000 && wamp > 1000)) {
             if (wamp > zmax) {
-               printf("plot this one.\n");
+               if (doPrint)
+                  printf("plot this one.\n");
                iplot = ichan;
                zmax = wamp;
             }
@@ -565,7 +581,8 @@ public:
          hbrms[ichan]->Fill(r);
 
          if (hwaveform[ichan]->GetEntries() == 0) {
-            printf("saving waveform %d\n", ichan);
+            if (doPrint)
+               printf("saving waveform %d\n", ichan);
             for (int i=0; i<ww[ichan]->nsamples; i++)
                hwaveform[ichan]->SetBinContent(i+1, ww[ichan]->samples[i]);
          }
@@ -727,6 +744,8 @@ public:
             ww[i] = NULL;
          }
       }
+
+      delete ww;
 
       static time_t t = 0;
 
