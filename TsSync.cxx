@@ -126,8 +126,24 @@ void TsSync::CheckSync(unsigned ii, unsigned i)
    double tt = fModules[ii].GetDt(jj);
    
    unsigned j = fModules[i].FindDt(tt);
-   if (j == 0)
-      return;
+
+   //printf("TsSync::CheckSync: module %d buf %d, dt %f with module %d buf %d\n", ii, jj, tt, i, j);
+   
+   if (j == 0) {
+      if (jj < 2) {
+         return;
+      }
+
+      jj -= 1;
+      tt = fModules[ii].GetDt(jj);
+      j = fModules[i].FindDt(tt);
+
+      //printf("TsSync::CheckSync: module %d buf %d, dt %f with module %d buf %d (2nd try)\n", ii, jj, tt, i, j);
+      
+      if (j == 0) {
+         return;
+      }
+   }
    
    // demand a few more good matches
    for (unsigned itry=1; itry<=ntry; itry++) {
@@ -175,8 +191,8 @@ void TsSync::Check(unsigned inew)
       }
    }
 
-   if (0 && fTrace)
-      printf("min %d, max %d\n", min, max);
+   if (fTrace)
+      printf("TsSync::Check: min %d, max %d\n", min, max);
    
    if (min < 3)
       return;
@@ -194,15 +210,22 @@ void TsSync::Check(unsigned inew)
    if (fTrace) {
       Dump();
    }
-   
+
+   int modules_with_data = 0;
    int no_sync = 0;
    for (unsigned i=0; i<fModules.size(); i++) {
-      if (fModules[i].fSyncedWith < 0) {
-         // FIXME: if there is no data from this module, mark sync ok.
-         no_sync += 1;
+      if (fModules[i].fBuf.size() > 0) {
+         modules_with_data++;
+         if (fModules[i].fSyncedWith < 0) {
+            no_sync += 1;
+         }
       }
    }
-   fSyncOk = (no_sync < 2);
+
+   if (modules_with_data > 1 && no_sync < 2) {
+      fSyncOk = true;
+      printf("TsSync: synchronization completed.\n");
+   }
 }
 
 void TsSync::Add(unsigned i, uint32_t ts)
@@ -218,8 +241,9 @@ void TsSync::Add(unsigned i, uint32_t ts)
 
    if (!fSyncOk && fModules[i].fOverflow) {
       fOverflow = true;
-      printf("TsSync: module %d buffer overflow\n", i);
+      printf("TsSync: module %d buffer overflow, synchronization failed.\n", i);
       Dump();
+      return;
    }
    
    if (0 && fTrace) {
