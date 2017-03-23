@@ -265,7 +265,9 @@ public:
          h_aw_amp->Fill(eawh->fAwHits[j].amp);
          h_aw_amp_time->Fill(eawh->fAwHits[j].time, eawh->fAwHits[j].amp);
 
-         for (unsigned k=0; k<j; k++) {
+         for (unsigned k=0; k<eawh->fAwHits.size(); k++) {
+            if (k==j)
+               continue;
             h_aw_aw_hits->Fill(eawh->fAwHits[j].chan, eawh->fAwHits[k].chan);
             h_aw_aw_time->Fill(eawh->fAwHits[j].time, eawh->fAwHits[k].time);
             h_aw_aw_amp->Fill(eawh->fAwHits[j].amp, eawh->fAwHits[k].amp);
