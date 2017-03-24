@@ -14,6 +14,8 @@
 #include "AgEVB.h"
 #include "AgFlow.h"
 
+#include "ncfm.h"
+
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
 
 #define MEMZERO(p) memset((p), 0, sizeof(p))
@@ -29,14 +31,28 @@ public:
    TARunInterface* NewRun(TARunInfo* runinfo);
 };
 
+static std::string join(const char* sep, const std::vector<std::string> &v)
+{
+   std::string s;
+   for (unsigned i=0; i<v.size(); i++) {
+      if (i>0)
+         s += sep;
+      s += v[i];
+   }
+   return s;
+}
+
 class UnpackRun: public TARunInterface
 {
 public:
    UnpackModule* fModule;
 
+   Ncfm*       fCfm;
    Alpha16EVB* fA16Evb;
    FeamEVB*    fFeamEvb;
    AgEVB*      fAgEvb;
+
+   std::vector<std::string> fFeamBanks;
    
    UnpackRun(TARunInfo* runinfo, UnpackModule* m)
       : TARunInterface(runinfo)
@@ -44,6 +60,7 @@ public:
       printf("UnpackRun::ctor!\n");
       fModule = m;
 
+      fCfm     = new Ncfm(getenv("AG_CFM"));
       fA16Evb  = NULL;
       fFeamEvb = NULL;
       fAgEvb   = NULL;
@@ -52,9 +69,16 @@ public:
    ~UnpackRun()
    {
       printf("UnpackRun::dtor!\n");
+      DELETE(fCfm);
       DELETE(fA16Evb);
       DELETE(fFeamEvb);
       DELETE(fAgEvb);
+   }
+
+   void LoadFeamBanks(int runno)
+   {
+      fFeamBanks = fCfm->ReadFile("feam", "banks", runno);
+      printf("Loaded feam banks: %s\n", join(" ", fFeamBanks).c_str());
    }
 
    void BeginRun(TARunInfo* runinfo)
@@ -63,6 +87,8 @@ public:
       time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
       printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
+
+      LoadFeamBanks(runinfo->fRunNo);
 
       fA16Evb  = new Alpha16EVB();
       fFeamEvb = new FeamEVB(MAX_FEAM, 1.0/TSNS*1e9);
@@ -118,7 +144,7 @@ public:
       }
 
       if (fFeamEvb) {
-         FeamEvent *e = UnpackFeamEvent(fFeamEvb, event);
+         FeamEvent *e = UnpackFeamEvent(fFeamEvb, event, fFeamBanks);
          if (e) {
             if (1) {
                printf("Unpacked FEAM event: ");

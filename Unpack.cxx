@@ -178,18 +178,19 @@ Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, TMEvent* me)
 };
 
 
-FeamEvent* UnpackFeamEvent(FeamEVB* evb, TMEvent* event)
+FeamEvent* UnpackFeamEvent(FeamEVB* evb, TMEvent* event, const std::vector<std::string> &banks)
 {
    //printf("event id %d\n", event->event_id);
    
    if (event->event_id != 1)
       return NULL;
       
-   const char* banks[] = { "BB01", "BB02", "BB03", "BB04", "BB05", "BB06", "BB07", "BB08", NULL };
+   //const char* banks[] = { "BB01", "BB02", "BB03", "BB04", "BB05", "BB06", "BB07", "BB08", NULL };
+   //const char* banks[] = { "BB10", "BB07", "BB04", "BB06", "BB01", "BB08", "BB11", "BB05", NULL };
    char *data = NULL;
    
-   for (int i=0; banks[i]; i++) {
-      TMBank* b = event->FindBank(banks[i]);
+   for (unsigned i=0; i<banks.size(); i++) {
+      TMBank* b = event->FindBank(banks[i].c_str());
       if (b) {
          data = event->GetBankData(b);
          if (data) {
