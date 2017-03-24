@@ -7,6 +7,7 @@
 
 #include <stdio.h> // NULL, printf()
 #include <math.h> // fabs()
+#include <assert.h> // assert()
 
 FeamEVB::FeamEVB(int num_modules, double ts_freq)
 {
@@ -141,11 +142,15 @@ void FeamEVB::AddPacket(int ifeam, const FeamPacket* p, const char* ptr, int siz
          // xxx
          
          fBuf.push_back(m);
+      } else {
+         printf("FeamEVB: Received first data from FEAM %d\n", ifeam);
       }
       
       //printf("Start ew event: FEAM %d: ", ifeam);
       //p->Print();
       //printf("\n");
+
+      assert(fData[ifeam] == NULL);
       
       fData[ifeam] = new FeamModuleData(p, ifeam);
    }
@@ -203,6 +208,12 @@ FeamEvent* FeamEVB::Get()
          return NULL;
       
       printf("FeamEVB: popping in incomplete event! have %d buffered events, have complete %d\n", (int)fEvents.size(), c);
+
+      if (c == 0) {
+         printf("First incomplete event: ");
+         fEvents.front()->Print();
+         printf("\n");
+      }
    }
    
    FeamEvent* e = fEvents.front();
