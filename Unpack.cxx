@@ -216,16 +216,6 @@ FeamEvent* UnpackFeamEvent(FeamEVB* evb, TMEvent* event, const std::vector<std::
    return evb->Get();
 }
 
-AgEVB* agevb = NULL;
-
-void agevb_init()
-{
-   if (!agevb) {
-      agevb = new AgEVB(100.0*1e6/100.0, 125.0*1e6/100.0);
-      //agevb->fSync.fTrace = true;
-   }
-}
-
 /* emacs
  * Local Variables:
  * tab-width: 8
