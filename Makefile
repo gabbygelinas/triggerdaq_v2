@@ -35,8 +35,10 @@ MAIN := $(ROOTANASYS)/obj/manalyzer_main.o
 
 # uncomment and define analyzer modules here
 
-MODULES += unpack_module.o a16module.o Alpha16.o feam_module.o TsSync.o Feam.o FeamEVB.o AgEvent.o AgEVB.o Unpack.o final_module.o
+MODULES += ncfm.o unpack_module.o a16module.o Alpha16.o feam_module.o TsSync.o Feam.o FeamEVB.o AgEvent.o AgEVB.o Unpack.o final_module.o
 ALL     += agana.exe
+
+#ALL     += ncfm.exe
 
 # examples
 
@@ -60,6 +62,9 @@ $(EXAMPLE_ALL): %.exe:
 
 %.exe: $(MAIN) $(MODULES)
 	$(CXX) -o $@ $(MAIN) $(MODULES) $(CXXFLAGS) $(LIBS) -lm -lz -lpthread
+
+ncfm.exe: %.exe: %.o
+	$(CXX) -o $@ $< $(CXXFLAGS) $(LIBS) -lm -lz -lpthread
 
 %.o: %.cxx
 	$(CXX) -o $@ $(CXXFLAGS) -c $<
