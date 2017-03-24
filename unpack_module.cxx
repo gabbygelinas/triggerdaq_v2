@@ -92,7 +92,7 @@ public:
 
       fA16Evb  = new Alpha16EVB();
       fFeamEvb = new FeamEVB(MAX_FEAM, 1.0/TSNS*1e9);
-      fAgEvb = new AgEVB(100.0*1e6/100.0, 125.0*1e6/100.0);
+      fAgEvb = new AgEVB(100.0*1e6/100.0, 125.0*1e6/100.0, 100, 90);
 
       fA16Evb->Reset();
       fA16Evb->Configure(runinfo->fRunNo);
