@@ -496,11 +496,21 @@ public:
       // got all the data here
 
       int nfeam = e->adcs.size();
-      int nchan_feam = e->adcs[0]->nsca * e->adcs[0]->nchan;
+      int nchan_feam = 0;
+      int nbins = 0;
+
+      for (unsigned i=0; i<e->adcs.size(); i++) {
+         if (e->adcs[i]) {
+            nchan_feam = e->adcs[i]->nsca * e->adcs[i]->nchan;
+            nbins = e->adcs[i]->nbins;
+            break;
+         }
+      }
 
       int nchan = nfeam * nchan_feam;
 
-      int nbins = e->adcs[0]->nbins;
+      if (nbins == 0 || nchan == 0)
+         return flow;
 
       Waveform** ww = new Waveform*[nchan];
 
