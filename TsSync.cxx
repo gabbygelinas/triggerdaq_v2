@@ -102,10 +102,16 @@ TsSync::TsSync() // ctor
    fSyncOk = false;
    fTrace = false;
    fOverflow = false;
+   fDeadMin = 0;
 }
 
 TsSync::~TsSync() // dtor
 {
+}
+
+void TsSync::SetDeadMin(int dead_min)
+{
+   fDeadMin = dead_min;
 }
 
 void TsSync::Configure(unsigned i, double freq_hz, int buf_max)
@@ -230,7 +236,7 @@ void TsSync::Check(unsigned inew)
       // at least one module has data and
       // only one unsynced module (all other modules synced to it)
       fSyncOk = true;
-   } else if (fModules.size() == 2 && modules_with_data == 1 && no_sync == 1) {
+   } else if (min > fDeadMin && fModules.size() == 2 && modules_with_data == 1 && no_sync == 1) {
       // total 2 modules, one of them has data, the other one is dead
       fSyncOk = true;
    }

@@ -56,10 +56,12 @@ public:
    bool fSyncOk;
    bool fOverflow;
    bool fTrace;
+   unsigned fDeadMin;
 
 public:
    TsSync(); // ctor
    ~TsSync(); // dtor
+   void SetDeadMin(int dead_min);
    void Configure(unsigned i, double freq_hz, int buf_max);
    void CheckSync(unsigned ii, unsigned i);
    void Check(unsigned inew);

@@ -13,6 +13,7 @@
 AgEVB::AgEVB(double a16_ts_freq, double feam_ts_freq)
 {
    fCounter = 0;
+   fSync.SetDeadMin(90);
    fSync.Configure(0, a16_ts_freq, 100);
    fSync.Configure(1, feam_ts_freq, 100);
    fLastA16Time = 0;
