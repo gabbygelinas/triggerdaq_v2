@@ -29,13 +29,15 @@ class AgEVB
 {
 public:
    TsSync fSync;
-   int fCounter;
+   int    fCounter;
    std::deque<AgEvbBuf*> fBuf[2];
    std::deque<AgEvent*> fEvents;
+   unsigned fMaxSkew;
+   unsigned fMaxDead;
    double fLastA16Time;
    double fLastFeamTime;
 
-   AgEVB(double a16_ts_freq, double feam_ts_freq); // ctor
+   AgEVB(double a16_ts_freq, double feam_ts_freq, int max_skew, int max_dead); // ctor
    void AddAlpha16Event(Alpha16Event *e);
    void AddFeamEvent(FeamEvent *e);
    AgEvent* FindEvent(double t);

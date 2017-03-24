@@ -10,12 +10,14 @@
 #include <stdio.h> // NULL, printf()
 #include <math.h> // fabs()
 
-AgEVB::AgEVB(double a16_ts_freq, double feam_ts_freq)
+AgEVB::AgEVB(double a16_ts_freq, double feam_ts_freq, int max_skew, int max_dead)
 {
    fCounter = 0;
-   fSync.SetDeadMin(90);
-   fSync.Configure(0, a16_ts_freq, 100);
-   fSync.Configure(1, feam_ts_freq, 100);
+   fMaxSkew = max_skew;
+   fMaxDead = max_dead;
+   fSync.SetDeadMin(fMaxDead);
+   fSync.Configure(0, a16_ts_freq, fMaxSkew);
+   fSync.Configure(1, feam_ts_freq, fMaxSkew);
    fLastA16Time = 0;
    fLastFeamTime = 0;
 }
@@ -200,7 +202,7 @@ AgEvent* AgEVB::Get()
       }
       // if there are too many buffered events, all incomplete,
       // something is wrong, push them out anyway
-      if (!c && fEvents.size() < 200)
+      if (!c && fEvents.size() < fMaxSkew)
          return NULL;
       
       printf("AgEVB:: popping in incomplete event! have %d buffered events, have complete %d\n", (int)fEvents.size(), c);
