@@ -223,9 +223,19 @@ void TsSync::Check(unsigned inew)
       }
    }
 
-   if (modules_with_data > 1 && no_sync < 2) {
-      fSyncOk = true;
+   if (fTrace)
+      printf("modules: %d, with data: %d, no_sync: %d\n", (int)fModules.size(), modules_with_data, no_sync);
 
+   if (modules_with_data > 1 && no_sync <= 1) {
+      // at least one module has data and
+      // only one unsynced module (all other modules synced to it)
+      fSyncOk = true;
+   } else if (fModules.size() == 2 && modules_with_data == 1 && no_sync == 1) {
+      // total 2 modules, one of them has data, the other one is dead
+      fSyncOk = true;
+   }
+
+   if (fSyncOk) {
       int count_dead = 0;
       for (unsigned i=0; i<fModules.size(); i++) {
          if ((fModules[i].fSyncedWith < 0) && (fModules[i].fBuf.size() == 0)) {

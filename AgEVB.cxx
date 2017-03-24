@@ -48,10 +48,10 @@ void AgEVB::CheckEvent(AgEvent *e)
 {
    e->complete = true;
 
-   if (!e->a16)
+   if (!e->a16 && !fSync.fModules[0].fDead)
       e->complete = false;
 
-   if (!e->feam)
+   if (!e->feam && !fSync.fModules[1].fDead)
       e->complete = false;
 
    e->error = false;

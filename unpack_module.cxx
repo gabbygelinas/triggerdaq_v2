@@ -154,7 +154,7 @@ public:
             e->Print();
             printf("\n");
 
-            if (e->complete) {
+            if (e->complete && e->a16 && e->feam) {
                double ta1 = e->a16->eventTime;
                double ta2 = e->a16->prevEventTime;
                double ta = (ta1-ta2)/1e9;
