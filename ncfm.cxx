@@ -70,7 +70,7 @@ NcfmData* Ncfm::LoadIndexFile(const char* system, const char* subsystem) const
       c->fIndex.push_back(ind);
     }
 
-   fprintf(stderr, "CFM: Loaded %d entries from \'%s\'\n", (int)c->fIndex.size(), f.c_str());
+   printf("CFM: Loaded %d entries from \'%s\'\n", (int)c->fIndex.size(), f.c_str());
 
    return c;
 }
