@@ -18,6 +18,10 @@ TsSyncEntry::TsSyncEntry(uint32_t xts, int xepoch, double xtime) // ctor
 TsSyncModule::TsSyncModule() // ctor
 {
    fFreqHz   = 0;
+   fEpsSec = 2000*1e-9; // in sec
+   fRelEps = 0;
+   fBufMax = 100;
+
    fEpoch    = 0;
    fFirstTs  = 0;
    fPrevTs   = 0;
@@ -25,11 +29,12 @@ TsSyncModule::TsSyncModule() // ctor
    fOffsetSec   = 0;
    fPrevTimeSec = 0;
    fLastTimeSec = 0;
-   fEps = 2000*1e-9; // in ns
+   fMaxDtSec = 0;
+   fMaxRelDt = 0;
+
    fSyncedWith  = -1;
    fOverflow = false;
    fDead = false;
-   fBufMax = 100;
 }
 
 void TsSyncModule::Print() const
@@ -83,12 +88,33 @@ double TsSyncModule::GetDt(unsigned j)
 
 unsigned TsSyncModule::FindDt(double dt)
 {
-   //printf("FindDt: fBuf.size %d\n", fBuf.size());
+   //printf("FindDt: fBuf.size %d\n", (int)fBuf.size());
    assert(fBuf.size() > 0);
    for (unsigned j=fBuf.size()-1; j>1; j--) {
       double jdt = GetDt(j);
-      //printf("size %d, buf %d, jdt %f, dt %f\n", (int)fBuf.size(), j, jdt, dt);
-      if (fabs(dt - jdt) < fEps) {
+      double jdiff = dt - jdt;
+      double rdiff = (dt-jdt)/dt;
+      double ajdiff = fabs(jdiff);
+      double ardiff = fabs(rdiff);
+
+      //printf("size %d, buf %d, jdt %f, dt %f, diff %.0f ns, diff %f\n", (int)fBuf.size(), j, jdt, dt, jdiff*1e9, rdiff);
+
+      if (fEpsSec > 0 && ajdiff < fEpsSec) {
+         if (ajdiff > fMaxDtSec) {
+            //printf("update max dt %f %f, eps %f\n", ajdiff*1e9, fMaxDtSec*1e9, fEpsSec*1e9);
+            fMaxDtSec = ajdiff;
+         }
+         if (ardiff > fMaxRelDt)
+            fMaxRelDt = ardiff;
+         //printf("found %d %f\n", j, jdt);
+         return j;
+      }
+
+      if (fRelEps > 0 && ardiff < fRelEps) {
+         if (ajdiff > fMaxDtSec)
+            fMaxDtSec = ajdiff;
+         if (ardiff > fMaxRelDt)
+            fMaxRelDt = ardiff;
          //printf("found %d %f\n", j, jdt);
          return j;
       }
@@ -114,7 +140,7 @@ void TsSync::SetDeadMin(int dead_min)
    fDeadMin = dead_min;
 }
 
-void TsSync::Configure(unsigned i, double freq_hz, int buf_max)
+void TsSync::Configure(unsigned i, double freq_hz, double eps_sec, double rel_eps, int buf_max)
 {
    // grow the array if needed
    TsSyncModule m;
@@ -122,6 +148,8 @@ void TsSync::Configure(unsigned i, double freq_hz, int buf_max)
       fModules.push_back(m);
    
    fModules[i].fFreqHz = freq_hz;
+   fModules[i].fEpsSec = eps_sec;
+   fModules[i].fRelEps = rel_eps;
    fModules[i].fBufMax = buf_max;
 }
 
@@ -160,9 +188,15 @@ void TsSync::CheckSync(unsigned ii, unsigned i)
          return;
       double xtt = fModules[ii].GetDt(jj-itry);
       double xt  = fModules[i].GetDt(j-itry);
-      
-      if (fabs(xt - xtt) > fModules[ii].fEps) {
-            return;
+      double dxt = xt - xtt;
+      double rdxt = dxt/xt;
+
+      if (fModules[ii].fEpsSec > 0 && fabs(dxt) > fModules[ii].fEpsSec) {
+         return;
+      }
+
+      if (fModules[ii].fRelEps > 0 && fabs(rdxt) > fModules[ii].fRelEps) {
+         return;
       }
    }
 
@@ -313,11 +347,21 @@ void TsSync::Dump() const
       printf("\n");
       }
    
-   printf("buf %2d: ", 99);
+   printf("buf %2d: ", -1);
    for (unsigned i=0; i<fModules.size(); i++) {
       printf(" %d", fModules[i].fSyncedWith);
    }
    printf("\n");
+   printf("buf %2d: ", -2);
+   for (unsigned i=0; i<fModules.size(); i++) {
+      printf(" %.0f", fModules[i].fMaxDtSec*1e9);
+   }
+   printf(" (max mismatch, ns)\n");
+   printf("buf %2d: ", -3);
+   for (unsigned i=0; i<fModules.size(); i++) {
+      printf(" %.1f", fModules[i].fMaxRelDt*1e6);
+   }
+   printf(" (max relative mismatch, ns/ns*1e6)\n");
 }
 
 /* emacs

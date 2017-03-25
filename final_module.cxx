@@ -69,18 +69,6 @@ public:
 
    TH2D* h_aw_pad_time_drift;
    TH2D* h_aw_pad_amp_pc;
-
-#if 0
-   TProfile* hbmean_prof;
-   TProfile* hbrms_prof;
-
-   TH2D* h2led2amp;
-
-   TH1D* hnhits;
-   TH1D* hled_hit;
-   TH1D* hamp_hit;
-   TH1D* hamp_hit_pedestal;
-#endif
    
    FinalRun(TARunInfo* runinfo, FinalModule* m)
       : TARunInterface(runinfo)
@@ -133,83 +121,6 @@ public:
       h_aw_pad_time_drift = new TH2D("h_aw_pad_time_drift", "time of hits in aw vs pads, drift region", 50, 0, 500, 70, 0, 700);
 
       h_aw_pad_amp_pc = new TH2D("h_aw_pad_amp_pc", "p.h. of hits in aw vs pads, pc region", 50, 0, 17000, 50, 0, 17000);
-
-#if 0
-      hbrms_all  = new TH1D("hbrms",  "baseline rms",  100, 0, 200);
-
-      hbmean_prof = new TProfile("hbmean_prof", "baseline mean vs channel", nchan, -0.5, nchan-0.5);
-      hbrms_prof  = new TProfile("hbrms_prof",  "baseline rms vs channel",  nchan, -0.5, nchan-0.5);
-
-      hamp_all   = new TH1D("hamp",   "pulse height", 100, 0, 17000);
-      hled_all   = new TH1D("hled",   "pulse leading edge, adc time bins", 100, 0, 900);
-
-      h2led2amp  = new TH2D("h2led2amp", "pulse amp vs time, adc time bins", 100, 0, 900, 100, 0, 17000);
-
-      hled_all_cut = new TH1D("hled_cut",   "pulse leading edge, adc time bins, with cuts", 100, 0, 900);
-      hamp_all_cut = new TH1D("hamp_cut",   "pulse height, with cuts", 100, 0, 17000);
-
-      hnhits = new TH1D("hnhits", "hits per channel", nchan, -0.5, nchan-0.5);
-      hled_hit = new TH1D("hled_hit", "hit time, adc time bins", 100, 0, 900);
-      hamp_hit = new TH1D("hamp_hit", "hit pulse height", 100, 0, 17000);
-      hamp_hit_pedestal = new TH1D("hamp_hit_pedestal", "hit pulse height, zoom on pedestal", 100, 0, 300);
-
-      // FIXME: who deletes this?
-      hbmean = new TH1D*[nchan];
-      hbrms  = new TH1D*[nchan];
-      hwaveform = new TH1D*[nchan];
-      hamp = new TH1D*[nchan];
-      hled = new TH1D*[nchan];
-   
-      pads->mkdir("baseline_mean")->cd();
-
-      for (int i=0; i<nchan; i++) {
-         char name[256];
-         char title[256];
-         sprintf(name, "hbmean%04d", i);
-         sprintf(title, "chan %04d baseline mean", i);
-         hbmean[i] = new TH1D(name, title, 100, 0, 17000);
-      }
-
-      pads->mkdir("baseline_rms")->cd();
-
-      for (int i=0; i<nchan; i++) {
-         char name[256];
-         char title[256];
-         sprintf(name, "hbrms%04d", i);
-         sprintf(title, "chan %04d baseline rms", i);
-         hbrms[i] = new TH1D(name, title, 100, 0, 200);
-      }
-
-      pads->mkdir("chan_waveform")->cd();
-
-      for (int i=0; i<nchan; i++) {
-         char name[256];
-         char title[256];
-         sprintf(name, "hwaveform%04d", i);
-         sprintf(title, "chan %04d waveform", i);
-         hwaveform[i] = new TH1D(name, title, nbins, -0.5, nbins-0.5);
-      }
-
-      pads->mkdir("chan_amp")->cd();
-
-      for (int i=0; i<nchan; i++) {
-         char name[256];
-         char title[256];
-         sprintf(name, "hamp%04d", i);
-         sprintf(title, "chan %04d pulse height", i);
-         hamp[i] = new TH1D(name, title, 100, 0, 17000);
-      }
-
-      pads->mkdir("chan_led")->cd();
-
-      for (int i=0; i<nchan; i++) {
-         char name[256];
-         char title[256];
-         sprintf(name, "hled%04d", i);
-         sprintf(title, "chan %04d pulse leading edge, adc bins", i);
-         hled[i] = new TH1D(name, title, 100, 0, 900);
-      }
-#endif
    }
 
    void EndRun(TARunInfo* runinfo)
@@ -239,62 +150,99 @@ public:
          return flow;
 
       AgAwHitsFlow* eawh = flow->Find<AgAwHitsFlow>();
-
-      if (!eawh) {
-         return flow;
-      }
-
       AgPadHitsFlow* eph = flow->Find<AgPadHitsFlow>();
-
-      if (!eph) {
-         return flow;
-      }
 
       //int force_plot = false;
 
-      if (1) {
-         printf("UUU event %d, time %f, anode wire hits: %d, pad hits: %d\n", ef->fEvent->counter, ef->fEvent->time, (int)eawh->fAwHits.size(), (int)eph->fPadHits.size());
-      }
+      AgEvent* age = ef->fEvent;
 
-      h_num_aw_hits->Fill(eawh->fAwHits.size());
-      h_num_pad_hits->Fill(eph->fPadHits.size());
-      h_num_aw_pad_hits->Fill(eph->fPadHits.size(), eawh->fAwHits.size());
+      if (age->a16 && age->feam) {
+         static bool first = true;
+         static double a16_time0 = 0;
+         static double feam_time0 = 0;
+         static uint32_t a16_ts0 = 0;
+         static uint32_t feam_ts0 = 0;
 
-      for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
-         h_aw_time->Fill(eawh->fAwHits[j].time);
-         h_aw_amp->Fill(eawh->fAwHits[j].amp);
-         h_aw_amp_time->Fill(eawh->fAwHits[j].time, eawh->fAwHits[j].amp);
+         double a16_time  = age->a16->eventTime/1e9;
+         double feam_time = age->feam->time;
 
-         for (unsigned k=0; k<eawh->fAwHits.size(); k++) {
-            if (k==j)
-               continue;
-            h_aw_aw_hits->Fill(eawh->fAwHits[j].chan, eawh->fAwHits[k].chan);
-            h_aw_aw_time->Fill(eawh->fAwHits[j].time, eawh->fAwHits[k].time);
-            h_aw_aw_amp->Fill(eawh->fAwHits[j].amp, eawh->fAwHits[k].amp);
+         uint32_t a16_ts  = 0;
+         uint32_t feam_ts = 0;
+
+         if (1)
+            a16_ts = age->a16->udpPacket[0].eventTimestamp;
+
+         if (age->feam->modules[0])
+            feam_ts = age->feam->modules[0]->ts_start;
+
+         if (first) {
+            first = false;
+            a16_time0 = a16_time;
+            feam_time0 = feam_time;
+            a16_ts0 = a16_ts;
+            feam_ts0 = feam_ts;
          }
+
+         double atr = a16_time-a16_time0;
+         double ftr = feam_time-feam_time0;
+         double dtr = atr-ftr;
+
+         uint32_t a16_tsr = a16_ts - a16_ts0;
+         uint32_t feam_tsr = feam_ts - feam_ts0;
+
+         uint32_t a16_tsr_ns = a16_tsr * 10.0;
+         uint32_t feam_tsr_ns = feam_tsr * 8.0;
+
+         int dts_ns = (a16_tsr_ns%0x80000000) - (feam_tsr_ns%0x80000000);
+
+         printf("TTT: %d %d, %f %f, diff %f, ts 0x%08x 0x%08x, ns: %12d %12d, diff %d\n", age->a16->eventNo, age->feam->counter, atr, ftr, dtr, a16_tsr, feam_tsr, a16_tsr_ns, feam_tsr_ns, dts_ns); 
       }
 
-      for (unsigned i=0; i<eph->fPadHits.size(); i++) {
-         h_pad_time->Fill(eph->fPadHits[i].time);
-         h_pad_amp->Fill(eph->fPadHits[i].amp);
-         h_pad_amp_time->Fill(eph->fPadHits[i].time, eph->fPadHits[i].amp);
-      }
-
-      for (unsigned i=0; i<eph->fPadHits.size(); i++) {
-         for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
-            h_aw_pad_hits->Fill(eph->fPadHits[i].chan, eawh->fAwHits[j].chan);
-            h_aw_pad_time->Fill(eph->fPadHits[i].time, eawh->fAwHits[j].time);
-
-            if ((eawh->fAwHits[j].time > 200) && eph->fPadHits[i].time > 200) {
-               h_aw_pad_time_drift->Fill(eph->fPadHits[i].time, eawh->fAwHits[j].time);
-            }
-
-            if ((eawh->fAwHits[j].time < 200) && eph->fPadHits[i].time < 200) {
-               h_aw_pad_amp_pc->Fill(eph->fPadHits[i].amp, eawh->fAwHits[j].amp);
-            }
+      if (eawh && eph) {
+         if (1) {
+            printf("UUU event %d, time %f, anode wire hits: %d, pad hits: %d\n", ef->fEvent->counter, ef->fEvent->time, (int)eawh->fAwHits.size(), (int)eph->fPadHits.size());
          }
-      }
          
+         h_num_aw_hits->Fill(eawh->fAwHits.size());
+         h_num_pad_hits->Fill(eph->fPadHits.size());
+         h_num_aw_pad_hits->Fill(eph->fPadHits.size(), eawh->fAwHits.size());
+         
+         for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
+            h_aw_time->Fill(eawh->fAwHits[j].time);
+            h_aw_amp->Fill(eawh->fAwHits[j].amp);
+            h_aw_amp_time->Fill(eawh->fAwHits[j].time, eawh->fAwHits[j].amp);
+            
+            for (unsigned k=0; k<eawh->fAwHits.size(); k++) {
+               if (k==j)
+                  continue;
+               h_aw_aw_hits->Fill(eawh->fAwHits[j].chan, eawh->fAwHits[k].chan);
+               h_aw_aw_time->Fill(eawh->fAwHits[j].time, eawh->fAwHits[k].time);
+               h_aw_aw_amp->Fill(eawh->fAwHits[j].amp, eawh->fAwHits[k].amp);
+            }
+         }
+         
+         for (unsigned i=0; i<eph->fPadHits.size(); i++) {
+            h_pad_time->Fill(eph->fPadHits[i].time);
+            h_pad_amp->Fill(eph->fPadHits[i].amp);
+            h_pad_amp_time->Fill(eph->fPadHits[i].time, eph->fPadHits[i].amp);
+         }
+         
+         for (unsigned i=0; i<eph->fPadHits.size(); i++) {
+            for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
+               h_aw_pad_hits->Fill(eph->fPadHits[i].chan, eawh->fAwHits[j].chan);
+               h_aw_pad_time->Fill(eph->fPadHits[i].time, eawh->fAwHits[j].time);
+               
+               if ((eawh->fAwHits[j].time > 200) && eph->fPadHits[i].time > 200) {
+                  h_aw_pad_time_drift->Fill(eph->fPadHits[i].time, eawh->fAwHits[j].time);
+               }
+               
+               if ((eawh->fAwHits[j].time < 200) && eph->fPadHits[i].time < 200) {
+                  h_aw_pad_amp_pc->Fill(eph->fPadHits[i].amp, eawh->fAwHits[j].amp);
+               }
+            }
+         }
+      }
+
       //hamp[ichan]->Fill(wamp);
 
       bool do_plot = (runinfo->fRoot->fgApp != NULL);

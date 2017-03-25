@@ -22,8 +22,13 @@ struct TsSyncEntry
 
 class TsSyncModule
 {
-public:
-   double   fFreqHz;
+ public: // configuration
+   double   fFreqHz; // timestamp clock frequency, Hz
+   double   fEpsSec; // time comparison threshold, sec
+   double   fRelEps; // relative time comparison threshold, sec/sec
+   unsigned fBufMax; // buffer overflow limit, nevents
+   
+ public: // running data
    int      fEpoch;
    uint32_t fFirstTs;
    uint32_t fPrevTs;
@@ -31,12 +36,15 @@ public:
    double   fOffsetSec;
    double   fPrevTimeSec;
    double   fLastTimeSec;
-   double   fEps;
-   int      fSyncedWith;
-   bool     fOverflow;
-   bool     fDead;
-   unsigned fBufMax;
+   double   fMaxDtSec;
+   double   fMaxRelDt;
 
+ public: // final status
+   int      fSyncedWith; // =(-1) not synchronized, >= 0 synchronized with module
+   bool     fOverflow;   // buffer overflow
+   bool     fDead;       // module has no events, declared dead
+
+ public: // timestamp buffer
    std::vector<TsSyncEntry> fBuf;
 
 public:
@@ -62,7 +70,7 @@ public:
    TsSync(); // ctor
    ~TsSync(); // dtor
    void SetDeadMin(int dead_min);
-   void Configure(unsigned i, double freq_hz, int buf_max);
+   void Configure(unsigned i, double freq_hz, double eps_sec, double rel_eps, int buf_max);
    void CheckSync(unsigned ii, unsigned i);
    void Check(unsigned inew);
    void Add(unsigned i, uint32_t ts);

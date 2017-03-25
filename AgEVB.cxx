@@ -10,29 +10,54 @@
 #include <stdio.h> // NULL, printf()
 #include <math.h> // fabs()
 
-AgEVB::AgEVB(double a16_ts_freq, double feam_ts_freq, int max_skew, int max_dead)
+AgEVB::AgEVB(double a16_ts_freq, double feam_ts_freq, double eps_sec, int max_skew, int max_dead)
 {
    fCounter = 0;
    fMaxSkew = max_skew;
    fMaxDead = max_dead;
    fSync.SetDeadMin(fMaxDead);
-   fSync.Configure(0, a16_ts_freq, fMaxSkew);
-   fSync.Configure(1, feam_ts_freq, fMaxSkew);
+   fSync.Configure(0, a16_ts_freq,  0, 10.0*1e-6, fMaxSkew);
+   fSync.Configure(1, feam_ts_freq, 0, 10.0*1e-6, fMaxSkew);
    fLastA16Time = 0;
    fLastFeamTime = 0;
+   fMaxDt = 0;
+   fMinDt = 0;
+   fEpsSec = eps_sec;
+}
+
+AgEVB::~AgEVB()
+{
+   printf("AgEVB: max dt: %.0f ns, min dt: %.0f ns\n", fMaxDt*1e9, fMinDt*1e9);
 }
 
 AgEvent* AgEVB::FindEvent(double t)
 {
+   double amin = 0;
    for (unsigned i=0; i<fEvents.size(); i++) {
       //printf("find event for time %f: event %d, %f, diff %f\n", t, i, fEvents[i]->time, fEvents[i]->time - t);
 
-      if (fabs(fEvents[i]->time - t) < 5000.0/1e9) {
+      double dt = fEvents[i]->time - t;
+      double adt = fabs(dt);
+
+      if (adt < fEpsSec) {
+         if (adt > fMaxDt)
+            fMaxDt = adt;
          //printf("Found event for time %f\n", t);
-         //printf("find event for time %f: event %d, %f, diff %f\n", t, i, fEvents[i]->time, fEvents[i]->time - t);
+         //printf("Found event for time %f: event %d, %f, diff %f %.0f ns\n", t, i, fEvents[i]->time, dt, dt*1e9);
          return fEvents[i];
       }
+
+      if (amin == 0)
+         amin = adt;
+      if (adt < amin)
+         amin = adt;
    }
+   
+   if (fMinDt == 0)
+      fMinDt = amin;
+
+   if (amin < fMinDt)
+      fMinDt = amin;
    
    AgEvent* e = new AgEvent();
    e->complete = false;

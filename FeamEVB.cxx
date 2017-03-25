@@ -16,7 +16,7 @@ FeamEVB::FeamEVB(int num_modules, double ts_freq)
    fSync.SetDeadMin(10);
    for (unsigned i=0; i<fNumModules; i++) {
       fData.push_back(NULL);
-      fSync.Configure(i, ts_freq, 50); // 1.0/TSNS*1e9);
+      fSync.Configure(i, ts_freq, 1000.0*1e-9, 0, 50);
    }
 }
 

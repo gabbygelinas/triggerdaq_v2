@@ -20,9 +20,6 @@
 
 #define MEMZERO(p) memset((p), 0, sizeof(p))
 
-//static const double TSNS = 16.0;
-static const double TSNS = 8.0/.99999821102751183809;
-
 class UnpackModule: public TAModuleInterface
 {
 public:
@@ -91,8 +88,9 @@ public:
       LoadFeamBanks(runinfo->fRunNo);
 
       fA16Evb  = new Alpha16EVB();
-      fFeamEvb = new FeamEVB(MAX_FEAM, 1.0/TSNS*1e9);
-      fAgEvb = new AgEVB(100.0*1e6/100.0, 125.0*1e6/100.0, 100, 90);
+      //fFeamEvb = new FeamEVB(MAX_FEAM, 125.0*1e6*0.99999821102751183809);
+      fFeamEvb = new FeamEVB(MAX_FEAM, 125.0*1e6);
+      fAgEvb = new AgEVB(100.0*1e6/100.0, 125.0*1e6/100.0, 50.0*1e-6, 100, 90);
 
       fA16Evb->Reset();
       fA16Evb->Configure(runinfo->fRunNo);
