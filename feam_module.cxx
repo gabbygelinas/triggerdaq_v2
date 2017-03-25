@@ -28,13 +28,6 @@
 
 #define MEMZERO(p) memset((p), 0, sizeof(p))
 
-//static const double TSNS = 16.0;
-static const double TSNS = 8.0/.99999821102751183809;
-
-#if 0
-static FeamEVB* xevb = NULL;
-#endif
-
 class FeamModule: public TAModuleInterface
 {
 public:
@@ -305,11 +298,6 @@ public:
 #if 0
       if (event->event_id != 1 && event->event_id != 2)
          return flow;
-
-      if (!xevb)
-         xevb = new FeamEVB(MAX_FEAM, 1.0/TSNS*1e9);
-
-      FeamEvent *e = UnpackFeamEvent(xevb, event);
 #endif
 
 #if 0
@@ -322,13 +310,6 @@ public:
       if (!e) {
          return flow;
       }
-
-#if 0
-      if (e) { // && e->complete && !e->error) {
-         agevb_init();
-         agevb->AddFeamEvent(e);
-      }
-#endif
 
       if (e) {
          if (1) {
