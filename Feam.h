@@ -10,6 +10,33 @@
 #include <vector>
 #include <utility>  // std::pair
 
+//
+// AFTER ASIC basic information:
+//
+// 511 SCA time bins
+// 76 SCA channels:
+// 72 data channels
+// 4 fixed pattern noise (fpn) channels: 13, 26, 51 and 64.
+//
+// Readout indices:
+//
+// 1, 2, 3: read
+// 4..15 chan 1..12 pins 36..25
+// 16 fpn1
+// 17..28 chan 13..24 pins 24..13
+// 29 fpn2
+// 30..53 chan 25..48 pins 21..1, 120..109
+// 54 fpn3
+// 55..66 chan 49..60 pins 108..97
+// 67 fpn4
+// 68..79 chan 61..72 pins 96..85
+//
+// followed by:
+// 8 bits of 0
+// 9 bits of last read cell index (MSB first)
+// 61 bits of 0
+//
+
 class FeamPacket
 {
 public:
