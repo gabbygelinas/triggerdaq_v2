@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 #include <vector>
+#include <utility>  // std::pair
 
 class FeamPacket
 {
@@ -61,6 +62,8 @@ public:
 #define MAX_FEAM_SCA    4
 #define MAX_FEAM_CHAN  80
 #define MAX_FEAM_BINS 900
+#define MAX_FEAM_PAD_COL    4
+#define MAX_FEAM_PADS 72
 
 struct FeamAdcData
 {
@@ -88,6 +91,7 @@ struct FeamEvent
 };
 
 extern void Unpack(FeamAdcData* a, FeamModuleData* m);
+extern std::pair<int,int> getPad(short fAFTER, int index);
 
 #endif
 
@@ -98,5 +102,3 @@ extern void Unpack(FeamAdcData* a, FeamModuleData* m);
  * indent-tabs-mode: nil
  * End:
  */
-
-

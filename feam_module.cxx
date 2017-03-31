@@ -46,12 +46,18 @@ public:
    TProfile* hbmean_prof;
    TProfile* hbrms_prof;
    TH1D* hnhits;
+   TH2D* htime;
+   TH2D* hamp;
+   TH2D* hpadhits;
 public:
    FeamHistograms()
    {
       hbmean_prof = NULL;
       hbrms_prof = NULL;
       hnhits = NULL;
+      htime = NULL;
+      hamp = NULL;
+      hpadhits = NULL;
    };
 
    void CreateHistograms(int ifeam, int nchan, int nbins)
@@ -70,6 +76,18 @@ public:
       sprintf(name,  "feam%02d_hit_map", ifeam);
       sprintf(title, "feam %2d hits vs chan", ifeam);
       hnhits      = new TH1D(name, title, nchan, -0.5, nchan-0.5);
+
+      sprintf(name,  "feam%02d_hit_time", ifeam);
+      sprintf(title, "feam %2d hit time vs chan", ifeam);
+      htime       = new TH2D(name, title, nchan, -0.5, nchan-0.5, 50, 0, 500);
+
+      sprintf(name,  "feam%02d_hit_amp", ifeam);
+      sprintf(title, "feam %2d hit p.h. vs chan", ifeam);
+      hamp        = new TH2D(name, title, nchan, -0.5, nchan-0.5, 50, 0, 17000);
+
+      sprintf(name,  "feam%02d_hit_pad", ifeam);
+      sprintf(title, "feam %2d hit column vs pad", ifeam);
+      hpadhits    = new TH2D(name, title, MAX_FEAM_PADS, -0.5, MAX_FEAM_PADS-0.5, MAX_FEAM_PAD_COL, 0, MAX_FEAM_PAD_COL);
    }
 };
 
@@ -84,11 +102,13 @@ public:
    TH1D** hbmean;
    TH1D** hbrms;
    TH1D** hwaveform;
+   TH1D** hwaveform1;
+   double *fMaxWamp;
 
    TH1D** hamp;
    TH1D** hled;
 
-   
+
    TH1D* hbmean_all;
    TH1D* hbrms_all;
 
@@ -109,7 +129,7 @@ public:
    TH1D* hamp_hit_pedestal;
 
    FeamHistograms fHF[MAX_FEAM];
-   
+
    FeamRun(TARunInfo* runinfo, FeamModule* m)
       : TARunInterface(runinfo)
    {
@@ -123,7 +143,7 @@ public:
 
       if (!m->fDoPads)
          return;
-      
+
       fC = new TCanvas();
 
       fin = NULL;
@@ -170,7 +190,7 @@ public:
    {
       if (hbmean_all) // already created
          return;
-      
+
       runinfo->fRoot->fOutputFile->cd();
       TDirectory* pads = gDirectory->mkdir("pads");
       pads->cd(); // select correct ROOT directory
@@ -204,9 +224,15 @@ public:
       hbmean = new TH1D*[nchan];
       hbrms  = new TH1D*[nchan];
       hwaveform = new TH1D*[nchan];
+      hwaveform1 = new TH1D*[nchan];
       hamp = new TH1D*[nchan];
       hled = new TH1D*[nchan];
-   
+
+      fMaxWamp = new double[nchan];
+      for (int i=0; i<nchan; i++) {
+         fMaxWamp[i] = 0;
+      }
+
       pads->mkdir("baseline_mean")->cd();
 
       for (int i=0; i<nchan; i++) {
@@ -235,6 +261,16 @@ public:
          sprintf(name, "hwaveform%04d", i);
          sprintf(title, "chan %04d waveform", i);
          hwaveform[i] = new TH1D(name, title, nbins, -0.5, nbins-0.5);
+      }
+
+      pads->mkdir("chan_waveform_max")->cd();
+
+      for (int i=0; i<nchan; i++) {
+         char name[256];
+         char title[256];
+         sprintf(name, "hwaveform%04d_max", i);
+         sprintf(title, "chan %04d waveform max p.h.", i);
+         hwaveform1[i] = new TH1D(name, title, nbins, -0.5, nbins-0.5);
       }
 
       pads->mkdir("chan_amp")->cd();
@@ -281,7 +317,7 @@ public:
 
       if (!fModule->fDoPads)
          return flow;
-      
+
       AgEventFlow *ef = flow->Find<AgEventFlow>();
 
       if (!ef || !ef->fEvent)
@@ -376,12 +412,12 @@ public:
          }
 
          printf("itpc %d, samples 0x%p\n", itpc, samples);
-         
+
          if (itpc < 0 || samples == NULL) {
             return flow;
          }
 
-#if 0         
+#if 0
          int count = 0;
          for (int ibin=0; ibin<xbins; ibin++) {
             for (int ichan=0; ichan<xchan; ichan++) {
@@ -391,27 +427,27 @@ public:
          }
          printf("got %d samples\n", count);
 #endif
-         
+
       } else if (fin) {
          // good stuff goes here
 
          char buf[4*1024*1024];
-         
+
          char *s = fgets(buf, sizeof(buf), fin);
          if (s == NULL) {
             *flags |= TAFlag_QUIT;
             return flow;
          }
          printf("read %d\n", (int)strlen(s));
-         
+
          int event_no = strtoul(s, &s, 0);
          int t0 = strtoul(s, &s, 0);
          int t1 = strtoul(s, &s, 0);
          int t2 = strtoul(s, &s, 0);
-         
+
          printf("event %d, t %d %d %d\n", event_no, t0, t1, t2);
 
-#if 0         
+#if 0
          int count = 0;
          for (int ibin=0; ibin<xbins; ibin++) {
             for (int ichan=0; ichan<xchan; ichan++) {
@@ -419,9 +455,9 @@ public:
                adc[ichan][ibin] = strtoul(s, &s, 0);
             }
          }
-         
+
          printf("got %d samples\n", count);
-         
+
          for (int i=0; ; i++) {
             if (!*s)
                break;
@@ -430,9 +466,9 @@ public:
                break;
             count++;
          }
-         
+
          printf("total %d samples before zeros\n", count);
-         
+
          for (int i=0; ; i++) {
             if (s[0]==0)
                break;
@@ -447,22 +483,22 @@ public:
             if (*s == '+')
                s++;
          }
-         
+
          printf("total %d samples with zeros\n", count);
 #endif
 
          s[100] = 0;
          printf("pads data: [%s]\n", s);
-         
+
          char buf1[1024];
-         
+
          char *s1 = fgets(buf1, sizeof(buf1), fin);
          if (s1 == NULL) {
             *flags |= TAFlag_QUIT;
             return flow;
          }
          printf("read %d [%s]\n", (int)strlen(s1), s1);
-         
+
          //int event_no = strtoul(s, &s, 0);
         //int t0 = strtoul(s, &s, 0);
          //int t1 = strtoul(s, &s, 0);
@@ -473,7 +509,7 @@ public:
       //
 
       bool doPrint = false;
-         
+
       // got all the data here
 
       int nfeam = e->adcs.size();
@@ -531,7 +567,7 @@ public:
 
          double r;
          double b = baseline(ww[ichan], 10, 100, NULL, &r);
-         
+
          if (b==0 && r==0)
             continue;
 
@@ -573,9 +609,17 @@ public:
 
          if (hwaveform[ichan]->GetEntries() == 0) {
             if (doPrint)
-               printf("saving waveform %d\n", ichan);
+               printf("saving first waveform %d\n", ichan);
             for (int i=0; i<ww[ichan]->nsamples; i++)
                hwaveform[ichan]->SetBinContent(i+1, ww[ichan]->samples[i]);
+         }
+
+         if (wamp > fMaxWamp[ichan]) {
+            fMaxWamp[ichan] = wamp;
+            if (doPrint)
+               printf("saving biggest waveform %d\n", ichan);
+            for (int i=0; i<ww[ichan]->nsamples; i++)
+               hwaveform1[ichan]->SetBinContent(i+1, ww[ichan]->samples[i]);
          }
 
          hamp[ichan]->Fill(wamp);
@@ -591,6 +635,7 @@ public:
 
          int ifeam = ichan/nchan_feam;
          int ichan_feam = ichan%nchan_feam;
+         int nc_after = e->adcs[ifeam]->nchan;
 
          fHF[ifeam].hbmean_prof->Fill(ichan_feam, b);
          fHF[ifeam].hbrms_prof->Fill(ichan_feam, r);
@@ -612,6 +657,10 @@ public:
             hamp_hit_pedestal->Fill(wamp);
 
             fHF[ifeam].hnhits->Fill(ichan_feam);
+            fHF[ifeam].htime->Fill(ichan_feam, xpos);
+            fHF[ifeam].hamp->Fill(ichan_feam, wamp);
+            auto pad = getPad(ichan_feam/nc_after, ichan_feam%nc_after);
+            fHF[ifeam].hpadhits->Fill(pad.second,pad.first);
          }
       }
 
@@ -622,7 +671,7 @@ public:
 
          fC->Clear();
          fC->Divide(2,3);
-         
+
          if (1) {
             fC->cd(1);
             TH1D* hh = new TH1D("hh", "hh", nbins, 0, nbins);
@@ -631,7 +680,7 @@ public:
             }
             hh->Draw();
          }
-         
+
          if (1) {
             fC->cd(2);
             TH1D* hhh = new TH1D("hhh", "hhh", nbins, 0, nbins);
@@ -642,7 +691,7 @@ public:
             hhh->SetMaximum(+33000);
             hhh->Draw();
          }
-         
+
          if (1) {
             fC->cd(3);
             int nbins = ww[39]->nsamples;
@@ -654,7 +703,7 @@ public:
             hhh->SetMaximum(+9000);
             hhh->Draw();
          }
-         
+
          if (1) {
             fC->cd(4);
             int nbins = ww[iplot]->nsamples;
@@ -666,7 +715,7 @@ public:
             hhh->SetMaximum(+9000);
             hhh->Draw();
          }
-         
+
          if (1) {
             fC->cd(5);
             int nbins = ww[33]->nsamples;
@@ -678,7 +727,7 @@ public:
             h33->SetMaximum(+9000);
             h33->Draw();
          }
-         
+
          if (1) {
             fC->cd(6);
             int nbins = ww[34]->nsamples;
@@ -690,7 +739,7 @@ public:
             h34->SetMaximum(+9000);
             h34->Draw();
          }
-         
+
          fC->Modified();
          fC->Draw();
          fC->Update();
@@ -713,7 +762,7 @@ public:
          h->SetMinimum(-9000);
          h->SetMaximum(+9000);
          h->Draw();
-         
+
          c->Modified();
          c->Draw();
          c->Update();
@@ -771,14 +820,14 @@ void FeamModule::Init(const std::vector<std::string> &args)
          fPlotPad = atoi(args[i+1].c_str());
    }
 }
-   
+
 void FeamModule::Finish()
 {
    printf("FeamModule::Finish!\n");
 
    DELETE(fPlotPadCanvas);
 }
-   
+
 TARunInterface* FeamModule::NewRun(TARunInfo* runinfo)
 {
    printf("FeamModule::NewRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());

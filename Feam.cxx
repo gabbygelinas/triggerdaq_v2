@@ -9,6 +9,8 @@
 #include <stdlib.h> // realloc()
 #include <string.h> // memcpy()
 #include <assert.h> // assert()
+#include <utility>  // std::pair
+#include <iostream>
 
 static uint8_t getUint8(const void* ptr, int offset)
 {
@@ -57,7 +59,7 @@ FeamPacket::~FeamPacket()
 void FeamPacket::Unpack(const char* data, int size)
 {
    error = true;
-   
+
    off = 0;
    cnt = getUint32le(data, off); off += 4;
    n   = getUint16le(data, off); off += 2;
@@ -99,7 +101,7 @@ void FeamModuleData::Finalize()
       error = true;
       return;
    }
-   
+
    if (fSize != 310688) {
       error = true;
       return;
@@ -166,18 +168,18 @@ FeamModuleData::FeamModuleData(const FeamPacket* p, int xmodule)
 {
    //printf("FeamModuleData: ctor! %d\n", x2count++);
    assert(p->n == 0);
-   
+
    module = xmodule;
-   
+
    cnt = p->cnt;
    ts_start = p->ts_start;
    ts_trig = p->ts_trig;
-   
+
    fSize = 0;
    fPtr = NULL;
-   
+
    next_n = 0;
-   
+
    error = false;
 
    fTs = 0;
@@ -239,7 +241,7 @@ void Unpack(FeamAdcData* a, FeamModuleData* m)
 
    const unsigned char* ptr = (const unsigned char*)m->fPtr;
    int count = 0;
-   
+
    for (int ibin = 0; ibin < 511; ibin++) {
       for (int ichan = 0; ichan < 76; ichan++) {
          for (int isca = 0; isca < 4; isca++) {
@@ -256,8 +258,75 @@ void Unpack(FeamAdcData* a, FeamModuleData* m)
          }
       }
    }
-   
+
    //printf("count %d\n", count);
+}
+
+std::pair<int,int> getPad(short fAFTER, int index){
+    // int channel = index; // FIXME: change to next line once basic testing is done
+    const int first = 0;  // change if index is numbered from 1
+    index -= first;
+
+    // Remove "special" channels to get 72 consecutive indices
+    int channel = index;
+    if(index == 12) channel = -1;
+    else if(index == 25) channel = -2;
+    else if(index == 50) channel = -3;
+    else if(index == 63) channel = -4;
+    else if(index > 76){
+       std::cerr << "Index " << index << " too large!" << std::endl;
+       return std::pair<int,int>(-999,-999);
+    } else
+        channel -= int(index > 11) + int(index > 24) + int(index > 49) + int(index > 62);
+
+    if(channel < 0){
+       return std::pair<int,int>(-(fAFTER+1), channel);
+    }
+    int col = -1;
+    int pad = -1;
+    int offset = 0;
+    if(fAFTER < 2){
+        if(fAFTER == 0) offset = 36;
+        if(channel < 36){
+            if(channel >= 18){
+                col = 0;
+                pad = channel+offset;
+            } else {
+                col = 1;
+                pad = 35-channel+offset;
+            }
+        } else {
+            if(channel < 54){
+                col = 0;
+                pad = channel-36+offset;
+            } else {
+                col = 1;
+                pad = 71-channel+offset;
+            }
+        }
+    } else {
+        if(fAFTER == 3) offset = 36;
+        if(channel < 36){
+            if(channel < 18){
+                col = 2;
+                pad = channel+offset;
+            } else {
+                col = 3;
+                pad = 35-channel+offset;
+            }
+        } else {
+            if(channel >= 54){
+                col = 2;
+                pad = channel-36+offset;
+            } else {
+                col = 3;
+                pad = 71-channel+offset;
+            }
+        }
+    }
+
+
+    return std::pair<int,int>(col,pad);
 }
 
 /* emacs
@@ -267,5 +336,3 @@ void Unpack(FeamAdcData* a, FeamModuleData* m)
  * indent-tabs-mode: nil
  * End:
  */
-
-
