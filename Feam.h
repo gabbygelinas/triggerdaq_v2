@@ -14,13 +14,14 @@
 // AFTER ASIC basic information:
 //
 // 511 SCA time bins
-// 76 SCA channels:
+// 79 readout index entries
+// 76 SCA channels
 // 72 data channels
-// 4 fixed pattern noise (fpn) channels: 13, 26, 51 and 64.
+// 4 fixed pattern noise (fpn) channels, readout index 16, 29, 54, 67)
 //
-// Readout indices:
+// Readout index, channel index, pin number:
 //
-// 1, 2, 3: read
+// 1, 2, 3: reset1, reset2, reset3
 // 4..15 chan 1..12 pins 36..25
 // 16 fpn1
 // 17..28 chan 13..24 pins 24..13
