@@ -46,48 +46,55 @@ public:
    TProfile* hbmean_prof;
    TProfile* hbrms_prof;
    TH1D* hnhits;
+   TH1D* hnhits_pad;
    TH2D* htime;
    TH2D* hamp;
    TH2D* hpadhits;
+
 public:
    FeamHistograms()
    {
       hbmean_prof = NULL;
       hbrms_prof = NULL;
       hnhits = NULL;
+      hnhits_pad = NULL;
       htime = NULL;
       hamp = NULL;
       hpadhits = NULL;
    };
 
-   void CreateHistograms(int ifeam, int nchan, int nbins)
+   void CreateHistograms(int position, int nchan, int nbins)
    {
       char name[256];
       char title[256];
 
-      sprintf(name,  "feam%02d_bmean_prof", ifeam);
-      sprintf(title, "feam %2d baseline mean vs chan", ifeam);
+      sprintf(name,  "pos%02d_bmean_prof", position);
+      sprintf(title, "feam pos %2d baseline mean vs chan", position);
       hbmean_prof = new TProfile(name, title, nchan, -0.5, nchan-0.5);
 
-      sprintf(name,  "feam%02d_brms_prof", ifeam);
-      sprintf(title, "feam %2d baseline rms vs chan", ifeam);
+      sprintf(name,  "pos%02d_brms_prof", position);
+      sprintf(title, "feam pos %2d baseline rms vs chan", position);
       hbrms_prof  = new TProfile(name, title,  nchan, -0.5, nchan-0.5);
 
-      sprintf(name,  "feam%02d_hit_map", ifeam);
-      sprintf(title, "feam %2d hits vs chan", ifeam);
+      sprintf(name,  "pos%02d_hit_map", position);
+      sprintf(title, "feam pos %2d hits vs SCA readout", position);
       hnhits      = new TH1D(name, title, nchan, -0.5, nchan-0.5);
 
-      sprintf(name,  "feam%02d_hit_time", ifeam);
-      sprintf(title, "feam %2d hit time vs chan", ifeam);
+      sprintf(name,  "pos%02d_hit_map_pads", position);
+      sprintf(title, "feam pos %2d hits vs TPC pad", position);
+      hnhits_pad  = new TH1D(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL, -0.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5);
+
+      sprintf(name,  "pos%02d_hit_time", position);
+      sprintf(title, "feam pos %2d hit time vs chan", position);
       htime       = new TH2D(name, title, nchan, -0.5, nchan-0.5, 50, 0, 500);
 
-      sprintf(name,  "feam%02d_hit_amp", ifeam);
-      sprintf(title, "feam %2d hit p.h. vs chan", ifeam);
+      sprintf(name,  "pos%02d_hit_amp", position);
+      sprintf(title, "feam pos %2d hit p.h. vs chan", position);
       hamp        = new TH2D(name, title, nchan, -0.5, nchan-0.5, 50, 0, 17000);
 
-      sprintf(name,  "feam%02d_hit_pad", ifeam);
-      sprintf(title, "feam %2d hit column vs pad", ifeam);
-      hpadhits    = new TH2D(name, title, MAX_FEAM_PADS, -0.5, MAX_FEAM_PADS-0.5, MAX_FEAM_PAD_COL, 0, MAX_FEAM_PAD_COL);
+      sprintf(name,  "pos%02d_hit_pad", position);
+      sprintf(title, "feam pos %2d hit column vs pad", position);
+      hpadhits    = new TH2D(name, title, MAX_FEAM_PAD_ROWS, -0.5, MAX_FEAM_PAD_ROWS-0.5, MAX_FEAM_PAD_COL, 0, MAX_FEAM_PAD_COL);
    }
 };
 
@@ -362,7 +369,7 @@ public:
                   continue;
                }
                FeamModuleData* m = e->modules[i];
-               printf("module %2d, cnt %4d, ts_trig: 0x%08x %14.3f usec, ts_incr %14.3f usec\n", m->module, m->cnt, m->ts_trig, m->fTime*1e6, m->fTimeIncr*1e6);
+               printf("position %2d, cnt %4d, ts_trig: 0x%08x %14.3f usec, ts_incr %14.3f usec\n", m->fPosition, m->cnt, m->ts_trig, m->fTime*1e6, m->fTimeIncr*1e6);
             }
          }
 
@@ -660,7 +667,10 @@ public:
             fHF[ifeam].htime->Fill(ichan_feam, xpos);
             fHF[ifeam].hamp->Fill(ichan_feam, wamp);
             auto pad = getPad(ichan_feam/nc_after, ichan_feam%nc_after);
-            fHF[ifeam].hpadhits->Fill(pad.second,pad.first);
+            int col = pad.first;
+            int row = pad.second;
+            fHF[ifeam].hpadhits->Fill(row, col);
+            fHF[ifeam].hnhits_pad->Fill(col*MAX_FEAM_PAD_ROWS + row);
          }
       }
 

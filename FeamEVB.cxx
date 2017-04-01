@@ -79,15 +79,15 @@ void FeamEVB::CheckFeam(FeamEvent *e)
    //PrintFeam(e);
 }
    
-void FeamEVB::AddFeam(int ifeam, FeamModuleData *m)
+void FeamEVB::AddFeam(int position, FeamModuleData *m)
 {
-   m->fTime = fSync.fModules[ifeam].GetTime(m->fTs, m->fTsEpoch);
+   m->fTime = fSync.fModules[position].GetTime(m->fTs, m->fTsEpoch);
 
-   //printf("FeamEVB::AddFeam: module %d, ts 0x%08x, epoch %d, time %f\n", ifeam, m->fTs, m->fTsEpoch, m->fTime);
+   //printf("FeamEVB::AddFeam: module %d, ts 0x%08x, epoch %d, time %f\n", position, m->fTs, m->fTsEpoch, m->fTime);
 
    FeamEvent* e = FindEvent(m->fTime);
    
-   if (e->modules[ifeam]) {
+   if (e->modules[position]) {
       // FIXME: duplicate data
       printf("duplicate data!\n");
       delete m;
@@ -100,10 +100,10 @@ void FeamEVB::AddFeam(int ifeam, FeamModuleData *m)
    if (m->fTimeIncr < e->timeIncr)
       e->timeIncr = m->fTimeIncr;
    
-   e->modules[ifeam] = m;
-   e->adcs[ifeam] = new FeamAdcData;
+   e->modules[position] = m;
+   e->adcs[position] = new FeamAdcData;
    
-   Unpack(e->adcs[ifeam], m);
+   Unpack(e->adcs[position], m);
    
    CheckFeam(e);
 }
@@ -113,29 +113,29 @@ void FeamEVB::Build()
    while (fBuf.size() > 0) {
       FeamModuleData* m = fBuf.front();
       fBuf.pop_front();
-      AddFeam(m->module, m);
+      AddFeam(m->fPosition, m);
    }
 }
 
-void FeamEVB::AddPacket(int ifeam, const FeamPacket* p, const char* ptr, int size)
+void FeamEVB::AddPacket(const char* bank, int position, const FeamPacket* p, const char* ptr, int size)
 {
    if (p->n == 0) {
       // 1st packet
       
-      if (fData[ifeam]) {
-         //printf("Complete event: FEAM %d: ", ifeam);
-         //data[ifeam]->Print();
+      if (fData[position]) {
+         //printf("Complete event: FEAM %d: ", position);
+         //data[position]->Print();
          //printf("\n");
          
-         FeamModuleData* m = fData[ifeam];
-         fData[ifeam] = NULL;
+         FeamModuleData* m = fData[position];
+         fData[position] = NULL;
          
-         fSync.Add(ifeam, m->ts_trig);
+         fSync.Add(position, m->ts_trig);
          
-         m->fTs = fSync.fModules[ifeam].fLastTs;
-         m->fTsEpoch = fSync.fModules[ifeam].fEpoch;
-         m->fTime = 0; // fSync.fModules[ifeam].fLastTimeSec;
-         m->fTimeIncr = fSync.fModules[ifeam].fLastTimeSec - fSync.fModules[ifeam].fPrevTimeSec;
+         m->fTs = fSync.fModules[position].fLastTs;
+         m->fTsEpoch = fSync.fModules[position].fEpoch;
+         m->fTime = 0; // fSync.fModules[position].fLastTimeSec;
+         m->fTimeIncr = fSync.fModules[position].fLastTimeSec - fSync.fModules[position].fPrevTimeSec;
          
          m->Finalize();
          
@@ -143,30 +143,30 @@ void FeamEVB::AddPacket(int ifeam, const FeamPacket* p, const char* ptr, int siz
          
          fBuf.push_back(m);
       } else {
-         printf("FeamEVB: Received first data from FEAM %d\n", ifeam);
+         printf("FeamEVB: Received first data from FEAM %d\n", position);
       }
       
-      //printf("Start ew event: FEAM %d: ", ifeam);
+      //printf("Start ew event: FEAM %d: ", position);
       //p->Print();
       //printf("\n");
 
-      assert(fData[ifeam] == NULL);
+      assert(fData[position] == NULL);
       
-      fData[ifeam] = new FeamModuleData(p, ifeam);
+      fData[position] = new FeamModuleData(p, bank, position);
    }
    
-   FeamModuleData* m = fData[ifeam];
+   FeamModuleData* m = fData[position];
    
    if (m == NULL) {
       // did not see the first event yet, cannot unpack
-      printf("FeamEVB: dropped packet, feam %d: ", ifeam);
+      printf("FeamEVB: dropped packet, feam %d: ", position);
       p->Print();
       printf("\n");
       delete p;
       return;
    }
    
-   m->AddData(p, ifeam, ptr, size);
+   m->AddData(p, position, ptr, size);
    
    //a->Print();
    //printf("\n");

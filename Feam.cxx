@@ -122,7 +122,7 @@ void FeamModuleData::Finalize()
 
 void FeamModuleData::Print() const
 {
-   printf("module %2d, ", module);
+   printf("bank %s, module %2d, ", fBank.c_str(), fPosition);
    printf("cnt %6d, ts_start 0x%08x, ts_trig 0x%08x, ",
           cnt,
           ts_start,
@@ -132,13 +132,13 @@ void FeamModuleData::Print() const
    printf("error %d", error);
 }
 
-void FeamModuleData::AddData(const FeamPacket*p, int xmodule, const char* ptr, int size)
+void FeamModuleData::AddData(const FeamPacket*p, int position, const char* ptr, int size)
 {
-   assert(xmodule == module);
+   assert(position == fPosition);
 
    //printf("add %d size %d\n", p->n, size);
    if (p->n != next_n) {
-      printf("module %2d, cnt %6d, wrong packet sequence: expected %d, got %d!\n", module, cnt, next_n, p->n);
+      printf("position %2d, cnt %6d, wrong packet sequence: expected %d, got %d!\n", position, cnt, next_n, p->n);
       next_n = p->n + 1;
       error = true;
       return;
@@ -164,12 +164,13 @@ void FeamModuleData::AddData(const FeamPacket*p, int xmodule, const char* ptr, i
    next_n = p->n + 1;
 }
 
-FeamModuleData::FeamModuleData(const FeamPacket* p, int xmodule)
+FeamModuleData::FeamModuleData(const FeamPacket* p, const char* bank, int position)
 {
    //printf("FeamModuleData: ctor! %d\n", x2count++);
    assert(p->n == 0);
 
-   module = xmodule;
+   fBank = bank;
+   fPosition = position;
 
    cnt = p->cnt;
    ts_start = p->ts_start;
@@ -221,7 +222,7 @@ FeamEvent::~FeamEvent() // dtor
       }
 }
 
-void FeamEvent::Print() const
+void FeamEvent::Print(int level) const
 {
    printf("FeamEvent %d, time %f, incr %f, complete %d, error %d, modules: ", counter, time, timeIncr, complete, error);
    for (unsigned i=0; i<modules.size(); i++) {

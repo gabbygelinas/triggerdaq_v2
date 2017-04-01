@@ -7,6 +7,7 @@
 #define Feam_H
 
 #include <stdint.h>
+#include <string>
 #include <vector>
 #include <utility>  // std::pair
 
@@ -60,7 +61,8 @@ public:
 class FeamModuleData
 {
 public:
-   int module;
+   std::string fBank; // MIDAS bank, FEAM serial number
+   int fPosition; // geographical position 0..63
 
    uint32_t cnt;
    uint32_t ts_start;
@@ -79,19 +81,21 @@ public:
    double   fTimeIncr;
 
 public:
-   FeamModuleData(const FeamPacket* p, int xmodule);
+   FeamModuleData(const FeamPacket* p, const char* bank, int position);
    ~FeamModuleData(); // dtor
-   void AddData(const FeamPacket*p, int module, const char* ptr, int size);
+   void AddData(const FeamPacket*p, int position, const char* ptr, int size);
    void Finalize();
    void Print() const;
 };
 
-#define MAX_FEAM   8
-#define MAX_FEAM_SCA    4
-#define MAX_FEAM_CHAN  80
-#define MAX_FEAM_BINS 900
-#define MAX_FEAM_PAD_COL    4
-#define MAX_FEAM_PADS 72
+#define MAX_FEAM           8 /* 64: 0..63 */
+#define MAX_FEAM_SCA       4 /* 0,1,2,3 is A,B,C,D */
+#define MAX_FEAM_READOUT  80 /* 1..79 */
+#define MAX_FEAM_BINS    511 /* SCA time bins     */
+#define MAX_FEAM_FPN       4 /* 4 FPN channels    */
+#define MAX_FEAM_CHAN     72 /* 72 data channels  */
+#define MAX_FEAM_PAD_COL   4 /* 4 TPC pad columns */
+#define MAX_FEAM_PAD_ROWS (4*18) /* 4*18 TPC pad rows across 2 ASICs on one wing */
 
 struct FeamAdcData
 {
@@ -99,7 +103,20 @@ struct FeamAdcData
    int nchan;
    int nbins;
 
-   int adc[MAX_FEAM_SCA][MAX_FEAM_CHAN][MAX_FEAM_BINS];
+   int adc[MAX_FEAM_SCA][MAX_FEAM_READOUT][MAX_FEAM_BINS];
+};
+
+struct FeamChannel
+{
+   std::string bank;
+   int position; /* 0..63, div8 is vertical position, mod8 is azimuthal position */
+   int sca; /* 0..3 */
+   int sca_readout; /* 1..79 */
+   int sca_chan; /* 1..72 */
+   int tpc_col; /* 0..3 */
+   int tpc_row; /* 0..72 */
+   int first_bin; /* usually 0 */
+   std::vector<int> adc_samples;
 };
 
 struct FeamEvent
@@ -112,10 +129,11 @@ struct FeamEvent
 
    std::vector<FeamModuleData*> modules;
    std::vector<FeamAdcData*> adcs;
+   std::vector<FeamChannel*> hits;
 
    FeamEvent(); // ctor
    ~FeamEvent(); // dtor
-   void Print() const;
+   void Print(int level=0) const;
 };
 
 extern void Unpack(FeamAdcData* a, FeamModuleData* m);

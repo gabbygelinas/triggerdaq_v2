@@ -208,7 +208,7 @@ FeamEvent* UnpackFeamEvent(FeamEVB* evb, TMEvent* event, const std::vector<std::
                
             assert(!p->error);
             
-            evb->AddPacket(i, p, data + p->off, p->buf_len);
+            evb->AddPacket(b->name.c_str(), i, p, data + p->off, p->buf_len);
          }
       }
    }

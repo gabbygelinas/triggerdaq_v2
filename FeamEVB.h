@@ -25,9 +25,9 @@ public:
    FeamEVB(int num_modules, double ts_freq); // ctor
    FeamEvent* FindEvent(double t);
    void CheckFeam(FeamEvent *e);
-   void AddFeam(int ifeam, FeamModuleData *m);
+   void AddFeam(int position, FeamModuleData *m);
    void Build();
-   void AddPacket(int ifeam, const FeamPacket* p, const char* ptr, int size);
+   void AddPacket(const char* bank, int position, const FeamPacket* p, const char* ptr, int size);
    void Print() const;
    FeamEvent* Get();
 };
