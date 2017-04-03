@@ -317,6 +317,13 @@ void TsSync::Add(unsigned i, uint32_t ts)
    }
 }
 
+void TsSync::Print() const
+{
+   printf("TsSync: ");
+   printf("sync_ok: %d, ", fSyncOk);
+   printf("overflow: %d", fOverflow);
+}
+
 void TsSync::Dump() const
 {
    unsigned min = 0;

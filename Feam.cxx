@@ -138,7 +138,7 @@ void FeamModuleData::AddData(const FeamPacket*p, int position, const char* ptr, 
 
    //printf("add %d size %d\n", p->n, size);
    if (p->n != next_n) {
-      printf("position %2d, cnt %6d, wrong packet sequence: expected %d, got %d!\n", position, cnt, next_n, p->n);
+      printf("FeamModuleData::AddData: position %2d, cnt %6d, wrong packet sequence: expected %d, got %d!\n", position, cnt, next_n, p->n);
       next_n = p->n + 1;
       error = true;
       return;
@@ -151,7 +151,7 @@ void FeamModuleData::AddData(const FeamPacket*p, int position, const char* ptr, 
    char* new_ptr = (char*)realloc(fPtr, new_size);
 
    if (!new_ptr) {
-      printf("cannot reallocate ADC buffer from %d to %d bytes!\n", fSize, new_size);
+      printf("FeamModuleData::AddData: cannot reallocate ADC buffer from %d to %d bytes!\n", fSize, new_size);
       error = true;
       return;
    }

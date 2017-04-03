@@ -32,9 +32,12 @@ class FeamEVB
    void CheckFeam(FeamEvent *e);
    void AddFeam(int position, FeamModuleData *m);
    void Build();
+   void BuildLastEvent();
    void AddPacket(const char* bank, int position, const FeamPacket* p, const char* ptr, int size);
+   void Finalize(int position);
    void Print() const;
    FeamEvent* Get();
+   FeamEvent* GetLastEvent();
 };
 
 #endif

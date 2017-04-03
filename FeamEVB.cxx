@@ -24,7 +24,6 @@ FeamEVB::FeamEVB(int num_modules, double ts_freq)
 
 FeamEVB::~FeamEVB()
 {
-   printf("FeamEVB: max dt: %.0f ns, min dt: %.0f ns\n", fMaxDt*1e9, fMinDt*1e9);
 }
 
 FeamEvent* FeamEVB::FindEvent(double t)
@@ -133,6 +132,18 @@ void FeamEVB::AddFeam(int position, FeamModuleData *m)
    CheckFeam(e);
 }
 
+void FeamEVB::BuildLastEvent()
+{
+   for (unsigned i=0; i<fData.size(); i++) {
+      if (fData[i]) {
+         // complete the buffered
+         Finalize(i);
+      }
+   }
+
+   Build();
+}
+
 void FeamEVB::Build()
 {
    while (fBuf.size() > 0) {
@@ -142,31 +153,33 @@ void FeamEVB::Build()
    }
 }
 
+void FeamEVB::Finalize(int position)
+{
+   FeamModuleData* m = fData[position];
+   fData[position] = NULL;
+
+   assert(m != NULL); // ensured by caller
+   
+   fSync.Add(position, m->ts_trig);
+   
+   m->fTs = fSync.fModules[position].fLastTs;
+   m->fTsEpoch = fSync.fModules[position].fEpoch;
+   m->fTime = 0; // fSync.fModules[position].fLastTimeSec;
+   m->fTimeIncr = fSync.fModules[position].fLastTimeSec - fSync.fModules[position].fPrevTimeSec;
+   
+   m->Finalize();
+   
+   fBuf.push_back(m);
+}
+
 void FeamEVB::AddPacket(const char* bank, int position, const FeamPacket* p, const char* ptr, int size)
 {
    if (p->n == 0) {
       // 1st packet
       
       if (fData[position]) {
-         //printf("Complete event: FEAM %d: ", position);
-         //data[position]->Print();
-         //printf("\n");
-         
-         FeamModuleData* m = fData[position];
-         fData[position] = NULL;
-         
-         fSync.Add(position, m->ts_trig);
-         
-         m->fTs = fSync.fModules[position].fLastTs;
-         m->fTsEpoch = fSync.fModules[position].fEpoch;
-         m->fTime = 0; // fSync.fModules[position].fLastTimeSec;
-         m->fTimeIncr = fSync.fModules[position].fLastTimeSec - fSync.fModules[position].fPrevTimeSec;
-         
-         m->Finalize();
-         
-         // xxx
-         
-         fBuf.push_back(m);
+         // complete the previous event
+         Finalize(position);
       } else {
          printf("FeamEVB: Received first data from FEAM %d\n", position);
       }
@@ -201,14 +214,45 @@ void FeamEVB::AddPacket(const char* bank, int position, const FeamPacket* p, con
 
 void FeamEVB::Print() const
 {
-   //printf("FEAM evb status: %p %p, buffered %d\n", data[0], data[1], (int)buf.size());
+   printf("FeamEVB::Print: FEAM event builder status:\n");
+
+   printf("Sync status: ");
+   fSync.Print();
+   printf("\n");
+
+   printf("event counter: %d\n", fCounter);
+   printf("max dt: %.0f ns (time between modules in one event)\n", fMaxDt*1e9);
+   printf("min dt: %.0f ns (time between events)\n", fMinDt*1e9);
+   
+   printf("Data buffer: %d entries\n", (int)fData.size());
+   for (unsigned i=0; i<fData.size(); i++) {
+      printf("position %d: ", i);
+      if (fData[i]) {
+         fData[i]->Print();
+      } else {
+         printf("null");
+      }
+      printf("\n");
+   }
+
+   printf("Incomplete events buffer: %d entries\n", (int)fBuf.size());
+   for (unsigned i=0; i<fBuf.size(); i++) {
+      printf("entry %d: ", i);
+      fBuf[i]->Print();
+      printf("\n");
+   }
+
+   printf("Completed events buffer: %d entries\n", (int)fEvents.size());
+   for (unsigned i=0; i<fEvents.size(); i++) {
+      printf("entry %d: ", i);
+      fEvents[i]->Print();
+      printf("\n");
+   }
+   printf("FeamEVB::Print: done.\n");
 }
 
 FeamEvent* FeamEVB::Get()
 {
-   if (fBuf.size() < 1)
-      return NULL;
-   
    if (fSync.fSyncOk)
       Build();
    
@@ -240,6 +284,18 @@ FeamEvent* FeamEVB::Get()
          printf("\n");
       }
    }
+   
+   FeamEvent* e = fEvents.front();
+   fEvents.pop_front();
+   return e;
+}
+
+FeamEvent* FeamEVB::GetLastEvent()
+{
+   BuildLastEvent();
+   
+   if (fEvents.size() < 1)
+      return NULL;
    
    FeamEvent* e = fEvents.front();
    fEvents.pop_front();
