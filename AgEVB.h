@@ -27,20 +27,25 @@ struct AgEvbBuf
 
 class AgEVB
 {
-public:
+ public: // settings
+   unsigned fMaxSkew;
+   unsigned fMaxDead;
+   double   fEpsSec;
+   bool     fClockDrift;
+
+ public: // event builder state
    TsSync fSync;
    int    fCounter;
    std::deque<AgEvbBuf*> fBuf[2];
    std::deque<AgEvent*> fEvents;
-   unsigned fMaxSkew;
-   unsigned fMaxDead;
    double fLastA16Time;
    double fLastFeamTime;
+
+ public: // diagnostics
    double fMaxDt;
    double fMinDt;
-   double fEpsSec;
 
-   AgEVB(double a16_ts_freq, double feam_ts_freq, double eps_sec, int max_skew, int max_dead); // ctor
+   AgEVB(double a16_ts_freq, double feam_ts_freq, double eps_sec, int max_skew, int max_dead, bool clock_drift); // ctor
    ~AgEVB(); // dtor
    void AddAlpha16Event(Alpha16Event *e);
    void AddFeamEvent(FeamEvent *e);

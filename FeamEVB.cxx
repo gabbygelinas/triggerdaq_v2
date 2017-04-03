@@ -18,16 +18,41 @@ FeamEVB::FeamEVB(int num_modules, double ts_freq)
       fData.push_back(NULL);
       fSync.Configure(i, ts_freq, 1000.0*1e-9, 0, 50);
    }
+   fMaxDt = 0;
+   fMinDt = 0;
+}
+
+FeamEVB::~FeamEVB()
+{
+   printf("FeamEVB: max dt: %.0f ns, min dt: %.0f ns\n", fMaxDt*1e9, fMinDt*1e9);
 }
 
 FeamEvent* FeamEVB::FindEvent(double t)
 {
+   double amin = 0;
    for (unsigned i=0; i<fEvents.size(); i++) {
-      if (fabs(fEvents[i]->time - t) < 200.0/1e9) {
+      double dt = fEvents[i]->time - t;
+      double adt = fabs(dt);
+      if (adt < 200.0/1e9) {
+         if (adt > fMaxDt) {
+            printf("FeamEVB: for time %f found event at time %f, new max dt %.0f ns, old max dt %.0f ns\n", t, fEvents[i]->time, adt*1e9, fMaxDt*1e9);
+            fMaxDt = adt;
+         }
          //printf("Found event for time %f\n", t);
          return fEvents[i];
       }
+
+      if (amin == 0)
+         amin = adt;
+      if (adt < amin)
+         amin = adt;
    }
+
+   if (fMinDt == 0)
+      fMinDt = amin;
+
+   if (amin < fMinDt)
+      fMinDt = amin;
    
    FeamEvent* e = new FeamEvent();
    e->complete = false;

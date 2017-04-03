@@ -14,15 +14,20 @@
 
 class FeamEVB
 {
-public:
+ public:
    unsigned fNumModules;
    TsSync fSync;
    int fCounter;
    std::vector<FeamModuleData*> fData;
    std::deque<FeamModuleData*> fBuf;
    std::deque<FeamEvent*> fEvents;
+   double fMaxDt;
+   double fMinDt;
 
+ public:
    FeamEVB(int num_modules, double ts_freq); // ctor
+   ~FeamEVB(); // dtor
+
    FeamEvent* FindEvent(double t);
    void CheckFeam(FeamEvent *e);
    void AddFeam(int position, FeamModuleData *m);
