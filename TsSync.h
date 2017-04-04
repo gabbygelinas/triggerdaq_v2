@@ -75,6 +75,7 @@ public:
    void Check(unsigned inew);
    void Add(unsigned i, uint32_t ts);
    void Dump() const;
+   void Print() const;
 };
 
 #endif

@@ -80,7 +80,7 @@ public:
 
    void BeginRun(TARunInfo* runinfo)
    {
-      printf("BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
+      printf("UnpackRun::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
       time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
       printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
@@ -88,9 +88,8 @@ public:
       LoadFeamBanks(runinfo->fRunNo);
 
       fA16Evb  = new Alpha16EVB();
-      //fFeamEvb = new FeamEVB(MAX_FEAM, 125.0*1e6*0.99999821102751183809);
-      fFeamEvb = new FeamEVB(MAX_FEAM, 125.0*1e6);
-      fAgEvb = new AgEVB(100.0*1e6/100.0, 125.0*1e6/100.0, 50.0*1e-6, 100, 90);
+      fFeamEvb = new FeamEVB(MAX_FEAM, 125.0*1e6, 10000/1e9);
+      fAgEvb = new AgEVB(100.0*1e6, 125.0*1e6, 50.0*1e-6, 100, 90, true);
 
       fA16Evb->Reset();
       fA16Evb->Configure(runinfo->fRunNo);
@@ -98,14 +97,57 @@ public:
 
    void EndRun(TARunInfo* runinfo)
    {
-      printf("EndRun, run %d\n", runinfo->fRunNo);
+      printf("UnpackRun::EndRun, run %d\n", runinfo->fRunNo);
       time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
       printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
-   }
 
+      int count_feam = 0;
+
+      if (fFeamEvb) {
+         //printf("UnpackRun::EndRun: FeamEVB state:\n");
+         //fFeamEvb->Print();
+
+         while (1) {
+            FeamEvent *e = fFeamEvb->GetLastEvent();
+            if (!e)
+               break;
+            
+            if (1) {
+               printf("Unpacked FEAM event: ");
+               e->Print();
+               printf("\n");
+            }
+            
+            if (0) {
+               for (unsigned i=0; i<e->modules.size(); i++) {
+                  if (!e->modules[i])
+                     break;
+                  FeamModuleData* m = e->modules[i];
+                  printf("position %2d, cnt %4d, ts_trig: 0x%08x %14.3f usec, ts_incr %14.3f usec\n", m->fPosition, m->cnt, m->ts_trig, m->fTime*1e6, m->fTimeIncr*1e6);
+                  //a->Print();
+                  //printf("\n");
+               }
+            }
+            
+            if (fAgEvb) {
+               count_feam += 1;
+               fAgEvb->AddFeamEvent(e);
+               e = NULL;
+            }
+            
+            DELETE(e);
+         }
+
+         printf("UnpackRun::EndRun: FeamEVB final state:\n");
+         fFeamEvb->Print();
+      }
+      
+      printf("UnpackRun::EndRun: Unpacked %d last FEAM events\n", count_feam);
+   }
+   
    void PauseRun(TARunInfo* runinfo)
    {
-      printf("PauseRun, run %d\n", runinfo->fRunNo);
+      printf("UnpackRun::PauseRun, run %d\n", runinfo->fRunNo);
    }
 
    void ResumeRun(TARunInfo* runinfo)
@@ -195,7 +237,7 @@ public:
 
    void AnalyzeSpecialEvent(TARunInfo* runinfo, TMEvent* event)
    {
-      printf("AnalyzeSpecialEvent, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
+      printf("UnpackRun::AnalyzeSpecialEvent, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
    }
 };
 

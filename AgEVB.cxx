@@ -10,11 +10,14 @@
 #include <stdio.h> // NULL, printf()
 #include <math.h> // fabs()
 
-AgEVB::AgEVB(double a16_ts_freq, double feam_ts_freq, double eps_sec, int max_skew, int max_dead)
+AgEVB::AgEVB(double a16_ts_freq, double feam_ts_freq, double eps_sec, int max_skew, int max_dead, bool clock_drift)
 {
-   fCounter = 0;
    fMaxSkew = max_skew;
    fMaxDead = max_dead;
+   fEpsSec = eps_sec;
+   fClockDrift = clock_drift;
+
+   fCounter = 0;
    fSync.SetDeadMin(fMaxDead);
    fSync.Configure(0, a16_ts_freq,  0, 10.0*1e-6, fMaxSkew);
    fSync.Configure(1, feam_ts_freq, 0, 10.0*1e-6, fMaxSkew);
@@ -22,7 +25,6 @@ AgEVB::AgEVB(double a16_ts_freq, double feam_ts_freq, double eps_sec, int max_sk
    fLastFeamTime = 0;
    fMaxDt = 0;
    fMinDt = 0;
-   fEpsSec = eps_sec;
 }
 
 AgEVB::~AgEVB()
@@ -40,10 +42,12 @@ AgEvent* AgEVB::FindEvent(double t)
       double adt = fabs(dt);
 
       if (adt < fEpsSec) {
-         if (adt > fMaxDt)
+         if (adt > fMaxDt) {
+            //printf("AgEVB: for time %f found event at time %f, new max dt %.0f ns, old max dt %.0f ns\n", t, fEvents[i]->time, adt*1e9, fMaxDt*1e9);
             fMaxDt = adt;
+         }
          //printf("Found event for time %f\n", t);
-         //printf("Found event for time %f: event %d, %f, diff %f %.0f ns\n", t, i, fEvents[i]->time, dt, dt*1e9);
+         //printf("AgEVB: Found event for time %f: event %d, %f, diff %f %.0f ns\n", t, i, fEvents[i]->time, dt, dt*1e9);
          return fEvents[i];
       }
 
@@ -103,7 +107,7 @@ void AgEVB::Build(int index, AgEvbBuf *m)
       printf("offset: %f %f, index %d, ts 0x%08x, epoch %d, feam time %f\n", e->time, m->time, index, m->ts, m->epoch, m->feam->time);
    }
 
-   if (1) { // adjust offset for clock drift
+   if (fClockDrift) { // adjust offset for clock drift
       double off = e->time - m->time;
       //printf("offset: %f %f, diff %f, index %d\n", e->time, m->time, off, index);
       fSync.fModules[index].fOffsetSec += off/2.0;
