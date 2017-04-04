@@ -971,9 +971,9 @@ struct A16Run: public TARunInterface
       time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
       printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
       fATX->EndRun();
-      char fname[1024];
-      sprintf(fname, "output%05d.pdf", runinfo->fRunNo);
-      fATX->fH->fCanvas->SaveAs(fname);
+      //char fname[1024];
+      //sprintf(fname, "output%05d.pdf", runinfo->fRunNo);
+      //fATX->fH->fCanvas->SaveAs(fname);
    }
 
    void PauseRun(TARunInfo* runinfo)
