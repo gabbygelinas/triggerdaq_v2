@@ -41,6 +41,59 @@ static uint32_t getUint32le(const void* ptr, int offset)
    return (ptr8[3]<<24) | (ptr8[2]<<16) | (ptr8[1]<<8) | ptr8[0];
 }
 
+padMap::padMap(){
+   const int first = 0;  // change if index is numbered from 1
+   for(int i = 0; i < MAX_FEAM_READOUT; i++){
+      if(i < 4) channel[i] = -99;
+      else {
+         if(i == 16) channel[i] = -1;
+         else if(i == 29) channel[i] = -2;
+         else if(i == 54) channel[i] = -3;
+         else if(i == 67) channel[i] = -4;
+         else {
+            int ch = i - int(i > 16) - int(i > 29) - int(i > 54) - int(i > 67) - 3;
+            channel[i] = ch;
+            readout[ch] = i;
+         }
+      }
+   }
+   for(int isca = 0; isca < MAX_FEAM_SCA; isca++){
+      padcol[isca][0] = -99;
+      padrow[isca][0] = -99;
+   }
+   for(int isca = 0; isca < MAX_FEAM_SCA; isca++){
+      int offset = (isca%2)*MAX_FEAM_PAD_ROWS/2;
+      for(int ch = 1; ch <= MAX_FEAM_CHAN; ch++){
+         int col, row;
+         if(ch <= 36){
+            if(ch > 18){
+               col = 0;
+               row = 36-ch+offset;
+            } else {
+               col = 1;
+               row = ch-1+offset;
+            }
+         } else {
+            if(ch < 55){
+               col = 0;
+               row = 72-ch+offset;
+            } else {
+               col = 1;
+               row = ch-37+offset;
+            }
+         }
+         if(isca > 1){
+            col = 3-col;
+            row = 71-row;
+         }
+         padcol[isca][ch] = col;
+         padrow[isca][ch] = row;
+         sca[col][row] = isca;
+         sca_chan[col][row] = ch;
+      }
+   }
+};
+
 //static int x1count = 0;
 
 FeamPacket::FeamPacket()
@@ -261,73 +314,6 @@ void Unpack(FeamAdcData* a, FeamModuleData* m)
    }
 
    //printf("count %d\n", count);
-}
-
-std::pair<int,int> getPad(short fAFTER, int index){
-    // int channel = index; // FIXME: change to next line once basic testing is done
-    const int first = 0;  // change if index is numbered from 1
-    index -= first;
-
-    // Remove "special" channels to get 72 consecutive indices
-    int channel = index;
-    if(index == 12) channel = -1;
-    else if(index == 25) channel = -2;
-    else if(index == 50) channel = -3;
-    else if(index == 63) channel = -4;
-    else if(index > 76){
-       std::cerr << "Index " << index << " too large!" << std::endl;
-       return std::pair<int,int>(-999,-999);
-    } else
-        channel -= int(index > 11) + int(index > 24) + int(index > 49) + int(index > 62);
-
-    if(channel < 0){
-       return std::pair<int,int>(-(fAFTER+1), channel);
-    }
-    int col = -1;
-    int pad = -1;
-    int offset = 0;
-    if(fAFTER < 2){
-        if(fAFTER == 0) offset = 36;
-        if(channel < 36){
-            if(channel >= 18){
-                col = 0;
-                pad = channel+offset;
-            } else {
-                col = 1;
-                pad = 35-channel+offset;
-            }
-        } else {
-            if(channel < 54){
-                col = 0;
-                pad = channel-36+offset;
-            } else {
-                col = 1;
-                pad = 71-channel+offset;
-            }
-        }
-    } else {
-        if(fAFTER == 3) offset = 36;
-        if(channel < 36){
-            if(channel < 18){
-                col = 2;
-                pad = channel+offset;
-            } else {
-                col = 3;
-                pad = 35-channel+offset;
-            }
-        } else {
-            if(channel >= 54){
-                col = 2;
-                pad = channel-36+offset;
-            } else {
-                col = 3;
-                pad = 71-channel+offset;
-            }
-        }
-    }
-
-
-    return std::pair<int,int>(col,pad);
 }
 
 /* emacs
