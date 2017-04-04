@@ -20,6 +20,11 @@ FeamEVB::FeamEVB(int num_modules, double ts_freq)
    }
    fMaxDt = 0;
    fMinDt = 0;
+   fCountComplete = 0;
+   fCountIncomplete = 0;
+   fCountDuplicate = 0;
+   fCountError = 0;
+   fCountDropped = 0;
 }
 
 FeamEVB::~FeamEVB()
@@ -112,8 +117,9 @@ void FeamEVB::AddFeam(int position, FeamModuleData *m)
    FeamEvent* e = FindEvent(m->fTime);
    
    if (e->modules[position]) {
-      // FIXME: duplicate data
-      printf("duplicate data!\n");
+      fCountDuplicate++;
+      printf("FeamEVB::AddFeam: Error: duplicate data for time %f position %d: ", m->fTime, position);
+      m->Print();
       delete m;
       return;
    }
@@ -197,7 +203,8 @@ void FeamEVB::AddPacket(const char* bank, int position, const FeamPacket* p, con
    
    if (m == NULL) {
       // did not see the first event yet, cannot unpack
-      printf("FeamEVB: dropped packet, feam %d: ", position);
+      fCountDropped++;
+      printf("FeamEVB::AddPacket: Error: no 1st packet for position %d, dropping packet: ", position);
       p->Print();
       printf("\n");
       delete p;
@@ -223,6 +230,12 @@ void FeamEVB::Print() const
    printf("event counter: %d\n", fCounter);
    printf("max dt: %.0f ns (time between modules in one event)\n", fMaxDt*1e9);
    printf("min dt: %.0f ns (time between events)\n", fMinDt*1e9);
+
+   printf("complete events: %d\n", fCountComplete);
+   printf("incomplete events: %d\n", fCountIncomplete);
+   printf("events with error: %d\n", fCountError);
+   printf("duplicate data error: %d\n", fCountDuplicate);
+   printf("dropped packet error: %d\n", fCountDropped);
    
    printf("Data buffer: %d entries\n", (int)fData.size());
    for (unsigned i=0; i<fData.size(); i++) {
@@ -279,7 +292,7 @@ FeamEvent* FeamEVB::Get()
       printf("FeamEVB: popping in incomplete event! have %d buffered events, have complete %d\n", (int)fEvents.size(), c);
 
       if (c == 0) {
-         printf("First incomplete event: ");
+         printf("FeamEVB: First incomplete event: ");
          fEvents.front()->Print();
          printf("\n");
       }
@@ -287,6 +300,15 @@ FeamEvent* FeamEVB::Get()
    
    FeamEvent* e = fEvents.front();
    fEvents.pop_front();
+
+   if (e->error)
+      fCountError++;
+
+   if (!e->complete)
+      fCountIncomplete++;
+   else
+      fCountComplete++;
+   
    return e;
 }
 

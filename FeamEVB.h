@@ -23,6 +23,11 @@ class FeamEVB
    std::deque<FeamEvent*> fEvents;
    double fMaxDt;
    double fMinDt;
+   int fCountComplete;
+   int fCountIncomplete;
+   int fCountDuplicate;
+   int fCountError;
+   int fCountDropped;
 
  public:
    FeamEVB(int num_modules, double ts_freq); // ctor
