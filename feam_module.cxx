@@ -13,6 +13,7 @@
 
 #include <vector>
 #include <deque>
+#include <iostream>
 
 #include "TCanvas.h"
 #include "TH1D.h"
@@ -100,6 +101,8 @@ public:
 
 class FeamRun: public TARunInterface
 {
+private:
+   const padMap padMapper;
 public:
    FeamModule* fModule;
 
@@ -666,11 +669,14 @@ public:
             fHF[ifeam].hnhits->Fill(ichan_feam);
             fHF[ifeam].htime->Fill(ichan_feam, xpos);
             fHF[ifeam].hamp->Fill(ichan_feam, wamp);
-            auto pad = getPad(ichan_feam/nc_after, ichan_feam%nc_after);
-            int col = pad.first;
-            int row = pad.second;
-            fHF[ifeam].hpadhits->Fill(row, col);
-            fHF[ifeam].hnhits_pad->Fill(col*MAX_FEAM_PAD_ROWS + row);
+
+            int ich = padMapper.channel[ichan_feam%nc_after+4];
+            if(ich >= 0){
+               int col = padMapper.padcol[ichan_feam/nc_after][ich];
+               int row = padMapper.padrow[ichan_feam/nc_after][ich];
+               fHF[ifeam].hpadhits->Fill(row, col);
+               fHF[ifeam].hnhits_pad->Fill(col*MAX_FEAM_PAD_ROWS + row);
+            }
          }
       }
 

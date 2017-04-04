@@ -97,6 +97,17 @@ public:
 #define MAX_FEAM_PAD_COL   4 /* 4 TPC pad columns */
 #define MAX_FEAM_PAD_ROWS (4*18) /* 4*18 TPC pad rows across 2 ASICs on one wing */
 
+class padMap{
+ public:
+   padMap();
+   int channel[MAX_FEAM_READOUT];
+   int readout[MAX_FEAM_CHAN+1];
+   int padcol[MAX_FEAM_SCA][MAX_FEAM_CHAN+1];
+   int padrow[MAX_FEAM_SCA][MAX_FEAM_CHAN+1];
+   int sca[MAX_FEAM_PAD_COL][MAX_FEAM_PAD_ROWS];
+   int sca_chan[MAX_FEAM_PAD_COL][MAX_FEAM_PAD_ROWS];
+};
+
 struct FeamAdcData
 {
    int nsca;

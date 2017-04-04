@@ -34,7 +34,7 @@ public:
    void Init(const std::vector<std::string> &args);
    void Finish();
    TARunInterface* NewRun(TARunInfo* runinfo);
-   
+
    //bool fDoPads;
    //int  fPlotPad;
    //TCanvas* fPlotPadCanvas;
@@ -69,7 +69,7 @@ public:
 
    TH2D* h_aw_pad_time_drift;
    TH2D* h_aw_pad_amp_pc;
-   
+
    FinalRun(TARunInfo* runinfo, FinalModule* m)
       : TARunInterface(runinfo)
    {
@@ -195,23 +195,23 @@ public:
 
          int dts_ns = (a16_tsr_ns%0x80000000) - (feam_tsr_ns%0x80000000);
 
-         printf("TTT: %d %d, %f %f, diff %f, ts 0x%08x 0x%08x, ns: %12d %12d, diff %d\n", age->a16->eventNo, age->feam->counter, atr, ftr, dtr, a16_tsr, feam_tsr, a16_tsr_ns, feam_tsr_ns, dts_ns); 
+         printf("TTT: %d %d, %f %f, diff %f, ts 0x%08x 0x%08x, ns: %12d %12d, diff %d\n", age->a16->eventNo, age->feam->counter, atr, ftr, dtr, a16_tsr, feam_tsr, a16_tsr_ns, feam_tsr_ns, dts_ns);
       }
 
       if (eawh && eph) {
          if (1) {
             printf("UUU event %d, time %f, anode wire hits: %d, pad hits: %d\n", ef->fEvent->counter, ef->fEvent->time, (int)eawh->fAwHits.size(), (int)eph->fPadHits.size());
          }
-         
+
          h_num_aw_hits->Fill(eawh->fAwHits.size());
          h_num_pad_hits->Fill(eph->fPadHits.size());
          h_num_aw_pad_hits->Fill(eph->fPadHits.size(), eawh->fAwHits.size());
-         
+
          for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
             h_aw_time->Fill(eawh->fAwHits[j].time);
             h_aw_amp->Fill(eawh->fAwHits[j].amp);
             h_aw_amp_time->Fill(eawh->fAwHits[j].time, eawh->fAwHits[j].amp);
-            
+
             for (unsigned k=0; k<eawh->fAwHits.size(); k++) {
                if (k==j)
                   continue;
@@ -220,22 +220,22 @@ public:
                h_aw_aw_amp->Fill(eawh->fAwHits[j].amp, eawh->fAwHits[k].amp);
             }
          }
-         
+
          for (unsigned i=0; i<eph->fPadHits.size(); i++) {
             h_pad_time->Fill(eph->fPadHits[i].time);
             h_pad_amp->Fill(eph->fPadHits[i].amp);
             h_pad_amp_time->Fill(eph->fPadHits[i].time, eph->fPadHits[i].amp);
          }
-         
+
          for (unsigned i=0; i<eph->fPadHits.size(); i++) {
             for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
                h_aw_pad_hits->Fill(eph->fPadHits[i].chan, eawh->fAwHits[j].chan);
                h_aw_pad_time->Fill(eph->fPadHits[i].time, eawh->fAwHits[j].time);
-               
+
                if ((eawh->fAwHits[j].time > 200) && eph->fPadHits[i].time > 200) {
                   h_aw_pad_time_drift->Fill(eph->fPadHits[i].time, eawh->fAwHits[j].time);
                }
-               
+
                if ((eawh->fAwHits[j].time < 200) && eph->fPadHits[i].time < 200) {
                   h_aw_pad_amp_pc->Fill(eph->fPadHits[i].amp, eawh->fAwHits[j].amp);
                }
@@ -253,7 +253,7 @@ public:
 
          fC->Clear();
          fC->Divide(2,3);
-         
+
          if (1) {
             fC->cd(1);
             TH1D* hh = new TH1D("hh", "hh", nbins, 0, nbins);
@@ -262,7 +262,7 @@ public:
             }
             hh->Draw();
          }
-         
+
          if (1) {
             fC->cd(2);
             TH1D* hhh = new TH1D("hhh", "hhh", nbins, 0, nbins);
@@ -273,7 +273,7 @@ public:
             hhh->SetMaximum(+33000);
             hhh->Draw();
          }
-         
+
          if (1) {
             fC->cd(3);
             int nbins = ww[39]->nsamples;
@@ -285,7 +285,7 @@ public:
             hhh->SetMaximum(+9000);
             hhh->Draw();
          }
-         
+
          if (1) {
             fC->cd(4);
             int nbins = ww[iplot]->nsamples;
@@ -297,7 +297,7 @@ public:
             hhh->SetMaximum(+9000);
             hhh->Draw();
          }
-         
+
          if (1) {
             fC->cd(5);
             int nbins = ww[33]->nsamples;
@@ -309,7 +309,7 @@ public:
             h33->SetMaximum(+9000);
             h33->Draw();
          }
-         
+
          if (1) {
             fC->cd(6);
             int nbins = ww[34]->nsamples;
@@ -321,7 +321,7 @@ public:
             h34->SetMaximum(+9000);
             h34->Draw();
          }
-         
+
          fC->Modified();
          fC->Draw();
          fC->Update();
@@ -346,7 +346,7 @@ public:
          h->SetMinimum(-9000);
          h->SetMaximum(+9000);
          h->Draw();
-         
+
          c->Modified();
          c->Draw();
          c->Update();
@@ -398,14 +398,14 @@ void FinalModule::Init(const std::vector<std::string> &args)
       //   fPlotPad = atoi(args[i+1].c_str());
    }
 }
-   
+
 void FinalModule::Finish()
 {
    printf("FinalModule::Finish!\n");
 
    //DELETE(fPlotPadCanvas);
 }
-   
+
 TARunInterface* FinalModule::NewRun(TARunInfo* runinfo)
 {
    printf("FinalModule::NewRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
