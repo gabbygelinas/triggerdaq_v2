@@ -9,9 +9,10 @@
 #include <math.h> // fabs()
 #include <assert.h> // assert()
 
-FeamEVB::FeamEVB(int num_modules, double ts_freq)
+FeamEVB::FeamEVB(int num_modules, double ts_freq, double eps_sec)
 {
    fNumModules = num_modules;
+   fEpsSec  = eps_sec;
    fCounter = 0;
    fSync.SetDeadMin(10);
    for (unsigned i=0; i<fNumModules; i++) {
@@ -37,7 +38,7 @@ FeamEvent* FeamEVB::FindEvent(double t)
    for (unsigned i=0; i<fEvents.size(); i++) {
       double dt = fEvents[i]->time - t;
       double adt = fabs(dt);
-      if (adt < 200.0/1e9) {
+      if (adt < fEpsSec) {
          if (adt > fMaxDt) {
             printf("FeamEVB: for time %f found event at time %f, new max dt %.0f ns, old max dt %.0f ns\n", t, fEvents[i]->time, adt*1e9, fMaxDt*1e9);
             fMaxDt = adt;
@@ -227,6 +228,7 @@ void FeamEVB::Print() const
    fSync.Print();
    printf("\n");
 
+   printf("event assembler time threshold: %.0f ns\n", fEpsSec*1e9);
    printf("event counter: %d\n", fCounter);
    printf("max dt: %.0f ns (time between modules in one event)\n", fMaxDt*1e9);
    printf("min dt: %.0f ns (time between events)\n", fMinDt*1e9);

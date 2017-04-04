@@ -16,6 +16,7 @@ class FeamEVB
 {
  public:
    unsigned fNumModules;
+   double fEpsSec;
    TsSync fSync;
    int fCounter;
    std::vector<FeamModuleData*> fData;
@@ -30,7 +31,7 @@ class FeamEVB
    int fCountDropped;
 
  public:
-   FeamEVB(int num_modules, double ts_freq); // ctor
+   FeamEVB(int num_modules, double ts_freq, double eps_sec); // ctor
    ~FeamEVB(); // dtor
 
    FeamEvent* FindEvent(double t);
