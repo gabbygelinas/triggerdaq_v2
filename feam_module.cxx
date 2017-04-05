@@ -132,6 +132,8 @@ public:
 
    TH1D* hbmean_all;
    TH1D* hbrms_all;
+   TH1D* hbrms_all_pads;
+   TH1D* hbrms_all_fpn;
 
    TH1D* hamp_all;
    TH1D* hled_all;
@@ -148,6 +150,8 @@ public:
    TH1D* hled_hit;
    TH1D* hamp_hit;
    TH1D* hamp_hit_pedestal;
+
+   TH2D* hpadmap;
 
    TDirectory* hdir_waveform_first;
 
@@ -221,8 +225,10 @@ public:
 
       pads->mkdir("summary")->cd();
 
-      hbmean_all = new TH1D("hbmean", "baseline mean", 100, ADC_MIN, ADC_MAX);
-      hbrms_all  = new TH1D("hbrms",  "baseline rms",  100, 0, ADC_RANGE_RMS);
+      hbmean_all = new TH1D("hbaseline_mean", "baseline mean", 100, ADC_MIN, ADC_MAX);
+      hbrms_all  = new TH1D("hbaseline_rms",  "baseline rms",  100, 0, ADC_RANGE_RMS);
+      hbrms_all_pads  = new TH1D("hbaseline_rms_pads",  "baseline rms, tpc pad channels",  100, 0, ADC_RANGE_RMS);
+      hbrms_all_fpn   = new TH1D("hbaseline_rms_fpn",  "baseline rms, fpn channels",  100, 0, ADC_RANGE_RMS);
 
       hbmean_prof = new TProfile("hbmean_prof", "baseline mean vs channel", nchan, -0.5, nchan-0.5);
       hbrms_prof  = new TProfile("hbrms_prof",  "baseline rms vs channel",  nchan, -0.5, nchan-0.5);
@@ -239,6 +245,8 @@ public:
       hled_hit = new TH1D("hled_hit", "hit time, adc time bins", 100, 0, 900);
       hamp_hit = new TH1D("hamp_hit", "hit pulse height", 100, 0, ADC_RANGE);
       hamp_hit_pedestal = new TH1D("hamp_hit_pedestal", "hit pulse height, zoom on pedestal", 100, 0, 300);
+
+      hpadmap = new TH2D("hpadmap", "map from TPC pad number (col*4*18+row) to SCA readout channel (sca*80+chan)", 4*4*18, -0.5, 4*4*18-0.5, NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
 
       for (int i=0; i<nfeam; i++) {
          fHF[i].CreateHistograms(i, nbins);
@@ -573,10 +581,6 @@ public:
 
                // consult the pad map
 
-               int scachan = padMapper.channel[ichan];
-               int col = -1;
-               int row = -1;
-
                static bool once = true;
                if (once) {
                   once = false;
@@ -596,22 +600,78 @@ public:
                         printf("%d ", padMapper.padrow[sca][i]);
                      printf("\n");
                   }
+
+                  int test[4*4*18];
+                  for (int i=0; i<4*4*18; i++)
+                     test[i] = 0;
+
+                  bool map_ok = true;
+
+                  for (int sca=0; sca<4; sca++) {
+                     for (int i=0; i<=79; i++) {
+                        int seqsca = sca*80+i;
+                        int chan = padMapper.channel[i];
+                        if (chan > 0) {
+                           int col = padMapper.padcol[sca][chan];
+                           int row = padMapper.padrow[sca][chan];
+                           int seqpad = col*4*18+row;
+                           hpadmap->Fill(seqpad, seqsca);
+                           if (test[seqpad] != 0) {
+                              printf("pad map error: col %d, row %d, seqpad %d: duplicate mapping seqsca %d and %d\n", col, row, seqpad, seqsca, test[seqpad]);
+                              map_ok = false;
+                           } else {
+                              test[seqpad] = seqsca;
+                           }
+                        }
+                     }
+                  }
+
+                  for (int i=0; i<4*4*18; i++) {
+                     if (test[i] == 0) {
+                        printf("pad map error: seqpad %d is not mapped to sca channel!\n", i);
+                        map_ok = false;
+                     }
+                  }
+
+                  if (map_ok) {
+                     printf("pad map is ok.\n");
+                  } else {
+                     printf("pad map has errors!\n");
+                  }
                }
                 
-               if (scachan > 0) {
+               int scachan = padMapper.channel[ichan];
+               int col = -1; // TPC pad column
+               int row = -1; // TPC pad row
+               int seqpad = -1; // TPC sequential pad number col*4*72+row
+
+               bool scachan_is_pad = (scachan > 0);
+               bool scachan_is_fpn = (scachan >= -4) && (scachan <= -1);
+
+               if (scachan_is_pad) {
                   col = padMapper.padcol[isca][scachan];
                   row = padMapper.padrow[isca][scachan];
                   //printf("isca %d, ichan %d, scachan %d, col %d, row %d\n", isca, ichan, scachan, col, row);
                   assert(col>=0 && col<4);
                   assert(row>=0 && row<4*72);
+                  seqpad = col*MAX_FEAM_PAD_ROWS + row;
                } else {
                   row = scachan; // special channel
                }
-               
+
                char xname[256];
                char xtitle[256];
-               sprintf(xname, "pos%02d_sca%d_chan%02d_scachan%02d_col%02d_row%02d", ifeam, isca, ichan, scachan, col, row);
-               sprintf(xtitle, "FEAM pos %d, sca %d, readout chan %d, sca chan %d, col %d, row %d", ifeam, isca, ichan, scachan, col, row);
+
+               if (scachan_is_pad) {
+                  sprintf(xname, "pos%02d_sca%d_chan%02d_scachan%02d_col%02d_row%02d", ifeam, isca, ichan, scachan, col, row);
+                  sprintf(xtitle, "FEAM pos %d, sca %d, readout chan %d, sca chan %d, col %d, row %d", ifeam, isca, ichan, scachan, col, row);
+               } else if (scachan_is_fpn) {
+                  sprintf(xname, "pos%02d_sca%d_chan%02d_fpn%d", ifeam, isca, ichan, -scachan);
+                  sprintf(xtitle, "FEAM pos %d, sca %d, readout chan %d, fpn %d", ifeam, isca, ichan, -scachan);
+               } else {
+                  sprintf(xname, "pos%02d_sca%d_chan%02d", ifeam, isca, ichan);
+                  sprintf(xtitle, "FEAM pos %d, sca %d, readout chan %d", ifeam, isca, ichan);
+               }
 
                // compute baseline
 
@@ -736,7 +796,13 @@ public:
                hbrms_all->Fill(brms);
                hamp_all->Fill(wamp);
                hled_all->Fill(xpos);
-               
+
+               if (scachan_is_pad) {
+                  hbrms_all_pads->Fill(brms);
+               } else if (scachan_is_fpn) {
+                  hbrms_all_fpn->Fill(brms);
+               }
+
                //hbmean_prof->Fill(seqchan, bmean);
                //hbrms_prof->Fill(seqchan, brms);
 
@@ -763,8 +829,8 @@ public:
                   fHF[ifeam].htime->Fill(seqsca, xpos);
                   fHF[ifeam].hamp->Fill(seqsca, wamp);
 
-                  if (scachan > 0) {
-                     fHF[ifeam].hnhits_pad->Fill(col*MAX_FEAM_PAD_ROWS + row);
+                  if (seqpad >= 0) {
+                     fHF[ifeam].hnhits_pad->Fill(seqpad);
                   }
                }
             }
