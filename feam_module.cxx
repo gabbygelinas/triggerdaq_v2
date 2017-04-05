@@ -20,7 +20,6 @@
 #include "TH2D.h"
 #include "TProfile.h"
 
-#include "Waveform.h"
 #include "FeamEVB.h"
 #include "Unpack.h"
 #include "AgFlow.h"
@@ -28,6 +27,13 @@
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
 
 #define MEMZERO(p) memset((p), 0, sizeof(p))
+
+#define ADC_MIN -33000
+#define ADC_MAX  33000
+#define ADC_RANGE 65000
+#define ADC_RANGE_RMS 500
+
+#define NUM_SEQSCA (3*80+79)
 
 class FeamModule: public TAModuleInterface
 {
@@ -50,7 +56,6 @@ public:
    TH1D* hnhits_pad;
    TH2D* htime;
    TH2D* hamp;
-   TH2D* hpadhits;
 
 public:
    FeamHistograms()
@@ -61,43 +66,49 @@ public:
       hnhits_pad = NULL;
       htime = NULL;
       hamp = NULL;
-      hpadhits = NULL;
    };
 
-   void CreateHistograms(int position, int nchan, int nbins)
+   void CreateHistograms(int position, int nbins)
    {
       char name[256];
       char title[256];
 
-      sprintf(name,  "pos%02d_bmean_prof", position);
-      sprintf(title, "feam pos %2d baseline mean vs chan", position);
-      hbmean_prof = new TProfile(name, title, nchan, -0.5, nchan-0.5);
+      sprintf(name,  "pos%02d_baseline_mean_prof", position);
+      sprintf(title, "feam pos %2d baseline mean vs (SCA*80 + readout index)", position);
+      hbmean_prof = new TProfile(name, title, NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
 
-      sprintf(name,  "pos%02d_brms_prof", position);
-      sprintf(title, "feam pos %2d baseline rms vs chan", position);
-      hbrms_prof  = new TProfile(name, title,  nchan, -0.5, nchan-0.5);
+      sprintf(name,  "pos%02d_baseline_rms_prof", position);
+      sprintf(title, "feam pos %2d baseline rms vs (SCA*80 +  readout index)", position);
+      hbrms_prof  = new TProfile(name, title,  NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
 
       sprintf(name,  "pos%02d_hit_map", position);
-      sprintf(title, "feam pos %2d hits vs SCA readout", position);
-      hnhits      = new TH1D(name, title, nchan, -0.5, nchan-0.5);
+      sprintf(title, "feam pos %2d hits vs (SCA*80 + readout index)", position);
+      hnhits      = new TH1D(name, title, NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
 
       sprintf(name,  "pos%02d_hit_map_pads", position);
-      sprintf(title, "feam pos %2d hits vs TPC pad", position);
+      sprintf(title, "feam pos %2d hits vs TPC seq.pad (col*4*18+row)", position);
       hnhits_pad  = new TH1D(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL, -0.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5);
 
       sprintf(name,  "pos%02d_hit_time", position);
-      sprintf(title, "feam pos %2d hit time vs chan", position);
-      htime       = new TH2D(name, title, nchan, -0.5, nchan-0.5, 50, 0, 500);
+      sprintf(title, "feam pos %2d hit time vs (SCA*80 + readout index)", position);
+      htime       = new TH2D(name, title, NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5, 50, 0, 500);
 
       sprintf(name,  "pos%02d_hit_amp", position);
-      sprintf(title, "feam pos %2d hit p.h. vs chan", position);
-      hamp        = new TH2D(name, title, nchan, -0.5, nchan-0.5, 50, 0, 17000);
-
-      sprintf(name,  "pos%02d_hit_pad", position);
-      sprintf(title, "feam pos %2d hit column vs pad", position);
-      hpadhits    = new TH2D(name, title, MAX_FEAM_PAD_ROWS, -0.5, MAX_FEAM_PAD_ROWS-0.5, MAX_FEAM_PAD_COL, 0, MAX_FEAM_PAD_COL);
+      sprintf(title, "feam pos %2d hit p.h. vs (SCA*80 + readout index)", position);
+      hamp        = new TH2D(name, title, NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5, 50, 0, ADC_RANGE);
    }
 };
+
+static int find_pulse(const int* adc, int nbins, double baseline, double gain, double threshold)
+{
+   for (int i=0; i<nbins; i++) {
+      if ((adc[i]-baseline)*gain > threshold) {
+         return i;
+      }
+   }
+   
+   return 0;
+}
 
 class FeamRun: public TARunInterface
 {
@@ -111,8 +122,8 @@ public:
 
    TH1D** hbmean;
    TH1D** hbrms;
-   TH1D** hwaveform;
-   TH1D** hwaveform1;
+   std::vector<TH1D*> hwaveform_first;
+   std::vector<TH1D*> hwaveform_max;
    double *fMaxWamp;
 
    TH1D** hamp;
@@ -137,6 +148,9 @@ public:
    TH1D* hled_hit;
    TH1D* hamp_hit;
    TH1D* hamp_hit_pedestal;
+
+   TDirectory* hdir_waveform_first;
+
 
    FeamHistograms fHF[MAX_FEAM];
 
@@ -207,34 +221,32 @@ public:
 
       pads->mkdir("summary")->cd();
 
-      hbmean_all = new TH1D("hbmean", "baseline mean", 100, 0, 17000);
-      hbrms_all  = new TH1D("hbrms",  "baseline rms",  100, 0, 200);
+      hbmean_all = new TH1D("hbmean", "baseline mean", 100, ADC_MIN, ADC_MAX);
+      hbrms_all  = new TH1D("hbrms",  "baseline rms",  100, 0, ADC_RANGE_RMS);
 
       hbmean_prof = new TProfile("hbmean_prof", "baseline mean vs channel", nchan, -0.5, nchan-0.5);
       hbrms_prof  = new TProfile("hbrms_prof",  "baseline rms vs channel",  nchan, -0.5, nchan-0.5);
 
-      hamp_all   = new TH1D("hamp",   "pulse height", 100, 0, 17000);
+      hamp_all   = new TH1D("hamp",   "pulse height", 100, 0, ADC_RANGE);
       hled_all   = new TH1D("hled",   "pulse leading edge, adc time bins", 100, 0, 900);
 
-      h2led2amp  = new TH2D("h2led2amp", "pulse amp vs time, adc time bins", 100, 0, 900, 100, 0, 17000);
+      h2led2amp  = new TH2D("h2led2amp", "pulse amp vs time, adc time bins", 100, 0, 900, 100, 0, ADC_RANGE);
 
       hled_all_cut = new TH1D("hled_cut",   "pulse leading edge, adc time bins, with cuts", 100, 0, 900);
-      hamp_all_cut = new TH1D("hamp_cut",   "pulse height, with cuts", 100, 0, 17000);
+      hamp_all_cut = new TH1D("hamp_cut",   "pulse height, with cuts", 100, 0, ADC_RANGE);
 
       hnhits = new TH1D("hnhits", "hits per channel", nchan, -0.5, nchan-0.5);
       hled_hit = new TH1D("hled_hit", "hit time, adc time bins", 100, 0, 900);
-      hamp_hit = new TH1D("hamp_hit", "hit pulse height", 100, 0, 17000);
+      hamp_hit = new TH1D("hamp_hit", "hit pulse height", 100, 0, ADC_RANGE);
       hamp_hit_pedestal = new TH1D("hamp_hit_pedestal", "hit pulse height, zoom on pedestal", 100, 0, 300);
 
       for (int i=0; i<nfeam; i++) {
-         fHF[i].CreateHistograms(i, nchan_feam, nbins);
+         fHF[i].CreateHistograms(i, nbins);
       }
 
       // FIXME: who deletes this?
       hbmean = new TH1D*[nchan];
       hbrms  = new TH1D*[nchan];
-      hwaveform = new TH1D*[nchan];
-      hwaveform1 = new TH1D*[nchan];
       hamp = new TH1D*[nchan];
       hled = new TH1D*[nchan];
 
@@ -250,7 +262,7 @@ public:
          char title[256];
          sprintf(name, "hbmean%04d", i);
          sprintf(title, "chan %04d baseline mean", i);
-         hbmean[i] = new TH1D(name, title, 100, 0, 17000);
+         hbmean[i] = new TH1D(name, title, 100, ADC_MIN, ADC_MAX);
       }
 
       pads->mkdir("baseline_rms")->cd();
@@ -260,18 +272,10 @@ public:
          char title[256];
          sprintf(name, "hbrms%04d", i);
          sprintf(title, "chan %04d baseline rms", i);
-         hbrms[i] = new TH1D(name, title, 100, 0, 200);
+         hbrms[i] = new TH1D(name, title, 100, 0, ADC_RANGE_RMS);
       }
 
-      pads->mkdir("chan_waveform")->cd();
-
-      for (int i=0; i<nchan; i++) {
-         char name[256];
-         char title[256];
-         sprintf(name, "hwaveform%04d", i);
-         sprintf(title, "chan %04d waveform", i);
-         hwaveform[i] = new TH1D(name, title, nbins, -0.5, nbins-0.5);
-      }
+      hdir_waveform_first = pads->mkdir("chan_waveform_first");
 
       pads->mkdir("chan_waveform_max")->cd();
 
@@ -279,8 +283,8 @@ public:
          char name[256];
          char title[256];
          sprintf(name, "hwaveform%04d_max", i);
-         sprintf(title, "chan %04d waveform max p.h.", i);
-         hwaveform1[i] = new TH1D(name, title, nbins, -0.5, nbins-0.5);
+         sprintf(title, "chan %04d biggest waveform", i);
+         hwaveform_max.push_back(new TH1D(name, title, nbins, -0.5, nbins-0.5));
       }
 
       pads->mkdir("chan_amp")->cd();
@@ -290,7 +294,7 @@ public:
          char title[256];
          sprintf(name, "hamp%04d", i);
          sprintf(title, "chan %04d pulse height", i);
-         hamp[i] = new TH1D(name, title, 100, 0, 17000);
+         hamp[i] = new TH1D(name, title, 100, 0, ADC_RANGE);
       }
 
       pads->mkdir("chan_led")->cd();
@@ -534,148 +538,235 @@ public:
          }
       }
 
-      int nchan = nfeam * nchan_feam;
+      int nchan = nfeam * nchan_feam; // MAX_FEAM_SCA * ...;
 
       if (nbins == 0 || nchan == 0)
          return flow;
 
-      Waveform** ww = new Waveform*[nchan];
+      // create histograms
 
-      for (int i=0; i<nchan; i++)
-         ww[i] = NULL;
-
-      for (unsigned ifeam=0; ifeam<e->adcs.size(); ifeam++) {
-         FeamAdcData* aaa = e->adcs[ifeam];
-         if (!aaa)
-            continue;
-         for (int isca=0; isca<aaa->nsca; isca++) {
-            for (int ichan=0; ichan<aaa->nchan; ichan++) {
-               int xchan = ifeam*(aaa->nsca*aaa->nchan) + isca*aaa->nchan + ichan;
-               ww[xchan] = new Waveform(aaa->nbins);
-               for (int ibin=0; ibin<aaa->nbins; ibin++) {
-                  ww[xchan]->samples[ibin] = (aaa->adc[isca][ichan][ibin])/4;
-               }
-            }
-         }
-      }
+      CreateHistograms(runinfo, nfeam, nchan_feam, nchan, nbins);
 
       // create pad hits flow event
 
       AgPadHitsFlow* hits = new AgPadHitsFlow(flow);
       flow = hits;
 
-      // create histograms
-
-      CreateHistograms(runinfo, nfeam, nchan_feam, nchan, nbins);
-
-      int iplot = 0;
+      // loop over all waveforms
+      
+      //int iplot = 0;
       double zmax = 0;
 
-      for (int ichan=0; ichan<nchan; ichan++) {
-         if (!ww[ichan])
+      int ibaseline_start = 10;
+      int ibaseline_end = 100;
+
+      for (unsigned ifeam=0; ifeam<e->adcs.size(); ifeam++) {
+         FeamAdcData* aaa = e->adcs[ifeam];
+         if (!aaa)
             continue;
+         for (int isca=0; isca<aaa->nsca; isca++) {
+            for (int ichan=1; ichan<=aaa->nchan; ichan++) {
+               const int* aptr = &aaa->adc[isca][ichan][0];
 
-         double r;
-         double b = baseline(ww[ichan], 10, 100, NULL, &r);
+               unsigned seqchan = ifeam*(aaa->nsca*aaa->nchan) + isca*aaa->nchan + ichan;
+               int seqsca = isca*80 + ichan;
 
-         if (b==0 && r==0)
-            continue;
+               // consult the pad map
 
-         double wmin = min(ww[ichan]);
-         double wmax = max(ww[ichan]);
-         double wamp = b - wmin;
+               int scachan = padMapper.channel[ichan];
+               int col = -1;
+               int row = -1;
 
-         int xpos = led(ww[ichan], b, -1, wamp/2.0);
+               static bool once = true;
+               if (once) {
+                  once = false;
+                  printf("Pad map:\n");
+                  printf("  sca chan: ");
+                  for (int i=0; i<=79; i++)
+                     printf("%d ", padMapper.channel[i]);
+                  printf("\n");
+                  for (int sca=0; sca<4; sca++) {
+                     printf("sca %d:\n", sca);
+                     printf("  tpc col: ");
+                     for (int i=0; i<=72; i++)
+                        printf("%d ", padMapper.padcol[sca][i]);
+                     printf("\n");
+                     printf("  tpc row: ");
+                     for (int i=0; i<=72; i++)
+                        printf("%d ", padMapper.padrow[sca][i]);
+                     printf("\n");
+                  }
+               }
+                
+               if (scachan > 0) {
+                  col = padMapper.padcol[isca][scachan];
+                  row = padMapper.padrow[isca][scachan];
+                  //printf("isca %d, ichan %d, scachan %d, col %d, row %d\n", isca, ichan, scachan, col, row);
+                  assert(col>=0 && col<4);
+                  assert(row>=0 && row<4*72);
+               } else {
+                  row = scachan; // special channel
+               }
+               
+               char xname[256];
+               char xtitle[256];
+               sprintf(xname, "pos%02d_sca%d_chan%02d_scachan%02d_col%02d_row%02d", ifeam, isca, ichan, scachan, col, row);
+               sprintf(xtitle, "FEAM pos %d, sca %d, readout chan %d, sca chan %d, col %d, row %d", ifeam, isca, ichan, scachan, col, row);
 
-         bool hit = false;
+               // compute baseline
 
-         if ((xpos > 150) && (xpos < 450) && (wamp > 600)) {
-            hit = true;
-         }
+               double sum0 = 0;
+               double sum1 = 0;
+               double sum2 = 0;
 
-         if (hit) {
-            AgPadHit h;
-            h.chan = ichan;
-            h.time = xpos;
-            h.amp  = wamp;
-            hits->fPadHits.push_back(h);
-         }
+               double bmin = aptr[ibaseline_start]; // baseline minimum
+               double bmax = aptr[ibaseline_start]; // baseline maximum
 
-         if (doPrint) {
-            printf("chan %3d: baseline %8.1f, rms %8.1f, min %8.1f, max %8.1f, amp %8.1f, xpos %3d, hit %d\n", ichan, b, r, wmin, wmax, wamp, xpos, hit);
-         }
+               for (int i=ibaseline_start; i<ibaseline_end; i++) {
+                  double a = aptr[i];
+                  sum0 += 1;
+                  sum1 += a;
+                  sum2 += a*a;
+                  if (a < bmin)
+                     bmin = a;
+                  if (a > bmax)
+                     bmax = a;
+               }
 
-         if (1 || (xpos > 0 && xpos < 4000 && wamp > 1000)) {
-            if (wamp > zmax) {
-               if (doPrint)
-                  printf("plot this one.\n");
-               iplot = ichan;
-               zmax = wamp;
-            }
-         }
+               double bmean = 0;
+               double bvar = 0;
+               double brms = 0;
 
-         hbmean[ichan]->Fill(b);
-         hbrms[ichan]->Fill(r);
+               if (sum0 > 0) {
+                  bmean = sum1/sum0;
+                  bvar = sum2/sum0 - bmean*bmean;
+                  if (bvar>0)
+                     brms = sqrt(bvar);
+               }
 
-         if (hwaveform[ichan]->GetEntries() == 0) {
-            if (doPrint)
-               printf("saving first waveform %d\n", ichan);
-            for (int i=0; i<ww[ichan]->nsamples; i++)
-               hwaveform[ichan]->SetBinContent(i+1, ww[ichan]->samples[i]);
-         }
+               // scan the whole waveform
+               
+               double wmin = aptr[0]; // waveform minimum
+               double wmax = aptr[0]; // waveform maximum
 
-         if (wamp > fMaxWamp[ichan]) {
-            fMaxWamp[ichan] = wamp;
-            if (doPrint)
-               printf("saving biggest waveform %d\n", ichan);
-            for (int i=0; i<ww[ichan]->nsamples; i++)
-               hwaveform1[ichan]->SetBinContent(i+1, ww[ichan]->samples[i]);
-         }
+               for (int i=0; i<nbins; i++) {
+                  double a = aptr[i];
+                  if (a < wmin)
+                     wmin = a;
+                  if (a > wmax)
+                     wmax = a;
+               }
 
-         hamp[ichan]->Fill(wamp);
-         hled[ichan]->Fill(xpos);
+               // find pulses
 
-         hbmean_all->Fill(b);
-         hbrms_all->Fill(r);
-         hamp_all->Fill(wamp);
-         hled_all->Fill(xpos);
+               double wamp = bmean - wmin;
 
-         hbmean_prof->Fill(ichan, b);
-         hbrms_prof->Fill(ichan, r);
+               int xpos = find_pulse(aptr, nbins, bmean, -1.0, wamp/2.0);
 
-         int ifeam = ichan/nchan_feam;
-         int ichan_feam = ichan%nchan_feam;
-         int nc_after = e->adcs[ifeam]->nchan;
+               // decide if we have a hit
 
-         fHF[ifeam].hbmean_prof->Fill(ichan_feam, b);
-         fHF[ifeam].hbrms_prof->Fill(ichan_feam, r);
+               bool hit = false;
+               
+               if ((xpos > 150) && (xpos < 450) && (wamp > 600)) {
+                  hit = true;
+               }
 
-         h2led2amp->Fill(xpos, wamp);
+               if (hit) {
+                  AgPadHit h;
+                  h.chan = ichan;
+                  h.time = xpos;
+                  h.amp  = wamp;
+                  hits->fPadHits.push_back(h);
+               }
 
-         if (wamp > 1000) {
-            hled_all_cut->Fill(xpos);
-         }
+               if (doPrint) {
+                  printf("chan %3d: baseline %8.1f, rms %8.1f, min %8.1f, max %8.1f, amp %8.1f, xpos %3d, hit %d\n", ichan, bmean, brms, wmin, wmax, wamp, xpos, hit);
+               }
+               
+               if (1 || (xpos > 0 && xpos < 4000 && wamp > 1000)) {
+                  if (wamp > zmax) {
+                     if (doPrint)
+                        printf("plot this one.\n");
+                     //iplot = ichan;
+                     zmax = wamp;
+                  }
+               }
 
-         if (xpos > 100 && xpos < 500) {
-            hamp_all_cut->Fill(wamp);
-         }
+               // create plots and histograms
 
-         if (hit) {
-            hnhits->Fill(ichan);
-            hled_hit->Fill(xpos);
-            hamp_hit->Fill(wamp);
-            hamp_hit_pedestal->Fill(wamp);
+               //hbmean[seqchan]->Fill(bmean);
+               //hbrms[seqchan]->Fill(brms);
 
-            fHF[ifeam].hnhits->Fill(ichan_feam);
-            fHF[ifeam].htime->Fill(ichan_feam, xpos);
-            fHF[ifeam].hamp->Fill(ichan_feam, wamp);
+               if (seqchan >= hwaveform_first.size()) {
+                  for (unsigned i=hwaveform_first.size(); i<=seqchan; i++)
+                     hwaveform_first.push_back(NULL);
+               }
 
-            int ich = padMapper.channel[ichan_feam%nc_after+4];
-            if(ich >= 0){
-               int col = padMapper.padcol[ichan_feam/nc_after][ich];
-               int row = padMapper.padrow[ichan_feam/nc_after][ich];
-               fHF[ifeam].hpadhits->Fill(row, col);
-               fHF[ifeam].hnhits_pad->Fill(col*MAX_FEAM_PAD_ROWS + row);
+               if (hwaveform_first[seqchan] == NULL) {
+                  char name[256];
+                  char title[256];
+                  sprintf(name, "hwaveform%04d_first_%s", seqchan, xname);
+                  sprintf(title, "%s first waveform", xtitle);
+                  hdir_waveform_first->cd();
+                  hwaveform_first[seqchan] = new TH1D(name, title, nbins, -0.5, nbins-0.5);
+                  //printf("seqchan %d, size %d, ptr %p, name %s, title %s\n", seqchan, hwaveform_first.size(), hwaveform_first[seqchan], name, title);
+               }
+
+               if (hwaveform_first[seqchan]->GetEntries() == 0) {
+                  if (doPrint)
+                     printf("saving first waveform %d\n", seqchan);
+                  for (int i=0; i<nbins; i++)
+                     hwaveform_first[seqchan]->SetBinContent(i+1, aptr[i]);
+               }
+
+#if 0
+               if (wamp > fMaxWamp[seqchan]) {
+                  fMaxWamp[seqchan] = wamp;
+                  if (doPrint)
+                     printf("saving biggest waveform %d\n", seqchan);
+                  for (int i=0; i<nbins; i++)
+                     hwaveform_max[seqchan]->SetBinContent(i+1, aptr[i]);
+               }
+#endif
+
+               //hamp[seqchan]->Fill(wamp);
+               //hled[seqchan]->Fill(xpos);
+               
+               hbmean_all->Fill(bmean);
+               hbrms_all->Fill(brms);
+               hamp_all->Fill(wamp);
+               hled_all->Fill(xpos);
+               
+               //hbmean_prof->Fill(seqchan, bmean);
+               //hbrms_prof->Fill(seqchan, brms);
+
+               fHF[ifeam].hbmean_prof->Fill(seqsca, bmean);
+               fHF[ifeam].hbrms_prof->Fill(seqsca, brms);
+               
+               h2led2amp->Fill(xpos, wamp);
+               
+               if (wamp > 1000) {
+                  hled_all_cut->Fill(xpos);
+               }
+               
+               if (xpos > 100 && xpos < 500) {
+                  hamp_all_cut->Fill(wamp);
+               }
+
+               if (hit) {
+                  hnhits->Fill(seqchan);
+                  hled_hit->Fill(xpos);
+                  hamp_hit->Fill(wamp);
+                  hamp_hit_pedestal->Fill(wamp);
+                  
+                  fHF[ifeam].hnhits->Fill(seqsca);
+                  fHF[ifeam].htime->Fill(seqsca, xpos);
+                  fHF[ifeam].hamp->Fill(seqsca, wamp);
+
+                  if (scachan > 0) {
+                     fHF[ifeam].hnhits_pad->Fill(col*MAX_FEAM_PAD_ROWS + row);
+                  }
+               }
             }
          }
       }
@@ -708,6 +799,7 @@ public:
             hhh->Draw();
          }
 
+#if 0
          if (1) {
             fC->cd(3);
             int nbins = ww[39]->nsamples;
@@ -755,6 +847,7 @@ public:
             h34->SetMaximum(+9000);
             h34->Draw();
          }
+#endif
 
          fC->Modified();
          fC->Draw();
@@ -769,6 +862,7 @@ public:
 
          c->cd();
 
+#if 0
          int nbins = ww[fModule->fPlotPad]->nsamples;
          TH1D* h = new TH1D("h", "h", nbins, 0, nbins);
          for (int ibin=0; ibin<nbins; ibin++) {
@@ -778,6 +872,7 @@ public:
          h->SetMinimum(-9000);
          h->SetMaximum(+9000);
          h->Draw();
+#endif
 
          c->Modified();
          c->Draw();
@@ -793,15 +888,6 @@ public:
             plot_next = time(NULL) + 15;
          }
       }
-
-      for (int i=0; i<nchan; i++) {
-         if (ww[i]) {
-            delete ww[i];
-            ww[i] = NULL;
-         }
-      }
-
-      delete ww;
 
       static time_t t = 0;
 

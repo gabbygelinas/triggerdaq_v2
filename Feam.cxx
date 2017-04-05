@@ -12,6 +12,7 @@
 #include <utility>  // std::pair
 #include <iostream>
 
+#if 0
 static uint8_t getUint8(const void* ptr, int offset)
 {
    return *(uint8_t*)(((char*)ptr)+offset);
@@ -28,6 +29,7 @@ static uint32_t getUint32be(const void* ptr, int offset)
    uint8_t *ptr8 = (uint8_t*)(((char*)ptr)+offset);
    return (ptr8[0]<<24) | (ptr8[1]<<16) | (ptr8[2]<<8) | ptr8[3];
 }
+#endif
 
 static uint16_t getUint16le(const void* ptr, int offset)
 {
@@ -289,15 +291,25 @@ void FeamEvent::Print(int level) const
 
 void Unpack(FeamAdcData* a, FeamModuleData* m)
 {
-   a->nsca  = 4;
-   a->nchan = 76;
-   a->nbins = 511;
+   a->nsca  = 4; // 0,1,2,3
+   a->nchan = 79; // 1..79 readout channels per table 2 in AFTER SCA manual
+   a->nbins = 511; // 0..511
+
+   memset(a->adc, 0, sizeof(a->adc));
 
    const unsigned char* ptr = (const unsigned char*)m->fPtr;
    int count = 0;
 
    for (int ibin = 0; ibin < 511; ibin++) {
-      for (int ichan = 0; ichan < 76; ichan++) {
+      for (int ichan = 0; ichan <= 3; ichan++) {
+         for (int isca = 0; isca < 4; isca++) {
+            a->adc[isca][ichan][ibin] = 0;
+         }
+      }
+   }
+
+   for (int ibin = 0; ibin < 511; ibin++) {
+      for (int ichan = 4; ichan <= 79; ichan++) {
          for (int isca = 0; isca < 4; isca++) {
             unsigned v = ptr[0] | ((ptr[1])<<8);
             // manual sign extension
