@@ -50,22 +50,17 @@ public:
 class FeamHistograms
 {
 public:
-   TProfile* hbmean_prof;
-   TProfile* hbrms_prof;
-   TH1D* hnhits;
-   TH1D* hnhits_pad;
-   TH2D* htime;
-   TH2D* hamp;
+   TProfile* hbmean_prof = NULL;
+   TProfile* hbrms_prof  = NULL;
+   TH1D* hnhits = NULL;
+   TH1D* hnhits_pad = NULL;
+   TH1D* hnhits_pad_drift = NULL;
+   TH2D* htime = NULL;
+   TH2D* hamp = NULL;
 
 public:
    FeamHistograms()
    {
-      hbmean_prof = NULL;
-      hbrms_prof = NULL;
-      hnhits = NULL;
-      hnhits_pad = NULL;
-      htime = NULL;
-      hamp = NULL;
    };
 
    void CreateHistograms(int position, int nbins)
@@ -88,6 +83,10 @@ public:
       sprintf(name,  "pos%02d_hit_map_pads", position);
       sprintf(title, "feam pos %2d hits vs TPC seq.pad (col*4*18+row)", position);
       hnhits_pad  = new TH1D(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL, -0.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5);
+
+      sprintf(name,  "pos%02d_hit_map_pads_drift", position);
+      sprintf(title, "feam pos %2d hits in drift region vs TPC seq.pad (col*4*18+row)", position);
+      hnhits_pad_drift = new TH1D(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL, -0.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5);
 
       sprintf(name,  "pos%02d_hit_time", position);
       sprintf(title, "feam pos %2d hit time vs (SCA*80 + readout index)", position);
@@ -129,27 +128,34 @@ public:
    TH1D** hamp;
    TH1D** hled;
 
-
    TH1D* hbmean_all;
    TH1D* hbrms_all;
    TH1D* hbrms_all_pads;
    TH1D* hbrms_all_fpn;
 
    TH1D* hamp_all;
+   TH1D* hamp_all_pedestal;
+   TH1D* hamp_all_above_pedestal;
    TH1D* hled_all;
 
-   TH1D* hled_all_cut;
-   TH1D* hamp_all_cut;
+   TH1D* hled_all_hits;
+   TH1D* hamp_all_hits;
 
-   TProfile* hbmean_prof;
-   TProfile* hbrms_prof;
+   //TProfile* hbmean_prof;
+   //TProfile* hbrms_prof;
 
    TH2D* h2led2amp;
+
+   TH1D* hdrift_amp_all;
+   TH1D* hdrift_amp_all_pedestal;
+   TH1D* hdrift_amp_all_above_pedestal;
+   TH1D* hdrift_led_all;
+   TH2D* hdrift_led2amp;
 
    TH1D* hnhits;
    TH1D* hled_hit;
    TH1D* hamp_hit;
-   TH1D* hamp_hit_pedestal;
+   //TH1D* hamp_hit_pedestal;
 
    TH2D* hpadmap;
 
@@ -230,21 +236,30 @@ public:
       hbrms_all_pads  = new TH1D("hbaseline_rms_pads",  "baseline rms, tpc pad channels",  100, 0, ADC_RANGE_RMS);
       hbrms_all_fpn   = new TH1D("hbaseline_rms_fpn",  "baseline rms, fpn channels",  100, 0, ADC_RANGE_RMS);
 
-      hbmean_prof = new TProfile("hbmean_prof", "baseline mean vs channel", nchan, -0.5, nchan-0.5);
-      hbrms_prof  = new TProfile("hbrms_prof",  "baseline rms vs channel",  nchan, -0.5, nchan-0.5);
+      //hbmean_prof = new TProfile("hbmean_prof", "baseline mean vs channel", nchan, -0.5, nchan-0.5);
+      //hbrms_prof  = new TProfile("hbrms_prof",  "baseline rms vs channel",  nchan, -0.5, nchan-0.5);
 
-      hamp_all   = new TH1D("hamp",   "pulse height", 100, 0, ADC_RANGE);
-      hled_all   = new TH1D("hled",   "pulse leading edge, adc time bins", 100, 0, 900);
+      hamp_all          = new TH1D("hamp",   "pulse height", 100, 0, ADC_RANGE);
+      hamp_all_pedestal = new TH1D("hamp_pedestal", "pulse height, zoom on pedestal area", 100, 0, 2000);
+      hamp_all_above_pedestal = new TH1D("hamp_above_pedestal", "pulse height, away from pedestal area", 100, 2000, ADC_RANGE);
 
-      h2led2amp  = new TH2D("h2led2amp", "pulse amp vs time, adc time bins", 100, 0, 900, 100, 0, ADC_RANGE);
+      hled_all   = new TH1D("hled",   "pulse leading edge, adc time bins", 100, 0, nbins);
 
-      hled_all_cut = new TH1D("hled_cut",   "pulse leading edge, adc time bins, with cuts", 100, 0, 900);
-      hamp_all_cut = new TH1D("hamp_cut",   "pulse height, with cuts", 100, 0, ADC_RANGE);
+      h2led2amp  = new TH2D("h2led2amp", "pulse amp vs time, adc time bins", 100, 0, nbins, 100, 0, ADC_RANGE);
+
+      hled_all_hits = new TH1D("hled_all_hits",   "pulse leading edge, adc time bins, with p.h. cut", 100, 0, nbins);
+      hamp_all_hits = new TH1D("hamp_all_hits",   "pulse height, with time cut", 100, 0, ADC_RANGE);
+
+      hdrift_amp_all = new TH1D("drift_amp", "drift region pulse height", 100, 0, ADC_RANGE);
+      hdrift_amp_all_pedestal = new TH1D("drift_amp_pedestal", "drift region pulse height, zoom on pedestal area", 100, 0, 2000);
+      hdrift_amp_all_above_pedestal = new TH1D("drift_amp_above_pedestal", "drift region pulse height, away from pedestal area", 100, 2000, ADC_RANGE);
+      hdrift_led_all = new TH1D("drift_led", "drift region pulse leading edge, adc time bins, above pedestal", 100, 0, nbins);
+      hdrift_led2amp = new TH2D("drift_led2amp", "drift region pulse amp vs time, adc time bins, above pedestal", 100, 0, nbins, 100, 0, ADC_RANGE);
 
       hnhits = new TH1D("hnhits", "hits per channel", nchan, -0.5, nchan-0.5);
-      hled_hit = new TH1D("hled_hit", "hit time, adc time bins", 100, 0, 900);
+      hled_hit = new TH1D("hled_hit", "hit time, adc time bins", 100, 0, nbins);
       hamp_hit = new TH1D("hamp_hit", "hit pulse height", 100, 0, ADC_RANGE);
-      hamp_hit_pedestal = new TH1D("hamp_hit_pedestal", "hit pulse height, zoom on pedestal", 100, 0, 300);
+      //hamp_hit_pedestal = new TH1D("hamp_hit_pedestal", "hit pulse height, zoom on pedestal", 100, 0, 300);
 
       hpadmap = new TH2D("hpadmap", "map from TPC pad number (col*4*18+row) to SCA readout channel (sca*80+chan)", 4*4*18, -0.5, 4*4*18-0.5, NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
 
@@ -312,7 +327,7 @@ public:
          char title[256];
          sprintf(name, "hled%04d", i);
          sprintf(title, "chan %04d pulse leading edge, adc bins", i);
-         hled[i] = new TH1D(name, title, 100, 0, 900);
+         hled[i] = new TH1D(name, title, 100, 0, nbins);
       }
    }
 
@@ -568,6 +583,15 @@ public:
       int ibaseline_start = 10;
       int ibaseline_end = 100;
 
+      int iwire_start = 175;
+      int iwire_end = 200;
+
+      int idrift_start = 200;
+      int idrift_cut = 200;
+      int idrift_end = 450;
+
+      double hit_amp_threshold = 1000;
+
       for (unsigned ifeam=0; ifeam<e->adcs.size(); ifeam++) {
          FeamAdcData* aaa = e->adcs[ifeam];
          if (!aaa)
@@ -717,33 +741,56 @@ public:
                      wmax = a;
                }
 
+               // scan the drift time region of the waveform
+               
+               double dmin = aptr[idrift_start]; // waveform minimum
+               double dmax = aptr[idrift_start]; // waveform maximum
+
+               for (int i=idrift_start; i<idrift_end; i++) {
+                  double a = aptr[i];
+                  if (a < dmin)
+                     dmin = a;
+                  if (a > dmax)
+                     dmax = a;
+               }
+
                // find pulses
 
                double wamp = bmean - wmin;
+               int wpos = find_pulse(aptr, nbins, bmean, -1.0, wamp/2.0);
 
-               int xpos = find_pulse(aptr, nbins, bmean, -1.0, wamp/2.0);
+               double damp = bmean - dmin;
+               int dpos = idrift_start + find_pulse(aptr+idrift_start, idrift_end-idrift_start, bmean, -1.0, damp/2.0);
 
                // decide if we have a hit
 
+               bool hit_time = false;
+               bool hit_amp = false;
                bool hit = false;
                
-               if ((xpos > 150) && (xpos < 450) && (wamp > 600)) {
-                  hit = true;
+               if ((wpos > iwire_start) && (wpos < idrift_end)) {
+                  hit_time = true;
                }
 
+               if (wamp > hit_amp_threshold) {
+                  hit_amp = true;
+               }
+
+               hit = hit_time && hit_amp;
+               
                if (hit) {
                   AgPadHit h;
                   h.chan = ichan;
-                  h.time = xpos;
+                  h.time = wpos;
                   h.amp  = wamp;
                   hits->fPadHits.push_back(h);
                }
 
                if (doPrint) {
-                  printf("chan %3d: baseline %8.1f, rms %8.1f, min %8.1f, max %8.1f, amp %8.1f, xpos %3d, hit %d\n", ichan, bmean, brms, wmin, wmax, wamp, xpos, hit);
+                  printf("chan %3d: baseline %8.1f, rms %8.1f, min %8.1f, max %8.1f, amp %8.1f, wpos %3d, hit %d\n", ichan, bmean, brms, wmin, wmax, wamp, wpos, hit);
                }
                
-               if (1 || (xpos > 0 && xpos < 4000 && wamp > 1000)) {
+               if (1 || (wpos > 0 && wpos < 4000 && wamp > 1000)) {
                   if (wamp > zmax) {
                      if (doPrint)
                         printf("plot this one.\n");
@@ -790,12 +837,14 @@ public:
 #endif
 
                //hamp[seqchan]->Fill(wamp);
-               //hled[seqchan]->Fill(xpos);
+               //hled[seqchan]->Fill(wpos);
                
                hbmean_all->Fill(bmean);
                hbrms_all->Fill(brms);
                hamp_all->Fill(wamp);
-               hled_all->Fill(xpos);
+               hamp_all_pedestal->Fill(wamp);
+               hamp_all_above_pedestal->Fill(wamp);
+               hled_all->Fill(wpos);
 
                if (scachan_is_pad) {
                   hbrms_all_pads->Fill(brms);
@@ -809,24 +858,42 @@ public:
                fHF[ifeam].hbmean_prof->Fill(seqsca, bmean);
                fHF[ifeam].hbrms_prof->Fill(seqsca, brms);
                
-               h2led2amp->Fill(xpos, wamp);
+               h2led2amp->Fill(wpos, wamp);
+
+               // plots for hits
                
-               if (wamp > 1000) {
-                  hled_all_cut->Fill(xpos);
+               if (hit_amp) {
+                  hled_all_hits->Fill(wpos);
                }
                
-               if (xpos > 100 && xpos < 500) {
-                  hamp_all_cut->Fill(wamp);
+               if (hit_time) {
+                  hamp_all_hits->Fill(wamp);
+               }
+
+               // plots for the drift region
+
+               if (dpos > idrift_cut) {
+                  hdrift_amp_all->Fill(damp);
+                  hdrift_amp_all_pedestal->Fill(damp);
+                  hdrift_amp_all_above_pedestal->Fill(damp);
+                  
+                  if (damp > hit_amp_threshold) {
+                     hdrift_led_all->Fill(dpos);
+                     hdrift_led2amp->Fill(dpos, damp);
+                     if (seqpad >= 0) {
+                        fHF[ifeam].hnhits_pad_drift->Fill(seqpad);
+                     }
+                  }
                }
 
                if (hit) {
                   hnhits->Fill(seqchan);
-                  hled_hit->Fill(xpos);
+                  hled_hit->Fill(wpos);
                   hamp_hit->Fill(wamp);
-                  hamp_hit_pedestal->Fill(wamp);
+                  //hamp_hit_pedestal->Fill(wamp);
                   
                   fHF[ifeam].hnhits->Fill(seqsca);
-                  fHF[ifeam].htime->Fill(seqsca, xpos);
+                  fHF[ifeam].htime->Fill(seqsca, wpos);
                   fHF[ifeam].hamp->Fill(seqsca, wamp);
 
                   if (seqpad >= 0) {
