@@ -123,7 +123,9 @@ public:
    TH1D** hbrms;
    std::vector<TH1D*> hwaveform_first;
    std::vector<TH1D*> hwaveform_max;
-   double *fMaxWamp;
+   std::vector<TH1D*> hwaveform_max_drift;
+   std::vector<double> fMaxWamp;
+   std::vector<double> fMaxWampDrift;
 
    TH1D** hamp;
    TH1D** hled;
@@ -160,7 +162,8 @@ public:
    TH2D* hpadmap;
 
    TDirectory* hdir_waveform_first;
-
+   TDirectory* hdir_waveform_max;
+   TDirectory* hdir_waveform_max_drift;
 
    FeamHistograms fHF[MAX_FEAM];
 
@@ -273,11 +276,6 @@ public:
       hamp = new TH1D*[nchan];
       hled = new TH1D*[nchan];
 
-      fMaxWamp = new double[nchan];
-      for (int i=0; i<nchan; i++) {
-         fMaxWamp[i] = 0;
-      }
-
       pads->mkdir("baseline_mean")->cd();
 
       for (int i=0; i<nchan; i++) {
@@ -299,7 +297,10 @@ public:
       }
 
       hdir_waveform_first = pads->mkdir("chan_waveform_first");
+      hdir_waveform_max = pads->mkdir("chan_waveform_max");
+      hdir_waveform_max_drift = pads->mkdir("chan_waveform_max_drift");
 
+#if 0
       pads->mkdir("chan_waveform_max")->cd();
 
       for (int i=0; i<nchan; i++) {
@@ -309,6 +310,7 @@ public:
          sprintf(title, "chan %04d biggest waveform", i);
          hwaveform_max.push_back(new TH1D(name, title, nbins, -0.5, nbins-0.5));
       }
+#endif
 
       pads->mkdir("chan_amp")->cd();
 
@@ -804,6 +806,8 @@ public:
                //hbmean[seqchan]->Fill(bmean);
                //hbrms[seqchan]->Fill(brms);
 
+               // save first waveform
+
                if (seqchan >= hwaveform_first.size()) {
                   for (unsigned i=hwaveform_first.size(); i<=seqchan; i++)
                      hwaveform_first.push_back(NULL);
@@ -826,7 +830,27 @@ public:
                      hwaveform_first[seqchan]->SetBinContent(i+1, aptr[i]);
                }
 
-#if 0
+               // save biggest waveform
+
+               if (seqchan >= fMaxWamp.size()) {
+                  for (unsigned i=fMaxWamp.size(); i<=seqchan; i++)
+                     fMaxWamp.push_back(0);
+               }
+
+               if (seqchan >= hwaveform_max.size()) {
+                  for (unsigned i=hwaveform_max.size(); i<=seqchan; i++)
+                     hwaveform_max.push_back(NULL);
+               }
+
+               if (hwaveform_max[seqchan] == NULL) {
+                  char name[256];
+                  char title[256];
+                  sprintf(name, "hwaveform%04d_max_%s", seqchan, xname);
+                  sprintf(title, "%s biggest waveform", xtitle);
+                  hdir_waveform_max->cd();
+                  hwaveform_max[seqchan] = new TH1D(name, title, nbins, -0.5, nbins-0.5);
+               }
+
                if (wamp > fMaxWamp[seqchan]) {
                   fMaxWamp[seqchan] = wamp;
                   if (doPrint)
@@ -834,7 +858,35 @@ public:
                   for (int i=0; i<nbins; i++)
                      hwaveform_max[seqchan]->SetBinContent(i+1, aptr[i]);
                }
-#endif
+
+               // save biggest drift region waveform
+
+               if (seqchan >= fMaxWampDrift.size()) {
+                  for (unsigned i=fMaxWampDrift.size(); i<=seqchan; i++)
+                     fMaxWampDrift.push_back(0);
+               }
+
+               if (seqchan >= hwaveform_max_drift.size()) {
+                  for (unsigned i=hwaveform_max_drift.size(); i<=seqchan; i++)
+                     hwaveform_max_drift.push_back(NULL);
+               }
+
+               if (hwaveform_max_drift[seqchan] == NULL) {
+                  char name[256];
+                  char title[256];
+                  sprintf(name, "hwaveform%04d_max_drift_%s", seqchan, xname);
+                  sprintf(title, "%s biggest drift region waveform", xtitle);
+                  hdir_waveform_max_drift->cd();
+                  hwaveform_max_drift[seqchan] = new TH1D(name, title, nbins, -0.5, nbins-0.5);
+               }
+
+               if (dpos > idrift_cut && damp > fMaxWampDrift[seqchan]) {
+                  fMaxWampDrift[seqchan] = damp;
+                  if (doPrint)
+                     printf("saving biggest drift waveform %d\n", seqchan);
+                  for (int i=0; i<nbins; i++)
+                     hwaveform_max_drift[seqchan]->SetBinContent(i+1, aptr[i]);
+               }
 
                //hamp[seqchan]->Fill(wamp);
                //hled[seqchan]->Fill(wpos);
