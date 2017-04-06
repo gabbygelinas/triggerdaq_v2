@@ -165,6 +165,8 @@ public:
 
    TH2D* hpadmap;
 
+   TDirectory* hdir_summary;
+   TDirectory* hdir_feam;
    TDirectory* hdir_waveform_first;
    TDirectory* hdir_waveform_max;
    TDirectory* hdir_waveform_max_drift;
@@ -236,7 +238,13 @@ public:
       TDirectory* pads = gDirectory->mkdir("pads");
       pads->cd(); // select correct ROOT directory
 
-      pads->mkdir("summary")->cd();
+      hdir_summary = pads->mkdir("summary");
+      hdir_feam = pads->mkdir("feam");
+      hdir_waveform_first = pads->mkdir("chan_waveform_first");
+      hdir_waveform_max = pads->mkdir("chan_waveform_max");
+      hdir_waveform_max_drift = pads->mkdir("chan_waveform_max_drift");
+
+      hdir_summary->cd();
 
       hbmean_all = new TH1D("hbaseline_mean", "baseline mean", 100, ADC_MIN, ADC_MAX);
       hbrms_all  = new TH1D("hbaseline_rms",  "baseline rms",  100, 0, ADC_RANGE_RMS);
@@ -270,13 +278,11 @@ public:
 
       hpadmap = new TH2D("hpadmap", "map from TPC pad number (col*4*18+row) to SCA readout channel (sca*80+chan)", 4*4*18, -0.5, 4*4*18-0.5, NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
 
+      hdir_feam->cd();
+
       for (int i=0; i<nfeam; i++) {
          fHF[i].CreateHistograms(i, nbins);
       }
-
-      hdir_waveform_first = pads->mkdir("chan_waveform_first");
-      hdir_waveform_max = pads->mkdir("chan_waveform_max");
-      hdir_waveform_max_drift = pads->mkdir("chan_waveform_max_drift");
    }
 
    void EndRun(TARunInfo* runinfo)
