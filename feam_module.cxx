@@ -32,6 +32,7 @@
 #define ADC_MAX  33000
 #define ADC_RANGE 65000
 #define ADC_RANGE_RMS 500
+#define ADC_RANGE_PED 2000
 
 #define NUM_SEQSCA (3*80+79)
 
@@ -50,8 +51,9 @@ public:
 class FeamHistograms
 {
 public:
-   TProfile* hbmean_prof = NULL;
-   TProfile* hbrms_prof  = NULL;
+   TProfile* hbmean_prof  = NULL;
+   TProfile* hbrms_prof   = NULL;
+   TProfile* hbrange_prof = NULL;
    TH1D* hnhits = NULL;
    TH1D* hnhits_pad = NULL;
    TH1D* hnhits_pad_drift = NULL;
@@ -75,6 +77,10 @@ public:
       sprintf(name,  "pos%02d_baseline_rms_prof", position);
       sprintf(title, "feam pos %2d baseline rms vs (SCA*80 +  readout index)", position);
       hbrms_prof  = new TProfile(name, title,  NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
+
+      sprintf(name,  "pos%02d_baseline_range_prof", position);
+      sprintf(title, "feam pos %2d baseline range (max-min) vs (SCA*80 +  readout index)", position);
+      hbrange_prof  = new TProfile(name, title,  NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
 
       sprintf(name,  "pos%02d_hit_map", position);
       sprintf(title, "feam pos %2d hits vs (SCA*80 + readout index)", position);
@@ -121,19 +127,21 @@ public:
 
    TH1D** hbmean;
    TH1D** hbrms;
+
    std::vector<TH1D*> hwaveform_first;
    std::vector<TH1D*> hwaveform_max;
    std::vector<TH1D*> hwaveform_max_drift;
    std::vector<double> fMaxWamp;
    std::vector<double> fMaxWampDrift;
 
-   TH1D** hamp;
-   TH1D** hled;
-
    TH1D* hbmean_all;
    TH1D* hbrms_all;
    TH1D* hbrms_all_pads;
    TH1D* hbrms_all_fpn;
+
+   TH1D* h_adc_range_all = NULL;
+   TH1D* h_adc_range_baseline = NULL;
+   TH1D* h_adc_range_drift = NULL;
 
    TH1D* hamp_all;
    TH1D* hamp_all_pedestal;
@@ -142,9 +150,6 @@ public:
 
    TH1D* hled_all_hits;
    TH1D* hamp_all_hits;
-
-   //TProfile* hbmean_prof;
-   //TProfile* hbrms_prof;
 
    TH2D* h2led2amp;
 
@@ -157,7 +162,6 @@ public:
    TH1D* hnhits;
    TH1D* hled_hit;
    TH1D* hamp_hit;
-   //TH1D* hamp_hit_pedestal;
 
    TH2D* hpadmap;
 
@@ -239,12 +243,13 @@ public:
       hbrms_all_pads  = new TH1D("hbaseline_rms_pads",  "baseline rms, tpc pad channels",  100, 0, ADC_RANGE_RMS);
       hbrms_all_fpn   = new TH1D("hbaseline_rms_fpn",  "baseline rms, fpn channels",  100, 0, ADC_RANGE_RMS);
 
-      //hbmean_prof = new TProfile("hbmean_prof", "baseline mean vs channel", nchan, -0.5, nchan-0.5);
-      //hbrms_prof  = new TProfile("hbrms_prof",  "baseline rms vs channel",  nchan, -0.5, nchan-0.5);
+      h_adc_range_all      = new TH1D("adc_range_all",      "waveform range (max-min)",  100, 0, ADC_RANGE_PED);
+      h_adc_range_baseline = new TH1D("adc_range_baseline", "waveform range (max-min), baseline region",  100, 0, ADC_RANGE_PED);
+      h_adc_range_drift    = new TH1D("adc_range_drift",    "waveform range (max-min), drift region",  100, 0, ADC_RANGE_PED);
 
       hamp_all          = new TH1D("hamp",   "pulse height", 100, 0, ADC_RANGE);
-      hamp_all_pedestal = new TH1D("hamp_pedestal", "pulse height, zoom on pedestal area", 100, 0, 2000);
-      hamp_all_above_pedestal = new TH1D("hamp_above_pedestal", "pulse height, away from pedestal area", 100, 2000, ADC_RANGE);
+      hamp_all_pedestal = new TH1D("hamp_pedestal", "pulse height, zoom on pedestal area", 100, 0, ADC_RANGE_PED);
+      hamp_all_above_pedestal = new TH1D("hamp_above_pedestal", "pulse height, away from pedestal area", 100, ADC_RANGE_PED, ADC_RANGE);
 
       hled_all   = new TH1D("hled",   "pulse leading edge, adc time bins", 100, 0, nbins);
 
@@ -254,15 +259,14 @@ public:
       hamp_all_hits = new TH1D("hamp_all_hits",   "pulse height, with time cut", 100, 0, ADC_RANGE);
 
       hdrift_amp_all = new TH1D("drift_amp", "drift region pulse height", 100, 0, ADC_RANGE);
-      hdrift_amp_all_pedestal = new TH1D("drift_amp_pedestal", "drift region pulse height, zoom on pedestal area", 100, 0, 2000);
-      hdrift_amp_all_above_pedestal = new TH1D("drift_amp_above_pedestal", "drift region pulse height, away from pedestal area", 100, 2000, ADC_RANGE);
+      hdrift_amp_all_pedestal = new TH1D("drift_amp_pedestal", "drift region pulse height, zoom on pedestal area", 100, 0, ADC_RANGE_PED);
+      hdrift_amp_all_above_pedestal = new TH1D("drift_amp_above_pedestal", "drift region pulse height, away from pedestal area", 100, ADC_RANGE_PED, ADC_RANGE);
       hdrift_led_all = new TH1D("drift_led", "drift region pulse leading edge, adc time bins, above pedestal", 100, 0, nbins);
       hdrift_led2amp = new TH2D("drift_led2amp", "drift region pulse amp vs time, adc time bins, above pedestal", 100, 0, nbins, 100, 0, ADC_RANGE);
 
       hnhits = new TH1D("hnhits", "hits per channel", nchan, -0.5, nchan-0.5);
       hled_hit = new TH1D("hled_hit", "hit time, adc time bins", 100, 0, nbins);
       hamp_hit = new TH1D("hamp_hit", "hit pulse height", 100, 0, ADC_RANGE);
-      //hamp_hit_pedestal = new TH1D("hamp_hit_pedestal", "hit pulse height, zoom on pedestal", 100, 0, 300);
 
       hpadmap = new TH2D("hpadmap", "map from TPC pad number (col*4*18+row) to SCA readout channel (sca*80+chan)", 4*4*18, -0.5, 4*4*18-0.5, NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
 
@@ -270,67 +274,9 @@ public:
          fHF[i].CreateHistograms(i, nbins);
       }
 
-      // FIXME: who deletes this?
-      hbmean = new TH1D*[nchan];
-      hbrms  = new TH1D*[nchan];
-      hamp = new TH1D*[nchan];
-      hled = new TH1D*[nchan];
-
-      pads->mkdir("baseline_mean")->cd();
-
-      for (int i=0; i<nchan; i++) {
-         char name[256];
-         char title[256];
-         sprintf(name, "hbmean%04d", i);
-         sprintf(title, "chan %04d baseline mean", i);
-         hbmean[i] = new TH1D(name, title, 100, ADC_MIN, ADC_MAX);
-      }
-
-      pads->mkdir("baseline_rms")->cd();
-
-      for (int i=0; i<nchan; i++) {
-         char name[256];
-         char title[256];
-         sprintf(name, "hbrms%04d", i);
-         sprintf(title, "chan %04d baseline rms", i);
-         hbrms[i] = new TH1D(name, title, 100, 0, ADC_RANGE_RMS);
-      }
-
       hdir_waveform_first = pads->mkdir("chan_waveform_first");
       hdir_waveform_max = pads->mkdir("chan_waveform_max");
       hdir_waveform_max_drift = pads->mkdir("chan_waveform_max_drift");
-
-#if 0
-      pads->mkdir("chan_waveform_max")->cd();
-
-      for (int i=0; i<nchan; i++) {
-         char name[256];
-         char title[256];
-         sprintf(name, "hwaveform%04d_max", i);
-         sprintf(title, "chan %04d biggest waveform", i);
-         hwaveform_max.push_back(new TH1D(name, title, nbins, -0.5, nbins-0.5));
-      }
-#endif
-
-      pads->mkdir("chan_amp")->cd();
-
-      for (int i=0; i<nchan; i++) {
-         char name[256];
-         char title[256];
-         sprintf(name, "hamp%04d", i);
-         sprintf(title, "chan %04d pulse height", i);
-         hamp[i] = new TH1D(name, title, 100, 0, ADC_RANGE);
-      }
-
-      pads->mkdir("chan_led")->cd();
-
-      for (int i=0; i<nchan; i++) {
-         char name[256];
-         char title[256];
-         sprintf(name, "hled%04d", i);
-         sprintf(title, "chan %04d pulse leading edge, adc bins", i);
-         hled[i] = new TH1D(name, title, 100, 0, nbins);
-      }
    }
 
    void EndRun(TARunInfo* runinfo)
@@ -581,6 +527,7 @@ public:
       
       //int iplot = 0;
       double zmax = 0;
+      bool first_zero_range = true;
 
       int ibaseline_start = 10;
       int ibaseline_end = 100;
@@ -756,6 +703,27 @@ public:
                      dmax = a;
                }
 
+               // diagnostics
+
+#if 1
+               if (scachan_is_pad || scachan_is_fpn) {
+                  if (bmax-bmin == 0) {
+                     if (first_zero_range) {
+                        first_zero_range = false;
+                        printf("XXX zero baseline range, feam %d, sca %d, readout %d, scachan %d, col %d, row %d, bmin %f, bmax %f, in hex 0x%04x\n", ifeam, isca, ichan, scachan, col, row, bmin, bmax, (uint16_t)bmin);
+                     }
+#if 0
+                     //FeamAdcData* aaa = e->adcs[ifeam];
+                     e->Print();
+                     printf("\n");
+                     e->modules[ifeam]->Print(1);
+                     printf("\n");
+                     abort();
+#endif
+                  }
+               }
+#endif
+
                // find pulses
 
                double wamp = bmean - wmin;
@@ -800,11 +768,6 @@ public:
                      zmax = wamp;
                   }
                }
-
-               // create plots and histograms
-
-               //hbmean[seqchan]->Fill(bmean);
-               //hbrms[seqchan]->Fill(brms);
 
                // save first waveform
 
@@ -888,15 +851,14 @@ public:
                      hwaveform_max_drift[seqchan]->SetBinContent(i+1, aptr[i]);
                }
 
-               //hamp[seqchan]->Fill(wamp);
-               //hled[seqchan]->Fill(wpos);
-               
-               hbmean_all->Fill(bmean);
-               hbrms_all->Fill(brms);
-               hamp_all->Fill(wamp);
-               hamp_all_pedestal->Fill(wamp);
-               hamp_all_above_pedestal->Fill(wamp);
-               hled_all->Fill(wpos);
+               if (scachan_is_pad || scachan_is_fpn) {
+                  hbmean_all->Fill(bmean);
+                  hbrms_all->Fill(brms);
+                  hamp_all->Fill(wamp);
+                  hamp_all_pedestal->Fill(wamp);
+                  hamp_all_above_pedestal->Fill(wamp);
+                  hled_all->Fill(wpos);
+               }
 
                if (scachan_is_pad) {
                   hbrms_all_pads->Fill(brms);
@@ -904,13 +866,17 @@ public:
                   hbrms_all_fpn->Fill(brms);
                }
 
-               //hbmean_prof->Fill(seqchan, bmean);
-               //hbrms_prof->Fill(seqchan, brms);
-
-               fHF[ifeam].hbmean_prof->Fill(seqsca, bmean);
-               fHF[ifeam].hbrms_prof->Fill(seqsca, brms);
+               if (scachan_is_pad || scachan_is_fpn) {
+                  h_adc_range_all->Fill(wmax-wmin);
+                  h_adc_range_baseline->Fill(bmax-bmin);
+                  h_adc_range_drift->Fill(dmax-dmin);
+                  
+                  fHF[ifeam].hbmean_prof->Fill(seqsca, bmean);
+                  fHF[ifeam].hbrms_prof->Fill(seqsca, brms);
+                  fHF[ifeam].hbrange_prof->Fill(seqsca, bmax-bmin);
                
-               h2led2amp->Fill(wpos, wamp);
+                  h2led2amp->Fill(wpos, wamp);
+               }
 
                // plots for hits
                
@@ -942,7 +908,6 @@ public:
                   hnhits->Fill(seqchan);
                   hled_hit->Fill(wpos);
                   hamp_hit->Fill(wamp);
-                  //hamp_hit_pedestal->Fill(wamp);
                   
                   fHF[ifeam].hnhits->Fill(seqsca);
                   fHF[ifeam].htime->Fill(seqsca, wpos);

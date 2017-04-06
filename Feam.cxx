@@ -175,7 +175,7 @@ void FeamModuleData::Finalize()
    ZZZ Processing FEAM event: module  3, cnt     62, ts_start 0xc8ef4a56, ts_trig 0xc8ef4cc6, next_n 256, size 310688, error 0
 */
 
-void FeamModuleData::Print() const
+void FeamModuleData::Print(int level) const
 {
    printf("bank %s, module %2d, ", fBank.c_str(), fPosition);
    printf("cnt %6d, ts_start 0x%08x, ts_trig 0x%08x, ",
@@ -185,6 +185,21 @@ void FeamModuleData::Print() const
    printf("next_n %d, ", next_n);
    printf("size %d, ", fSize);
    printf("error %d", error);
+
+   if (level > 0) {
+      printf("\n");
+      printf("ADC data:\n");
+      const uint16_t* aptr16 = (uint16_t*)fPtr;
+      int asize16 = fSize/2;
+      for (int i=0; i<asize16; i++) {
+         if (i%4 == 0)
+            printf("%d: ", i);
+         printf(" 0x%04x", aptr16[i]);
+         if (i%4 == 3)
+            printf("\n");
+      }
+      printf("ADC data done\n");
+   }
 }
 
 void FeamModuleData::AddData(const FeamPacket*p, int position, const char* ptr, int size)

@@ -85,7 +85,7 @@ public:
    ~FeamModuleData(); // dtor
    void AddData(const FeamPacket*p, int position, const char* ptr, int size);
    void Finalize();
-   void Print() const;
+   void Print(int level=0) const;
 };
 
 #define MAX_FEAM           8 /* 64: 0..63 */
