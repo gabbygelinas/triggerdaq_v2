@@ -54,6 +54,8 @@ public:
    TProfile* hbmean_prof  = NULL;
    TProfile* hbrms_prof   = NULL;
    TProfile* hbrange_prof = NULL;
+   TH1D* hnhitchan = NULL;
+   TH1D* hnhitchan_map = NULL;
    TH1D* hnhits = NULL;
    TH1D* hnhits_pad = NULL;
    TH1D* hnhits_pad_drift = NULL;
@@ -81,6 +83,14 @@ public:
       sprintf(name,  "pos%02d_baseline_range_prof", position);
       sprintf(title, "feam pos %2d baseline range (max-min) vs (SCA*80 +  readout index)", position);
       hbrange_prof  = new TProfile(name, title,  NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
+
+      sprintf(name,  "pos%02d_nhitchan", position);
+      sprintf(title, "feam pos %2d number of hit channels", position);
+      hnhitchan = new TH1D(name, title, 100, 0, 100);
+
+      sprintf(name,  "pos%02d_nhitchan_map", position);
+      sprintf(title, "feam pos %2d hit channels vs (SCA*80 + readout index)", position);
+      hnhitchan_map = new TH1D(name, title, NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
 
       sprintf(name,  "pos%02d_hit_map", position);
       sprintf(title, "feam pos %2d hits vs (SCA*80 + readout index)", position);
@@ -162,6 +172,8 @@ public:
    TH1D* hnhits;
    TH1D* hled_hit;
    TH1D* hamp_hit;
+
+   TH1D* hnhitchan = NULL;
 
    TH2D* hpadmap;
 
@@ -275,6 +287,8 @@ public:
       hnhits = new TH1D("hnhits", "hits per channel", nchan, -0.5, nchan-0.5);
       hled_hit = new TH1D("hled_hit", "hit time, adc time bins", 100, 0, nbins);
       hamp_hit = new TH1D("hamp_hit", "hit pulse height", 100, 0, ADC_RANGE);
+
+      hnhitchan = new TH1D("hnhitchan", "number of hit channels per event", 100, 0, 1000);
 
       hpadmap = new TH2D("hpadmap", "map from TPC pad number (col*4*18+row) to SCA readout channel (sca*80+chan)", 4*4*18, -0.5, 4*4*18-0.5, NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
 
@@ -547,10 +561,15 @@ public:
 
       double hit_amp_threshold = 1000;
 
+      int nhitchan = 0;
+
       for (unsigned ifeam=0; ifeam<e->adcs.size(); ifeam++) {
          FeamAdcData* aaa = e->adcs[ifeam];
          if (!aaa)
             continue;
+
+         int nhitchan_feam = 0;
+
          for (int isca=0; isca<aaa->nsca; isca++) {
             for (int ichan=1; ichan<=aaa->nchan; ichan++) {
                const int* aptr = &aaa->adc[isca][ichan][0];
@@ -753,13 +772,38 @@ public:
                }
 
                hit = hit_time && hit_amp;
-               
-               if (hit) {
-                  AgPadHit h;
-                  h.chan = ichan;
-                  h.time = wpos;
-                  h.amp  = wamp;
-                  hits->fPadHits.push_back(h);
+
+               if (hit_amp) {
+
+                  FeamChannel* c = new FeamChannel;
+                  c->bank = e->modules[ifeam]->fBank;
+                  c->position = ifeam;
+                  c->sca = isca;
+                  c->sca_readout = ichan;
+                  c->sca_chan = scachan;
+                  c->tpc_col = col;
+                  c->tpc_row = row;
+                  c->first_bin = 0;
+                  c->adc_samples.reserve(nbins);
+                  for (int i=0; i<nbins; i++)
+                     c->adc_samples.push_back(aptr[i]);
+
+                  //printf("adc samples: size %d, capacity %d\n", c->adc_samples.size(), c->adc_samples.capacity());
+
+                  e->hits.push_back(c);
+
+                  nhitchan++;
+                  nhitchan_feam++;
+
+                  fHF[ifeam].hnhitchan_map->Fill(seqsca);
+
+                  if (hit) {
+                     AgPadHit h;
+                     h.chan = ichan;
+                     h.time = wpos;
+                     h.amp  = wamp;
+                     hits->fPadHits.push_back(h);
+                  }
                }
 
                if (doPrint) {
@@ -925,7 +969,11 @@ public:
                }
             }
          }
+
+         fHF[ifeam].hnhitchan->Fill(nhitchan_feam);
       }
+
+      hnhitchan->Fill(nhitchan);
 
       bool do_plot = (runinfo->fRoot->fgApp != NULL);
 

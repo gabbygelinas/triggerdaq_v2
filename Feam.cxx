@@ -290,6 +290,12 @@ FeamEvent::~FeamEvent() // dtor
          delete adcs[i];
          adcs[i] = NULL;
       }
+
+   for (unsigned i=0; i<hits.size(); i++)
+      if (hits[i]) {
+         delete hits[i];
+         hits[i] = NULL;
+      }
 }
 
 void FeamEvent::Print(int level) const
