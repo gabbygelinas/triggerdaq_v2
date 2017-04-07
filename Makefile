@@ -35,7 +35,7 @@ MAIN := $(ROOTANASYS)/obj/manalyzer_main.o
 
 # uncomment and define analyzer modules here
 
-MODULES += ncfm.o unpack_module.o a16module.o Alpha16.o feam_module.o TsSync.o Feam.o FeamEVB.o AgEvent.o AgEVB.o Unpack.o reco_module.o final_module.o
+MODULES += ncfm.o unpack_module.o a16module.o Alpha16.o feam_module.o TsSync.o Feam.o FeamEVB.o AgEvent.o AgEVB.o Unpack.o Signals.o TPCBase.o reco_module.o final_module.o
 ALL     += agana.exe
 
 #ALL     += ncfm.exe
@@ -65,6 +65,17 @@ $(EXAMPLE_ALL): %.exe:
 
 ncfm.exe: %.exe: %.o
 	$(CXX) -o $@ $< $(CXXFLAGS) $(LIBS) -lm -lz -lpthread
+
+reco_module.o: reco_module.cxx Signals.o TPCBase.o
+	$(CXX) -o $@ -I$(HOME)/alpha-g/dataAnalysis -I$(HOME)/alpha-g/garfieldpp $(CXXFLAGS) -c $<
+
+Signals.o: HAVE_ROOT = ""
+Signals.o: $(HOME)/alpha-g/dataAnalysis/Signals.cc
+	echo HAVE_ROOT = $(HAVE_ROOT)
+	$(CXX) -o $@ -I$(HOME)/alpha-g/dataAnalysis -I$(HOME)/alpha-g/garfieldpp $(CXXFLAGS) -c $<
+
+TPCBase.o: $(HOME)/alpha-g/garfieldpp/TPCBase.cc
+	$(CXX) -o $@ -I$(HOME)/alpha-g/garfieldpp $(CXXFLAGS) -c $<
 
 %.o: %.cxx
 	$(CXX) -o $@ $(CXXFLAGS) -c $<

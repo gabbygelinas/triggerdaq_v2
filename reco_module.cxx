@@ -5,15 +5,25 @@
 //
 
 #include <stdio.h>
+#include <iostream>
+
+#include "TH2D.h"
 
 #include "manalyzer.h"
 #include "midasio.h"
 
 #include "AgFlow.h"
 
+#include "Signals.hh"
+#include "TPCBase.hh"
+
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
 
 #define MEMZERO(p) memset((p), 0, sizeof(p))
+
+using std::cout;
+using std::cerr;
+using std::endl;
 
 class RecoModule: public TAModuleInterface
 {
@@ -25,7 +35,11 @@ public:
 
 class RecoRun: public TARunInterface
 {
+private:
+   Signals *signals = NULL;
 public:
+   TH2D* h_aw_padcol;
+
    RecoRun(TARunInfo* runinfo)
       : TARunInterface(runinfo)
    {
@@ -42,6 +56,8 @@ public:
       printf("RecoRun::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
       time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
       printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
+      signals = new Signals(runinfo->fRunNo);
+      h_aw_padcol = new TH2D("h_aw_padcol", "anode pad coincidences;anode;pad sector", TPCBase::NanodeWires, 0, TPCBase::NanodeWires, TPCBase::npadsec, 0, TPCBase::npadsec);
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
    }
 
@@ -50,6 +66,7 @@ public:
       printf("RecoRun::EndRun, run %d\n", runinfo->fRunNo);
       time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
       printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
+      // DELETE(signals);
    }
 
    void PauseRun(TARunInfo* runinfo)
@@ -64,7 +81,7 @@ public:
 
    TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
    {
-      printf("RecoRun::Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
+      // printf("RecoRun::Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
 
       AgEventFlow *ef = flow->Find<AgEventFlow>();
 
@@ -84,6 +101,18 @@ public:
       // age->a16  --- aw data
       //
 
+      if(age->feam && age->a16){
+         signals->Reset(age,10,16);
+         int ntimes = signals->Analyze(age,1,1);
+         cout << "KKKK " << ntimes << " times: " << signals->sanode.size() << '\t' << signals->spad.size() << endl;
+         for(auto sa: signals->sanode){
+            for(auto sp: signals->spad){
+               // cout << "KKKK " << sa.i << '\t' << sp.sec << endl;
+               if(abs(sa.t-sp.t) < 50)
+                  h_aw_padcol->Fill(sa.i, sp.sec);
+            }
+         }
+      }
       return flow;
    }
 
