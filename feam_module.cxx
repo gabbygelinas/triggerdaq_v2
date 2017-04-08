@@ -56,8 +56,10 @@ public:
    TProfile* hbrange_prof = NULL;
    TH1D* hnhitchan = NULL;
    TH1D* hnhitchan_map = NULL;
+   TH1D* h_spike_map = NULL;
    TH1D* hnhits = NULL;
    TH1D* hnhits_pad = NULL;
+   TH1D* hnhits_pad_nospike = NULL;
    TH1D* hnhits_pad_drift = NULL;
    TH2D* htime = NULL;
    TH2D* hamp = NULL;
@@ -96,9 +98,17 @@ public:
       sprintf(title, "feam pos %2d hits vs (SCA*80 + readout index)", position);
       hnhits      = new TH1D(name, title, NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
 
+      sprintf(name,  "pos%02d_spike_map", position);
+      sprintf(title, "feam pos %2d spikes vs (SCA*80 + readout index)", position);
+      h_spike_map = new TH1D(name, title, NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
+
       sprintf(name,  "pos%02d_hit_map_pads", position);
       sprintf(title, "feam pos %2d hits vs TPC seq.pad (col*4*18+row)", position);
       hnhits_pad  = new TH1D(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL, -0.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5);
+
+      sprintf(name,  "pos%02d_hit_map_pads_nospike", position);
+      sprintf(title, "feam pos %2d hits with spikes removed vs TPC seq.pad (col*4*18+row)", position);
+      hnhits_pad_nospike = new TH1D(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL, -0.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5);
 
       sprintf(name,  "pos%02d_hit_map_pads_drift", position);
       sprintf(title, "feam pos %2d hits in drift region vs TPC seq.pad (col*4*18+row)", position);
@@ -125,6 +135,79 @@ static int find_pulse(const int* adc, int nbins, double baseline, double gain, d
    return 0;
 }
 
+class ChanHistograms
+{
+public:
+   std::string fNameBase;
+   std::string fTitleBase;
+   int fNbins = 0;
+   TDirectory* fDirBad = NULL;
+   
+   TH1D* hbmean = NULL;
+   TH1D* hbrms  = NULL;
+
+   TH1D* hwaveform_first = NULL;
+   TH1D* hwaveform_bad   = NULL;
+   TH1D* hwaveform_max   = NULL;
+   TH1D* hwaveform_max_drift = NULL;
+
+   double fMaxWamp = 0;
+   double fMaxWampDrift = 0;
+
+   
+public:
+   ChanHistograms(const char* xname, const char* xtitle, TDirectory* dir_first, TDirectory* dir_bad, TDirectory* dir_max, TDirectory* dir_max_drift, int nbins) // ctor
+   {
+      fNameBase = xname;
+      fTitleBase = xtitle;
+      fNbins = nbins;
+      fDirBad = dir_bad;
+      
+      char name[256];
+      char title[256];
+
+      sprintf(name, "hwf_first_%s", xname);
+      sprintf(title, "%s first waveform", xtitle);
+
+      dir_first->cd();
+      hwaveform_first = new TH1D(name, title, nbins, -0.5, nbins-0.5);
+
+      sprintf(name, "hwf_max_%s", xname);
+      sprintf(title, "%s biggest waveform", xtitle);
+      dir_max->cd();
+      hwaveform_max = new TH1D(name, title, nbins, -0.5, nbins-0.5);
+
+      sprintf(name, "hwf_max_drift_%s", xname);
+      sprintf(title, "%s biggest waveform, drift region", xtitle);
+      dir_max_drift->cd();
+      hwaveform_max_drift = new TH1D(name, title, nbins, -0.5, nbins-0.5);
+   }
+
+   ~ChanHistograms() // dtor
+   {
+
+   }
+
+   bool SaveBad(int nbins, const int* adc)
+   {
+      if (hwaveform_bad == NULL) {
+         char name[256];
+         char title[256];
+         sprintf(name, "hwf_bad_%s", fNameBase.c_str());
+         sprintf(title, "%s bad waveform", fTitleBase.c_str());
+         fDirBad->cd();
+         hwaveform_bad = new TH1D(name, title, nbins, -0.5, nbins-0.5);
+
+         for (int i=0; i<nbins; i++)
+            hwaveform_bad->SetBinContent(i+1, adc[i]);
+
+         return true;
+      }
+
+      return false;
+   }
+};
+
 class FeamRun: public TARunInterface
 {
 private:
@@ -135,15 +218,10 @@ public:
    FILE *fin;
    TCanvas* fC;
 
-   TH1D** hbmean;
-   TH1D** hbrms;
-
-   std::vector<TH1D*> hwaveform_first;
-   std::vector<TH1D*> hwaveform_max;
-   std::vector<TH1D*> hwaveform_max_drift;
-   std::vector<double> fMaxWamp;
-   std::vector<double> fMaxWampDrift;
-
+   TH1D* h_spike_diff = NULL;
+   TH1D* h_spike_diff_max = NULL;
+   TH1D* h_spike_num = NULL;
+   
    TH1D* hbmean_all;
    TH1D* hbrms_all;
    TH1D* hbrms_all_pads;
@@ -180,10 +258,12 @@ public:
    TDirectory* hdir_summary;
    TDirectory* hdir_feam;
    TDirectory* hdir_waveform_first;
+   TDirectory* hdir_waveform_bad;
    TDirectory* hdir_waveform_max;
    TDirectory* hdir_waveform_max_drift;
 
    FeamHistograms fHF[MAX_FEAM];
+   std::vector<ChanHistograms*> fHC;
 
    int fCountTestScaEvents = 0;
    int fCountBadScaEvents = 0;
@@ -232,6 +312,9 @@ public:
    {
       printf("FeamRun::dtor!\n");
       DELETE(fC);
+      for (unsigned i=0; i<fHC.size(); i++) {
+         DELETE(fHC[i]);
+      }
    }
 
    void BeginRun(TARunInfo* runinfo)
@@ -257,10 +340,15 @@ public:
       hdir_summary = pads->mkdir("summary");
       hdir_feam = pads->mkdir("feam");
       hdir_waveform_first = pads->mkdir("chan_waveform_first");
+      hdir_waveform_bad = pads->mkdir("chan_waveform_bad");
       hdir_waveform_max = pads->mkdir("chan_waveform_max");
       hdir_waveform_max_drift = pads->mkdir("chan_waveform_max_drift");
 
       hdir_summary->cd();
+
+      h_spike_diff = new TH1D("spike_diff", "channel spike finder", 100, 0, 1000);
+      h_spike_diff_max = new TH1D("spike_diff_max", "channel spike finder, max", 100, 0, 1000);
+      h_spike_num = new TH1D("spike_num", "channel spike finder, num", 100, 0-0.5, 100-0.5);
 
       hbmean_all = new TH1D("hbaseline_mean", "baseline mean", 100, ADC_MIN, ADC_MAX);
       hbrms_all  = new TH1D("hbaseline_rms",  "baseline rms",  100, 0, ADC_RANGE_RMS);
@@ -713,6 +801,69 @@ public:
                   sprintf(xtitle, "FEAM pos %d, sca %d, readout chan %d", ifeam, isca, ichan);
                }
 
+               // create per-channel data
+               
+               if (seqchan >= fHC.size()) {
+                  for (unsigned i=fHC.size(); i<=seqchan; i++)
+                     fHC.push_back(NULL);
+               }
+
+               if (fHC[seqchan] == NULL)
+                  fHC[seqchan] = new ChanHistograms(xname, xtitle, hdir_waveform_first, hdir_waveform_bad, hdir_waveform_max, hdir_waveform_max_drift, nbins);
+
+               // check for spikes
+
+               bool spike = false;
+
+               double spike_max = 0;
+               int spike_num = 0;
+               for (int i=1; i<nbins-1; i++) {
+                  double a0 = aptr[i-1];
+                  double a1 = aptr[i];
+                  double a2 = aptr[i+1];
+                  if (a0 <= a1 && a1 <= a2)
+                     continue;
+                  if (a0 >= a1 && a1 >= a2)
+                     continue;
+                  double aa = (a0+a2)/2.0;
+                  double da = fabs(a1 - aa);
+                  if (da > spike_max)
+                     spike_max = da;
+                  if (da > 300)
+                     spike_num++;
+                  h_spike_diff->Fill(da);
+               }
+               h_spike_diff_max->Fill(spike_max);
+               h_spike_num->Fill(spike_num);
+
+               if (spike_max > 500 && spike_num > 10) {
+                  spike = true;
+               }
+               
+               if (spike) {
+                  spike = true;
+                  if (fHC[seqchan]->SaveBad(nbins, aptr)) {
+                     printf("BBB feam pos %d, seqsca %d, spike %f %d\n", ifeam, seqsca, spike_max, spike_num);
+
+                     for (int i=1; i<nbins-1; i++) {
+                        double a0 = aptr[i-1];
+                        double a1 = aptr[i];
+                        double a2 = aptr[i+1];
+                        if (a0 <= a1 && a1 <= a2)
+                           continue;
+                        if (a0 >= a1 && a1 >= a2)
+                           continue;
+                        double aa = (a0+a2)/2.0;
+                        double da = fabs(a1 - aa);
+                        if (da > spike_max)
+                           spike_max = da;
+                        if (da > 300) {
+                           printf("bin %d, %.0f %.0f %.0f, aa %.0f, da %.0f\n", i, a0, a1, a2, aa, da);
+                        }
+                     }
+                  }
+               }
+
                // compute baseline
 
                double sum0 = 0;
@@ -863,84 +1014,31 @@ public:
 
                // save first waveform
 
-               if (seqchan >= hwaveform_first.size()) {
-                  for (unsigned i=hwaveform_first.size(); i<=seqchan; i++)
-                     hwaveform_first.push_back(NULL);
-               }
-
-               if (hwaveform_first[seqchan] == NULL) {
-                  char name[256];
-                  char title[256];
-                  sprintf(name, "hwf_first_%s", xname);
-                  sprintf(title, "%s first waveform", xtitle);
-                  hdir_waveform_first->cd();
-                  hwaveform_first[seqchan] = new TH1D(name, title, nbins, -0.5, nbins-0.5);
-                  //printf("seqchan %d, size %d, ptr %p, name %s, title %s\n", seqchan, hwaveform_first.size(), hwaveform_first[seqchan], name, title);
-               }
-
-               if (hwaveform_first[seqchan]->GetEntries() == 0) {
+               if (fHC[seqchan]->hwaveform_first->GetEntries() == 0) {
                   if (doPrint)
                      printf("saving first waveform %d\n", seqchan);
                   for (int i=0; i<nbins; i++)
-                     hwaveform_first[seqchan]->SetBinContent(i+1, aptr[i]);
+                     fHC[seqchan]->hwaveform_first->SetBinContent(i+1, aptr[i]);
                }
 
                // save biggest waveform
 
-               if (seqchan >= fMaxWamp.size()) {
-                  for (unsigned i=fMaxWamp.size(); i<=seqchan; i++)
-                     fMaxWamp.push_back(0);
-               }
-
-               if (seqchan >= hwaveform_max.size()) {
-                  for (unsigned i=hwaveform_max.size(); i<=seqchan; i++)
-                     hwaveform_max.push_back(NULL);
-               }
-
-               if (hwaveform_max[seqchan] == NULL) {
-                  char name[256];
-                  char title[256];
-                  sprintf(name, "hwf_max_%s", xname);
-                  sprintf(title, "%s biggest waveform", xtitle);
-                  hdir_waveform_max->cd();
-                  hwaveform_max[seqchan] = new TH1D(name, title, nbins, -0.5, nbins-0.5);
-               }
-
-               if (wamp > fMaxWamp[seqchan]) {
-                  fMaxWamp[seqchan] = wamp;
+               if (wamp > fHC[seqchan]->fMaxWamp) {
+                  fHC[seqchan]->fMaxWamp = wamp;
                   if (doPrint)
                      printf("saving biggest waveform %d\n", seqchan);
                   for (int i=0; i<nbins; i++)
-                     hwaveform_max[seqchan]->SetBinContent(i+1, aptr[i]);
+                     fHC[seqchan]->hwaveform_max->SetBinContent(i+1, aptr[i]);
                }
 
                // save biggest drift region waveform
 
-               if (seqchan >= fMaxWampDrift.size()) {
-                  for (unsigned i=fMaxWampDrift.size(); i<=seqchan; i++)
-                     fMaxWampDrift.push_back(0);
-               }
-
-               if (seqchan >= hwaveform_max_drift.size()) {
-                  for (unsigned i=hwaveform_max_drift.size(); i<=seqchan; i++)
-                     hwaveform_max_drift.push_back(NULL);
-               }
-
-               if (hwaveform_max_drift[seqchan] == NULL) {
-                  char name[256];
-                  char title[256];
-                  sprintf(name, "hwf_max_drift_%s", xname);
-                  sprintf(title, "%s biggest drift region waveform", xtitle);
-                  hdir_waveform_max_drift->cd();
-                  hwaveform_max_drift[seqchan] = new TH1D(name, title, nbins, -0.5, nbins-0.5);
-               }
-
-               if (dpos > idrift_cut && damp > fMaxWampDrift[seqchan]) {
-                  fMaxWampDrift[seqchan] = damp;
+               if (dpos > idrift_cut && damp > fHC[seqchan]->fMaxWampDrift) {
+                  fHC[seqchan]->fMaxWampDrift = damp;
                   if (doPrint)
                      printf("saving biggest drift waveform %d\n", seqchan);
                   for (int i=0; i<nbins; i++)
-                     hwaveform_max_drift[seqchan]->SetBinContent(i+1, aptr[i]);
+                     fHC[seqchan]->hwaveform_max_drift->SetBinContent(i+1, aptr[i]);
                }
 
                if (scachan_is_pad || scachan_is_fpn) {
@@ -1007,11 +1105,19 @@ public:
 
                   if (seqpad >= 0) {
                      fHF[ifeam].hnhits_pad->Fill(seqpad);
+                     if (!spike) {
+                        fHF[ifeam].hnhits_pad_nospike->Fill(seqpad);
+                     }
                   }
+               }
+
+               if (spike) {
+                  fHF[ifeam].h_spike_map->Fill(seqsca);
                }
             }
          }
 
+         fHF[ifeam].h_spike_map->Fill(1); // event counter marker
          fHF[ifeam].hnhitchan->Fill(nhitchan_feam);
       }
 
