@@ -185,6 +185,10 @@ public:
 
    FeamHistograms fHF[MAX_FEAM];
 
+   int fCountTestScaEvents = 0;
+   int fCountBadScaEvents = 0;
+   int fCountBadSca = 0;
+
    FeamRun(TARunInfo* runinfo, FeamModule* m)
       : TARunInterface(runinfo)
    {
@@ -301,9 +305,11 @@ public:
 
    void EndRun(TARunInfo* runinfo)
    {
-      printf("EndRun, run %d\n", runinfo->fRunNo);
+      printf("FeamRun::EndRun, run %d\n", runinfo->fRunNo);
       time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
       printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
+
+      printf("FeamRun::EndRun: test for bad SCA: total events %d, bad events %d, bad sca %d\n", fCountTestScaEvents, fCountBadScaEvents, fCountBadSca);
    }
 
    void PauseRun(TARunInfo* runinfo)
@@ -543,6 +549,42 @@ public:
       AgPadHitsFlow* hits = new AgPadHitsFlow(flow);
       flow = hits;
 
+      // check for bad sca data
+
+      bool bad_sca = false;
+
+      fCountTestScaEvents++;
+
+      for (unsigned ifeam=0; ifeam<e->adcs.size(); ifeam++) {
+         FeamAdcData* aaa = e->adcs[ifeam];
+         if (!aaa)
+            continue;
+
+         for (int isca=0; isca<aaa->nsca; isca++) {
+            int first_chan = 4;
+            int v = aaa->adc[isca][first_chan][0];
+
+            bool bad = (v == 0x7FFC);
+
+            if (bad) {
+               printf("XXX FEAM pos %02d sca %d has gibberish data: ", ifeam, isca);
+               e->Print();
+               printf("\n");
+            }
+
+            if (bad) {
+               fCountBadSca++;
+               bad_sca = true;
+            }
+         }
+      }
+
+      if (bad_sca) {
+         fCountBadScaEvents++;
+         e->error = true;
+         return flow;
+      }
+
       // loop over all waveforms
       
       //int iplot = 0;
@@ -661,13 +703,13 @@ public:
                char xtitle[256];
 
                if (scachan_is_pad) {
-                  sprintf(xname, "pos%02d_sca%d_chan%02d_scachan%02d_col%02d_row%02d", ifeam, isca, ichan, scachan, col, row);
+                  sprintf(xname, "pos%02d_%03d_sca%d_chan%02d_scachan%02d_col%02d_row%02d", ifeam, seqsca, isca, ichan, scachan, col, row);
                   sprintf(xtitle, "FEAM pos %d, sca %d, readout chan %d, sca chan %d, col %d, row %d", ifeam, isca, ichan, scachan, col, row);
                } else if (scachan_is_fpn) {
-                  sprintf(xname, "pos%02d_sca%d_chan%02d_fpn%d", ifeam, isca, ichan, -scachan);
+                  sprintf(xname, "pos%02d_%03d_sca%d_chan%02d_fpn%d", ifeam, seqsca, isca, ichan, -scachan);
                   sprintf(xtitle, "FEAM pos %d, sca %d, readout chan %d, fpn %d", ifeam, isca, ichan, -scachan);
                } else {
-                  sprintf(xname, "pos%02d_sca%d_chan%02d", ifeam, isca, ichan);
+                  sprintf(xname, "pos%02d_%03d_sca%d_chan%02d", ifeam, seqsca, isca, ichan);
                   sprintf(xtitle, "FEAM pos %d, sca %d, readout chan %d", ifeam, isca, ichan);
                }
 
@@ -829,7 +871,7 @@ public:
                if (hwaveform_first[seqchan] == NULL) {
                   char name[256];
                   char title[256];
-                  sprintf(name, "hwaveform%04d_first_%s", seqchan, xname);
+                  sprintf(name, "hwf_first_%s", xname);
                   sprintf(title, "%s first waveform", xtitle);
                   hdir_waveform_first->cd();
                   hwaveform_first[seqchan] = new TH1D(name, title, nbins, -0.5, nbins-0.5);
@@ -858,7 +900,7 @@ public:
                if (hwaveform_max[seqchan] == NULL) {
                   char name[256];
                   char title[256];
-                  sprintf(name, "hwaveform%04d_max_%s", seqchan, xname);
+                  sprintf(name, "hwf_max_%s", xname);
                   sprintf(title, "%s biggest waveform", xtitle);
                   hdir_waveform_max->cd();
                   hwaveform_max[seqchan] = new TH1D(name, title, nbins, -0.5, nbins-0.5);
@@ -887,7 +929,7 @@ public:
                if (hwaveform_max_drift[seqchan] == NULL) {
                   char name[256];
                   char title[256];
-                  sprintf(name, "hwaveform%04d_max_drift_%s", seqchan, xname);
+                  sprintf(name, "hwf_max_drift_%s", xname);
                   sprintf(title, "%s biggest drift region waveform", xtitle);
                   hdir_waveform_max_drift->cd();
                   hwaveform_max_drift[seqchan] = new TH1D(name, title, nbins, -0.5, nbins-0.5);
