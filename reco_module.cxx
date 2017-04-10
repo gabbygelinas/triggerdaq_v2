@@ -39,6 +39,9 @@ private:
    Signals *signals = NULL;
 public:
    TH2D* h_aw_padcol;
+   TH1D* h_timediff;
+   TH1D* h_firsttimediff;
+   TH2D* h_firsttime;
 
    RecoRun(TARunInfo* runinfo)
       : TARunInterface(runinfo)
@@ -57,8 +60,13 @@ public:
       time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
       printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
       signals = new Signals(runinfo->fRunNo);
-      h_aw_padcol = new TH2D("h_aw_padcol", "anode pad coincidences;anode;pad sector", TPCBase::NanodeWires, 0, TPCBase::NanodeWires, TPCBase::npadsec, 0, TPCBase::npadsec);
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
+      TDirectory* dir = gDirectory->mkdir("signalAnalysis");
+      dir->cd();
+      h_aw_padcol = new TH2D("h_aw_padcol", "anode pad coincidences;anode;pad sector", TPCBase::NanodeWires, 0, TPCBase::NanodeWires, TPCBase::npadsec, 0, TPCBase::npadsec);
+      h_timediff = new TH1D("h_timediff", "pad / anode time difference;t_a-t_p",4000,-2000,2000);
+      h_firsttimediff = new TH1D("h_firsttimediff", "pad / anode first time difference;t_a0-t_p0",4000,-2000,2000);
+      h_firsttime = new TH2D("h_firsttime", "pad / anode first time;t_a0;t_p0",1000,0,10000,500,0,8000);
    }
 
    void EndRun(TARunInfo* runinfo)
@@ -101,17 +109,28 @@ public:
       // age->a16  --- aw data
       //
 
+      double t_pad_first = 1e6;
+      double t_aw_first = 1e6;
       if(age->feam && age->a16){
          signals->Reset(age,10,16);
          int ntimes = signals->Analyze(age,1,1);
          cout << "KKKK " << ntimes << " times: " << signals->sanode.size() << '\t' << signals->spad.size() << endl;
+         bool first = true;
          for(auto sa: signals->sanode){
+            if(sa.t < t_aw_first) t_aw_first = sa.t;
             for(auto sp: signals->spad){
+               if(first)
+                  if(sp.t < t_pad_first) t_pad_first = sp.t;
                // cout << "KKKK " << sa.i << '\t' << sp.sec << endl;
-               if(abs(sa.t-sp.t) < 50)
+               h_timediff->Fill(sa.t-sp.t);
+               if(abs(sa.t-sp.t) < 16)
                   h_aw_padcol->Fill(sa.i, sp.sec);
             }
+            first = false;
          }
+
+         h_firsttimediff->Fill(t_aw_first-t_pad_first);
+         h_firsttime->Fill(t_aw_first,t_pad_first);
       }
       return flow;
    }
