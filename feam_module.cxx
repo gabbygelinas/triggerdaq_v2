@@ -64,6 +64,8 @@ public:
    TH2D* htime = NULL;
    TH2D* hamp = NULL;
    TH2D* hamp_pad = NULL;
+   TProfile* h_amp_seqsca = NULL;
+   TProfile* h_amp_seqpad = NULL;
    TProfile* h_pulser_amp_hit_seqpad = NULL;
    TProfile* h_pulser_led_hit_seqpad = NULL;
    TProfile* h_pulser_led_hit_seqsca = NULL;
@@ -130,10 +132,19 @@ public:
       sprintf(title, "feam pos %2d hit p.h. vs TPC seq.pad (col*4*18+row)", position);
       hamp_pad    = new TH2D(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL, -0.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5, 50, 0, ADC_RANGE);
       
+      sprintf(name,  "pos%02d_amp_seqsca", position);
+      sprintf(title, "feam pos %2d hit p.h. profile, cut 10000..40000 vs (SCA*80 + readout index)", position);
+      h_amp_seqsca = new TProfile(name, title, NUM_SEQSCA, -0.5, NUM_SEQSCA-0.5);
+      
+      sprintf(name,  "pos%02d_amp_seqpad", position);
+      sprintf(title, "feam pos %2d hit p.h. profile, cut 10000..40000 vs TPC seq.pad (col*4*18+row)", position);
+      h_amp_seqpad = new TProfile(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL+1, -1.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5);
+      
+      sprintf(name,  "pos%02d_pulser_hit_led_seqsca", position);
       if (pulser) {
          sprintf(name,  "pos%02d_pulser_hit_amp_seqpad", position);
          sprintf(title, "feam pos %2d pulser hit p.h. vs TPC seq.pad (col*4*18+row)", position);
-         h_pulser_amp_hit_seqpad = new TProfile(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL, -1.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5);
+         h_pulser_amp_hit_seqpad = new TProfile(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL+1, -1.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5);
 
          sprintf(name,  "pos%02d_pulser_hit_led_seqpad", position);
          sprintf(title, "feam pos %2d pulser hit time vs TPC seq.pad (col*4*18+row)", position);
@@ -1145,6 +1156,11 @@ public:
                   fHF[ifeam].htime->Fill(seqsca, wpos);
                   fHF[ifeam].hamp->Fill(seqsca, wamp);
                   fHF[ifeam].hamp_pad->Fill(seqpad, wamp);
+
+                  if (wamp >= 10000 && wamp <= 40000) {
+                     fHF[ifeam].h_amp_seqsca->Fill(seqsca, wamp);
+                     fHF[ifeam].h_amp_seqpad->Fill(seqpad, wamp);
+                  }
 
                   h_amp_hit_col->Fill(ifeam*4 + col, wamp);
 
