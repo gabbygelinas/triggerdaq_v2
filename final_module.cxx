@@ -111,16 +111,16 @@ public:
       h_aw_aw_amp  = new TH2D("h_aw_aw_amp",  "p.h. in aw vs aw", 50, 0, 17000, 50, 0, 17000);
 
       h_pad_time = new TH1D("h_pad_time", "pad hit time", 50, 0, 500);
-      h_pad_amp = new TH1D("h_pad_amp", "pad hit pulse height", 100, 0, 17000);
-      h_pad_amp_time = new TH2D("h_pad_amp_time", "pad p.h vs time", 50, 0, 500, 50, 0, 17000);
+      h_pad_amp = new TH1D("h_pad_amp", "pad hit pulse height", 100, 0, 60000);
+      h_pad_amp_time = new TH2D("h_pad_amp_time", "pad p.h vs time", 50, 0, 500, 50, 0, 60000);
 
-      h_aw_pad_hits = new TH2D("h_aw_pad_hits", "hits in aw vs hits in pads", 2432, -0.5, 2432-0.5, 128, -0.5, 128-0.5);
+      h_aw_pad_hits = new TH2D("h_aw_pad_hits", "hits in aw vs hits in pads", 4*8, -0.5, 4*8-0.5, 128, -0.5, 128-0.5);
 
       h_aw_pad_time = new TH2D("h_aw_pad_time", "time of hits in aw vs pads", 50, 0, 500, 70, 0, 700);
 
       h_aw_pad_time_drift = new TH2D("h_aw_pad_time_drift", "time of hits in aw vs pads, drift region", 50, 0, 500, 70, 0, 700);
 
-      h_aw_pad_amp_pc = new TH2D("h_aw_pad_amp_pc", "p.h. of hits in aw vs pads, pc region", 50, 0, 17000, 50, 0, 17000);
+      h_aw_pad_amp_pc = new TH2D("h_aw_pad_amp_pc", "p.h. of hits in aw vs pads, pc region", 50, 0, 60000, 50, 0, 17000);
    }
 
    void EndRun(TARunInfo* runinfo)
@@ -229,7 +229,8 @@ public:
 
          for (unsigned i=0; i<eph->fPadHits.size(); i++) {
             for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
-               h_aw_pad_hits->Fill(eph->fPadHits[i].chan, eawh->fAwHits[j].chan);
+               int xcol = (eph->fPadHits[i].ifeam%8)*4 + eph->fPadHits[i].col;
+               h_aw_pad_hits->Fill(xcol, eawh->fAwHits[j].chan);
                h_aw_pad_time->Fill(eph->fPadHits[i].time, eawh->fAwHits[j].time);
 
                if ((eawh->fAwHits[j].time > 200) && eph->fPadHits[i].time > 200) {

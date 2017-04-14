@@ -1023,7 +1023,10 @@ public:
 
                   if (hit) {
                      AgPadHit h;
-                     h.chan = ichan;
+                     h.ifeam = ifeam;
+                     h.seqsca = seqsca;
+                     h.col = col;
+                     h.row = row;
                      h.time = wpos;
                      h.amp  = wamp;
                      hits->fPadHits.push_back(h);
