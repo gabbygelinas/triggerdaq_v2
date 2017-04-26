@@ -34,7 +34,7 @@ class AgEventFlow: public TAFlowEvent
 
 struct AgAwHit
 {
-   int chan; // anode wire seq number
+   int chan;
    double time; // hit time
    double amp;  // hit amplitude
 };
@@ -53,7 +53,10 @@ class AgAwHitsFlow: public TAFlowEvent
 
 struct AgPadHit
 {
-   int chan; // pad channel number
+   int ifeam; // feam position
+   int seqsca; // sca*80+ri
+   int col;
+   int row;
    double time; // hit time
    double amp;  // hit amplitude
 };

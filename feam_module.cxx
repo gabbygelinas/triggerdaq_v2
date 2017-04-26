@@ -63,13 +63,19 @@ public:
    TH1D* hnhits_pad_drift = NULL;
    TH2D* htime = NULL;
    TH2D* hamp = NULL;
+   TH2D* hamp_pad = NULL;
+   TProfile* h_amp_seqsca = NULL;
+   TProfile* h_amp_seqpad = NULL;
+   TProfile* h_pulser_amp_hit_seqpad = NULL;
+   TProfile* h_pulser_led_hit_seqpad = NULL;
+   TProfile* h_pulser_led_hit_seqsca = NULL;
 
 public:
    FeamHistograms()
    {
    };
 
-   void CreateHistograms(int position, int nbins)
+   void CreateHistograms(int position, int nbins, bool pulser)
    {
       char name[256];
       char title[256];
@@ -121,6 +127,33 @@ public:
       sprintf(name,  "pos%02d_hit_amp", position);
       sprintf(title, "feam pos %2d hit p.h. vs (SCA*80 + readout index)", position);
       hamp        = new TH2D(name, title, NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5, 50, 0, ADC_RANGE);
+
+      sprintf(name,  "pos%02d_hit_amp_pads", position);
+      sprintf(title, "feam pos %2d hit p.h. vs TPC seq.pad (col*4*18+row)", position);
+      hamp_pad    = new TH2D(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL, -0.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5, 50, 0, ADC_RANGE);
+      
+      sprintf(name,  "pos%02d_amp_seqsca", position);
+      sprintf(title, "feam pos %2d hit p.h. profile, cut 10000..40000 vs (SCA*80 + readout index)", position);
+      h_amp_seqsca = new TProfile(name, title, NUM_SEQSCA, -0.5, NUM_SEQSCA-0.5);
+      
+      sprintf(name,  "pos%02d_amp_seqpad", position);
+      sprintf(title, "feam pos %2d hit p.h. profile, cut 10000..40000 vs TPC seq.pad (col*4*18+row)", position);
+      h_amp_seqpad = new TProfile(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL+1, -1.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5);
+      
+      sprintf(name,  "pos%02d_pulser_hit_led_seqsca", position);
+      if (pulser) {
+         sprintf(name,  "pos%02d_pulser_hit_amp_seqpad", position);
+         sprintf(title, "feam pos %2d pulser hit p.h. vs TPC seq.pad (col*4*18+row)", position);
+         h_pulser_amp_hit_seqpad = new TProfile(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL+1, -1.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5);
+
+         sprintf(name,  "pos%02d_pulser_hit_led_seqpad", position);
+         sprintf(title, "feam pos %2d pulser hit time vs TPC seq.pad (col*4*18+row)", position);
+         h_pulser_led_hit_seqpad = new TProfile(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL, -0.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5);
+
+         sprintf(name,  "pos%02d_pulser_hit_led_seqsca", position);
+         sprintf(title, "feam pos %2d pulser hit time vs (SCA*80 + readout index)", position);
+         h_pulser_led_hit_seqsca = new TProfile(name, title, NUM_SEQSCA, -0.5, NUM_SEQSCA-0.5);
+      }
    }
 };
 
@@ -250,6 +283,10 @@ public:
    TH1D* hnhits;
    TH1D* hled_hit;
    TH1D* hamp_hit;
+   TH2D* h_amp_hit_col = NULL;
+
+   bool  fPulser = false;
+   TH1D* h_pulser_led_hit = NULL;
 
    TH1D* hnhitchan = NULL;
 
@@ -379,15 +416,20 @@ public:
       hnhits = new TH1D("hnhits", "hits per channel", nchan, -0.5, nchan-0.5);
       hled_hit = new TH1D("hled_hit", "hit time, adc time bins", 100, 0, nbins);
       hamp_hit = new TH1D("hamp_hit", "hit pulse height", 100, 0, ADC_RANGE);
+      h_amp_hit_col = new TH2D("hamp_hit_col", "hit pulse height va column (ifeam*4+col)", 8*4, -0.5, 8*4-0.5, 100, 0, ADC_RANGE);
 
       hnhitchan = new TH1D("hnhitchan", "number of hit channels per event", 100, 0, 1000);
+
+      if (fPulser) {
+         h_pulser_led_hit = new TH1D("pulser_led_hit", "pulser time, adc bins", 30, 180-0.5, 210-0.5);
+      }
 
       hpadmap = new TH2D("hpadmap", "map from TPC pad number (col*4*18+row) to SCA readout channel (sca*80+chan)", 4*4*18, -0.5, 4*4*18-0.5, NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
 
       hdir_feam->cd();
 
       for (int i=0; i<nfeam; i++) {
-         fHF[i].CreateHistograms(i, nbins);
+         fHF[i].CreateHistograms(i, nbins, fPulser);
       }
    }
 
@@ -992,7 +1034,10 @@ public:
 
                   if (hit) {
                      AgPadHit h;
-                     h.chan = ichan;
+                     h.ifeam = ifeam;
+                     h.seqsca = seqsca;
+                     h.col = col;
+                     h.row = row;
                      h.time = wpos;
                      h.amp  = wamp;
                      hits->fPadHits.push_back(h);
@@ -1098,10 +1143,26 @@ public:
                   hnhits->Fill(seqchan);
                   hled_hit->Fill(wpos);
                   hamp_hit->Fill(wamp);
+
+                  if (fPulser) {
+                     h_pulser_led_hit->Fill(wpos);
+                     fHF[ifeam].h_pulser_amp_hit_seqpad->Fill(-1, 0); // force plot to start from 0
+                     fHF[ifeam].h_pulser_amp_hit_seqpad->Fill(seqpad, wamp);
+                     fHF[ifeam].h_pulser_led_hit_seqpad->Fill(seqpad, wpos);
+                     fHF[ifeam].h_pulser_led_hit_seqsca->Fill(seqsca, wpos);
+                  }
                   
                   fHF[ifeam].hnhits->Fill(seqsca);
                   fHF[ifeam].htime->Fill(seqsca, wpos);
                   fHF[ifeam].hamp->Fill(seqsca, wamp);
+                  fHF[ifeam].hamp_pad->Fill(seqpad, wamp);
+
+                  if (wamp >= 10000 && wamp <= 40000) {
+                     fHF[ifeam].h_amp_seqsca->Fill(seqsca, wamp);
+                     fHF[ifeam].h_amp_seqpad->Fill(seqpad, wamp);
+                  }
+
+                  h_amp_hit_col->Fill(ifeam*4 + col, wamp);
 
                   if (seqpad >= 0) {
                      fHF[ifeam].hnhits_pad->Fill(seqpad);
