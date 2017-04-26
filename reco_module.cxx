@@ -8,6 +8,7 @@
 #include <iostream>
 
 #include "TH2D.h"
+#include "TPolyMarker3D.h"
 
 #include "manalyzer.h"
 #include "midasio.h"
@@ -15,7 +16,17 @@
 #include "AgFlow.h"
 
 #include "Signals.hh"
+#include "SpacePoints.hh"
+#include "PointsFinder.hh"
+#include "TSpacePoint.hh"
 #include "TPCBase.hh"
+
+#include "TrackViewer.hh"
+
+#include "settings.hh"
+#include "TEvent.hh"
+extern double gMagneticField;
+extern int gVerb;
 
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
 
@@ -35,13 +46,21 @@ public:
 
 class RecoRun: public TARunInterface
 {
-private:
-   Signals *signals = NULL;
+// private:
+//    PointsFinder *pf = NULL;
 public:
    TH2D* h_aw_padcol;
    TH1D* h_timediff;
+   TH1D* h_atimes;
+   TH1D* h_ptimes;
    TH1D* h_firsttimediff;
    TH2D* h_firsttime;
+
+   TH2D* h_times_aw_p;
+   TH2D* h_times_aw_p_match;
+   TH1D* h_timediff_aw_p_match;
+
+   TCanvas *cTimes;
 
    RecoRun(TARunInfo* runinfo)
       : TARunInterface(runinfo)
@@ -59,14 +78,43 @@ public:
       printf("RecoRun::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
       time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
       printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
-      signals = new Signals(runinfo->fRunNo);
+      // signals = new Signals(runinfo->fRunNo);
+      // pf = new PointsFinder(runinfo->fRunNo);
+      // pf->SetNoiseThreshold(100);
+      // pf->SetMatchPadThreshold(0.1);
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
       TDirectory* dir = gDirectory->mkdir("signalAnalysis");
       dir->cd();
       h_aw_padcol = new TH2D("h_aw_padcol", "anode pad coincidences;anode;pad sector", TPCBase::NanodeWires, 0, TPCBase::NanodeWires, TPCBase::npadsec, 0, TPCBase::npadsec);
       h_timediff = new TH1D("h_timediff", "pad / anode time difference;t_a-t_p",4000,-2000,2000);
+      h_atimes = new TH1D("h_atimes", "anode times;t in ns",1000,0,10000);
+      h_ptimes = new TH1D("h_ptimes", "pad times;t in ns",500,0,8000);
       h_firsttimediff = new TH1D("h_firsttimediff", "pad / anode first time difference;t_a0-t_p0",4000,-2000,2000);
       h_firsttime = new TH2D("h_firsttime", "pad / anode first time;t_a0;t_p0",1000,0,10000,500,0,8000);
+
+      h_times_aw_p = new TH2D("h_times_aw_p", "pad / anode times;t_a;t_p",1000,0,10000,500,0,8000);
+      h_times_aw_p_match = new TH2D("h_times_aw_p_match", "pad / anode times matched;t_a;t_p",1000,0,10000,500,0,8000);
+      h_timediff_aw_p_match = new TH1D("h_timediff_aw_p_match", "pad / anode time difference;t_a-t_p",4000,-2000,2000);
+
+      gMagneticField=0.;
+      gVerb = 2;
+      TLookUpTable::LookUpTableInstance()->SetGas("arco2",0.28);
+      TLookUpTable::LookUpTableInstance()->SetB(gMagneticField);
+
+      TrackViewer::TrackViewerInstance()->StartViewer();
+
+      TrackViewer::TrackViewerInstance()->StartDeconv();
+      TrackViewer::TrackViewerInstance()->StartCoincView();
+
+      cTimes = new TCanvas("cTimes","aw and pad times");
+      h_atimes->SetFillStyle(0);
+      h_ptimes->SetFillStyle(0);
+      h_atimes->SetLineColor(kBlue);
+      h_ptimes->SetLineColor(kRed);
+      h_atimes->SetMinimum(0);
+      h_atimes->SetMaximum(2);
+      h_atimes->Draw();
+      h_ptimes->Draw("same");
    }
 
    void EndRun(TARunInfo* runinfo)
@@ -74,7 +122,6 @@ public:
       printf("RecoRun::EndRun, run %d\n", runinfo->fRunNo);
       time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
       printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
-      // DELETE(signals);
    }
 
    void PauseRun(TARunInfo* runinfo)
@@ -103,35 +150,91 @@ public:
 
       AgEvent* age = ef->fEvent;
 
+      TEvent anEvent( event->serial_number, runinfo->fRunNo );
+
+      // const Signals *signals = anEvent.GetSignals();
+
       // use:
       //
       // age->feam --- pads data
       // age->a16  --- aw data
       //
 
+
       double t_pad_first = 1e6;
       double t_aw_first = 1e6;
       if(age->feam && age->a16){
-         signals->Reset(age,10,16);
-         int ntimes = signals->Analyze(age,1,1);
-         cout << "KKKK " << ntimes << " times: " << signals->sanode.size() << '\t' << signals->spad.size() << endl;
+         anEvent.RecEvent( age );
+         // pf->Reset();
+         // pf->GetSignals()->Reset(age,10,16);
+         h_atimes->Reset();
+         h_ptimes->Reset();
+         // int ntimes = signals->Analyze(age,1,1);
+         // cout << "KKKK " << ntimes << " times: " << signals->sanode.size() << '\t' << signals->spad.size() << endl;
+         int nmax = std::max(anEvent.GetSignals()->sanode.size(), anEvent.GetSignals()->spad.size());
+         // for(int i = 0; i < nmax; i++){
+         //    cout << "KKKK " << ((i<signals->sanode.size())?(signals->sanode[i].t):-1) << '\t' << ((i<signals->spad.size())?(signals->spad[i].t):-1) << endl;
+         // }
          bool first = true;
-         for(auto sa: signals->sanode){
+         cout << anEvent.GetSignals()->sanode.size() << endl;
+         for(auto sa: anEvent.GetSignals()->sanode){
             if(sa.t < t_aw_first) t_aw_first = sa.t;
-            for(auto sp: signals->spad){
-               if(first)
+            h_atimes->Fill(sa.t);
+            double r, phi;
+            TPCBase::GetAnodePosition(sa.i, r, phi, true);
+            std::pair<int,int> pad = TPCBase::FindPad(0, phi);
+            for(auto sp: anEvent.GetSignals()->spad){
+               if(first){
                   if(sp.t < t_pad_first) t_pad_first = sp.t;
+                  h_ptimes->Fill(sp.t);
+               }
                // cout << "KKKK " << sa.i << '\t' << sp.sec << endl;
                h_timediff->Fill(sa.t-sp.t);
+               h_times_aw_p->Fill(sa.t, sp.t);
+
+               if(sp.sec == pad.first){
+                  h_times_aw_p_match->Fill(sa.t, sp.t);
+                  h_timediff_aw_p_match->Fill(sa.t-sp.t);
+               }
+
                if(abs(sa.t-sp.t) < 16)
                   h_aw_padcol->Fill(sa.i, sp.sec);
             }
             first = false;
          }
+         cTimes->Update();
 
          h_firsttimediff->Fill(t_aw_first-t_pad_first);
          h_firsttime->Fill(t_aw_first,t_pad_first);
+
+         // pf->Reset();
+         // int nxy = pf->FindPointsXY(age->a16);
+         // cout << "PPPP XY " << nxy << endl;
+         // int nz = pf->FindPointsZ(age->feam);
+         // cout << "PPPP  Z " << nz << endl;
+         // if(nz > 10){
+         //    auto *points_array = pf->GetPoints();
+         //    TPolyMarker3D* spm = new TPolyMarker3D(nz);
+         //    spm->SetMarkerColor(kCyan+1);
+         //    spm->SetMarkerStyle(2);
+         //    spm->SetMarkerSize(4);
+         //    for(int i=0; i<nz; ++i)
+         //       {
+         //          TSpacePoint* p = (TSpacePoint*) points_array->At(i);
+         //          // if(abs(p->GetZ()) < 2000)
+         //             spm->SetNextPoint(p->GetX(),p->GetY(),p->GetZ());
+         //       }
+         //    spm->SaveAs("points.root");
+         //    cout << "PPPPPPPPPPPP saved" << endl;
+         // }
+
+         // auto fullSigs = anEvent.GetSignals()->MatchPads();
+         // cout << "PPPP  " << fullSigs.size() << endl;
       }
+      // TrackViewer::TrackViewerInstance()->DrawPoints( pf->GetPoints() );
+      // TrackViewer::TrackViewerInstance()->DrawPoints2D(anEvent.GetPointsArray() );
+      TrackViewer::TrackViewerInstance()->DrawPoints(anEvent.GetPointsArray() );
+
       return flow;
    }
 
