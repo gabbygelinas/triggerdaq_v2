@@ -105,6 +105,7 @@ public:
 
       TrackViewer::TrackViewerInstance()->StartDeconv();
       TrackViewer::TrackViewerInstance()->StartCoincView();
+      TrackViewer::TrackViewerInstance()->StartHitsView();
 
       cTimes = new TCanvas("cTimes","aw and pad times");
       h_atimes->SetFillStyle(0);
