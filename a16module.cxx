@@ -276,6 +276,65 @@ struct PlotHistogramsPads
    }
 };
 
+class A16ChanHistograms
+{
+public:
+   std::string fNameBase;
+   std::string fTitleBase;
+   int fNbins = 0;
+
+   TH1D* hbmean = NULL;
+   TH1D* hbrms  = NULL;
+
+   TH1D* hwaveform_first = NULL;
+   TH1D* hwaveform_max   = NULL;
+   TH1D* hwaveform_max_drift = NULL;
+
+   double fMaxWamp = 0;
+   double fMaxWampDrift = 0;
+
+
+public:
+   A16ChanHistograms(const char* xname, const char* xtitle, TDirectory* dir, int nbins) // ctor
+   {
+      TDirectory* dir_first = dir->GetDirectory("achan_waveform_first");
+      if(!dir_first) dir_first = dir->mkdir("achan_waveform_first");
+      TDirectory* dir_max = dir->GetDirectory("achan_waveform_max");
+      if(!dir_max) dir_max = dir->mkdir("achan_waveform_max");
+      TDirectory* dir_max_drift = dir->GetDirectory("achan_waveform_max_drift");
+      if(!dir_max_drift) dir_max_drift = dir->mkdir("achan_waveform_max_drift");
+
+      fNameBase = xname;
+      fTitleBase = xtitle;
+      fNbins = nbins;
+
+      char name[256];
+      char title[256];
+
+      sprintf(name, "hawf_first_%s", xname);
+      sprintf(title, "%s first waveform", xtitle);
+
+      dir_first->cd();
+      hwaveform_first = new TH1D(name, title, nbins, -0.5, nbins-0.5);
+
+      sprintf(name, "hawf_max_%s", xname);
+      sprintf(title, "%s biggest waveform", xtitle);
+      dir_max->cd();
+      hwaveform_max = new TH1D(name, title, nbins, -0.5, nbins-0.5);
+
+      sprintf(name, "hawf_max_drift_%s", xname);
+      sprintf(title, "%s biggest waveform, drift region", xtitle);
+      dir_max_drift->cd();
+      hwaveform_max_drift = new TH1D(name, title, nbins, -0.5, nbins-0.5);
+   }
+
+   ~A16ChanHistograms() // dtor
+   {
+
+   }
+
+};
+
 static int x = 0;
 
 struct PlotA16
@@ -551,8 +610,12 @@ public:
    int fCountGood;
    int fCountBad;
 
+   TDirectory *dnoise = NULL;
+   TDirectory *dwf = NULL;
    TCanvas *c;
    TH1D *hwf0, *hwf1, *hfftsum0, *hfftsum1, *hbase0, *hbase1, *hRMS0, *hRMS1;
+   std::vector<A16ChanHistograms*> fHC;
+
    int entries = 0;
 
    AlphaTpcX()
@@ -562,6 +625,9 @@ public:
 
       fEvb = new Alpha16EVB();
 
+      dnoise = gDirectory->mkdir("noise");
+      dwf = gDirectory->mkdir("waveforms");
+      dnoise->cd();
       c = new TCanvas("cnoise","noise analysis",800,1200);
       c->Divide(1,6);
       hwf0 = new TH1D("hwf0","waveform 0",701,0,701);
@@ -759,6 +825,42 @@ public:
 
             double ph = b - wmin;
 
+            ////// Plot waveforms
+            if (i >= fHC.size()) {
+               for (unsigned j=fHC.size(); j<=i; j++)
+                  fHC.push_back(NULL);
+            }
+
+            if (fHC[i] == NULL){
+               char xname[256];
+               char xtitle[256];
+               sprintf(xname, "hawf_%03d", i);
+               sprintf(xtitle, "Waveform anode %03d", i);
+               fHC[i] = new A16ChanHistograms(xname, xtitle, dwf, w->nsamples);
+            }
+
+            // save first waveform
+
+            bool doPrint = false;
+            if (fHC[i]->hwaveform_first->GetEntries() == 0) {
+               if (doPrint)
+                  printf("saving first waveform %d\n", i);
+               for (int j=0; j< w->nsamples; j++)
+                  fHC[i]->hwaveform_first->SetBinContent(j+1, w->samples[j]);
+            }
+
+            // save biggest waveform
+
+            if (ph > fHC[i]->fMaxWamp) {
+               fHC[i]->fMaxWamp = ph;
+               if (doPrint)
+                  printf("saving biggest waveform %d\n", i);
+               for (int j=0; j< w->nsamples; j++)
+                  fHC[i]->hwaveform_max->SetBinContent(j+1, w->samples[j]);
+            }
+
+            ////////
+
             //if (ph > 120) {
             if (ph > 250) {
                fH->fHph->Fill(ph);
@@ -812,6 +914,17 @@ public:
                   h.amp = ph;
                   hits->push_back(h);
                }
+                           // save biggest drift region waveform
+
+               if (le > 180 && ph > fHC[i]->fMaxWampDrift) {
+                  fHC[i]->fMaxWampDrift = ph;
+                  if (doPrint)
+                     printf("saving biggest drift waveform %d\n", i);
+                  for (int j=0; j< w->nsamples; j++)
+                     fHC[i]->hwaveform_max_drift->SetBinContent(j+1, w->samples[j]);
+               }
+
+
             }
 
             delete w;
@@ -928,7 +1041,7 @@ struct A16Run: public TARunInterface
    int fCounter;
    AlphaTpcX* fATX;
    bool fTrace;
-   
+
    A16Run(TARunInfo* runinfo, A16Module* m)
       : TARunInterface(runinfo)
    {
@@ -1025,7 +1138,7 @@ struct A16Run: public TARunInterface
 
       if (fModule->fDoPlotAll)
          force_plot = true;
-      
+
       time_t now = time(NULL);
 
       if (force_plot) {
@@ -1077,13 +1190,13 @@ void A16Module::Init(const std::vector<std::string> &args)
    fTotalEventCounter = 0;
    TARootHelper::fgDir->cd(); // select correct ROOT directory
 }
-   
+
 void A16Module::Finish()
 {
    printf("A16Module::Finish!\n");
    printf("Counted %d events grand total\n", fTotalEventCounter);
 }
-   
+
 TARunInterface* A16Module::NewRun(TARunInfo* runinfo)
 {
    printf("A16Module::NewRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
