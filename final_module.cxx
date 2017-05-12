@@ -46,6 +46,7 @@ public:
    FinalModule* fModule;
 
    TCanvas* fC;
+   TCanvas* fPH;
 
    TH1D* h_num_aw_hits;
    TH1D* h_num_pad_hits;
@@ -63,9 +64,12 @@ public:
    TH1D* h_pad_amp;
    TH2D* h_pad_amp_time;
 
+   TH2D *h_pad_amp_pad;
+
    TH2D* h_aw_pad_hits;
 
    TH2D* h_aw_pad_time;
+   TH2D *h_aw_amp_aw;
 
    TH2D* h_aw_pad_time_drift;
    TH2D* h_aw_pad_amp_pc;
@@ -76,13 +80,16 @@ public:
       printf("FinalRun::ctor!\n");
       fModule = m;
 
-      fC = new TCanvas();
+      //      fC = new TCanvas();
+      fPH = new TCanvas("fPH","Pulseheights",600,1000);
+      fPH->Divide(1,2);
    }
 
    ~FinalRun()
    {
       printf("FinalRun::dtor!\n");
       DELETE(fC);
+      DELETE(fPH);
    }
 
    void BeginRun(TARunInfo* runinfo)
@@ -113,10 +120,17 @@ public:
       h_pad_time = new TH1D("h_pad_time", "pad hit time", 50, 0, 500);
       h_pad_amp = new TH1D("h_pad_amp", "pad hit pulse height", 100, 0, 60000);
       h_pad_amp_time = new TH2D("h_pad_amp_time", "pad p.h vs time", 50, 0, 500, 50, 0, 60000);
+      int npads = MAX_FEAM*MAX_FEAM_PAD_COL*MAX_FEAM_PAD_ROWS;
+      h_pad_amp_pad = new TH2D("h_pad_amp_pad", "pad p.h vs pad number",npads , -0.5, npads-0.5, 600, 0, 60000);
+      fPH->cd(2);
+      h_pad_amp_pad->Draw();
 
       h_aw_pad_hits = new TH2D("h_aw_pad_hits", "hits in aw vs hits in pads", 4*8, -0.5, 4*8-0.5, 128, -0.5, 128-0.5);
 
       h_aw_pad_time = new TH2D("h_aw_pad_time", "time of hits in aw vs pads", 50, 0, 500, 70, 0, 700);
+      h_aw_amp_aw = new TH2D("h_aw_amp_aw", "aw p.h vs aw number", 256, -0.5, 256.-0.5, 1700, 0, 17000);
+      fPH->cd(1);
+      h_aw_amp_aw->Draw();
 
       h_aw_pad_time_drift = new TH2D("h_aw_pad_time_drift", "time of hits in aw vs pads, drift region", 50, 0, 500, 70, 0, 700);
 
@@ -211,6 +225,7 @@ public:
             h_aw_time->Fill(eawh->fAwHits[j].time);
             h_aw_amp->Fill(eawh->fAwHits[j].amp);
             h_aw_amp_time->Fill(eawh->fAwHits[j].time, eawh->fAwHits[j].amp);
+            h_aw_amp_aw->Fill(eawh->fAwHits[j].chan, eawh->fAwHits[j].amp);
 
             for (unsigned k=0; k<eawh->fAwHits.size(); k++) {
                if (k==j)
@@ -225,6 +240,7 @@ public:
             h_pad_time->Fill(eph->fPadHits[i].time);
             h_pad_amp->Fill(eph->fPadHits[i].amp);
             h_pad_amp_time->Fill(eph->fPadHits[i].time, eph->fPadHits[i].amp);
+            h_pad_amp_pad->Fill(eph->fPadHits[i].col*MAX_FEAM_PAD_ROWS + eph->fPadHits[i].row, eph->fPadHits[i].amp);
          }
 
          for (unsigned i=0; i<eph->fPadHits.size(); i++) {
@@ -249,6 +265,9 @@ public:
       bool do_plot = (runinfo->fRoot->fgApp != NULL);
 
       if (do_plot) {
+         fPH->GetPad(1)->Modified();
+         fPH->GetPad(2)->Modified();
+         fPH->Update();
 #if 0
          // plot waveforms
 
