@@ -25,7 +25,7 @@ endif
 # get the rootana Makefile settings
 
 CXXFLAGS += -I$(ROOTANASYS)/include $(shell cat $(ROOTANASYS)/include/rootana_cflags.txt)
-LIBS     += -L$(ROOTANASYS)/lib -lrootana $(shell cat $(ROOTANASYS)/include/rootana_libs.txt) -L$(ANALYSIS_TPC) -lAGTPC -lAGDAQ -lAGUTILS -lGeom -lRGL
+LIBS     += -L$(ROOTANASYS)/lib -lrootana $(shell cat $(ROOTANASYS)/include/rootana_libs.txt)
 
 # select the main program - local custom main()
 # or standard main() from rootana
@@ -35,10 +35,12 @@ MAIN := $(ROOTANASYS)/obj/manalyzer_main.o
 
 # uncomment and define analyzer modules here
 
-MODULES += ncfm.o unpack_module.o a16module.o Alpha16.o feam_module.o TsSync.o Feam.o FeamEVB.o AgEvent.o AgEVB.o Unpack.o reco_module.o final_module.o
+RMODULES = reco_module.o
+RLIBS = -L$(ANALYSIS_TPC) -lAGTPC -lAGDAQ -lAGUTILS -lGeom -lRGL
+
+MODULES += ncfm.o unpack_module.o a16module.o Alpha16.o feam_module.o TsSync.o Feam.o FeamEVB.o AgEvent.o AgEVB.o Unpack.o $(RMODULES) final_module.o
 
 ALL     += agana.exe
-
 #ALL     += ncfm.exe
 
 # examples
@@ -56,7 +58,7 @@ all:: $(MODULES)
 all:: $(ALL)
 
 %.exe: %.o manalyzer_main.o
-	$(CXX) -o $@ manalyzer_main.o $< $(CXXFLAGS) $(LIBS) -lm -lz -lpthread
+	$(CXX) -o $@ manalyzer_main.o $< $(CXXFLAGS) $(RLIBS) $(LIBS) -lm -lz -lpthread
 
 $(EXAMPLE_ALL): %.exe:
 	$(CXX) -o $@ $(ROOTANASYS)/obj/manalyzer_main.o $< $(CXXFLAGS) $(LIBS) -lm -lz -lpthread
