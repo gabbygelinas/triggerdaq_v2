@@ -131,15 +131,15 @@ public:
       sprintf(name,  "pos%02d_hit_amp_pads", position);
       sprintf(title, "feam pos %2d hit p.h. vs TPC seq.pad (col*4*18+row)", position);
       hamp_pad    = new TH2D(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL, -0.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5, 50, 0, ADC_RANGE);
-      
+
       sprintf(name,  "pos%02d_amp_seqsca", position);
       sprintf(title, "feam pos %2d hit p.h. profile, cut 10000..40000 vs (SCA*80 + readout index)", position);
       h_amp_seqsca = new TProfile(name, title, NUM_SEQSCA, -0.5, NUM_SEQSCA-0.5);
-      
+
       sprintf(name,  "pos%02d_amp_seqpad", position);
       sprintf(title, "feam pos %2d hit p.h. profile, cut 10000..40000 vs TPC seq.pad (col*4*18+row)", position);
       h_amp_seqpad = new TProfile(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL+1, -1.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5);
-      
+
       sprintf(name,  "pos%02d_pulser_hit_led_seqsca", position);
       if (pulser) {
          sprintf(name,  "pos%02d_pulser_hit_amp_seqpad", position);
@@ -164,7 +164,7 @@ static int find_pulse(const int* adc, int nbins, double baseline, double gain, d
          return i;
       }
    }
-   
+
    return 0;
 }
 
@@ -175,7 +175,7 @@ public:
    std::string fTitleBase;
    int fNbins = 0;
    TDirectory* fDirBad = NULL;
-   
+
    TH1D* hbmean = NULL;
    TH1D* hbrms  = NULL;
 
@@ -187,7 +187,7 @@ public:
    double fMaxWamp = 0;
    double fMaxWampDrift = 0;
 
-   
+
 public:
    ChanHistograms(const char* xname, const char* xtitle, TDirectory* dir_first, TDirectory* dir_bad, TDirectory* dir_max, TDirectory* dir_max_drift, int nbins) // ctor
    {
@@ -195,7 +195,7 @@ public:
       fTitleBase = xtitle;
       fNbins = nbins;
       fDirBad = dir_bad;
-      
+
       char name[256];
       char title[256];
 
@@ -254,7 +254,7 @@ public:
    TH1D* h_spike_diff = NULL;
    TH1D* h_spike_diff_max = NULL;
    TH1D* h_spike_num = NULL;
-   
+
    TH1D* hbmean_all;
    TH1D* hbrms_all;
    TH1D* hbrms_all_pads;
@@ -716,7 +716,7 @@ public:
       }
 
       // loop over all waveforms
-      
+
       //int iplot = 0;
       double zmax = 0;
       bool first_zero_range = true;
@@ -809,7 +809,7 @@ public:
                      printf("pad map has errors!\n");
                   }
                }
-                
+
                int scachan = padMapper.channel[ichan];
                int col = -1; // TPC pad column
                int row = -1; // TPC pad row
@@ -844,7 +844,7 @@ public:
                }
 
                // create per-channel data
-               
+
                if (seqchan >= fHC.size()) {
                   for (unsigned i=fHC.size(); i<=seqchan; i++)
                      fHC.push_back(NULL);
@@ -881,7 +881,7 @@ public:
                if (spike_max > 500 && spike_num > 10) {
                   spike = true;
                }
-               
+
                if (spike) {
                   spike = true;
                   if (fHC[seqchan]->SaveBad(nbins, aptr)) {
@@ -938,7 +938,7 @@ public:
                }
 
                // scan the whole waveform
-               
+
                double wmin = aptr[0]; // waveform minimum
                double wmax = aptr[0]; // waveform maximum
 
@@ -951,7 +951,7 @@ public:
                }
 
                // scan the drift time region of the waveform
-               
+
                double dmin = aptr[idrift_start]; // waveform minimum
                double dmax = aptr[idrift_start]; // waveform maximum
 
@@ -997,7 +997,7 @@ public:
                bool hit_time = false;
                bool hit_amp = false;
                bool hit = false;
-               
+
                if ((wpos > iwire_start) && (wpos < idrift_end)) {
                   hit_time = true;
                }
@@ -1047,7 +1047,7 @@ public:
                if (doPrint) {
                   printf("chan %3d: baseline %8.1f, rms %8.1f, min %8.1f, max %8.1f, amp %8.1f, wpos %3d, hit %d\n", ichan, bmean, brms, wmin, wmax, wamp, wpos, hit);
                }
-               
+
                if (1 || (wpos > 0 && wpos < 4000 && wamp > 1000)) {
                   if (wamp > zmax) {
                      if (doPrint)
@@ -1105,20 +1105,20 @@ public:
                   h_adc_range_all->Fill(wmax-wmin);
                   h_adc_range_baseline->Fill(bmax-bmin);
                   h_adc_range_drift->Fill(dmax-dmin);
-                  
+
                   fHF[ifeam].hbmean_prof->Fill(seqsca, bmean);
                   fHF[ifeam].hbrms_prof->Fill(seqsca, brms);
                   fHF[ifeam].hbrange_prof->Fill(seqsca, bmax-bmin);
-               
+
                   h2led2amp->Fill(wpos, wamp);
                }
 
                // plots for hits
-               
+
                if (hit_amp) {
                   hled_all_hits->Fill(wpos);
                }
-               
+
                if (hit_time) {
                   hamp_all_hits->Fill(wamp);
                }
@@ -1129,7 +1129,7 @@ public:
                   hdrift_amp_all->Fill(damp);
                   hdrift_amp_all_pedestal->Fill(damp);
                   hdrift_amp_all_above_pedestal->Fill(damp);
-                  
+
                   if (damp > hit_amp_threshold) {
                      hdrift_led_all->Fill(dpos);
                      hdrift_led2amp->Fill(dpos, damp);
@@ -1151,7 +1151,7 @@ public:
                      fHF[ifeam].h_pulser_led_hit_seqpad->Fill(seqpad, wpos);
                      fHF[ifeam].h_pulser_led_hit_seqsca->Fill(seqsca, wpos);
                   }
-                  
+
                   fHF[ifeam].hnhits->Fill(seqsca);
                   fHF[ifeam].htime->Fill(seqsca, wpos);
                   fHF[ifeam].hamp->Fill(seqsca, wamp);
@@ -1192,25 +1192,25 @@ public:
          fC->Clear();
          fC->Divide(2,3);
 
-         if (1) {
-            fC->cd(1);
-            TH1D* hh = new TH1D("hh", "hh", nbins, 0, nbins);
-            for (int ibin=0; ibin<nbins; ibin++) {
-               hh->SetBinContent(ibin+1, e->adcs[0]->adc[0][0][ibin]);
-            }
-            hh->Draw();
-         }
+         // if (1) {
+         //    fC->cd(1);
+         //    TH1D* hh = new TH1D("hh", "hh", nbins, 0, nbins);
+         //    for (int ibin=0; ibin<nbins; ibin++) {
+         //       hh->SetBinContent(ibin+1, e->adcs[0]->adc[0][0][ibin]);
+         //    }
+         //    hh->Draw();
+         // }
 
-         if (1) {
-            fC->cd(2);
-            TH1D* hhh = new TH1D("hhh", "hhh", nbins, 0, nbins);
-            for (int ibin=0; ibin<nbins; ibin++) {
-               hhh->SetBinContent(ibin+1, e->adcs[0]->adc[0][0][ibin]);
-            }
-            hhh->SetMinimum(-33000);
-            hhh->SetMaximum(+33000);
-            hhh->Draw();
-         }
+         // if (1) {
+         //    fC->cd(2);
+         //    TH1D* hhh = new TH1D("hhh", "hhh", nbins, 0, nbins);
+         //    for (int ibin=0; ibin<nbins; ibin++) {
+         //       hhh->SetBinContent(ibin+1, e->adcs[0]->adc[0][0][ibin]);
+         //    }
+         //    hhh->SetMinimum(-33000);
+         //    hhh->SetMaximum(+33000);
+         //    hhh->Draw();
+         // }
 
 #if 0
          if (1) {
