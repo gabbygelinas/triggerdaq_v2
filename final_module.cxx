@@ -43,10 +43,10 @@ public:
 class FinalRun: public TARunInterface
 {
 public:
-   FinalModule* fModule;
+   FinalModule* fModule = NULL;
 
-   TCanvas* fC;
-   TCanvas* fPH;
+   TCanvas* fC = NULL;
+   TCanvas* fPH = NULL;
 
    TH1D* h_num_aw_hits;
    TH1D* h_num_pad_hits;
