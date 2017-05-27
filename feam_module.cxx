@@ -1162,7 +1162,7 @@ public:
                      fHF[ifeam].h_amp_seqpad->Fill(seqpad, wamp);
                   }
 
-                  h_amp_hit_col->Fill(ifeam*4 + col, wamp);
+                  h_amp_hit_col->Fill((ifeam*4 + col +1)%(MAX_FEAM_PAD_COL*MAX_FEAM), wamp);   // There is a 1 column shift between anode and pad module boundaries
 
                   if (seqpad >= 0) {
                      fHF[ifeam].hnhits_pad->Fill(seqpad);
