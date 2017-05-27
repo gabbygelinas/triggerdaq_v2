@@ -88,8 +88,10 @@ public:
       LoadFeamBanks(runinfo->fRunNo);
 
       fA16Evb  = new Alpha16EVB();
-      fFeamEvb = new FeamEVB(MAX_FEAM, 125.0*1e6, 10000/1e9);
+      fFeamEvb = new FeamEVB(fFeamBanks.size(), 125.0*1e6, 10000/1e9);
       fAgEvb = new AgEVB(100.0*1e6, 125.0*1e6, 50.0*1e-6, 100, 90, true);
+
+      //fFeamEvb->fSync.fTrace = true;
 
       fA16Evb->Reset();
       fA16Evb->Configure(runinfo->fRunNo);
