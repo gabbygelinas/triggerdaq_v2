@@ -15,6 +15,8 @@
 #include "AgFlow.h"
 
 #include "Signals.hh"
+#include "SpacePoints.hh"
+#include "PointsFinder.hh"
 #include "TPCBase.hh"
 
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
@@ -37,6 +39,7 @@ class RecoRun: public TARunInterface
 {
 private:
    Signals *signals = NULL;
+   PointsFinder *pf = NULL;
 public:
    TH2D* h_aw_padcol;
    TH1D* h_timediff;
@@ -60,6 +63,9 @@ public:
       time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
       printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
       signals = new Signals(runinfo->fRunNo);
+      pf = new PointsFinder(runinfo->fRunNo);
+      pf->SetNoiseThreshold(100);
+      pf->SetMatchPadThreshold(1);
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
       TDirectory* dir = gDirectory->mkdir("signalAnalysis");
       dir->cd();
@@ -74,7 +80,7 @@ public:
       printf("RecoRun::EndRun, run %d\n", runinfo->fRunNo);
       time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
       printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
-      // DELETE(signals);
+      DELETE(pf);
    }
 
    void PauseRun(TARunInfo* runinfo)
@@ -113,8 +119,13 @@ public:
       double t_aw_first = 1e6;
       if(age->feam && age->a16){
          signals->Reset(age,10,16);
+         pf->Reset();
          int ntimes = signals->Analyze(age,1,1);
          cout << "KKKK " << ntimes << " times: " << signals->sanode.size() << '\t' << signals->spad.size() << endl;
+         int nmax = std::max(signals->sanode.size(), signals->spad.size());
+         for(int i = 0; i < nmax; i++){
+            cout << "KKKK " << ((i<signals->sanode.size())?(signals->sanode[i].t):-1) << '\t' << ((i<signals->spad.size())?(signals->spad[i].t):-1) << endl;
+         }
          bool first = true;
          for(auto sa: signals->sanode){
             if(sa.t < t_aw_first) t_aw_first = sa.t;
@@ -131,6 +142,14 @@ public:
 
          h_firsttimediff->Fill(t_aw_first-t_pad_first);
          h_firsttime->Fill(t_aw_first,t_pad_first);
+
+         int nxy = pf->FindPointsXY(age->a16);
+         cout << "PPPP XY " << nxy << endl;
+         int nz = pf->FindPointsZ(age->feam);
+         cout << "PPPP  Z " << nz << endl;
+
+         auto fullSigs = signals->MatchPads();
+         cout << "PPPP  " << fullSigs.size() << endl;
       }
       return flow;
    }
