@@ -43,9 +43,10 @@ public:
 class FinalRun: public TARunInterface
 {
 public:
-   FinalModule* fModule;
+   FinalModule* fModule = NULL;
 
-   TCanvas* fC;
+   TCanvas* fC = NULL;
+   TCanvas* fPH = NULL;
 
    TH1D* h_num_aw_hits;
    TH1D* h_num_pad_hits;
@@ -81,13 +82,16 @@ public:
       printf("FinalRun::ctor!\n");
       fModule = m;
 
-      fC = new TCanvas();
+      //      fC = new TCanvas();
+      fPH = new TCanvas("fPH","Pulseheights",600,1000);
+      fPH->Divide(1,2);
    }
 
    ~FinalRun()
    {
       printf("FinalRun::dtor!\n");
       DELETE(fC);
+      DELETE(fPH);
    }
 
    void BeginRun(TARunInfo* runinfo)
@@ -121,12 +125,16 @@ public:
       int npads = MAX_FEAM*MAX_FEAM_PAD_COL*MAX_FEAM_PAD_ROWS;
       h_pad_amp_pad = new TH2D("h_pad_amp_pad", "pad p.h vs pad number",npads , -0.5, npads-0.5, 600, 0, 60000);
       h_pad_time_pad = new TH2D("h_pad_time_pad", "pad time vs pad number",npads , -0.5, npads-0.5, 500, 0, 500);
+      fPH->cd(2);
+      h_pad_amp_pad->Draw();
 
       h_aw_pad_hits = new TH2D("h_aw_pad_hits", "hits in aw vs hits in pads", 4*8, -0.5, 4*8-0.5, 128, -0.5, 128-0.5);
 
       h_aw_pad_time = new TH2D("h_aw_pad_time", "time of hits in aw vs pads", 50, 0, 500, 70, 0, 700);
       h_aw_amp_aw = new TH2D("h_aw_amp_aw", "aw p.h vs aw number", 256, -0.5, 256.-0.5, 1700, 0, 17000);
       h_aw_time_aw = new TH2D("h_aw_time_aw", "aw time vs aw number",256 , -0.5, 256.-0.5, 700, 0, 700);
+      fPH->cd(1);
+      h_aw_amp_aw->Draw();
 
       h_aw_pad_time_drift = new TH2D("h_aw_pad_time_drift", "time of hits in aw vs pads, drift region", 50, 0, 500, 70, 0, 700);
 
@@ -263,6 +271,9 @@ public:
       bool do_plot = (runinfo->fRoot->fgApp != NULL);
 
       if (do_plot) {
+         fPH->GetPad(1)->Modified();
+         fPH->GetPad(2)->Modified();
+         fPH->Update();
 #if 0
          // plot waveforms
 

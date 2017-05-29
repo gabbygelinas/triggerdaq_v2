@@ -273,6 +273,9 @@ void TsSync::Check(unsigned inew)
    } else if (min > fDeadMin && fModules.size() == 2 && modules_with_data == 1 && no_sync == 1) {
       // total 2 modules, one of them has data, the other one is dead
       fSyncOk = true;
+   } else if (min > fDeadMin && fModules.size() == 1 && modules_with_data == 1 && no_sync == 1) {
+      // total 1 modules, 1 module has data
+      fSyncOk = true;
    }
 
    if (fSyncOk) {
