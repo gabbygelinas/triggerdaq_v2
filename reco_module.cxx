@@ -85,7 +85,9 @@ public:
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
       TDirectory* dir = gDirectory->mkdir("signalAnalysis");
       dir->cd();
-      h_aw_padcol = new TH2D("h_aw_padcol", "anode pad coincidences;anode;pad sector", TPCBase::NanodeWires, 0, TPCBase::NanodeWires, TPCBase::npadsec, 0, TPCBase::npadsec);
+      int naw = TPCBase::TPCBaseInstance()->GetNumberOfAnodeWires();
+      int nps = TPCBase::TPCBaseInstance()->GetNumberPadsRow();
+      h_aw_padcol = new TH2D("h_aw_padcol", "anode pad coincidences;anode;pad sector", naw, 0, naw, nps, 0, nps);
       h_timediff = new TH1D("h_timediff", "pad / anode time difference;t_a-t_p",4000,-2000,2000);
       h_atimes = new TH1D("h_atimes", "anode times;t in ns",1000,0,10000);
       h_ptimes = new TH1D("h_ptimes", "pad times;t in ns",500,0,8000);
@@ -182,8 +184,8 @@ public:
             if(sa.t < t_aw_first) t_aw_first = sa.t;
             h_atimes->Fill(sa.t);
             double r, phi;
-            TPCBase::GetAnodePosition(sa.i, r, phi, true);
-            std::pair<int,int> pad = TPCBase::FindPad(0, phi);
+            TPCBase::TPCBaseInstance()->GetAnodePosition(sa.i, r, phi, true);
+            std::pair<int,int> pad = TPCBase::TPCBaseInstance()->FindPad(0, phi);
             for(auto sp: anEvent.GetSignals()->spad){
                if(first){
                   if(sp.t < t_pad_first) t_pad_first = sp.t;
