@@ -18,7 +18,10 @@
 #include "Signals.hh"
 #include "SpacePoints.hh"
 #include "PointsFinder.hh"
+<<<<<<< HEAD
+=======
 #include "TSpacePoint.hh"
+>>>>>>> 9a428c9569b1dcab92d4a9b2913cb1330c0bb46a
 #include "TPCBase.hh"
 
 #include "TrackViewer.hh"
@@ -46,8 +49,14 @@ public:
 
 class RecoRun: public TARunInterface
 {
+<<<<<<< HEAD
+private:
+   Signals *signals = NULL;
+   PointsFinder *pf = NULL;
+=======
 // private:
 //    PointsFinder *pf = NULL;
+>>>>>>> 9a428c9569b1dcab92d4a9b2913cb1330c0bb46a
 public:
    TH2D* h_aw_padcol;
    TH1D* h_timediff;
@@ -78,10 +87,17 @@ public:
       printf("RecoRun::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
       time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
       printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
+<<<<<<< HEAD
+      signals = new Signals(runinfo->fRunNo);
+      pf = new PointsFinder(runinfo->fRunNo);
+      pf->SetNoiseThreshold(100);
+      pf->SetMatchPadThreshold(1);
+=======
       // signals = new Signals(runinfo->fRunNo);
       // pf = new PointsFinder(runinfo->fRunNo);
       // pf->SetNoiseThreshold(100);
       // pf->SetMatchPadThreshold(0.1);
+>>>>>>> 9a428c9569b1dcab92d4a9b2913cb1330c0bb46a
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
       TDirectory* dir = gDirectory->mkdir("signalAnalysis");
       dir->cd();
@@ -123,6 +139,10 @@ public:
       printf("RecoRun::EndRun, run %d\n", runinfo->fRunNo);
       time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
       printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
+<<<<<<< HEAD
+      DELETE(pf);
+=======
+>>>>>>> 9a428c9569b1dcab92d4a9b2913cb1330c0bb46a
    }
 
    void PauseRun(TARunInfo* runinfo)
@@ -165,6 +185,16 @@ public:
       double t_pad_first = 1e6;
       double t_aw_first = 1e6;
       if(age->feam && age->a16){
+<<<<<<< HEAD
+         signals->Reset(age,10,16);
+         pf->Reset();
+         int ntimes = signals->Analyze(age,1,1);
+         cout << "KKKK " << ntimes << " times: " << signals->sanode.size() << '\t' << signals->spad.size() << endl;
+         int nmax = std::max(signals->sanode.size(), signals->spad.size());
+         for(int i = 0; i < nmax; i++){
+            cout << "KKKK " << ((i<signals->sanode.size())?(signals->sanode[i].t):-1) << '\t' << ((i<signals->spad.size())?(signals->spad[i].t):-1) << endl;
+         }
+=======
          anEvent.RecEvent( age );
          // pf->Reset();
          // pf->GetSignals()->Reset(age,10,16);
@@ -176,6 +206,7 @@ public:
          // for(int i = 0; i < nmax; i++){
          //    cout << "KKKK " << ((i<signals->sanode.size())?(signals->sanode[i].t):-1) << '\t' << ((i<signals->spad.size())?(signals->spad[i].t):-1) << endl;
          // }
+>>>>>>> 9a428c9569b1dcab92d4a9b2913cb1330c0bb46a
          bool first = true;
          cout << anEvent.GetSignals()->sanode.size() << endl;
          for(auto sa: anEvent.GetSignals()->sanode){
@@ -208,6 +239,15 @@ public:
          h_firsttimediff->Fill(t_aw_first-t_pad_first);
          h_firsttime->Fill(t_aw_first,t_pad_first);
 
+<<<<<<< HEAD
+         int nxy = pf->FindPointsXY(age->a16);
+         cout << "PPPP XY " << nxy << endl;
+         int nz = pf->FindPointsZ(age->feam);
+         cout << "PPPP  Z " << nz << endl;
+
+         auto fullSigs = signals->MatchPads();
+         cout << "PPPP  " << fullSigs.size() << endl;
+=======
          // pf->Reset();
          // int nxy = pf->FindPointsXY(age->a16);
          // cout << "PPPP XY " << nxy << endl;
@@ -231,6 +271,7 @@ public:
 
          // auto fullSigs = anEvent.GetSignals()->MatchPads();
          // cout << "PPPP  " << fullSigs.size() << endl;
+>>>>>>> 9a428c9569b1dcab92d4a9b2913cb1330c0bb46a
       }
       // TrackViewer::TrackViewerInstance()->DrawPoints( pf->GetPoints() );
       // TrackViewer::TrackViewerInstance()->DrawPoints2D(anEvent.GetPointsArray() );

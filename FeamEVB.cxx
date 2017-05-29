@@ -121,6 +121,7 @@ void FeamEVB::AddFeam(int position, FeamModuleData *m)
       fCountDuplicate++;
       printf("FeamEVB::AddFeam: Error: duplicate data for time %f position %d: ", m->fTime, position);
       m->Print();
+      printf("\n");
       delete m;
       return;
    }

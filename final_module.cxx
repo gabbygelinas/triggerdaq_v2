@@ -132,7 +132,7 @@ public:
 
       h_aw_pad_time = new TH2D("h_aw_pad_time", "time of hits in aw vs pads", 50, 0, 500, 70, 0, 700);
       h_aw_amp_aw = new TH2D("h_aw_amp_aw", "aw p.h vs aw number", 256, -0.5, 256.-0.5, 1700, 0, 17000);
-      h_aw_time_aw = new TH2D("h_aw_time_aw", "aw time vs aw number", 256, -0.5, 256.-0.5, 700, 0, 700);
+      h_aw_time_aw = new TH2D("h_aw_time_aw", "aw time vs aw number",256 , -0.5, 256.-0.5, 700, 0, 700);
       fPH->cd(1);
       h_aw_amp_aw->Draw();
 
