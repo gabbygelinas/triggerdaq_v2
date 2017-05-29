@@ -289,7 +289,11 @@ public:
    TH1D* hwaveform_first = NULL;
    TH1D* hwaveform_max   = NULL;
    TH1D* hwaveform_max_drift = NULL;
+   TH1D* hwaveform_avg   = NULL;
+   TH1D* hwaveform_avg_drift = NULL;
 
+   int nwf = 0;
+   int nwf_drift = 0;
    double fMaxWamp = 0;
    double fMaxWampDrift = 0;
 
@@ -303,6 +307,10 @@ public:
       if(!dir_max) dir_max = dir->mkdir("achan_waveform_max");
       TDirectory* dir_max_drift = dir->GetDirectory("achan_waveform_max_drift");
       if(!dir_max_drift) dir_max_drift = dir->mkdir("achan_waveform_max_drift");
+      TDirectory* dir_avg = dir->GetDirectory("achan_waveform_avg");
+      if(!dir_avg) dir_avg = dir->mkdir("achan_waveform_avg");
+      TDirectory* dir_avg_drift = dir->GetDirectory("achan_waveform_avg_drift");
+      if(!dir_avg_drift) dir_avg_drift = dir->mkdir("achan_waveform_avg_drift");
 
       fNameBase = xname;
       fTitleBase = xtitle;
@@ -326,6 +334,16 @@ public:
       sprintf(title, "%s biggest waveform, drift region", xtitle);
       dir_max_drift->cd();
       hwaveform_max_drift = new TH1D(name, title, nbins, -0.5, nbins-0.5);
+
+      sprintf(name, "hawf_avg_%s", xname);
+      sprintf(title, "%s average waveform", xtitle);
+      dir_avg->cd();
+      hwaveform_avg = new TH1D(name, title, nbins, -0.5, nbins-0.5);
+
+      sprintf(name, "hawf_avg_drift_%s", xname);
+      sprintf(title, "%s average waveform, drift region", xtitle);
+      dir_avg_drift->cd();
+      hwaveform_avg_drift = new TH1D(name, title, nbins, -0.5, nbins-0.5);
    }
 
    ~A16ChanHistograms() // dtor
@@ -718,6 +736,10 @@ public:
       printf("EndRun: early bad events: %d, good events: %d, bad events: %d, total %d events\n", fCountEarlyBad, fCountGood, fCountBad, fCountEarlyBad + fCountGood + fCountBad);
       hfftsum0->Scale(1./double(hbase0->GetEntries()*sqrt(701.)));
       hfftsum1->Scale(1./double(hbase1->GetEntries()*sqrt(701.)));
+      for(auto *hc: fHC){
+         if(hc->nwf) hc->hwaveform_avg->Scale(1./double(hc->nwf));
+         if(hc->nwf_drift) hc->hwaveform_avg_drift->Scale(1./double(hc->nwf_drift));
+      }
    }
 
    int Event(Alpha16Event* e, std::vector<AgAwHit>* hits)
@@ -859,6 +881,12 @@ public:
                   fHC[i]->hwaveform_max->SetBinContent(j+1, w->samples[j]);
             }
 
+            // add to average waveform
+
+            for (int j=0; j< w->nsamples; j++)
+               fHC[i]->hwaveform_avg->AddBinContent(j+1, w->samples[j]);
+            fHC[i]->nwf++;
+
             ////////
 
             //if (ph > 120) {
@@ -916,12 +944,19 @@ public:
                }
                            // save biggest drift region waveform
 
-               if (le > 180 && ph > fHC[i]->fMaxWampDrift) {
-                  fHC[i]->fMaxWampDrift = ph;
-                  if (doPrint)
-                     printf("saving biggest drift waveform %d\n", i);
+               if (le > 180){
+                  if(ph > fHC[i]->fMaxWampDrift) {
+                     fHC[i]->fMaxWampDrift = ph;
+                     if (doPrint)
+                        printf("saving biggest drift waveform %d\n", i);
+                     for (int j=0; j< w->nsamples; j++)
+                        fHC[i]->hwaveform_max_drift->SetBinContent(j+1, w->samples[j]);
+                  }
+                  // add to average waveform
+
                   for (int j=0; j< w->nsamples; j++)
-                     fHC[i]->hwaveform_max_drift->SetBinContent(j+1, w->samples[j]);
+                     fHC[i]->hwaveform_avg_drift->AddBinContent(j+1, w->samples[j]);
+                  fHC[i]->nwf_drift++;
                }
 
 

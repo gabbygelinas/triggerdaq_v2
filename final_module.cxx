@@ -43,10 +43,10 @@ public:
 class FinalRun: public TARunInterface
 {
 public:
-   FinalModule* fModule;
+   FinalModule* fModule = NULL;
 
-   TCanvas* fC;
-   TCanvas* fPH;
+   TCanvas* fC = NULL;
+   TCanvas* fPH = NULL;
 
    TH1D* h_num_aw_hits;
    TH1D* h_num_pad_hits;
@@ -65,11 +65,13 @@ public:
    TH2D* h_pad_amp_time;
 
    TH2D *h_pad_amp_pad;
+   TH2D *h_pad_time_pad;
 
    TH2D* h_aw_pad_hits;
 
    TH2D* h_aw_pad_time;
    TH2D *h_aw_amp_aw;
+   TH2D *h_aw_time_aw;
 
    TH2D* h_aw_pad_time_drift;
    TH2D* h_aw_pad_amp_pc;
@@ -109,19 +111,20 @@ public:
       h_num_pad_hits = new TH1D("h_num_pad_hits", "number of cathode pad hits", 100, 0, 100);
       h_num_aw_pad_hits = new TH2D("h_num_aw_pad_hits", "number of aw vs pad hits", 50, 0, 100, 100, 0, 50);
 
-      h_aw_time = new TH1D("h_aw_time", "aw hit time", 70, 0, 700);
-      h_aw_amp = new TH1D("h_aw_amp", "aw hit pulse height", 100, 0, 17000);
+      h_aw_time = new TH1D("h_aw_time", "aw hit time", 700, 0, 700);
+      h_aw_amp = new TH1D("h_aw_amp", "aw hit pulse height", 170, 0, 17000);
       h_aw_amp_time = new TH2D("h_aw_amp_time", "aw p.h. vs time", 70, 0, 700, 50, 0, 17000);
 
       h_aw_aw_hits = new TH2D("h_aw_aw_hits", "hits in aw vs aw", 128, -0.5, 128-0.5, 128, -0.5, 128-0.5);
       h_aw_aw_time = new TH2D("h_aw_aw_time", "time in aw vs aw", 70, 0, 700, 70, 0, 700);
       h_aw_aw_amp  = new TH2D("h_aw_aw_amp",  "p.h. in aw vs aw", 50, 0, 17000, 50, 0, 17000);
 
-      h_pad_time = new TH1D("h_pad_time", "pad hit time", 50, 0, 500);
-      h_pad_amp = new TH1D("h_pad_amp", "pad hit pulse height", 100, 0, 60000);
+      h_pad_time = new TH1D("h_pad_time", "pad hit time", 500, 0, 500);
+      h_pad_amp = new TH1D("h_pad_amp", "pad hit pulse height", 600, 0, 60000);
       h_pad_amp_time = new TH2D("h_pad_amp_time", "pad p.h vs time", 50, 0, 500, 50, 0, 60000);
       int npads = MAX_FEAM*MAX_FEAM_PAD_COL*MAX_FEAM_PAD_ROWS;
       h_pad_amp_pad = new TH2D("h_pad_amp_pad", "pad p.h vs pad number",npads , -0.5, npads-0.5, 600, 0, 60000);
+      h_pad_time_pad = new TH2D("h_pad_time_pad", "pad time vs pad number",npads , -0.5, npads-0.5, 500, 0, 500);
       fPH->cd(2);
       h_pad_amp_pad->Draw();
 
@@ -129,6 +132,7 @@ public:
 
       h_aw_pad_time = new TH2D("h_aw_pad_time", "time of hits in aw vs pads", 50, 0, 500, 70, 0, 700);
       h_aw_amp_aw = new TH2D("h_aw_amp_aw", "aw p.h vs aw number", 256, -0.5, 256.-0.5, 1700, 0, 17000);
+      h_aw_time_aw = new TH2D("h_aw_time_aw", "aw time vs aw number", 256, -0.5, 256.-0.5, 700, 0, 700);
       fPH->cd(1);
       h_aw_amp_aw->Draw();
 
@@ -226,6 +230,7 @@ public:
             h_aw_amp->Fill(eawh->fAwHits[j].amp);
             h_aw_amp_time->Fill(eawh->fAwHits[j].time, eawh->fAwHits[j].amp);
             h_aw_amp_aw->Fill(eawh->fAwHits[j].chan, eawh->fAwHits[j].amp);
+            h_aw_time_aw->Fill(eawh->fAwHits[j].chan, eawh->fAwHits[j].time);
 
             for (unsigned k=0; k<eawh->fAwHits.size(); k++) {
                if (k==j)
@@ -241,6 +246,7 @@ public:
             h_pad_amp->Fill(eph->fPadHits[i].amp);
             h_pad_amp_time->Fill(eph->fPadHits[i].time, eph->fPadHits[i].amp);
             h_pad_amp_pad->Fill(eph->fPadHits[i].col*MAX_FEAM_PAD_ROWS + eph->fPadHits[i].row, eph->fPadHits[i].amp);
+            h_pad_time_pad->Fill(eph->fPadHits[i].col*MAX_FEAM_PAD_ROWS + eph->fPadHits[i].row, eph->fPadHits[i].time);
          }
 
          for (unsigned i=0; i<eph->fPadHits.size(); i++) {

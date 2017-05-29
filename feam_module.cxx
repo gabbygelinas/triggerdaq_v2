@@ -183,14 +183,32 @@ public:
    TH1D* hwaveform_bad   = NULL;
    TH1D* hwaveform_max   = NULL;
    TH1D* hwaveform_max_drift = NULL;
+   TH1D* hwaveform_avg   = NULL;
+   TH1D* hwaveform_avg_drift = NULL;
+
+   int nwf = 0;
+   int nwf_drift = 0;
 
    double fMaxWamp = 0;
    double fMaxWampDrift = 0;
 
 
 public:
-   ChanHistograms(const char* xname, const char* xtitle, TDirectory* dir_first, TDirectory* dir_bad, TDirectory* dir_max, TDirectory* dir_max_drift, int nbins) // ctor
+   ChanHistograms(const char* xname, const char* xtitle, TDirectory* dir, int nbins) // ctor
    {
+      TDirectory* dir_first = dir->GetDirectory("pchan_waveform_first");
+      if(!dir_first) dir_first = dir->mkdir("pchan_waveform_first");
+      TDirectory* dir_bad = dir->GetDirectory("pchan_waveform_bad");
+      if(!dir_bad) dir_bad = dir->mkdir("pchan_waveform_bad");
+      TDirectory* dir_max = dir->GetDirectory("pchan_waveform_max");
+      if(!dir_max) dir_max = dir->mkdir("pchan_waveform_max");
+      TDirectory* dir_max_drift = dir->GetDirectory("pchan_waveform_max_drift");
+      if(!dir_max_drift) dir_max_drift = dir->mkdir("pchan_waveform_max_drift");
+      TDirectory* dir_avg = dir->GetDirectory("pchan_waveform_avg");
+      if(!dir_avg) dir_avg = dir->mkdir("pchan_waveform_avg");
+      TDirectory* dir_avg_drift = dir->GetDirectory("pchan_waveform_avg_drift");
+      if(!dir_avg_drift) dir_avg_drift = dir->mkdir("pchan_waveform_avg_drift");
+
       fNameBase = xname;
       fTitleBase = xtitle;
       fNbins = nbins;
@@ -199,21 +217,31 @@ public:
       char name[256];
       char title[256];
 
-      sprintf(name, "hwf_first_%s", xname);
+      sprintf(name, "hpwf_first_%s", xname);
       sprintf(title, "%s first waveform", xtitle);
 
       dir_first->cd();
       hwaveform_first = new TH1D(name, title, nbins, -0.5, nbins-0.5);
 
-      sprintf(name, "hwf_max_%s", xname);
+      sprintf(name, "hpwf_max_%s", xname);
       sprintf(title, "%s biggest waveform", xtitle);
       dir_max->cd();
       hwaveform_max = new TH1D(name, title, nbins, -0.5, nbins-0.5);
 
-      sprintf(name, "hwf_max_drift_%s", xname);
+      sprintf(name, "hpwf_max_drift_%s", xname);
       sprintf(title, "%s biggest waveform, drift region", xtitle);
       dir_max_drift->cd();
       hwaveform_max_drift = new TH1D(name, title, nbins, -0.5, nbins-0.5);
+
+      sprintf(name, "hpwf_avg_%s", xname);
+      sprintf(title, "%s average waveform", xtitle);
+      dir_avg->cd();
+      hwaveform_avg = new TH1D(name, title, nbins, -0.5, nbins-0.5);
+
+      sprintf(name, "hpwf_avg_drift_%s", xname);
+      sprintf(title, "%s average waveform, drift region", xtitle);
+      dir_avg_drift->cd();
+      hwaveform_avg_drift = new TH1D(name, title, nbins, -0.5, nbins-0.5);
    }
 
    ~ChanHistograms() // dtor
@@ -226,7 +254,7 @@ public:
       if (hwaveform_bad == NULL) {
          char name[256];
          char title[256];
-         sprintf(name, "hwf_bad_%s", fNameBase.c_str());
+         sprintf(name, "hpwf_bad_%s", fNameBase.c_str());
          sprintf(title, "%s bad waveform", fTitleBase.c_str());
          fDirBad->cd();
          hwaveform_bad = new TH1D(name, title, nbins, -0.5, nbins-0.5);
@@ -294,11 +322,7 @@ public:
 
    TDirectory* hdir_summary;
    TDirectory* hdir_feam;
-   TDirectory* hdir_waveform_first;
-   TDirectory* hdir_waveform_bad;
-   TDirectory* hdir_waveform_max;
-   TDirectory* hdir_waveform_max_drift;
-
+   TDirectory* hdir_pads;
    FeamHistograms fHF[MAX_FEAM];
    std::vector<ChanHistograms*> fHC;
 
@@ -371,15 +395,11 @@ public:
          return;
 
       runinfo->fRoot->fOutputFile->cd();
-      TDirectory* pads = gDirectory->mkdir("pads");
-      pads->cd(); // select correct ROOT directory
+      hdir_pads = gDirectory->mkdir("pads");
+      hdir_pads->cd(); // select correct ROOT directory
 
-      hdir_summary = pads->mkdir("summary");
-      hdir_feam = pads->mkdir("feam");
-      hdir_waveform_first = pads->mkdir("chan_waveform_first");
-      hdir_waveform_bad = pads->mkdir("chan_waveform_bad");
-      hdir_waveform_max = pads->mkdir("chan_waveform_max");
-      hdir_waveform_max_drift = pads->mkdir("chan_waveform_max_drift");
+      hdir_summary = hdir_pads->mkdir("summary");
+      hdir_feam = hdir_pads->mkdir("feam");
 
       hdir_summary->cd();
 
@@ -438,6 +458,12 @@ public:
       printf("FeamRun::EndRun, run %d\n", runinfo->fRunNo);
       time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
       printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
+      for(auto *hc: fHC){
+         if(hc){
+            if(hc->nwf) hc->hwaveform_avg->Scale(1./double(hc->nwf));
+            if(hc->nwf_drift) hc->hwaveform_avg_drift->Scale(1./double(hc->nwf_drift));
+         }
+      }
 
       printf("FeamRun::EndRun: test for bad SCA: total events %d, bad events %d, bad sca %d\n", fCountTestScaEvents, fCountBadScaEvents, fCountBadSca);
    }
@@ -641,7 +667,7 @@ public:
          printf("read %d [%s]\n", (int)strlen(s1), s1);
 
          //int event_no = strtoul(s, &s, 0);
-        //int t0 = strtoul(s, &s, 0);
+         //int t0 = strtoul(s, &s, 0);
          //int t1 = strtoul(s, &s, 0);
          //int t2 = strtoul(s, &s, 0);
          //printf("event %d, t %d %d %d\n", event_no, t0, t1, t2);
@@ -851,7 +877,7 @@ public:
                }
 
                if (fHC[seqchan] == NULL)
-                  fHC[seqchan] = new ChanHistograms(xname, xtitle, hdir_waveform_first, hdir_waveform_bad, hdir_waveform_max, hdir_waveform_max_drift, nbins);
+                  fHC[seqchan] = new ChanHistograms(xname, xtitle, hdir_pads, nbins);
 
                // check for spikes
 
@@ -1076,16 +1102,30 @@ public:
                      fHC[seqchan]->hwaveform_max->SetBinContent(i+1, aptr[i]);
                }
 
+               // add to average waveform
+
+               for (int j=0; j< nbins; j++)
+                  fHC[seqchan]->hwaveform_avg->AddBinContent(j+1, aptr[j]);
+               fHC[seqchan]->nwf++;
+
                // save biggest drift region waveform
 
-               if (dpos > idrift_cut && damp > fHC[seqchan]->fMaxWampDrift) {
-                  fHC[seqchan]->fMaxWampDrift = damp;
-                  if (doPrint)
-                     printf("saving biggest drift waveform %d\n", seqchan);
-                  for (int i=0; i<nbins; i++)
-                     fHC[seqchan]->hwaveform_max_drift->SetBinContent(i+1, aptr[i]);
-               }
+               if (dpos > idrift_cut){
+                  if(damp > fHC[seqchan]->fMaxWampDrift) {
+                     fHC[seqchan]->fMaxWampDrift = damp;
+                     if (doPrint)
+                        printf("saving biggest drift waveform %d\n", seqchan);
+                     for (int i=0; i<nbins; i++)
+                        fHC[seqchan]->hwaveform_max_drift->SetBinContent(i+1, aptr[i]);
+                  }
 
+                  // add to average waveform
+
+                  for (int j=0; j< nbins; j++)
+                     fHC[seqchan]->hwaveform_avg_drift->AddBinContent(j+1, aptr[j]);
+                  fHC[seqchan]->nwf_drift++;
+
+               }
                if (scachan_is_pad || scachan_is_fpn) {
                   hbmean_all->Fill(bmean);
                   hbrms_all->Fill(brms);
@@ -1162,7 +1202,7 @@ public:
                      fHF[ifeam].h_amp_seqpad->Fill(seqpad, wamp);
                   }
 
-                  h_amp_hit_col->Fill(ifeam*4 + col, wamp);
+                  h_amp_hit_col->Fill((ifeam*4 + col +1)%(MAX_FEAM_PAD_COL*MAX_FEAM), wamp);   // There is a 1 column shift between anode and pad module boundaries
 
                   if (seqpad >= 0) {
                      fHF[ifeam].hnhits_pad->Fill(seqpad);
