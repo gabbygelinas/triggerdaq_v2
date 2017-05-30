@@ -1065,7 +1065,6 @@ public:
    void Finish();
    TARunInterface* NewRun(TARunInfo* runinfo);
 
-   int fTotalEventCounter;
    bool fPlotWF;
    bool fDoPlotAll;
 };
@@ -1105,7 +1104,7 @@ struct A16Run: public TARunInterface
 
    void BeginRun(TARunInfo* runinfo)
    {
-      printf("BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
+      printf("A16Run::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
       time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
       printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
       fCounter = 0;
@@ -1115,7 +1114,7 @@ struct A16Run: public TARunInterface
 
    void EndRun(TARunInfo* runinfo)
    {
-      printf("EndRun, run %d, events %d\n", runinfo->fRunNo, fCounter);
+      printf("A16Run::EndRun, run %d, events %d\n", runinfo->fRunNo, fCounter);
       time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
       printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
       fATX->EndRun();
@@ -1126,18 +1125,18 @@ struct A16Run: public TARunInterface
 
    void PauseRun(TARunInfo* runinfo)
    {
-      printf("PauseRun, run %d\n", runinfo->fRunNo);
+      printf("A16Run::PauseRun, run %d\n", runinfo->fRunNo);
    }
 
    void ResumeRun(TARunInfo* runinfo)
    {
-      printf("ResumeRun, run %d\n", runinfo->fRunNo);
+      printf("A16Run::ResumeRun, run %d\n", runinfo->fRunNo);
    }
 
    TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
    {
       if (fTrace)
-         printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
+         printf("A16Run::Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
 
       AgEventFlow *ef = flow->Find<AgEventFlow>();
 
@@ -1192,7 +1191,6 @@ struct A16Run: public TARunInterface
       }
 
       fCounter++;
-      fModule->fTotalEventCounter++;
 
 #if 0
       delete e;
@@ -1222,14 +1220,12 @@ void A16Module::Init(const std::vector<std::string> &args)
       }
    }
 
-   fTotalEventCounter = 0;
    TARootHelper::fgDir->cd(); // select correct ROOT directory
 }
 
 void A16Module::Finish()
 {
    printf("A16Module::Finish!\n");
-   printf("Counted %d events grand total\n", fTotalEventCounter);
 }
 
 TARunInterface* A16Module::NewRun(TARunInfo* runinfo)
