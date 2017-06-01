@@ -85,6 +85,7 @@ public:
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
       TDirectory* dir = gDirectory->mkdir("signalAnalysis");
       dir->cd();
+      TPCBase::TPCBaseInstance()->SetPrototype(true);
       int naw = TPCBase::TPCBaseInstance()->GetNumberOfAnodeWires();
       int nps = TPCBase::TPCBaseInstance()->GetNumberPadsRow();
       h_aw_padcol = new TH2D("h_aw_padcol", "anode pad coincidences;anode;pad sector", naw, 0, naw, nps, 0, nps);
