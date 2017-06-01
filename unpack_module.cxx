@@ -42,12 +42,12 @@ static std::string join(const char* sep, const std::vector<std::string> &v)
 class UnpackRun: public TARunInterface
 {
 public:
-   UnpackModule* fModule;
+   UnpackModule* fModule = NULL;
 
-   Ncfm*       fCfm;
-   Alpha16EVB* fA16Evb;
-   FeamEVB*    fFeamEvb;
-   AgEVB*      fAgEvb;
+   Ncfm*       fCfm = NULL;
+   Alpha16EVB* fA16Evb = NULL;
+   FeamEVB*    fFeamEvb = NULL;
+   AgEVB*      fAgEvb = NULL;
 
    std::vector<std::string> fFeamBanks;
    
@@ -87,14 +87,25 @@ public:
 
       LoadFeamBanks(runinfo->fRunNo);
 
-      fA16Evb  = new Alpha16EVB();
-      fFeamEvb = new FeamEVB(fFeamBanks.size(), 125.0*1e6, 10000/1e9);
+      bool have_a16  = true;
+      bool have_feam = true;
+
+      if (runinfo->fRunNo == 537) {
+         have_a16 = false;
+      }
+
+      if (have_a16) {
+         fA16Evb  = new Alpha16EVB();
+         fA16Evb->Reset();
+         fA16Evb->Configure(runinfo->fRunNo);
+      }
+
+      if (have_feam) {
+         fFeamEvb = new FeamEVB(fFeamBanks.size(), 125.0*1e6, 10000/1e9);
+         //fFeamEvb->fSync.fTrace = true;
+      }
+      
       fAgEvb = new AgEVB(100.0*1e6, 125.0*1e6, 50.0*1e-6, 100, 90, true);
-
-      //fFeamEvb->fSync.fTrace = true;
-
-      fA16Evb->Reset();
-      fA16Evb->Configure(runinfo->fRunNo);
    }
 
    void EndRun(TARunInfo* runinfo)
