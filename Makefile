@@ -20,6 +20,7 @@ endif
 
 ifneq ($(ROOTSYS),)
 HAVE_ROOT:=1
+LIBS   += -lSpectrum
 endif
 
 # get the rootana Makefile settings
@@ -36,7 +37,7 @@ MAIN := $(ROOTANASYS)/obj/manalyzer_main.o
 # uncomment and define analyzer modules here
 
 RMODULES = reco_module.o
-RLIBS = -L$(ANALYSIS_TPC) -lAGTPC -lAGDAQ -lAGUTILS -lGeom -lRGL
+RLIBS = -L$(ANALYSIS_TPC) -lAGTPC -lAGUTILS -lGeom -lRGL
 
 MODULES += ncfm.o unpack_module.o a16module.o Alpha16.o feam_module.o TsSync.o Feam.o FeamEVB.o AgEvent.o AgEVB.o Unpack.o $(RMODULES) final_module.o
 
@@ -70,7 +71,7 @@ ncfm.exe: %.exe: %.o
 	$(CXX) -o $@ $< $(CXXFLAGS) $(LIBS) -lm -lz -lpthread
 
 reco_module.o: reco_module.cxx
-	$(CXX) -o $@ -I$(AGTPC_ANALYSIS) -I$(ANALYSIS_TPC)/include -I$(GARFIELDPP) $(CXXFLAGS) -c $<
+	$(CXX) -o $@ -I$(AGTPC_ANALYSIS) -I$(ANALYSIS_TPC)/include -I$(GARFIELDPP) -I${SOURCE_TPC}/include $(CXXFLAGS) -c $<
 
 # Signals.o: HAVE_ROOT = ""
 # Signals.o: $(AGTPC_ANALYSIS)/Signals.cc
