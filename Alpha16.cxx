@@ -209,7 +209,7 @@ Alpha16Event::~Alpha16Event() // dtor
 
 void Alpha16Event::Print() const
 {
-   printf("ALPHA16 event: %d, time %.0f (incr %.0f), channels: %d, error %d, complete %d\n", eventNo, eventTime, eventTime - prevEventTime, numChan, error, complete);
+   printf("ALPHA16 event: %d, time %.0f (incr %.0f), channels: %d, error %d, complete %d", eventNo, eventTime, eventTime - prevEventTime, numChan, error, complete);
 }
 
 Alpha16EVB::Alpha16EVB() // ctor

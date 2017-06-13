@@ -744,6 +744,8 @@ public:
 
    int Event(Alpha16Event* e, std::vector<AgAwHit>* hits)
    {
+      bool verbose = false;
+      
       //printf("new event: "); e->Print();
 
       if (e->error || !e->complete) {
@@ -762,7 +764,7 @@ public:
          return 0;
       }
 
-      printf("event: "); e->Print();
+      printf("Have Alpha16 event: "); e->Print(); printf("\n");
 
       //if (fLastEvent) {
       //   delete fLastEvent;
@@ -773,7 +775,7 @@ public:
 
       bool force_plot = false;
 
-      printf("analyzing: "); e->Print();
+      //printf("analyzing: "); e->Print();
 
       // analyze the event
 
@@ -926,7 +928,8 @@ public:
                if (ph > 4000) {
                   nhits++;
                   //printf("samples %d %d, ", e->waveform[i].size(), w->nsamples);
-                  printf("chan %4d: baseline %8.1f, rms %4.1f, range %8.1f %6.1f, pulse %6.1f, le %4d\n", i, b, brms, wmin, wmax, ph, le);
+                  if (verbose)
+                     printf("chan %4d: baseline %8.1f, rms %4.1f, range %8.1f %6.1f, pulse %6.1f, le %4d\n", i, b, brms, wmin, wmax, ph, le);
                }
 
                bool hit = false;
@@ -971,7 +974,8 @@ public:
       fH->fHtdiff->Fill(tdiff);
       fH->fHtdiff2->Fill(tdiff);
 
-      printf("Found %d hits\n", nhits);
+      if (verbose)
+         printf("Found %d hits\n", nhits);
 
       if (nhits >= 5)
          force_plot = true;

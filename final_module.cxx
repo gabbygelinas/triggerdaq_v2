@@ -213,11 +213,11 @@ public:
 
          int dts_ns = (a16_tsr_ns%0x80000000) - (feam_tsr_ns%0x80000000);
 
-         printf("TTT: %d %d, %f %f, diff %f, ts 0x%08x 0x%08x, ns: %12d %12d, diff %d\n", age->a16->eventNo, age->feam->counter, atr, ftr, dtr, a16_tsr, feam_tsr, a16_tsr_ns, feam_tsr_ns, dts_ns);
+         printf("Have AgEvent: %d %d, %f %f, diff %f, ts 0x%08x 0x%08x, ns: %12d %12d, diff %d\n", age->a16->eventNo, age->feam->counter, atr, ftr, dtr, a16_tsr, feam_tsr, a16_tsr_ns, feam_tsr_ns, dts_ns);
       }
 
       if (eawh && eph) {
-         if (1) {
+         if (0) {
             printf("UUU event %d, time %f, anode wire hits: %d, pad hits: %d\n", ef->fEvent->counter, ef->fEvent->time, (int)eawh->fAwHits.size(), (int)eph->fPadHits.size());
          }
 

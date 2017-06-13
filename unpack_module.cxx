@@ -231,14 +231,14 @@ public:
          if (e) {
             printf("Have AgEvent: ");
             e->Print();
-            printf("\n");
+            //printf("\n");
 
             if (e->complete && e->a16 && e->feam) {
                double ta1 = e->a16->eventTime;
                double ta2 = e->a16->prevEventTime;
                double ta = (ta1-ta2)/1e9;
                double tf = e->feam->timeIncr;
-               printf("incr %f %f sec, diff %f ns, count %d\n", ta, tf, (tf-ta)*1e9, e->counter);
+               printf("  incr %f %f sec, diff %f ns, count %d\n", ta, tf, (tf-ta)*1e9, e->counter);
             }
 
             flow = new AgEventFlow(flow, e);

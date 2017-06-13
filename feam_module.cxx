@@ -480,6 +480,8 @@ public:
 
    TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
    {
+      bool verbose = false;
+      
       //printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
 
       if (!fModule->fDoPads)
@@ -516,7 +518,7 @@ public:
 
       if (e) {
          if (1) {
-            printf("ZZZ Processing FEAM event: ");
+            printf("Have FEAM event: ");
             e->Print();
             printf("\n");
          }
@@ -723,7 +725,7 @@ public:
             bool bad = (v == 0x7FFC);
 
             if (bad) {
-               printf("XXX FEAM pos %02d sca %d has gibberish data: ", ifeam, isca);
+               printf("Error: FEAM pos %02d sca %d has gibberish data: ", ifeam, isca);
                e->Print();
                printf("\n");
             }
@@ -911,7 +913,8 @@ public:
                if (spike) {
                   spike = true;
                   if (fHC[seqchan]->SaveBad(nbins, aptr)) {
-                     printf("BBB feam pos %d, seqsca %d, spike %f %d\n", ifeam, seqsca, spike_max, spike_num);
+                     if (verbose)
+                        printf("BBB feam pos %d, seqsca %d, spike %f %d\n", ifeam, seqsca, spike_max, spike_num);
 
                      for (int i=1; i<nbins-1; i++) {
                         double a0 = aptr[i-1];
@@ -926,7 +929,8 @@ public:
                         if (da > spike_max)
                            spike_max = da;
                         if (da > 300) {
-                           printf("bin %d, %.0f %.0f %.0f, aa %.0f, da %.0f\n", i, a0, a1, a2, aa, da);
+                           if (verbose)
+                              printf("bin %d, %.0f %.0f %.0f, aa %.0f, da %.0f\n", i, a0, a1, a2, aa, da);
                         }
                      }
                   }

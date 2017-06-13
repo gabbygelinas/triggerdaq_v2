@@ -37,16 +37,17 @@ void AgEvent::Print() const
 {
    printf("AgEvent: complete %d, error %d, counter %d, time %f, incr %f\n", complete, error, counter, time, timeIncr);
    printf("  ");
-   if (a16)
-      a16->Print();
-   else
+   if (a16) {
+      a16->Print(); printf("\n");
+   } else {
       printf("A16Event:  NULL\n");
+   }
    printf("  ");
-   if (feam)
-      feam->Print();
-   else
+   if (feam) {
+      feam->Print(); printf("\n");
+   } else {
       printf("FeamEvent: NULL");
-   printf("\n");
+   }
 }
 
 /* emacs
