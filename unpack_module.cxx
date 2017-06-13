@@ -111,8 +111,8 @@ public:
    void EndRun(TARunInfo* runinfo)
    {
       printf("UnpackRun::EndRun, run %d\n", runinfo->fRunNo);
-      time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
-      printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
+      //time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
+      //printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
 
       int count_feam = 0;
 

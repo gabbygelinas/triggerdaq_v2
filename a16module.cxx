@@ -733,7 +733,7 @@ public:
 
    void EndRun()
    {
-      printf("EndRun: early bad events: %d, good events: %d, bad events: %d, total %d events\n", fCountEarlyBad, fCountGood, fCountBad, fCountEarlyBad + fCountGood + fCountBad);
+      printf("AlphaTpcX::EndRun: early bad events: %d, good events: %d, bad events: %d, total %d events\n", fCountEarlyBad, fCountGood, fCountBad, fCountEarlyBad + fCountGood + fCountBad);
       hfftsum0->Scale(1./double(hbase0->GetEntries()*sqrt(701.)));
       hfftsum1->Scale(1./double(hbase1->GetEntries()*sqrt(701.)));
       for(auto *hc: fHC){
