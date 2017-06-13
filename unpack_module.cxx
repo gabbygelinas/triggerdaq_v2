@@ -231,7 +231,7 @@ public:
          if (e) {
             printf("Have AgEvent: ");
             e->Print();
-            //printf("\n");
+            printf("\n");
 
             if (e->complete && e->a16 && e->feam) {
                double ta1 = e->a16->eventTime;

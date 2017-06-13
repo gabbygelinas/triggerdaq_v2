@@ -35,16 +35,18 @@ AgEvent::~AgEvent() // dtor
 
 void AgEvent::Print() const
 {
-   printf("AgEvent: complete %d, error %d, counter %d, time %f, incr %f\n", complete, error, counter, time, timeIncr);
+   printf("AgEvent: complete %d, error %d, counter %d, time %f, incr %f", complete, error, counter, time, timeIncr);
+   printf("\n");
    printf("  ");
    if (a16) {
-      a16->Print(); printf("\n");
+      a16->Print();
    } else {
-      printf("A16Event:  NULL\n");
+      printf("A16Event:  NULL");
    }
+   printf("\n");
    printf("  ");
    if (feam) {
-      feam->Print(); printf("\n");
+      feam->Print();
    } else {
       printf("FeamEvent: NULL");
    }
