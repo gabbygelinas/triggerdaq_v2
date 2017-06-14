@@ -45,6 +45,15 @@ class AgEVB
    double fMaxDt;
    double fMinDt;
 
+ public: // counters
+   int fCount = 0;
+   int fCountComplete   = 0;
+   int fCountError      = 0;
+   int fCountIncomplete = 0;
+   int fCountIncompleteA16  = 0;
+   int fCountIncompleteFeam = 0;
+
+ public: // member functions
    AgEVB(double a16_ts_freq, double feam_ts_freq, double eps_sec, int max_skew, int max_dead, bool clock_drift); // ctor
    ~AgEVB(); // dtor
    void AddAlpha16Event(Alpha16Event *e);
@@ -54,6 +63,7 @@ class AgEVB
    void Build(int index, AgEvbBuf *m);
    void Build();
    void Print() const;
+   void UpdateCounters(const AgEvent* e);
    AgEvent* Get();
    AgEvent* GetLastEvent();
 };

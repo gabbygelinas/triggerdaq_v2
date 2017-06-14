@@ -9,6 +9,7 @@
 
 #include <stdio.h> // NULL, printf()
 #include <math.h> // fabs()
+#include <assert.h> // assert()
 
 AgEVB::AgEVB(double a16_ts_freq, double feam_ts_freq, double eps_sec, int max_skew, int max_dead, bool clock_drift)
 {
@@ -211,6 +212,31 @@ void AgEVB::Print() const
    printf("  Buffered A16:  %d\n", (int)fBuf[0].size());
    printf("  Buffered FEAM: %d\n", (int)fBuf[1].size());
    printf("  Buffered output: %d\n", (int)fEvents.size());
+   printf("  Output %d events: %d complete, %d with errors, %d incomplete (%d no A16, %d no FEAM)\n", fCount, fCountComplete, fCountError, fCountIncomplete, fCountIncompleteA16, fCountIncompleteFeam);
+}
+
+void AgEVB::UpdateCounters(const AgEvent* e)
+{
+   fCount++;
+   if (e->error) {
+      fCountError++;
+   }
+
+   if (e->complete) {
+      fCountComplete++;
+   } else {
+      fCountIncomplete++;
+
+      if (!e->a16 && e->feam) {
+         fCountIncompleteA16++;
+      } else if (e->a16 && !e->feam) {
+         fCountIncompleteFeam++;
+      } else if (!e->a16 && !e->feam) {
+         assert(!"This cannot happen, both A16 and FEAM missing!");
+      } else {
+         assert(!"This cannot happen!");
+      }
+   }
 }
 
 AgEvent* AgEVB::Get()
@@ -243,6 +269,7 @@ AgEvent* AgEVB::Get()
    
    AgEvent* e = fEvents.front();
    fEvents.pop_front();
+   UpdateCounters(e);
    return e;
 }
 
@@ -255,6 +282,7 @@ AgEvent* AgEVB::GetLastEvent()
    
    AgEvent* e = fEvents.front();
    fEvents.pop_front();
+   UpdateCounters(e);
    return e;
 }
 
