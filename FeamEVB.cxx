@@ -225,24 +225,24 @@ void FeamEVB::Print() const
 {
    printf("FeamEVB::Print: FEAM event builder status:\n");
 
-   printf("Sync status: ");
+   printf("  Sync status: ");
    fSync.Print();
    printf("\n");
 
-   printf("event assembler time threshold: %.0f ns\n", fEpsSec*1e9);
-   printf("event counter: %d\n", fCounter);
-   printf("max dt: %.0f ns (time between modules in one event)\n", fMaxDt*1e9);
-   printf("min dt: %.0f ns (time between events)\n", fMinDt*1e9);
+   printf("  event assembler time threshold: %.0f ns\n", fEpsSec*1e9);
+   printf("  event counter: %d\n", fCounter);
+   printf("  max dt: %.0f ns (time between modules in one event)\n", fMaxDt*1e9);
+   printf("  min dt: %.0f ns (time between events)\n", fMinDt*1e9);
 
-   printf("complete events: %d\n", fCountComplete);
-   printf("incomplete events: %d\n", fCountIncomplete);
-   printf("events with error: %d\n", fCountError);
-   printf("duplicate data error: %d\n", fCountDuplicate);
-   printf("dropped packet error: %d\n", fCountDropped);
+   printf("  complete events: %d\n", fCountComplete);
+   printf("  incomplete events: %d\n", fCountIncomplete);
+   printf("  events with error: %d\n", fCountError);
+   printf("  duplicate data error: %d\n", fCountDuplicate);
+   printf("  dropped packet error: %d\n", fCountDropped);
    
-   printf("Data buffer: %d entries\n", (int)fData.size());
+   printf("  Data buffer: %d entries\n", (int)fData.size());
    for (unsigned i=0; i<fData.size(); i++) {
-      printf("position %d: ", i);
+      printf("    position %d: ", i);
       if (fData[i]) {
          fData[i]->Print();
       } else {
@@ -251,16 +251,16 @@ void FeamEVB::Print() const
       printf("\n");
    }
 
-   printf("Incomplete events buffer: %d entries\n", (int)fBuf.size());
+   printf("  Incomplete events buffer: %d entries\n", (int)fBuf.size());
    for (unsigned i=0; i<fBuf.size(); i++) {
-      printf("entry %d: ", i);
+      printf("    entry %d: ", i);
       fBuf[i]->Print();
       printf("\n");
    }
 
-   printf("Completed events buffer: %d entries\n", (int)fEvents.size());
+   printf("  Completed events buffer: %d entries\n", (int)fEvents.size());
    for (unsigned i=0; i<fEvents.size(); i++) {
-      printf("entry %d: ", i);
+      printf("    entry %d: ", i);
       fEvents[i]->Print();
       printf("\n");
    }
