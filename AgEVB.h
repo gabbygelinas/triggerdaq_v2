@@ -55,6 +55,7 @@ class AgEVB
    void Build();
    void Print() const;
    AgEvent* Get();
+   AgEvent* GetLastEvent();
 };
 
 #endif

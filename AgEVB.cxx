@@ -206,7 +206,11 @@ void AgEVB::AddFeamEvent(FeamEvent* e)
 
 void AgEVB::Print() const
 {
-   //printf("FEAM evb status: %p %p, buffered %d\n", data[0], data[1], (int)buf.size());
+   printf("AgEVB status:\n");
+   printf("  Sync: "); fSync.Print(); printf("\n");
+   printf("  Buffered A16:  %d\n", (int)fBuf[0].size());
+   printf("  Buffered FEAM: %d\n", (int)fBuf[1].size());
+   printf("  Buffered output: %d\n", (int)fEvents.size());
 }
 
 AgEvent* AgEVB::Get()
@@ -236,6 +240,18 @@ AgEvent* AgEVB::Get()
       
       printf("AgEVB:: popping in incomplete event! have %d buffered events, have complete %d\n", (int)fEvents.size(), c);
    }
+   
+   AgEvent* e = fEvents.front();
+   fEvents.pop_front();
+   return e;
+}
+
+AgEvent* AgEVB::GetLastEvent()
+{
+   Build();
+   
+   if (fEvents.size() < 1)
+      return NULL;
    
    AgEvent* e = fEvents.front();
    fEvents.pop_front();

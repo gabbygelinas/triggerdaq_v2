@@ -156,6 +156,36 @@ public:
       }
       
       printf("UnpackRun::EndRun: Unpacked %d last FEAM events\n", count_feam);
+
+      // Handle leftover AgEVB events
+
+      int count_agevent = 0;
+
+      if (fAgEvb) {
+         printf("UnpackRun::EndRun: AgEVB state:\n");
+         fAgEvb->Print();
+         
+         while (1) {
+            AgEvent *e = fAgEvb->GetLastEvent();
+            if (!e)
+               break;
+            
+            if (1) {
+               printf("Unpacked AgEvent: ");
+               e->Print();
+               printf("\n");
+            }
+            
+            count_agevent += 1;
+            
+            delete e;
+         }
+
+         printf("UnpackRun::EndRun: AgEVB final state:\n");
+         fAgEvb->Print();
+      }
+      
+      printf("UnpackRun::EndRun: Unpacked %d last AgEvent events\n", count_agevent);
    }
    
    void PauseRun(TARunInfo* runinfo)
