@@ -202,13 +202,13 @@ void FeamModuleData::Print(int level) const
    }
 }
 
-void FeamModuleData::AddData(const FeamPacket*p, int position, const char* ptr, int size)
-{
-   assert(position == fPosition);
+int FeamModuleData::fgMaxAlloc = 0;
 
+void FeamModuleData::AddData(const FeamPacket*p, const char* ptr, int size)
+{
    //printf("add %d size %d\n", p->n, size);
    if (p->n != next_n) {
-      printf("FeamModuleData::AddData: position %2d, cnt %6d, wrong packet sequence: expected %d, got %d!\n", position, cnt, next_n, p->n);
+      printf("FeamModuleData::AddData: position %2d, cnt %6d, wrong packet sequence: expected %d, got %d!\n", fPosition, cnt, next_n, p->n);
       next_n = p->n + 1;
       error = true;
       return;
@@ -218,18 +218,28 @@ void FeamModuleData::AddData(const FeamPacket*p, int position, const char* ptr, 
    assert(size < 12000); // UDP packet size is 1500 bytes, jumbo frame up to 9000 bytes
 
    int new_size = fSize + size;
-   char* new_ptr = (char*)realloc(fPtr, new_size);
 
-   if (!new_ptr) {
-      printf("FeamModuleData::AddData: cannot reallocate ADC buffer from %d to %d bytes!\n", fSize, new_size);
-      error = true;
-      return;
+   if (new_size > fAlloc) {
+      if (new_size < fgMaxAlloc)
+         new_size = fgMaxAlloc;
+      //printf("realloc %d -> %d, max %d\n", fAlloc, new_size, fgMaxAlloc);
+      char* new_ptr = (char*)realloc(fPtr, new_size);
+
+      if (!new_ptr) {
+         printf("FeamModuleData::AddData: cannot reallocate ADC buffer from %d to %d bytes!\n", fSize, new_size);
+         error = true;
+         return;
+      }
+
+      fAlloc = new_size;
+      fPtr = new_ptr;
+
+      if (fAlloc > fgMaxAlloc)
+         fgMaxAlloc = fAlloc;
    }
 
-   memcpy(new_ptr + fSize, ptr, size);
-
-   fPtr = new_ptr;
-   fSize = new_size;
+   memcpy(fPtr + fSize, ptr, size);
+   fSize += size;
 
    next_n = p->n + 1;
 }
@@ -246,26 +256,193 @@ FeamModuleData::FeamModuleData(const FeamPacket* p, const char* bank, int positi
    ts_start = p->ts_start;
    ts_trig = p->ts_trig;
 
-   fSize = 0;
-   fPtr = NULL;
-
    next_n = 0;
-
-   error = false;
-
-   fTs = 0;
-   fTsEpoch = 0;
-   fTime = 0;
-   fTimeIncr = 0;
 }
 
 FeamModuleData::~FeamModuleData() // dtor
 {
    //printf("FeamModuleData: dtor!\n"); x2count--;
+   if (fPacket) {
+      delete fPacket;
+      fPacket = NULL;
+   }
    if (fPtr)
       free(fPtr);
    fPtr = NULL;
    fSize = 0;
+   fAlloc = 0;
+}
+
+#define ST_INIT  0
+#define ST_DATA  1
+#define ST_WAIT  2
+#define ST_DONE  3
+
+void FeamAsm::Print() const
+{
+   int countComplete = 0;
+   int countError = 0;
+   for (unsigned i=0; i<fBuffer.size(); i++) {
+      if (fBuffer[i]->complete)
+         countComplete++;
+      if (fBuffer[i]->error)
+         countError++;
+   }
+   printf("pos %d, bank %s, state %d, cnt %d, nextn %d, ig %d, fi %d, do %d (sy %d, tr %d, sk %d, wcnt %d), cur %p, buf %d (com %d, err %d)", fPosition, fBank.c_str(), fState, fCnt, fNextN, fCountIgnoredBeforeFirst, fCountFirst, fCountDone, fCountLostSync, fCountTruncated, fCountSkip, fCountWrongCnt, fCurrent, (int)fBuffer.size(), countComplete, countError);
+}
+
+void FeamAsm::StFirstPacket(const FeamPacket* p, const char* bank, int position, const char* ptr, int size)
+{
+   fState = ST_DATA;
+   fCnt = p->cnt;
+   fNextN = 1;
+   fCountFirst++;
+
+   fPosition = position;
+   fBank = bank;
+
+   assert(fCurrent == NULL);
+
+   fCurrent = new FeamModuleData(p, bank, position);
+   fCurrent->fPacket = new FeamPacket(*p); // copy constructor
+
+   fCurrent->AddData(p, ptr, size);
+}
+
+void FeamAsm::StLastPacket()
+{
+   fState = ST_DONE;
+   //fCnt = 0;
+   //fNextN = 0;
+   fCountDone++;
+
+   assert(fCurrent != NULL);
+
+   fCurrent->complete = true;
+   fBuffer.push_back(fCurrent);
+   fCurrent = NULL;
+}
+
+void FeamAsm::AddData(const FeamPacket* p, const char* ptr, int size)
+{
+   assert(fCurrent != NULL);
+   fCurrent->AddData(p, ptr, size);
+}
+
+void FeamAsm::FlushIncomplete()
+{
+   assert(fCurrent != NULL);
+
+   fCurrent->complete = false;
+   fCurrent->error = true;
+   fBuffer.push_back(fCurrent);
+   fCurrent = NULL;
+}
+
+void FeamAsm::AddPacket(const FeamPacket* p, const char* bank, int position, const char* ptr, int size)
+{
+   bool trace = false;
+   bool traceNormal = false;
+   
+   switch (fState) {
+   default: {
+      assert(!"invalid state!");
+      break;
+   }
+   case ST_INIT: { // initial state, before received first first packet
+      if (p->n==0) { // first packet
+         if (trace)
+            printf("ST_INIT: bank %s, packet cnt %d, n %d ---> first packet\n", bank, p->cnt, p->n);
+         StFirstPacket(p, bank, position, ptr, size);
+      } else {
+         if (traceNormal)
+            printf("ST_INIT: bank %s, packet cnt %d, n %d\n", bank, p->cnt, p->n);
+         fCountIgnoredBeforeFirst++;
+      }
+      break;
+   }
+   case ST_DATA: { // receiving data
+      //printf("ST_FIRST: bank %s, packet cnt %d, n %d\n", bank, p->cnt, p->n);
+      if (p->n == 0) { // unexpected first packet
+         if (trace)
+            printf("ST_DATA: bank %s, packet cnt %d, n %d ---> unexpected first packet\n", bank, p->cnt, p->n);
+         fCountTruncated++;
+         FlushIncomplete();
+         StFirstPacket(p, bank, position, ptr, size);
+      } else if (p->cnt != fCnt) { // packet from wrong event
+         if (trace)
+            printf("ST_DATA: bank %s, packet cnt %d, n %d ---> wrong cnt expected cnt %d\n", bank, p->cnt, p->n, fCnt);
+         fState = ST_WAIT;
+         FlushIncomplete();
+         fCountWrongCnt++;
+      } else if (p->n != fNextN) { // out of sequence packet
+         if (trace)
+            printf("ST_DATA: bank %s, packet cnt %d, n %d ---> out of sequence expected n %d\n", bank, p->cnt, p->n, fNextN);
+         fState = ST_WAIT;
+         FlushIncomplete();
+         fCountLostSync++;
+      } else if (p->n == 255) { // last packet
+         if (trace)
+            printf("ST_DATA: bank %s, packet cnt %d, n %d ---> last packet\n", bank, p->cnt, p->n);
+         StLastPacket();
+      } else {
+         if (traceNormal)
+            printf("ST_DATA: bank %s, packet cnt %d, n %d\n", bank, p->cnt, p->n);
+         fNextN++;
+         AddData(p, ptr, size);
+      }
+      break;
+   }
+   case ST_WAIT: { // skipping bad data
+      if (p->n == 0) { // first packet
+         if (trace)
+            printf("ST_WAIT: bank %s, packet cnt %d, n %d ---> first packet\n", bank, p->cnt, p->n);
+         StFirstPacket(p, bank, position, ptr, size);
+      } else {
+         if (traceNormal)
+            printf("ST_WAIT: bank %s, packet cnt %d, n %d\n", bank, p->cnt, p->n);
+         fCountSkip++;
+      }
+      break;
+   }
+   case ST_DONE: { // received last packet
+      if (p->n == 0) { // first packet
+         if (trace)
+            printf("ST_DONE: bank %s, packet cnt %d, n %d ---> first packet\n", bank, p->cnt, p->n);
+         StFirstPacket(p, bank, position, ptr, size);
+      } else {
+         if (trace)
+            printf("ST_DONE: bank %s, packet cnt %d, n %d ---> lost first packet\n", bank, p->cnt, p->n);
+         fState = ST_WAIT;
+         fCountLostFirst++;
+      }
+      break;
+   }
+   } // switch (fState)
+}
+
+void FeamAsm::Finalize()
+{
+   switch (fState) {
+   default: {
+      assert(!"invalid state!");
+      break;
+   }
+   case ST_INIT: { // initial state, before received first first packet
+      break;
+   }
+   case ST_DATA: { // receiving data
+      FlushIncomplete();
+      fState = ST_DONE;
+      break;
+   }
+   case ST_WAIT: { // skipping bad data
+      break;
+   }
+   case ST_DONE: { // received last packet
+      break;
+   }
+   } // switch (fState)
 }
 
 FeamEvent::FeamEvent() // ctor

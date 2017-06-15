@@ -16,6 +16,7 @@ FeamEVB::FeamEVB(int num_modules, double ts_freq, double eps_sec)
    fCounter = 0;
    fSync.SetDeadMin(10);
    for (unsigned i=0; i<fNumModules; i++) {
+      fAsm.push_back(new FeamAsm);
       fData.push_back(NULL);
       fSync.Configure(i, ts_freq, 1000.0*1e-9, 0, 50);
    }
@@ -30,6 +31,10 @@ FeamEVB::FeamEVB(int num_modules, double ts_freq, double eps_sec)
 
 FeamEVB::~FeamEVB()
 {
+   for (unsigned i=0; i<fAsm.size(); i++) {
+      delete fAsm[i];
+      fAsm[i] = NULL;
+   }
 }
 
 FeamEvent* FeamEVB::FindEvent(double t)
@@ -143,6 +148,10 @@ void FeamEVB::AddFeam(int position, FeamModuleData *m)
 void FeamEVB::BuildLastEvent()
 {
    for (unsigned i=0; i<fData.size(); i++) {
+      fAsm[i]->Finalize();
+   }
+
+   for (unsigned i=0; i<fData.size(); i++) {
       if (fData[i]) {
          // complete the buffered
          Finalize(i);
@@ -182,6 +191,8 @@ void FeamEVB::Finalize(int position)
 
 void FeamEVB::AddPacket(const char* bank, int position, const FeamPacket* p, const char* ptr, int size)
 {
+   fAsm[position]->AddPacket(p, bank, position, ptr, size);
+   
    if (p->n == 0) {
       // 1st packet
       
@@ -213,7 +224,7 @@ void FeamEVB::AddPacket(const char* bank, int position, const FeamPacket* p, con
       return;
    }
    
-   m->AddData(p, position, ptr, size);
+   m->AddData(p, ptr, size);
    
    //a->Print();
    //printf("\n");
@@ -240,6 +251,13 @@ void FeamEVB::Print() const
    printf("  duplicate data error: %d\n", fCountDuplicate);
    printf("  dropped packet error: %d\n", fCountDropped);
    
+   printf("  Assembler: %d entries\n", (int)fAsm.size());
+   for (unsigned i=0; i<fAsm.size(); i++) {
+      printf("    position %d: ", i);
+      fAsm[i]->Print();
+      printf("\n");
+   }
+
    printf("  Data buffer: %d entries\n", (int)fData.size());
    for (unsigned i=0; i<fData.size(); i++) {
       printf("    position %d: ", i);

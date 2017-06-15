@@ -19,6 +19,7 @@ class FeamEVB
    double fEpsSec;
    TsSync fSync;
    int fCounter;
+   std::vector<FeamAsm*> fAsm;
    std::vector<FeamModuleData*> fData;
    std::deque<FeamModuleData*> fBuf;
    std::deque<FeamEvent*> fEvents;
