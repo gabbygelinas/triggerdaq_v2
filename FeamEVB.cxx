@@ -13,27 +13,34 @@ FeamEVB::FeamEVB(int num_modules, double ts_freq, double eps_sec)
 {
    fNumModules = num_modules;
    fEpsSec  = eps_sec;
-   fCounter = 0;
    fSync.SetDeadMin(10);
    for (unsigned i=0; i<fNumModules; i++) {
       fAsm.push_back(new FeamAsm);
-      fData.push_back(NULL);
       fSync.Configure(i, ts_freq, 1000.0*1e-9, 0, 50);
    }
-   fMaxDt = 0;
-   fMinDt = 0;
-   fCountComplete = 0;
-   fCountIncomplete = 0;
-   fCountDuplicate = 0;
-   fCountError = 0;
-   fCountDropped = 0;
 }
 
 FeamEVB::~FeamEVB()
 {
    for (unsigned i=0; i<fAsm.size(); i++) {
-      delete fAsm[i];
-      fAsm[i] = NULL;
+      if (fAsm[i]) {
+         delete fAsm[i];
+         fAsm[i] = NULL;
+      }
+   }
+
+   for (unsigned i=0; i<fBuf.size(); i++) {
+      if (fBuf[i]) {
+         delete fBuf[i];
+         fBuf[i] = NULL;
+      }
+   }
+
+   for (unsigned i=0; i<fEvents.size(); i++) {
+      if (fEvents[i]) {
+         delete fEvents[i];
+         fEvents[i] = NULL;
+      }
    }
 }
 
@@ -147,22 +154,21 @@ void FeamEVB::AddFeam(int position, FeamModuleData *m)
 
 void FeamEVB::BuildLastEvent()
 {
-   for (unsigned i=0; i<fData.size(); i++) {
+   for (unsigned i=0; i<fAsm.size(); i++) {
       fAsm[i]->Finalize();
+      Flush(i);
    }
 
-   for (unsigned i=0; i<fData.size(); i++) {
-      if (fData[i]) {
-         // complete the buffered
-         Finalize(i);
-      }
-   }
-
-   Build();
+   Build(true);
 }
 
-void FeamEVB::Build()
+void FeamEVB::Build(bool force_build)
 {
+   bool ok_to_build = fSync.fSyncOk || fSync.fSyncFailed || force_build;
+
+   if (!ok_to_build)
+      return;
+
    while (fBuf.size() > 0) {
       FeamModuleData* m = fBuf.front();
       fBuf.pop_front();
@@ -170,13 +176,8 @@ void FeamEVB::Build()
    }
 }
 
-void FeamEVB::Finalize(int position)
+void FeamEVB::Finalize(int position, FeamModuleData* m)
 {
-   FeamModuleData* m = fData[position];
-   fData[position] = NULL;
-
-   assert(m != NULL); // ensured by caller
-   
    fSync.Add(position, m->ts_trig);
    
    m->fTs = fSync.fModules[position].fLastTs;
@@ -189,46 +190,27 @@ void FeamEVB::Finalize(int position)
    fBuf.push_back(m);
 }
 
+void FeamEVB::Flush(int position)
+{
+   bool flag = false;
+   while (fAsm[position]->fBuffer.size() > 0) {
+      FeamModuleData* m = fAsm[position]->fBuffer.front();
+      fAsm[position]->fBuffer.pop_front();
+      Finalize(position, m);
+      flag = true;
+   }
+
+   if (flag) {
+      Build();
+   }
+}
+
 void FeamEVB::AddPacket(const char* bank, int position, const FeamPacket* p, const char* ptr, int size)
 {
    fAsm[position]->AddPacket(p, bank, position, ptr, size);
-   
-   if (p->n == 0) {
-      // 1st packet
-      
-      if (fData[position]) {
-         // complete the previous event
-         Finalize(position);
-      } else {
-         printf("FeamEVB: Received first data from FEAM %d\n", position);
-      }
-      
-      //printf("Start ew event: FEAM %d: ", position);
-      //p->Print();
-      //printf("\n");
 
-      assert(fData[position] == NULL);
-      
-      fData[position] = new FeamModuleData(p, bank, position);
-   }
-   
-   FeamModuleData* m = fData[position];
-   
-   if (m == NULL) {
-      // did not see the first event yet, cannot unpack
-      fCountDropped++;
-      printf("FeamEVB::AddPacket: Error: no 1st packet for position %d, dropping packet: ", position);
-      p->Print();
-      printf("\n");
-      delete p;
-      return;
-   }
-   
-   m->AddData(p, ptr, size);
-   
-   //a->Print();
-   //printf("\n");
-   
+   Flush(position);
+
    delete p;
 }
 
@@ -249,23 +231,11 @@ void FeamEVB::Print() const
    printf("  incomplete events: %d\n", fCountIncomplete);
    printf("  events with error: %d\n", fCountError);
    printf("  duplicate data error: %d\n", fCountDuplicate);
-   printf("  dropped packet error: %d\n", fCountDropped);
    
    printf("  Assembler: %d entries\n", (int)fAsm.size());
    for (unsigned i=0; i<fAsm.size(); i++) {
       printf("    position %d: ", i);
       fAsm[i]->Print();
-      printf("\n");
-   }
-
-   printf("  Data buffer: %d entries\n", (int)fData.size());
-   for (unsigned i=0; i<fData.size(); i++) {
-      printf("    position %d: ", i);
-      if (fData[i]) {
-         fData[i]->Print();
-      } else {
-         printf("null");
-      }
       printf("\n");
    }
 
@@ -298,25 +268,19 @@ FeamEvent* FeamEVB::Get()
       // oldest event is incomplete,
       // check if any newer events are completed,
       // if they are, pop this incomplete event
-      bool c = false;
+      int c = -1;
       for (unsigned i=0; i<fEvents.size(); i++) {
          if (fEvents[i]->complete) {
-            c = true;
+            c = i;
             break;
          }
       }
       // if there are too many buffered events, all incomplete,
       // something is wrong, push them out anyway
-      if (!c && fEvents.size() < 10)
+      if ((c < 0) && (fEvents.size() < 20))
          return NULL;
       
-      printf("FeamEVB: popping in incomplete event! have %d buffered events, have complete %d\n", (int)fEvents.size(), c);
-
-      if (c == 0) {
-         printf("FeamEVB: First incomplete event: ");
-         fEvents.front()->Print();
-         printf("\n");
-      }
+      printf("FeamEVB: popping an incomplete event! have %d buffered events, have complete at %d\n", (int)fEvents.size(), c);
    }
    
    FeamEvent* e = fEvents.front();
@@ -329,7 +293,7 @@ FeamEvent* FeamEVB::Get()
       fCountIncomplete++;
    else
       fCountComplete++;
-   
+
    return e;
 }
 
@@ -342,6 +306,15 @@ FeamEvent* FeamEVB::GetLastEvent()
    
    FeamEvent* e = fEvents.front();
    fEvents.pop_front();
+
+   if (e->error)
+      fCountError++;
+
+   if (!e->complete)
+      fCountIncomplete++;
+   else
+      fCountComplete++;
+
    return e;
 }
 
