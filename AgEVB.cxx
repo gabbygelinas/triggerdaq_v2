@@ -162,7 +162,9 @@ void AgEVB::Build()
 
 void AgEVB::AddAlpha16Event(Alpha16Event* e)
 {
+   fCountA16++;
    if (e->eventTime <= fLastA16Time) {
+      fCountRejectedA16++;
       printf("AgEVB::AddA16Event: Alpha16 event time did not increase: new time %f, last seen time %f\n", e->eventTime, fLastA16Time);
       delete e;
       return;
@@ -185,11 +187,15 @@ void AgEVB::AddAlpha16Event(Alpha16Event* e)
 
 void AgEVB::AddFeamEvent(FeamEvent* e)
 {
-   if (e->time <= fLastFeamTime) {
+   fCountFeam++;
+
+   if (fCountFeam > 1 && e->time <= fLastFeamTime) {
+      fCountRejectedFeam++;
       printf("AgEVB::AddFeamEvent: FEAM event time did not increase: new time %f, last seen time %f\n", e->time, fLastFeamTime);
       delete e;
       return;
    }
+
    fLastFeamTime = e->time;
    uint32_t ts = e->time*fSync.fModules[1].fFreqHz;
    //printf("FeamEvent: t %f, ts 0x%08x", e->time, ts);
@@ -209,6 +215,8 @@ void AgEVB::Print() const
 {
    printf("AgEVB status:\n");
    printf("  Sync: "); fSync.Print(); printf("\n");
+   printf("  A16 events: in %d, rejected %d\n", fCountA16, fCountRejectedA16);
+   printf("  Feam events: in %d, rejected %d\n", fCountFeam, fCountRejectedFeam);
    printf("  Buffered A16:  %d\n", (int)fBuf[0].size());
    printf("  Buffered FEAM: %d\n", (int)fBuf[1].size());
    printf("  Buffered output: %d\n", (int)fEvents.size());
