@@ -452,6 +452,12 @@ void Alpha16EVB::CheckEvent(Alpha16Event* e)
 
       fLastEventTs = ets;
       fLastEventTime = eventTime;
+   } else if (e->numChan <= 16) { // unsynchronized A16 event
+      e->eventTime = -1;
+      e->prevEventTime = -1;
+   } else { // incomplete event
+      e->eventTime = -2;
+      e->prevEventTime = -2;
    }
 }
 

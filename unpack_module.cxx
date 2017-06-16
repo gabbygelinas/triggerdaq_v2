@@ -215,7 +215,7 @@ public:
                printf("\n");
             }
 
-            if (fAgEvb) {
+            if (fAgEvb && e->eventTime >= 0) {
                fAgEvb->AddAlpha16Event(e);
                e = NULL;
             }

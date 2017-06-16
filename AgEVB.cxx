@@ -164,7 +164,7 @@ void AgEVB::AddAlpha16Event(Alpha16Event* e)
 {
    fCountA16++;
 
-   if (e->eventTime <= fLastA16Time) {
+   if (fCountA16 > 1 && e->eventTime <= fLastA16Time) {
       fCountRejectedA16++;
       printf("AgEVB::AddA16Event: Alpha16 event time did not increase: new time %f, last seen time %f\n", e->eventTime, fLastA16Time);
       delete e;
