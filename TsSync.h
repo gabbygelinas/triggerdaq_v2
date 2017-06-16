@@ -50,6 +50,7 @@ class TsSyncModule
 public:
    TsSyncModule(); // ctor
    void Print() const;
+   void DumpBuf() const;
    double GetTime(uint32_t ts, int epoch) const;
    void Add(uint32_t ts);
    void Retime();
@@ -62,6 +63,7 @@ class TsSync
 public:
    std::vector<TsSyncModule> fModules;
    bool fSyncOk;
+   bool fSyncFailed;
    bool fOverflow;
    bool fTrace;
    unsigned fDeadMin;
