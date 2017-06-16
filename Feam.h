@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
+#include <deque>
 #include <utility>  // std::pair
 
 //
@@ -72,8 +73,6 @@ public:
    bool complete = false;
    bool error = false;
 
-   uint32_t next_n;
-
  public: // ADC data stream data
 
    static int fgMaxAlloc;
@@ -109,7 +108,7 @@ class FeamAsm
    int fPosition;
 
  public: // output buffer
-   std::vector<FeamModuleData*> fBuffer;
+   std::deque<FeamModuleData*> fBuffer;
 
  public: // counters
    int fCountIgnoredBeforeFirst = 0;
@@ -122,6 +121,7 @@ class FeamAsm
    int fCountWrongCnt = 0;
 
  public: // API
+   ~FeamAsm();
    void Print() const;
    void AddPacket(const FeamPacket* p, const char* bank, int position, const char* ptr, int size);
    void Finalize();

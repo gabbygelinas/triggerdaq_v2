@@ -152,11 +152,6 @@ void FeamModuleData::Finalize()
       return;
    }
 
-   if (next_n != 256) {
-      error = true;
-      return;
-   }
-
    if (fSize != 310688) {
       error = true;
       return;
@@ -182,7 +177,6 @@ void FeamModuleData::Print(int level) const
           cnt,
           ts_start,
           ts_trig);
-   printf("next_n %d, ", next_n);
    printf("size %d, ", fSize);
    printf("error %d", error);
 
@@ -207,12 +201,6 @@ int FeamModuleData::fgMaxAlloc = 0;
 void FeamModuleData::AddData(const FeamPacket*p, const char* ptr, int size)
 {
    //printf("add %d size %d\n", p->n, size);
-   if (p->n != next_n) {
-      printf("FeamModuleData::AddData: position %2d, cnt %6d, wrong packet sequence: expected %d, got %d!\n", fPosition, cnt, next_n, p->n);
-      next_n = p->n + 1;
-      error = true;
-      return;
-   }
 
    assert(size >= 0);
    assert(size < 12000); // UDP packet size is 1500 bytes, jumbo frame up to 9000 bytes
@@ -240,8 +228,6 @@ void FeamModuleData::AddData(const FeamPacket*p, const char* ptr, int size)
 
    memcpy(fPtr + fSize, ptr, size);
    fSize += size;
-
-   next_n = p->n + 1;
 }
 
 FeamModuleData::FeamModuleData(const FeamPacket* p, const char* bank, int position)
@@ -255,8 +241,6 @@ FeamModuleData::FeamModuleData(const FeamPacket* p, const char* bank, int positi
    cnt = p->cnt;
    ts_start = p->ts_start;
    ts_trig = p->ts_trig;
-
-   next_n = 0;
 }
 
 FeamModuleData::~FeamModuleData() // dtor
@@ -277,6 +261,22 @@ FeamModuleData::~FeamModuleData() // dtor
 #define ST_DATA  1
 #define ST_WAIT  2
 #define ST_DONE  3
+
+FeamAsm::~FeamAsm()
+{
+   fState = -1;
+   fCnt = 0;
+   fNextN = -1;
+   if (fCurrent)
+      delete fCurrent;
+   fCurrent = NULL;
+   for (unsigned i=0; i<fBuffer.size(); i++) {
+      if (fBuffer[i]) {
+         delete fBuffer[i];
+         fBuffer[i] = NULL;
+      }
+   }
+}
 
 void FeamAsm::Print() const
 {
@@ -312,8 +312,6 @@ void FeamAsm::StFirstPacket(const FeamPacket* p, const char* bank, int position,
 void FeamAsm::StLastPacket()
 {
    fState = ST_DONE;
-   //fCnt = 0;
-   //fNextN = 0;
    fCountDone++;
 
    assert(fCurrent != NULL);
@@ -384,12 +382,14 @@ void FeamAsm::AddPacket(const FeamPacket* p, const char* bank, int position, con
       } else if (p->n == 255) { // last packet
          if (trace)
             printf("ST_DATA: bank %s, packet cnt %d, n %d ---> last packet\n", bank, p->cnt, p->n);
+         AddData(p, ptr, size);
+         fNextN++;
          StLastPacket();
       } else {
          if (traceNormal)
             printf("ST_DATA: bank %s, packet cnt %d, n %d\n", bank, p->cnt, p->n);
-         fNextN++;
          AddData(p, ptr, size);
+         fNextN++;
       }
       break;
    }
