@@ -56,6 +56,10 @@ class AgEVB
    int fCountFeam = 0;
    int fCountRejectedA16 = 0;
    int fCountRejectedFeam = 0;
+   int fCountCompleteA16 = 0;
+   int fCountCompleteFeam = 0;
+   int fCountErrorA16 = 0;
+   int fCountErrorFeam = 0;
 
  public: // member functions
    AgEVB(double a16_ts_freq, double feam_ts_freq, double eps_sec, int max_skew, int max_dead, bool clock_drift); // ctor
