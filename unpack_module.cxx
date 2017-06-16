@@ -209,17 +209,15 @@ public:
          Alpha16Event* e = UnpackAlpha16Event(fA16Evb, event);
 
          if (e) {
-            if (e->complete) {
-               if (1) {
-                  printf("Unpacked Alpha16 event: ");
-                  e->Print();
-                  printf("\n");
-               }
+            if (1) {
+               printf("Unpacked Alpha16 event: ");
+               e->Print();
+               printf("\n");
+            }
 
-               if (fAgEvb) {
-                  fAgEvb->AddAlpha16Event(e);
-                  e = NULL;
-               }
+            if (fAgEvb) {
+               fAgEvb->AddAlpha16Event(e);
+               e = NULL;
             }
 
             DELETE(e);
