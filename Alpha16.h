@@ -55,6 +55,8 @@ struct Alpha16Event
    int      eventNo; // event counter, starting from 1
    double   eventTime; // event time stamp, in ns, time of first event is zero
    double   prevEventTime; // time of previous event, in ns, zero for first event
+   double   time; // event time in sec
+   double   timeIncr; // time from previous event, sec
 
    bool     udpPresent[MAX_ALPHA16*NUM_CHAN_ALPHA16];  // udp packet received
    uint32_t udpEventTs[MAX_ALPHA16*NUM_CHAN_ALPHA16];  // timestamp from udp packet
