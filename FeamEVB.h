@@ -14,21 +14,24 @@
 
 class FeamEVB
 {
- public:
+ public: // config
    unsigned fNumModules;
    double fEpsSec;
+
+ public: // state
    TsSync fSync;
-   int fCounter;
-   std::vector<FeamModuleData*> fData;
+   int fCounter = 0;
+   std::vector<FeamAsm*> fAsm;
    std::deque<FeamModuleData*> fBuf;
    std::deque<FeamEvent*> fEvents;
-   double fMaxDt;
-   double fMinDt;
-   int fCountComplete;
-   int fCountIncomplete;
-   int fCountDuplicate;
-   int fCountError;
-   int fCountDropped;
+
+ public: // diagnostics and counters
+   double fMaxDt = 0;
+   double fMinDt = 0;
+   int fCountComplete = 0;
+   int fCountIncomplete = 0;
+   int fCountDuplicate = 0;
+   int fCountError = 0;
 
  public:
    FeamEVB(int num_modules, double ts_freq, double eps_sec); // ctor
@@ -37,10 +40,11 @@ class FeamEVB
    FeamEvent* FindEvent(double t);
    void CheckFeam(FeamEvent *e);
    void AddFeam(int position, FeamModuleData *m);
-   void Build();
+   void Build(bool force_build = false);
    void BuildLastEvent();
    void AddPacket(const char* bank, int position, const FeamPacket* p, const char* ptr, int size);
-   void Finalize(int position);
+   void Flush(int position);
+   void Finalize(int position, FeamModuleData* m);
    void Print() const;
    FeamEvent* Get();
    FeamEvent* GetLastEvent();

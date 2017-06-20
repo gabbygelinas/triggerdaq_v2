@@ -42,6 +42,17 @@ void TsSyncModule::Print() const
    printf("ts 0x%08x, prev 0x%08x, first 0x%08x, offset %f, time %f %f, diff %f, buf %d", fLastTs, fPrevTs, fFirstTs, fOffsetSec, fLastTimeSec, fPrevTimeSec, fLastTimeSec-fPrevTimeSec, (int)fBuf.size());
 }
 
+void TsSyncModule::DumpBuf() const
+{
+   for (unsigned i=0; i<fBuf.size(); i++) {
+      printf("XXX TsSyncEntry %d: 0x%08x %d %f\n",
+             i,
+             fBuf[i].ts,
+             fBuf[i].epoch,
+             fBuf[i].time);
+   }
+}
+
 double TsSyncModule::GetTime(uint32_t ts, int epoch) const
 {
    // must do all computations in double precision to avoid trouble with 32-bit timestamp wraparound.
@@ -53,6 +64,7 @@ void TsSyncModule::Add(uint32_t ts)
    if (fFirstTs == 0) {
       fFirstTs = ts;
    }
+
    fPrevTs = fLastTs;
    fPrevTimeSec = fLastTimeSec;
    fLastTs = ts;
@@ -126,6 +138,7 @@ unsigned TsSyncModule::FindDt(double dt)
 TsSync::TsSync() // ctor
 {
    fSyncOk = false;
+   fSyncFailed = false;
    fTrace = false;
    fOverflow = false;
    fDeadMin = 0;
@@ -201,13 +214,14 @@ void TsSync::CheckSync(unsigned ii, unsigned i)
    }
 
    fModules[ii].fSyncedWith = i;
-   
+
    // check for sync loop
    if (fModules[i].fSyncedWith >= 0)
       fModules[ii].fSyncedWith = fModules[i].fSyncedWith;
    
    double off = fModules[i].fBuf[j].time - fModules[ii].fBuf[jj].time;
    fModules[ii].fOffsetSec = off;
+
    fModules[ii].Retime();
 
    printf("TsSync: module %d buf %d synced with module %d buf %d, offset %f\n", ii, jj, i, j, off);
@@ -293,6 +307,9 @@ void TsSync::Check(unsigned inew)
 
 void TsSync::Add(unsigned i, uint32_t ts)
 {
+   if (fSyncFailed)
+      return;
+
    if (fOverflow)
       return;
 
@@ -304,6 +321,7 @@ void TsSync::Add(unsigned i, uint32_t ts)
 
    if (!fSyncOk && fModules[i].fOverflow) {
       fOverflow = true;
+      fSyncFailed = true;
       printf("TsSync: module %d buffer overflow, synchronization failed.\n", i);
       Dump();
       return;
@@ -324,6 +342,7 @@ void TsSync::Print() const
 {
    printf("TsSync: ");
    printf("sync_ok: %d, ", fSyncOk);
+   printf("sync_failed: %d, ", fSyncFailed);
    printf("overflow: %d", fOverflow);
 }
 
@@ -349,27 +368,27 @@ void TsSync::Dump() const
       for (unsigned i=0; i<fModules.size(); i++) {
          if (j<fModules[i].fBuf.size()) {
             double dt = fModules[i].fBuf[j].time - fModules[i].fBuf[j-1].time;
-            printf(" %f", dt);
+            printf(" %10.6f", dt);
          } else {
-            printf(" -");
+            printf(" %10s", "-");
          }
       }
       printf("\n");
-      }
+   }
    
    printf("buf %2d: ", -1);
    for (unsigned i=0; i<fModules.size(); i++) {
-      printf(" %d", fModules[i].fSyncedWith);
+      printf(" %10d", fModules[i].fSyncedWith);
    }
-   printf("\n");
+   printf(" (synced with)\n");
    printf("buf %2d: ", -2);
    for (unsigned i=0; i<fModules.size(); i++) {
-      printf(" %.0f", fModules[i].fMaxDtSec*1e9);
+      printf(" %10.0f", fModules[i].fMaxDtSec*1e9);
    }
    printf(" (max mismatch, ns)\n");
    printf("buf %2d: ", -3);
    for (unsigned i=0; i<fModules.size(); i++) {
-      printf(" %.1f", fModules[i].fMaxRelDt*1e6);
+      printf(" %10.1f", fModules[i].fMaxRelDt*1e6);
    }
    printf(" (max relative mismatch, ns/ns*1e6)\n");
 }

@@ -196,6 +196,8 @@ void Alpha16Event::Reset()
    eventNo = 0;
    eventTime = 0;
    prevEventTime = 0;
+   time = 0;
+   timeIncr = 0;
    MEMZERO(udpPresent);
    MEMZERO(udpEventTs);
    numChan = 0;
@@ -209,7 +211,7 @@ Alpha16Event::~Alpha16Event() // dtor
 
 void Alpha16Event::Print() const
 {
-   printf("ALPHA16 event: %d, time %.0f (incr %.0f), channels: %d, error %d, complete %d", eventNo, eventTime, eventTime - prevEventTime, numChan, error, complete);
+   printf("Alpha16Event: %d, time %.6f, incr %.6f, complete %d, error %d, channels: %d", eventNo, time, timeIncr, complete, error, numChan);
 }
 
 Alpha16EVB::Alpha16EVB() // ctor
@@ -450,8 +452,17 @@ void Alpha16EVB::CheckEvent(Alpha16Event* e)
       e->eventTime = eventTime;
       e->prevEventTime = fLastEventTime;
 
+      e->time = e->eventTime * 1e-9; // ns to sec
+      e->timeIncr = (e->eventTime-e->prevEventTime) * 1e-9; // ns to sec
+
       fLastEventTs = ets;
       fLastEventTime = eventTime;
+   } else if (e->numChan <= 16) { // unsynchronized A16 event
+      e->eventTime = -1;
+      e->prevEventTime = -1;
+   } else { // incomplete event
+      e->eventTime = -2;
+      e->prevEventTime = -2;
    }
 }
 

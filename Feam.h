@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
+#include <deque>
 #include <utility>  // std::pair
 
 //
@@ -63,29 +64,73 @@ class FeamModuleData
 public:
    std::string fBank; // MIDAS bank, FEAM serial number
    int fPosition; // geographical position 0..63
+   FeamPacket* fPacket = NULL; // event counter, timestamps, etc
 
    uint32_t cnt;
    uint32_t ts_start;
    uint32_t ts_trig;
 
-   bool error;
+   bool complete = false;
+   bool error = false;
 
-   uint32_t next_n;
+ public: // ADC data stream data
 
-   int fSize;
-   char* fPtr;
+   static int fgMaxAlloc;
+   int fAlloc = 0;
+   int fSize = 0;
+   char* fPtr = NULL;
 
-   uint32_t fTs;
-   int      fTsEpoch;
-   double   fTime;
-   double   fTimeIncr;
+ public: // FeamEVB data
+
+   uint32_t fTs = 0;
+   int      fTsEpoch = 0;
+   double   fTime = 0;
+   double   fTimeIncr = 0;
 
 public:
    FeamModuleData(const FeamPacket* p, const char* bank, int position);
    ~FeamModuleData(); // dtor
-   void AddData(const FeamPacket*p, int position, const char* ptr, int size);
+   void AddData(const FeamPacket*p, const char* ptr, int size);
    void Finalize();
    void Print(int level=0) const;
+};
+
+class FeamAsm
+{
+ public: // state
+   int fState = 0;
+   uint32_t fCnt = 0;
+   int fNextN = 0;
+   FeamModuleData* fCurrent = NULL;
+
+ public: // context
+   std::string fBank;
+   int fPosition;
+
+ public: // output buffer
+   std::deque<FeamModuleData*> fBuffer;
+
+ public: // counters
+   int fCountIgnoredBeforeFirst = 0;
+   int fCountFirst = 0;
+   int fCountDone  = 0;
+   int fCountLostFirst = 0;
+   int fCountLostSync = 0;
+   int fCountTruncated = 0;
+   int fCountSkip = 0;
+   int fCountWrongCnt = 0;
+
+ public: // API
+   ~FeamAsm();
+   void Print() const;
+   void AddPacket(const FeamPacket* p, const char* bank, int position, const char* ptr, int size);
+   void Finalize();
+
+ public: // internal functions
+   void StFirstPacket(const FeamPacket* p, const char* bank, int position, const char* ptr, int size);
+   void StLastPacket();
+   void AddData(const FeamPacket* p, const char* ptr, int size);
+   void FlushIncomplete();
 };
 
 #define MAX_FEAM           8 /* 64: 0..63 */
