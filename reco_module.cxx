@@ -60,6 +60,14 @@ public:
    TH2D* h_times_aw_p_match;
    TH1D* h_timediff_aw_p_match;
 
+   TH2D *h_unmatched;
+   TH1D *h_unmatched_a;
+   TH1D *h_unmatched_p;
+   TH2D *h_unmatched_p_v_NP;
+   TH2D *h_unmatched_p_v_NA;
+   TH2D *h_unmatched_a_v_NP;
+   TH2D *h_unmatched_a_v_NA;
+
    TCanvas *cTimes;
 
    RecoRun(TARunInfo* runinfo)
@@ -98,6 +106,14 @@ public:
       h_times_aw_p = new TH2D("h_times_aw_p", "pad / anode times;t_a;t_p",1000,0,10000,500,0,8000);
       h_times_aw_p_match = new TH2D("h_times_aw_p_match", "pad / anode times matched;t_a;t_p",1000,0,10000,500,0,8000);
       h_timediff_aw_p_match = new TH1D("h_timediff_aw_p_match", "pad / anode time difference;t_a-t_p",4000,-2000,2000);
+
+      h_unmatched = new TH2D("h_unmatched", "Unmatched signals;number of unmatched anode signals;number of unmatched pad signals",1000,0,1000,1000,0,1000);
+      h_unmatched_a = new TH1D("h_unmatched_a", "Unmatched anode signals ratio;number of unmatched anode signals / total number of anode signals",1000,0,1);
+      h_unmatched_p = new TH1D("h_unmatched_p", "Unmatched pad signals ratio;number of unmatched pad signals / total number of pad signals",1000,0,1);
+      h_unmatched_a_v_NA = new TH2D("h_unmatched_a_v_NA", "Unmatched anode signals vs NA;total number of anode signals;number of unmatched anode signals",1000,0,1000,1000,0,1000);
+      h_unmatched_a_v_NP = new TH2D("h_unmatched_a_v_NP", "Unmatched anode signals vs NP;total number of pad signals;number of unmatched anode signals",1000,0,1000,1000,0,1000);
+      h_unmatched_p_v_NA = new TH2D("h_unmatched_p_v_NA", "Unmatched pad signals vs NA;total number of anode signals;number of unmatched pad signals",1000,0,1000,1000,0,1000);
+      h_unmatched_p_v_NP = new TH2D("h_unmatched_p_v_NP", "Unmatched pad signals vs NP;total number of pad signals;number of unmatched pad signals",1000,0,1000,1000,0,1000);
 
       gMagneticField=0.;
       gVerb = 2;
@@ -168,49 +184,64 @@ public:
       double t_pad_first = 1e6;
       double t_aw_first = 1e6;
       if(age->feam && age->a16){
-         anEvent.RecEvent( age );
-         // pf->Reset();
-         // pf->GetSignals()->Reset(age,10,16);
-         h_atimes->Reset();
-         h_ptimes->Reset();
-         // int ntimes = signals->Analyze(age,1,1);
-         // cout << "KKKK " << ntimes << " times: " << signals->sanode.size() << '\t' << signals->spad.size() << endl;
-         int nmax = std::max(anEvent.GetSignals()->sanode.size(), anEvent.GetSignals()->spad.size());
-         // for(int i = 0; i < nmax; i++){
-         //    cout << "KKKK " << ((i<signals->sanode.size())?(signals->sanode[i].t):-1) << '\t' << ((i<signals->spad.size())?(signals->spad[i].t):-1) << endl;
-         // }
-         bool first = true;
-         cout << anEvent.GetSignals()->sanode.size() << endl;
-         for(auto sa: anEvent.GetSignals()->sanode){
-            if(sa.t < t_aw_first) t_aw_first = sa.t;
-            h_atimes->Fill(sa.t);
-            double r, phi;
-            TPCBase::TPCBaseInstance()->GetAnodePosition(sa.i, r, phi, true);
-            std::pair<int,int> pad = TPCBase::TPCBaseInstance()->FindPad(0, phi);
-            for(auto sp: anEvent.GetSignals()->spad){
-               if(first){
-                  if(sp.t < t_pad_first) t_pad_first = sp.t;
-                  h_ptimes->Fill(sp.t);
-               }
-               // cout << "KKKK " << sa.i << '\t' << sp.sec << endl;
-               h_timediff->Fill(sa.t-sp.t);
-               h_times_aw_p->Fill(sa.t, sp.t);
+         if(age->feam->complete && age->a16->complete && !age->feam->error && !age->a16->error){
+            anEvent.RecEvent( age );
+            // pf->Reset();
+            // pf->GetSignals()->Reset(age,10,16);
+            h_atimes->Reset();
+            h_ptimes->Reset();
+            // int ntimes = signals->Analyze(age,1,1);
+            // cout << "KKKK " << ntimes << " times: " << signals->sanode.size() << '\t' << signals->spad.size() << endl;
+            int nmax = std::max(anEvent.GetSignals()->sanode.size(), anEvent.GetSignals()->spad.size());
+            // for(int i = 0; i < nmax; i++){
+            //    cout << "KKKK " << ((i<signals->sanode.size())?(signals->sanode[i].t):-1) << '\t' << ((i<signals->spad.size())?(signals->spad[i].t):-1) << endl;
+            // }
 
-               if(sp.sec == pad.first){
-                  h_times_aw_p_match->Fill(sa.t, sp.t);
-                  h_timediff_aw_p_match->Fill(sa.t-sp.t);
-               }
+            int unmatchedAnodeSignals, unmatchedPadSignals;
+            anEvent.GetNumberOfUnmatched(unmatchedAnodeSignals,unmatchedPadSignals);
+            h_unmatched->Fill(unmatchedAnodeSignals,unmatchedPadSignals);
+            int NA = anEvent.GetSignals()->sanode.size();
+            int NP = anEvent.GetSignals()->spad.size();
+            h_unmatched_a->Fill(double(unmatchedAnodeSignals)/double(NA));
+            h_unmatched_p->Fill(double(unmatchedPadSignals)/double(NP));
+            h_unmatched_a_v_NA->Fill(NA,unmatchedAnodeSignals);
+            h_unmatched_a_v_NP->Fill(NP,unmatchedAnodeSignals);
+            h_unmatched_p_v_NA->Fill(NA,unmatchedPadSignals);
+            h_unmatched_p_v_NP->Fill(NP,unmatchedPadSignals);
 
-               if(abs(sa.t-sp.t) < 16)
-                  h_aw_padcol->Fill(sa.i, sp.sec);
+            bool first = true;
+            cout << NA << endl;
+            for(auto sa: anEvent.GetSignals()->sanode){
+               if(sa.t < t_aw_first) t_aw_first = sa.t;
+               h_atimes->Fill(sa.t);
+               double r, phi;
+               TPCBase::TPCBaseInstance()->GetAnodePosition(sa.i, r, phi, true);
+               std::pair<int,int> pad = TPCBase::TPCBaseInstance()->FindPad(0, phi);
+               for(auto sp: anEvent.GetSignals()->spad){
+                  if(first){
+                     if(sp.t < t_pad_first) t_pad_first = sp.t;
+                     h_ptimes->Fill(sp.t);
+                  }
+                  // cout << "KKKK " << sa.i << '\t' << sp.sec << endl;
+                  h_timediff->Fill(sa.t-sp.t);
+                  h_times_aw_p->Fill(sa.t, sp.t);
+
+                  if(sp.sec == pad.first){
+                     h_times_aw_p_match->Fill(sa.t, sp.t);
+                     h_timediff_aw_p_match->Fill(sa.t-sp.t);
+                  }
+
+                  if(abs(sa.t-sp.t) < 16)
+                     h_aw_padcol->Fill(sa.i, sp.sec);
+               }
+               first = false;
             }
-            first = false;
+            cTimes->Update();
+
+            h_firsttimediff->Fill(t_aw_first-t_pad_first);
+            h_firsttime->Fill(t_aw_first,t_pad_first);
+
          }
-         cTimes->Update();
-
-         h_firsttimediff->Fill(t_aw_first-t_pad_first);
-         h_firsttime->Fill(t_aw_first,t_pad_first);
-
       }
       // TrackViewer::TrackViewerInstance()->DrawPoints( pf->GetPoints() );
       // TrackViewer::TrackViewerInstance()->DrawPoints2D(anEvent.GetPointsArray() );
