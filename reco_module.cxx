@@ -68,6 +68,9 @@ public:
    TH2D *h_unmatched_a_v_NP;
    TH2D *h_unmatched_a_v_NA;
 
+   TH2D *h_resRMS_a;
+   TH2D *h_resRMS_p;
+
    TCanvas *cTimes;
 
    RecoRun(TARunInfo* runinfo)
@@ -115,6 +118,8 @@ public:
       h_unmatched_p_v_NA = new TH2D("h_unmatched_p_v_NA", "Unmatched pad signals vs NA;total number of anode signals;number of unmatched pad signals",1000,0,1000,1000,0,1000);
       h_unmatched_p_v_NP = new TH2D("h_unmatched_p_v_NP", "Unmatched pad signals vs NP;total number of pad signals;number of unmatched pad signals",1000,0,1000,1000,0,1000);
 
+      h_resRMS_a = new TH2D("h_resRMS_a","RMS of anode deconvolution residual;anode;RMS", naw, 0, naw,2000,0,1000);
+      h_resRMS_p = new TH2D("h_resRMS_p","RMS of pad deconvolution residual;pad;RMS", nps*TPCBase::TPCBaseInstance()->GetNumberPadsColumn(), 0, nps*TPCBase::TPCBaseInstance()->GetNumberPadsColumn(),2000,0,10000);
       gMagneticField=0.;
       gVerb = 2;
       TLookUpTable::LookUpTableInstance()->SetGas("arco2",0.28);
@@ -241,6 +246,16 @@ public:
             h_firsttimediff->Fill(t_aw_first-t_pad_first);
             h_firsttime->Fill(t_aw_first,t_pad_first);
 
+            const vector<TPCBase::electrode> &anodes = anEvent.GetSignals()->anodes;
+            const vector<double> &resRMS_a = anEvent.GetSignals()->resRMS_a;
+            for(unsigned int i= 0; i < anodes.size(); i++){
+               h_resRMS_a->Fill(anodes[i].i, resRMS_a[i]);
+            }
+            const vector<TPCBase::electrode> &pads = anEvent.GetSignals()->pads;
+            const vector<double> &resRMS_p = anEvent.GetSignals()->resRMS_p;
+            for(unsigned int i= 0; i < pads.size(); i++){
+               h_resRMS_p->Fill(pads[i].sec*TPCBase::TPCBaseInstance()->GetNumberPadsColumn()+pads[i].i, resRMS_p[i]);
+            }
          }
       }
       // TrackViewer::TrackViewerInstance()->DrawPoints( pf->GetPoints() );
