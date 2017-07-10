@@ -153,9 +153,14 @@ Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, TMEvent* me)
             int packetVersion = Alpha16Packet::PacketVersion(ptr, bklen);
 
             if (0) {
+               printf("ALPHA16 bname %s, bank %p, len %d\n", bname, b, bklen);
                printf("Header:\n");
                printf("  packet type:    0x%02x (%d)\n", packetType, packetType);
                printf("  packet version: 0x%02x (%d)\n", packetVersion, packetVersion);
+
+               Alpha16Packet p;
+               p.Unpack(ptr, bklen);
+               p.Print();
             }
             
             if (packetType == 1 && packetVersion == 1) {
