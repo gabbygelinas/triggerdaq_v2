@@ -31,6 +31,13 @@ static uint32_t getUint32(const void* ptr, int offset)
    return (ptr8[0]<<24) | (ptr8[1]<<16) | (ptr8[2]<<8) | ptr8[3];
 }
 
+static std::string toString(int v)
+{
+   char buf[256];
+   sprintf(buf, "%d", v);
+   return buf;
+}
+
 // CRC16 from http://stackoverflow.com/questions/10564491/function-to-calculate-a-crc16-checksum
 static unsigned short crc16(const unsigned char* data_p, unsigned char length){
    unsigned char x;
@@ -200,6 +207,7 @@ void Alpha16Event::Reset()
    timeIncr = 0;
    MEMZERO(udpPresent);
    MEMZERO(udpEventTs);
+   MEMZERO(udpEventTsIncr);
    numChan = 0;
    error    = false;
    complete = false;
@@ -211,7 +219,18 @@ Alpha16Event::~Alpha16Event() // dtor
 
 void Alpha16Event::Print() const
 {
-   printf("Alpha16Event: %d, time %.6f, incr %.6f, complete %d, error %d, channels: %d", eventNo, time, timeIncr, complete, error, numChan);
+   if (!error) {
+      printf("Alpha16Event: %d, time %.6f, incr %.6f, complete %d, error %d, channels: %d", eventNo, time, timeIncr, complete, error, numChan);
+   } else {
+      printf("Alpha16Event: %d, time %.6f, incr %.6f, complete %d, error %d (%s), channels: %d", eventNo, time, timeIncr, complete, error, error_message.c_str(), numChan);
+   }
+   for (int i=0; i<MAX_ALPHA16*NUM_CHAN_ALPHA16; i+=NUM_CHAN_ALPHA16) {
+      uint32_t ts = udpEventTsIncr[i];
+      if (ts) {
+         //printf(" 0x%08x (0x%08x)", ts, (int)((ts*100.0)/125.0));
+         printf(" 0x%08x", ts);
+      }
+   }
 }
 
 Alpha16EVB::Alpha16EVB() // ctor
@@ -225,6 +244,7 @@ void Alpha16EVB::Reset()
    fEventCount = 0;
    fHaveEventTs = false;
    MEMZERO(fFirstEventTs);
+   MEMZERO(fLastUdpEventTs);
    fTsEpoch = 0;
    fLastEventTs = 0;
    fLastEventTime = 0;
@@ -335,6 +355,8 @@ void Alpha16EVB::AddBank(Alpha16Event* e, int xmodule, const void* bkptr, int bk
 
    if (xchan<0 || xchan >= NUM_CHAN_ALPHA16) {
       // invalid channel number
+      e->error_message += "| invalid channel number ";
+      e->error_message += toString(xchan);
       e->error = true;
       return;
    }
@@ -361,6 +383,7 @@ void Alpha16EVB::AddBank(Alpha16Event* e, int xmodule, const void* bkptr, int bk
 
    if (e->udpPresent[chan]) {
       // duplicate udp packet
+      e->error_message += "| duplicate udp channel";
       e->error = true;
       return;
    }
@@ -369,6 +392,10 @@ void Alpha16EVB::AddBank(Alpha16Event* e, int xmodule, const void* bkptr, int bk
    e->waveform[chan].Unpack(bkptr, bklen);
    e->udpPresent[chan] = true;
    e->udpEventTs[chan] = e->udpPacket[chan].eventTimestamp;
+
+   e->udpEventTsIncr[chan] = e->udpEventTs[chan] - fLastUdpEventTs[chan];
+   fLastUdpEventTs[chan] = e->udpEventTs[chan];
+
    e->numChan++;
 }
 
@@ -394,6 +421,10 @@ void Alpha16EVB::CheckEvent(Alpha16Event* e)
             num_samples = e->waveform[i].size();
          if (e->waveform[i].size() != num_samples) {
             // wrong number of ADC samples
+            e->error_message += "| wrong number of ADC samples ";
+            e->error_message += toString(e->waveform[i].size());
+            e->error_message += " should be ";
+            e->error_message += toString(num_samples);
             e->error = true;
          }
       }
@@ -404,6 +435,10 @@ void Alpha16EVB::CheckEvent(Alpha16Event* e)
 
    if ((int)num_samples != fConfNumSamples) {
       // wrong number of ADC samples
+      e->error_message += "| wrong number of ADC samples ";
+      e->error_message += toString(num_samples);
+      e->error_message += " should be fConfNumSamples ";
+      e->error_message += toString(fConfNumSamples);
       e->error = true;
    }
 
@@ -431,8 +466,13 @@ void Alpha16EVB::CheckEvent(Alpha16Event* e)
             if (ets == 0)
                ets = ts;
             if (ts != ets && ts != ets+1 && ts+1 != ets) {
-               printf("ts mismatch %d: 0x%08x vs 0x%08x diff %d\n", i, ts, ets, ts-ets);
-               e->error = true;
+               double ts125 = ts*100.0/125.0;
+               ts = ts125;
+               if (ts != ets && ts != ets+1 && ts+1 != ets) {
+                  printf("ts mismatch %d: 0x%08x vs 0x%08x diff %d\n", i, ts, ets, ts-ets);
+                  e->error_message += "| timestamp mismatch ";
+                  e->error = true;
+               }
             }
          }
       }
