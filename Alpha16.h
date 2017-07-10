@@ -11,6 +11,7 @@
 
 #include <stdint.h>
 #include <vector>
+#include <string>
 
 struct Alpha16Packet
 {
@@ -60,6 +61,7 @@ struct Alpha16Event
 
    bool     udpPresent[MAX_ALPHA16*NUM_CHAN_ALPHA16];  // udp packet received
    uint32_t udpEventTs[MAX_ALPHA16*NUM_CHAN_ALPHA16];  // timestamp from udp packet
+   uint32_t udpEventTsIncr[MAX_ALPHA16*NUM_CHAN_ALPHA16];  // timestamp from udp packet increment from previous event
 
    Alpha16Packet  udpPacket[MAX_ALPHA16*NUM_CHAN_ALPHA16];
    Alpha16Waveform waveform[MAX_ALPHA16*NUM_CHAN_ALPHA16];
@@ -67,6 +69,7 @@ struct Alpha16Event
    int  numChan;  // count of received channels
 
    bool error;    // event has an error
+   std::string error_message; // error message
    bool complete; // event is complete
    
    Alpha16Event(); // ctor
@@ -82,7 +85,7 @@ struct Alpha16EVB
 
    bool     fHaveEventTs;
    uint32_t fFirstEventTs[MAX_ALPHA16*NUM_CHAN_ALPHA16]; // udp timestamp of first event
-   //uint32_t fLastEventTs[MAX_ALPHA16*NUM_CHAN_ALPHA16];  // udp timestamp of last seen event
+   uint32_t fLastUdpEventTs[MAX_ALPHA16*NUM_CHAN_ALPHA16];  // udp timestamp of last seen event
    uint32_t fLastEventTs;
    double   fLastEventTime;
    int      fTsEpoch;
