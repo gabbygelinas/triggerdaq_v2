@@ -16,9 +16,9 @@
 #include "AgFlow.h"
 
 #include "Signals.hh"
-#include "SpacePoints.hh"
 #include "PointsFinder.hh"
 #include "TSpacePoint.hh"
+#include "TLookUpTable.hh"
 #include "TPCBase.hh"
 
 #include "TrackViewer.hh"
@@ -121,7 +121,7 @@ public:
       h_resRMS_a = new TH2D("h_resRMS_a","RMS of anode deconvolution residual;anode;RMS", naw, 0, naw,2000,0,1000);
       h_resRMS_p = new TH2D("h_resRMS_p","RMS of pad deconvolution residual;pad;RMS", nps*TPCBase::TPCBaseInstance()->GetNumberPadsColumn(), 0, nps*TPCBase::TPCBaseInstance()->GetNumberPadsColumn(),2000,0,10000);
       gMagneticField=0.;
-      gVerb = 2;
+      gVerb = 1;
       TLookUpTable::LookUpTableInstance()->SetGas("arco2",0.28);
       TLookUpTable::LookUpTableInstance()->SetB(gMagneticField);
 
