@@ -313,7 +313,7 @@ public:
    TH1D* hamp_hit;
    TH2D* h_amp_hit_col = NULL;
 
-   bool  fPulser = false;
+   bool  fPulser = true;
    TH1D* h_pulser_led_hit = NULL;
 
    TH1D* hnhitchan = NULL;

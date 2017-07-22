@@ -26,6 +26,10 @@
 #include "TVirtualFFT.h"
 #include "Waveform.h"
 
+#define DELETE(x) if (x) { delete (x); (x) = NULL; }
+
+#define MEMZERO(p) memset((p), 0, sizeof(p))
+
 Waveform* NewWaveform(const Alpha16Waveform* a, double scale)
 {
    Waveform* w = new Waveform(a->size());
@@ -747,6 +751,7 @@ public:
       bool verbose = false;
       
       //printf("new event: "); e->Print();
+      //e->error = false;
 
       if (e->error || !e->complete) {
          if (fCountGood)
@@ -919,7 +924,10 @@ public:
 
                fH->fHph3->Fill(le, ph);
 
-               if (le > 100 && le < 120) {
+               int calStart = 160;
+               int calEnd = 180;
+
+               if (le > calStart && le < calEnd) {
                   fH->fHleCal->Fill(le);
                   fH->fHoccCal->Fill(i);
                   fH->fHleVsChanCal->Fill(i, le);
