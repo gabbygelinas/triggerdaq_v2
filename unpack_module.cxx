@@ -20,14 +20,6 @@
 
 #define MEMZERO(p) memset((p), 0, sizeof(p))
 
-class UnpackModule: public TAModuleInterface
-{
-public:
-   void Init(const std::vector<std::string> &args);
-   void Finish();
-   TARunInterface* NewRun(TARunInfo* runinfo);
-};
-
 static std::string join(const char* sep, const std::vector<std::string> &v)
 {
    std::string s;
@@ -39,11 +31,9 @@ static std::string join(const char* sep, const std::vector<std::string> &v)
    return s;
 }
 
-class UnpackRun: public TARunInterface
+class UnpackModule: public TARunObject
 {
 public:
-   UnpackModule* fModule = NULL;
-
    Ncfm*       fCfm = NULL;
    Alpha16EVB* fA16Evb = NULL;
    FeamEVB*    fFeamEvb = NULL;
@@ -51,11 +41,10 @@ public:
 
    std::vector<std::string> fFeamBanks;
    
-   UnpackRun(TARunInfo* runinfo, UnpackModule* m)
-      : TARunInterface(runinfo)
+   UnpackModule(TARunInfo* runinfo)
+      : TARunObject(runinfo)
    {
-      printf("UnpackRun::ctor!\n");
-      fModule = m;
+      printf("UnpackModule::ctor!\n");
 
       fCfm     = new Ncfm(getenv("AG_CFM"));
       fA16Evb  = NULL;
@@ -63,9 +52,9 @@ public:
       fAgEvb   = NULL;
    }
 
-   ~UnpackRun()
+   ~UnpackModule()
    {
-      printf("UnpackRun::dtor!\n");
+      printf("UnpackModule::dtor!\n");
       DELETE(fCfm);
       DELETE(fA16Evb);
       DELETE(fFeamEvb);
@@ -282,32 +271,36 @@ public:
    }
 };
 
-void UnpackModule::Init(const std::vector<std::string> &args)
+class UnpackModuleFactory: public TAFactory
 {
-   printf("UnpackModule::Init!\n");
+public:
+   void Init(const std::vector<std::string> &args)
+   {
+      printf("UnpackModuleFactory::Init!\n");
 
-   for (unsigned i=0; i<args.size(); i++) {
+      for (unsigned i=0; i<args.size(); i++) {
 #if 0
-      if (args[i] == "--nopads")
-         fDoPads = false;
-      if (args[i] == "--plot1")
-         fPlotPad = atoi(args[i+1].c_str());
+         if (args[i] == "--nopads")
+            fDoPads = false;
+         if (args[i] == "--plot1")
+            fPlotPad = atoi(args[i+1].c_str());
 #endif
+      }
    }
-}
-   
-void UnpackModule::Finish()
-{
-   printf("UnpackModule::Finish!\n");
-}
-   
-TARunInterface* UnpackModule::NewRun(TARunInfo* runinfo)
-{
-   printf("UnpackModule::NewRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
-   return new UnpackRun(runinfo, this);
-}
 
-static TARegisterModule tarm(new UnpackModule);
+   void Finish()
+   {
+      printf("UnpackModuleFactory::Finish!\n");
+   }
+   
+   TARunObject* NewRunObject(TARunInfo* runinfo)
+   {
+      printf("UnpackModuleFactory::NewRunObject, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
+      return new UnpackModule(runinfo);
+   }
+};
+
+static TARegister tar(new UnpackModuleFactory);
 
 /* emacs
  * Local Variables:

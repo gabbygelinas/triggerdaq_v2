@@ -1070,45 +1070,43 @@ public:
  * End:
  */
 
-class A16Module: public TAModuleInterface
+class A16Flags
 {
 public:
-   void Init(const std::vector<std::string> &args);
-   void Finish();
-   TARunInterface* NewRun(TARunInfo* runinfo);
-
-   bool fPlotWF;
-   bool fDoPlotAll;
+   bool fPlotWF = false;
+   bool fDoPlotAll = false;
 };
 
-struct A16Run: public TARunInterface
+class A16Module: public TARunObject
 {
-   A16Module* fModule;
-   int fCounter;
-   AlphaTpcX* fATX;
-   bool fTrace;
+public:
+   A16Flags* fFlags = NULL;
+   int fCounter = 0;
+   AlphaTpcX* fATX = NULL;
+   bool fTrace = false;
 
-   A16Run(TARunInfo* runinfo, A16Module* m)
-      : TARunInterface(runinfo)
+public:
+   A16Module(TARunInfo* runinfo, A16Flags* f)
+      : TARunObject(runinfo)
    {
       fTrace = false;
       if (fTrace)
-         printf("A16Run::ctor!\n");
-      fModule = m;
+         printf("A16Module::ctor!\n");
+      fFlags = f;
 
       runinfo->fRoot->fOutputFile->cd();
       TDirectory* aw = gDirectory->mkdir("tpc_aw");
       aw->cd(); // select correct ROOT directory
 
       fATX = new AlphaTpcX();
-      if (m->fPlotWF)
+      if (fFlags->fPlotWF)
          fATX->CreateA16Canvas();
    }
 
-   ~A16Run()
+   ~A16Module()
    {
       if (fTrace)
-         printf("A16Run::dtor!\n");
+         printf("A16Module::dtor!\n");
       if (fATX)
          delete fATX;
       fATX = NULL;
@@ -1116,7 +1114,7 @@ struct A16Run: public TARunInterface
 
    void BeginRun(TARunInfo* runinfo)
    {
-      printf("A16Run::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
+      printf("A16Module::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
       time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
       printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
       fCounter = 0;
@@ -1126,7 +1124,7 @@ struct A16Run: public TARunInterface
 
    void EndRun(TARunInfo* runinfo)
    {
-      printf("A16Run::EndRun, run %d, events %d\n", runinfo->fRunNo, fCounter);
+      printf("A16Module::EndRun, run %d, events %d\n", runinfo->fRunNo, fCounter);
       time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
       printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
       fATX->EndRun();
@@ -1137,18 +1135,18 @@ struct A16Run: public TARunInterface
 
    void PauseRun(TARunInfo* runinfo)
    {
-      printf("A16Run::PauseRun, run %d\n", runinfo->fRunNo);
+      printf("A16Module::PauseRun, run %d\n", runinfo->fRunNo);
    }
 
    void ResumeRun(TARunInfo* runinfo)
    {
-      printf("A16Run::ResumeRun, run %d\n", runinfo->fRunNo);
+      printf("A16Module::ResumeRun, run %d\n", runinfo->fRunNo);
    }
 
    TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
    {
       if (fTrace)
-         printf("A16Run::Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
+         printf("A16Module::Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
 
       AgEventFlow *ef = flow->Find<AgEventFlow>();
 
@@ -1182,7 +1180,7 @@ struct A16Run: public TARunInterface
 
       int force_plot = fATX->Event(e, &hits->fAwHits);
 
-      if (fModule->fDoPlotAll)
+      if (fFlags->fDoPlotAll)
          force_plot = true;
 
       time_t now = time(NULL);
@@ -1217,36 +1215,45 @@ struct A16Run: public TARunInterface
    }
 };
 
-void A16Module::Init(const std::vector<std::string> &args)
+class A16ModuleFactory: public TAFactory
 {
-   printf("A16Module::Init!\n");
-
-   fPlotWF = false;
-
-   for (unsigned i=0; i<args.size(); i++) {
-      if (args[i] == "--wf")
-         fPlotWF = true;
-      if (args[i] == "--wfall") {
-         fDoPlotAll = true;
-         fPlotWF = true;
+public:
+   A16Flags fFlags;
+   
+public:
+   void Init(const std::vector<std::string> &args)
+   {
+      printf("A16ModuleFactory::Init!\n");
+      
+      fFlags.fPlotWF = false;
+      
+      for (unsigned i=0; i<args.size(); i++) {
+         if (args[i] == "--wf")
+            fFlags.fPlotWF = true;
+         if (args[i] == "--wfall") {
+            fFlags.fDoPlotAll = true;
+            fFlags.fPlotWF = true;
+         }
       }
+      
+      TARootHelper::fgDir->cd(); // select correct ROOT directory
+   }
+   
+   void Finish()
+   {
+      printf("A16ModuleFactory::Finish!\n");
+   }
+   
+   TARunObject* NewRunObject(TARunInfo* runinfo)
+   {
+      printf("A16ModuleFactory::NewRunObject, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
+      return new A16Module(runinfo, &fFlags);
    }
 
-   TARootHelper::fgDir->cd(); // select correct ROOT directory
-}
+public:
+};
 
-void A16Module::Finish()
-{
-   printf("A16Module::Finish!\n");
-}
-
-TARunInterface* A16Module::NewRun(TARunInfo* runinfo)
-{
-   printf("A16Module::NewRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
-   return new A16Run(runinfo, this);
-}
-
-static TARegisterModule tarm(new A16Module);
+static TARegister tar(new A16ModuleFactory);
 
 /* emacs
  * Local Variables:

@@ -36,18 +36,6 @@
 
 #define NUM_SEQSCA (3*80+79)
 
-class FeamModule: public TAModuleInterface
-{
-public:
-   void Init(const std::vector<std::string> &args);
-   void Finish();
-   TARunInterface* NewRun(TARunInfo* runinfo);
-
-   bool fDoPads;
-   int  fPlotPad;
-   TCanvas* fPlotPadCanvas;
-};
-
 class FeamHistograms
 {
 public:
@@ -269,13 +257,30 @@ public:
    }
 };
 
-class FeamRun: public TARunInterface
+class FeamFlags
+{
+public:
+   bool fDoPads = true;
+   int  fPlotPad = -1;
+   TCanvas* fPlotPadCanvas = NULL;
+
+public:
+   FeamFlags() // ctor
+   {
+   }
+
+   ~FeamFlags() // dtor
+   {
+      DELETE(fPlotPadCanvas);
+   }
+};
+   
+class FeamModule: public TARunObject
 {
 private:
    const padMap padMapper;
 public:
-   FeamModule* fModule;
-
+   FeamFlags* fFlags = NULL;
    FILE *fin;
    TCanvas* fC;
 
@@ -330,18 +335,18 @@ public:
    int fCountBadScaEvents = 0;
    int fCountBadSca = 0;
 
-   FeamRun(TARunInfo* runinfo, FeamModule* m)
-      : TARunInterface(runinfo)
+   FeamModule(TARunInfo* runinfo, FeamFlags* f)
+      : TARunObject(runinfo)
    {
-      printf("FeamRun::ctor!\n");
-      fModule = m;
+      printf("FeamModule::ctor!\n");
+      fFlags = f;
 
       hbmean_all = NULL;
 
       fC = NULL;
       fin = NULL;
 
-      if (!m->fDoPads)
+      if (!fFlags->fDoPads)
          return;
 
       fC = new TCanvas();
@@ -369,9 +374,9 @@ public:
       }
    }
 
-   ~FeamRun()
+   ~FeamModule()
    {
-      printf("FeamRun::dtor!\n");
+      printf("FeamModule::dtor!\n");
       DELETE(fC);
       for (unsigned i=0; i<fHC.size(); i++) {
          DELETE(fHC[i]);
@@ -385,7 +390,7 @@ public:
       printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
 
-      if (!fModule->fDoPads)
+      if (!fFlags->fDoPads)
          return;
    }
 
@@ -455,7 +460,7 @@ public:
 
    void EndRun(TARunInfo* runinfo)
    {
-      printf("FeamRun::EndRun, run %d\n", runinfo->fRunNo);
+      printf("FeamModule::EndRun, run %d\n", runinfo->fRunNo);
       time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
       printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
       for(auto *hc: fHC){
@@ -465,7 +470,7 @@ public:
          }
       }
 
-      printf("FeamRun::EndRun: test for bad SCA: total events %d, bad events %d, bad sca %d\n", fCountTestScaEvents, fCountBadScaEvents, fCountBadSca);
+      printf("FeamModule::EndRun: test for bad SCA: total events %d, bad events %d, bad sca %d\n", fCountTestScaEvents, fCountBadScaEvents, fCountBadSca);
    }
 
    void PauseRun(TARunInfo* runinfo)
@@ -484,7 +489,7 @@ public:
       
       //printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
 
-      if (!fModule->fDoPads)
+      if (!fFlags->fDoPads)
          return flow;
 
       AgEventFlow *ef = flow->Find<AgEventFlow>();
@@ -1311,19 +1316,19 @@ public:
          fC->Update();
       }
 
-      if (fModule->fPlotPad >= 0) {
-         if (!fModule->fPlotPadCanvas)
-            fModule->fPlotPadCanvas = new TCanvas("FEAM PAD", "FEAM PAD", 900, 650);
+      if (fFlags->fPlotPad >= 0) {
+         if (!fFlags->fPlotPadCanvas)
+            fFlags->fPlotPadCanvas = new TCanvas("FEAM PAD", "FEAM PAD", 900, 650);
 
-         TCanvas*c = fModule->fPlotPadCanvas;
+         TCanvas*c = fFlags->fPlotPadCanvas;
 
          c->cd();
 
 #if 0
-         int nbins = ww[fModule->fPlotPad]->nsamples;
+         int nbins = ww[fFlags->fPlotPad]->nsamples;
          TH1D* h = new TH1D("h", "h", nbins, 0, nbins);
          for (int ibin=0; ibin<nbins; ibin++) {
-            h->SetBinContent(ibin+1, ww[fModule->fPlotPad]->samples[ibin]);
+            h->SetBinContent(ibin+1, ww[fFlags->fPlotPad]->samples[ibin]);
          }
 
          h->SetMinimum(-9000);
@@ -1364,36 +1369,37 @@ public:
    }
 };
 
-void FeamModule::Init(const std::vector<std::string> &args)
+class FeamModuleFactory: public TAFactory
 {
-   printf("FeamModule::Init!\n");
+public:
+   FeamFlags fFlags;
+   
+public:
+   void Init(const std::vector<std::string> &args)
+   {
+      printf("FeamModuleFactory::Init!\n");
 
-   fDoPads = true;
-   fPlotPad = -1;
-   fPlotPadCanvas = NULL;
-
-   for (unsigned i=0; i<args.size(); i++) {
-      if (args[i] == "--nopads")
-         fDoPads = false;
-      if (args[i] == "--plot1")
-         fPlotPad = atoi(args[i+1].c_str());
+      for (unsigned i=0; i<args.size(); i++) {
+         if (args[i] == "--nopads")
+            fFlags.fDoPads = false;
+         if (args[i] == "--plot1")
+            fFlags.fPlotPad = atoi(args[i+1].c_str());
+      }
    }
-}
 
-void FeamModule::Finish()
-{
-   printf("FeamModule::Finish!\n");
+   void Finish()
+   {
+      printf("FeamModuleFactory::Finish!\n");
+   }
 
-   DELETE(fPlotPadCanvas);
-}
+   TARunObject* NewRunObject(TARunInfo* runinfo)
+   {
+      printf("FeamModuleFactory::NewRunObject, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
+      return new FeamModule(runinfo, &fFlags);
+   }
+};
 
-TARunInterface* FeamModule::NewRun(TARunInfo* runinfo)
-{
-   printf("FeamModule::NewRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
-   return new FeamRun(runinfo, this);
-}
-
-static TARegisterModule tarm(new FeamModule);
+static TARegister tar(new FeamModuleFactory);
 
 /* emacs
  * Local Variables:
