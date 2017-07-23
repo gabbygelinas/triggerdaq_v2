@@ -363,19 +363,21 @@ public:
 
 };
 
-static int x = 0;
-
-#if 0
 struct PlotA16
 {
-   TCanvas* fCanvas;
-   TH1D* fH[16];
-   int fFirstChan;
+   TCanvas* fCanvas = NULL;
+   std::vector<TH1D*> fH;
 
-   PlotA16(TCanvas* c, int first_chan) // ctor
+   int fModule = 0;
+   int fSection = 0;
+
+   PlotA16(TCanvas* c, int module, int section) // ctor
    {
       if (!c) {
-         c = new TCanvas("ALPHA16 ADC", "ALPHA16 ADC", 900, 650);
+         char title[256];
+         sprintf(title, "ADC mod%d section %d", module, section);
+         c = new TCanvas(title, title, 900, 650);
+         //c = new TCanvas("ALPHA16 ADC", "ALPHA16 ADC", 900, 650);
          if (!(c->GetShowEventStatus()))
             c->ToggleEventStatus();
          if (!(c->GetShowToolBar()))
@@ -387,10 +389,12 @@ struct PlotA16
       fCanvas->cd();
       fCanvas->Divide(4,4);
 
-      fFirstChan = first_chan;
+      fModule = module;
+      fSection = section;
 
-      for (int i=0; i<16; i++)
-         fH[i] = NULL;
+      for (int i=0; i<16; i++) {
+         fH.push_back(NULL);
+      }
    }
 
    ~PlotA16()
@@ -401,7 +405,47 @@ struct PlotA16
       }
    }
 
-   void Draw(const Alpha16Event* adc)
+   void DrawChannel(int i, const Alpha16Channel* c)
+   {
+      assert(i>=0 && i<16);
+
+      fCanvas->cd(i+1);
+
+      int color = 1;
+      
+      if (!fH[i]) {
+         char name[256];
+         sprintf(name, "mod%dch%d", c->adc_module, c->adc_chan);
+         
+         fH[i] = new TH1D(name, name, c->adc_samples.size(), 0, c->adc_samples.size());
+         
+         fH[i]->Draw();
+         fH[i]->SetMinimum(-(1<<15));
+         fH[i]->SetMaximum(1<<15);
+         //fH[i]->SetMinimum(-2000);
+         //fH[i]->SetMaximum(2000);
+         fH[i]->GetYaxis()->SetLabelSize(0.10);
+         //fH[i]->SetLineColor(color);
+      }
+
+      fH[i]->SetLineColor(color);
+
+      for (unsigned s=0; s<c->adc_samples.size(); s++) {
+         int v = c->adc_samples[s];
+         //printf("bin %d, v %d\n", i, v);
+         fH[i]->SetBinContent(s+1, v);
+      }
+   }
+
+   void ClearChannel(int i)
+   {
+      if (fH[i]) {
+         fH[i]->SetLineColor(2);
+         //fH[i]->Clear();
+      }
+   }
+   
+   void Draw(const Alpha16Event* e)
    {
       // colors:
       // 0 = white
@@ -411,34 +455,25 @@ struct PlotA16
       // 4 = blue
 
       for (int i=0; i<16; i++) {
-         fCanvas->cd(i+1);
+         ClearChannel(i);
+      }
 
-         int color = 1;
-
-         int ichan = fFirstChan + i;
-
-         if (!adc->udpPresent[ichan])
+      for (unsigned i=0; i<e->hits.size(); i++) {
+         Alpha16Channel* c = e->hits[i];
+         if (c->adc_module != fModule)
             continue;
-
-         if (!fH[i]) {
-            char name[256];
-            sprintf(name, "a16ch%02d_x%d", i, x++);
-
-            fH[i] = new TH1D(name, name, adc->waveform[ichan].size(), 0, adc->waveform[ichan].size());
-
-            fH[i]->Draw();
-            fH[i]->SetMinimum(-(1<<15));
-            fH[i]->SetMaximum(1<<15);
-            //fH[i]->SetMinimum(-2000);
-            //fH[i]->SetMaximum(2000);
-            fH[i]->GetYaxis()->SetLabelSize(0.10);
-            fH[i]->SetLineColor(color);
-         }
-
-         for (unsigned s=0; s<adc->waveform[ichan].size(); s++) {
-            int v = adc->waveform[ichan][s];
-            //printf("bin %d, v %d\n", i, v);
-            fH[i]->SetBinContent(s+1, v);
+         if (fSection == 0) { // 16 onboard ADCs
+            if (c->adc_chan < 0 || c->adc_chan >= 16)
+               continue;
+            DrawChannel(c->adc_chan, c);
+         } else if (fSection == 1) {
+            if (c->adc_chan < 16 || c->adc_chan >= 32)
+               continue;
+            DrawChannel(c->adc_chan-16, c);
+         } else if (fSection == 2) {
+            if (c->adc_chan < 32 || c->adc_chan >= 48)
+               continue;
+            DrawChannel(c->adc_chan-32, c);
          }
       }
 
@@ -447,7 +482,6 @@ struct PlotA16
       fCanvas->Update();
    }
 };
-#endif
 
 #if 0
 struct PlotWire
@@ -1111,6 +1145,8 @@ public:
    AlphaTpcX* fATX = NULL;
    bool fTrace = false;
 
+   std::vector<PlotA16*> fPlotA16;
+
 public:
    A16Module(TARunInfo* runinfo, A16Flags* f)
       : TARunObject(runinfo)
@@ -1148,6 +1184,17 @@ public:
       fCounter = 0;
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
       fATX->BeginRun(runinfo->fRunNo);
+
+      //fPlotA16.push_back(new PlotA16(NULL, 1, 0));
+      //fPlotA16.push_back(new PlotA16(NULL, 2, 0));
+      //fPlotA16.push_back(new PlotA16(NULL, 3, 0));
+      //fPlotA16.push_back(new PlotA16(NULL, 4, 0));
+      fPlotA16.push_back(new PlotA16(NULL, 5, 0));
+      fPlotA16.push_back(new PlotA16(NULL, 6, 0));
+      fPlotA16.push_back(new PlotA16(NULL, 6, 1));
+      fPlotA16.push_back(new PlotA16(NULL, 6, 2));
+      fPlotA16.push_back(new PlotA16(NULL, 7, 0));
+      //fPlotA16.push_back(new PlotA16(NULL, 8, 0));
    }
 
    void EndRun(TARunInfo* runinfo)
@@ -1187,21 +1234,15 @@ public:
          return flow;
       }
 
-#if 0
-      if (event->event_id != 1)
-         return flow;
+      printf("---> in a16module: ");
+      e->Print();
+      printf("\n");
 
-      Alpha16Event* e = UnpackAlpha16Event(fATX->fEvb, event);
-
-      if (!e) {
-         return flow;
+      for (unsigned i=0; i<fPlotA16.size(); i++) {
+         fPlotA16[i]->Draw(e);
       }
 
-      if (e && e->complete) {
-         agevb_init();
-         agevb->AddAlpha16Event(e);
-      }
-#endif
+      *flags |= TAFlag_DISPLAY;
 
       AgAwHitsFlow* hits = new AgAwHitsFlow(flow);
       flow = hits;
