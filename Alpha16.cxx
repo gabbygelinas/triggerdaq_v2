@@ -207,10 +207,11 @@ Alpha16Channel* Unpack(const char* bankname, int module, const Alpha16Packet* p,
    c->adc_samples.reserve(nsamples);
    c->adc_samples.clear();
    
-   //printf("Unpacking: "); Print();
    for (int i=0; i<nsamples; i++) {
-      int v = getUint16(bkptr, 30 + i*2);
-      //printf("sample %d: 0x%02x (%d)\n", i, v, v);
+      unsigned v = getUint16(bkptr, 30 + i*2);
+      // manual sign extension
+      if (v & 0x8000)
+         v |= 0xffff0000;
       c->adc_samples.push_back(v);
    }
 
