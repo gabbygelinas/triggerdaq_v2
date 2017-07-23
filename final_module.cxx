@@ -166,14 +166,14 @@ public:
          static uint32_t a16_ts0 = 0;
          static uint32_t feam_ts0 = 0;
 
-         double a16_time  = age->a16->eventTime/1e9;
+         double a16_time  = age->a16->time;
          double feam_time = age->feam->time;
 
          uint32_t a16_ts  = 0;
          uint32_t feam_ts = 0;
 
          if (1)
-            a16_ts = age->a16->udpPacket[0].eventTimestamp;
+            a16_ts = age->a16->udpPackets[0]->eventTimestamp;
 
          if (age->feam->modules[0])
             feam_ts = age->feam->modules[0]->ts_start;
@@ -198,7 +198,7 @@ public:
 
          int dts_ns = (a16_tsr_ns%0x80000000) - (feam_tsr_ns%0x80000000);
 
-         printf("Have AgEvent: %d %d, %f %f, diff %f, ts 0x%08x 0x%08x, ns: %12d %12d, diff %d\n", age->a16->eventNo, age->feam->counter, atr, ftr, dtr, a16_tsr, feam_tsr, a16_tsr_ns, feam_tsr_ns, dts_ns);
+         printf("Have AgEvent: %d %d, %f %f, diff %f, ts 0x%08x 0x%08x, ns: %12d %12d, diff %d\n", age->a16->counter, age->feam->counter, atr, ftr, dtr, a16_tsr, feam_tsr, a16_tsr_ns, feam_tsr_ns, dts_ns);
       }
 
       if (eawh && eph) {

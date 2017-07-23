@@ -204,7 +204,7 @@ public:
                printf("\n");
             }
 
-            if (fAgEvb && e->eventTime >= 0) {
+            if (fAgEvb && e->time >= 0) {
                fAgEvb->AddAlpha16Event(e);
                e = NULL;
             }
@@ -251,9 +251,7 @@ public:
             printf("\n");
 
             if (e->complete && e->a16 && e->feam) {
-               double ta1 = e->a16->eventTime;
-               double ta2 = e->a16->prevEventTime;
-               double ta = (ta1-ta2)/1e9;
+               double ta = e->a16->timeIncr;
                double tf = e->feam->timeIncr;
                printf("  incr %f %f sec, diff %f ns, count %d\n", ta, tf, (tf-ta)*1e9, e->counter);
             }

@@ -30,6 +30,7 @@
 
 #define MEMZERO(p) memset((p), 0, sizeof(p))
 
+#if 0
 Waveform* NewWaveform(const Alpha16Waveform* a, double scale)
 {
    Waveform* w = new Waveform(a->size());
@@ -38,7 +39,9 @@ Waveform* NewWaveform(const Alpha16Waveform* a, double scale)
    }
    return w;
 }
+#endif
 
+#if 0
 struct PlotHistograms
 {
    TCanvas* fCanvas;
@@ -184,7 +187,9 @@ struct PlotHistograms
       fCanvas->Update();
    }
 };
+#endif
 
+#if 0
 struct PlotHistogramsPads
 {
    TCanvas* fCanvas;
@@ -279,6 +284,7 @@ struct PlotHistogramsPads
       fCanvas->Update();
    }
 };
+#endif
 
 class A16ChanHistograms
 {
@@ -359,6 +365,7 @@ public:
 
 static int x = 0;
 
+#if 0
 struct PlotA16
 {
    TCanvas* fCanvas;
@@ -440,7 +447,9 @@ struct PlotA16
       fCanvas->Update();
    }
 };
+#endif
 
+#if 0
 struct PlotWire
 {
    TCanvas* fCanvas;
@@ -531,7 +540,9 @@ struct PlotWire
       fCanvas->Update();
    }
 };
+#endif
 
+#if 0
 struct FileWire
 {
    FILE *fp1;
@@ -613,6 +624,7 @@ struct FileWire
    }
 
 };
+#endif
 
 class AlphaTpcX
 {
@@ -621,12 +633,12 @@ public:
 
    Alpha16EVB* fEvb;
 
-   PlotA16* fPlotA16[SHOW_ALPHA16];
+   //PlotA16* fPlotA16[SHOW_ALPHA16];
 
    //Alpha16Event* fLastEvent;
 
-   PlotHistograms* fH;
-   PlotHistogramsPads* fP;
+   //PlotHistograms* fH;
+   //PlotHistogramsPads* fP;
 
    int fCountEarlyBad;
    int fCountGood;
@@ -642,8 +654,8 @@ public:
 
    AlphaTpcX()
    {
-      fH = new PlotHistograms(NULL);
-      fP = NULL; // new PlotHistogramsPads(NULL);
+      //fH = new PlotHistograms(NULL);
+      //fP = NULL; // new PlotHistogramsPads(NULL);
 
       fEvb = new Alpha16EVB();
 
@@ -678,8 +690,8 @@ public:
       hRMS0 = new TH1D("hRMS0", "RMS 0", 1000, 0, 100);
       hRMS1 = new TH1D("hRMS1", "RMS 1", 1000, 0, 100);
 
-      for (int i=0; i<SHOW_ALPHA16; i++)
-         fPlotA16[i] = NULL;
+      //for (int i=0; i<SHOW_ALPHA16; i++)
+      //fPlotA16[i] = NULL;
 
       //fLastEvent = NULL;
 
@@ -695,18 +707,21 @@ public:
          fEvb = NULL;
       }
 
+#if 0
       for (int i=0; i<SHOW_ALPHA16; i++) {
          if (fPlotA16[i]) {
             delete fPlotA16[i];
             fPlotA16[i] = NULL;
          }
       }
+#endif
 
       //if (fLastEvent) {
       //   delete fLastEvent;
       //   fLastEvent = NULL;
       //}
 
+#if 0
       if (fH) {
          delete fH;
          fH = NULL;
@@ -716,8 +731,10 @@ public:
          delete fP;
          fP = NULL;
       }
+#endif
    }
 
+#if 0
    void CreateA16Canvas()
    {
       for (int i=0; i<SHOW_ALPHA16; i++) {
@@ -727,6 +744,7 @@ public:
          fPlotA16[i] = new PlotA16(c, i*NUM_CHAN_ALPHA16);
       }
    }
+#endif
 
    void BeginRun(int run)
    {
@@ -765,7 +783,7 @@ public:
 
       if (0) {
          //printf("event: "); e->Print();
-         printf("a16: event %4d, ts %14.3f usec, ts_incr %14.3f usec\n", e->eventNo, e->eventTime/1e3, (e->eventTime-e->prevEventTime)/1e3);
+         printf("a16: event %4d, ts %14.3f usec, ts_incr %14.3f usec\n", e->counter, e->time*1e6, e->timeIncr*1e6);
          return 0;
       }
 
@@ -786,6 +804,7 @@ public:
 
       int nhits = 0;
 
+#if 0
       for (int i=0; i<SHOW_ALPHA16*NUM_CHAN_ALPHA16; i++)
          if (e->udpPresent[i]) {
 
@@ -975,12 +994,15 @@ public:
 
             delete w;
          }
+#endif
 
-      double tdiff = (e->eventTime - e->prevEventTime)/1e9; // convert ns to sec
+#if 0
+      double tdiff = e->timeIncr;
       //printf("time diff %f sec\n", tdiff);
 
       fH->fHtdiff->Fill(tdiff);
       fH->fHtdiff2->Fill(tdiff);
+#endif
 
       if (verbose)
          printf("Found %d hits\n", nhits);
@@ -991,6 +1013,7 @@ public:
       return force_plot;
    }
 
+#if 0
    void Plot()
    {
       time_t tstart = time(NULL);
@@ -1012,7 +1035,9 @@ public:
 
       printf("plotting: done, %d sec!\n", elapsed);
    }
+#endif
 
+#if 0
    void PlotA16Canvas(Alpha16Event* e)
    {
       time_t tstart = time(NULL);
@@ -1032,6 +1057,7 @@ public:
 
       printf("plotting: done, %d sec!\n", elapsed);
    }
+#endif
 
    void AnalyzeNoise(Waveform *w, short i){
       TH1D *h, *hRMS, *hbase, *hfftsum;
@@ -1099,8 +1125,10 @@ public:
       aw->cd(); // select correct ROOT directory
 
       fATX = new AlphaTpcX();
+#if 0
       if (fFlags->fPlotWF)
          fATX->CreateA16Canvas();
+#endif
    }
 
    ~A16Module()
@@ -1185,6 +1213,7 @@ public:
 
       time_t now = time(NULL);
 
+#if 0
       if (force_plot) {
          static time_t plot_next = 0;
          if (now > plot_next) {
@@ -1192,13 +1221,16 @@ public:
             plot_next = time(NULL) + 15;
          }
       }
+#endif
 
+#if 0
       static time_t t = 0;
 
       if (now - t > 15) {
          t = now;
          fATX->Plot();
       }
+#endif
 
       fCounter++;
 

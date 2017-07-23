@@ -51,8 +51,9 @@ static unsigned short crc16(const unsigned char* data_p, unsigned char length){
    return crc;
 }
 
-void Alpha16Packet::Unpack(const void*ptr, int bklen8)
+Alpha16Packet* Alpha16Packet::Unpack(const void*ptr, int bklen8)
 {
+   Alpha16Packet* p = new Alpha16Packet();
    /*
      ALPHA16 UDP packet data format from Bryerton: this is packet version 1:
      
@@ -118,24 +119,26 @@ void Alpha16Packet::Unpack(const void*ptr, int bklen8)
       Bryerton
    */
    
-   bankLength = bklen8;
-   packetType = getUint8(ptr, 0);
-   packetVersion = getUint8(ptr, 1);
-   acceptedTrigger = getUint16(ptr, 2);
-   hardwareId = getUint32(ptr, 4);
-   buildTimestamp = getUint32(ptr, 10);
+   p->bankLength = bklen8;
+   p->packetType = getUint8(ptr, 0);
+   p->packetVersion = getUint8(ptr, 1);
+   p->acceptedTrigger = getUint16(ptr, 2);
+   p->hardwareId = getUint32(ptr, 4);
+   p->buildTimestamp = getUint32(ptr, 10);
    //int zero = getUint16(ptr, 14);
-   eventTimestamp = getUint32(ptr, 18);
-   triggerOffset = getUint32(ptr, 22);
-   moduleId = getUint8(ptr, 26);
+   p->eventTimestamp = getUint32(ptr, 18);
+   p->triggerOffset = getUint32(ptr, 22);
+   p->moduleId = getUint8(ptr, 26);
    int chanX = getUint8(ptr, 27);
-   channelType = chanX & 0x80;
-   channelId = chanX & 0x7F;
-   nsamples = getUint16(ptr, 28);
-   checksum = getUint16(ptr, 30 + nsamples*2);
-   length = 32 + nsamples*2;
+   p->channelType = chanX & 0x80;
+   p->channelId = chanX & 0x7F;
+   p->nsamples = getUint16(ptr, 28);
+   p->checksum = getUint16(ptr, 30 + p->nsamples*2);
+   p->length = 32 + p->nsamples*2;
    
-   xcrc16 = crc16((const unsigned char*)ptr, 32 + nsamples*2);
+   p->xcrc16 = crc16((const unsigned char*)ptr, 32 + p->nsamples*2);
+
+   return p;
 }
 
 int Alpha16Packet::PacketType(const void*ptr, int bklen8)
@@ -178,6 +181,43 @@ void Alpha16Packet::Print() const
    printf("length: %d, bank length %d\n", length, bankLength);
 };
 
+void Alpha16Channel::Print() const
+{
+   printf("Alpha16Channel: bank %s, adc module %d chan %d, preamp pos %d, wire %d, tpc_wire %d, first_bin %d, samples %d", bank.c_str(), adc_module, adc_chan, preamp_pos, preamp_wire, tpc_wire, first_bin, (int)adc_samples.size());
+}
+
+Alpha16Channel* Unpack(const char* bankname, int module, const Alpha16Packet* p, const void* bkptr, int bklen8)
+{
+   Alpha16Channel* c = new Alpha16Channel;
+
+   c->bank = bankname;
+   c->adc_module = module;
+   if (p->channelType == 0) {
+      c->adc_chan = p->channelId;
+   } else {
+      c->adc_chan = 16 + p->channelId;
+   }
+   c->preamp_pos = 0;
+   c->preamp_wire = 0;
+   c->tpc_wire = 0;
+   c->first_bin = 0;
+
+   int nsamples = getUint16(bkptr, 28);
+
+   c->adc_samples.reserve(nsamples);
+   c->adc_samples.clear();
+   
+   //printf("Unpacking: "); Print();
+   for (int i=0; i<nsamples; i++) {
+      int v = getUint16(bkptr, 30 + i*2);
+      //printf("sample %d: 0x%02x (%d)\n", i, v, v);
+      c->adc_samples.push_back(v);
+   }
+
+   return c;
+};
+
+#if 0
 void Alpha16Waveform::Unpack(const void* bkptr, int bklen8)
 {
    int nsamples = getUint16(bkptr, 28);
@@ -192,12 +232,14 @@ void Alpha16Waveform::Unpack(const void* bkptr, int bklen8)
       this->push_back(v);
    }
 };
+#endif
 
 Alpha16Event::Alpha16Event() // ctor
 {
-   Reset();
+   //Reset();
 }
 
+#if 0
 void Alpha16Event::Reset()
 {
    eventNo = 0;
@@ -212,6 +254,7 @@ void Alpha16Event::Reset()
    error    = false;
    complete = false;
 }
+#endif
    
 Alpha16Event::~Alpha16Event() // dtor
 {
@@ -219,11 +262,17 @@ Alpha16Event::~Alpha16Event() // dtor
 
 void Alpha16Event::Print() const
 {
-   if (!error) {
-      printf("Alpha16Event: %d, time %.6f, incr %.6f, complete %d, error %d, channels: %d", eventNo, time, timeIncr, complete, error, numChan);
-   } else {
-      printf("Alpha16Event: %d, time %.6f, incr %.6f, complete %d, error %d (%s), channels: %d", eventNo, time, timeIncr, complete, error, error_message.c_str(), numChan);
+   std::string e;
+   e += toString(error);
+   if (error) {
+      e += " (";
+      e += error_message;
+      e += ")";
    }
+
+   printf("Alpha16Event: %d, time %.6f, incr %.6f, complete %d, error %s, hits: %d, udp: %d", counter, time, timeIncr, complete, e.c_str(), (int)hits.size(), (int)udp.size());
+
+#if 0
    for (int i=0; i<MAX_ALPHA16*NUM_CHAN_ALPHA16; i+=NUM_CHAN_ALPHA16) {
       uint32_t ts = udpEventTsIncr[i];
       if (ts) {
@@ -231,6 +280,7 @@ void Alpha16Event::Print() const
          printf(" 0x%08x", ts);
       }
    }
+#endif
 }
 
 Alpha16EVB::Alpha16EVB() // ctor
@@ -243,14 +293,16 @@ void Alpha16EVB::Reset()
    //printf("Alpha16EVB::Reset!\n");
    fEventCount = 0;
    fHaveEventTs = false;
-   MEMZERO(fFirstEventTs);
-   MEMZERO(fLastUdpEventTs);
+   //   MEMZERO(fFirstEventTs);
+   //   MEMZERO(fLastUdpEventTs);
    fTsEpoch = 0;
    fLastEventTs = 0;
    fLastEventTime = 0;
+#if 0
    fConfModMap.clear();
    fConfNumChan = 0;
    fConfNumSamples = 0;
+#endif
 }
 
 void Alpha16EVB::Configure(int runno)
@@ -301,13 +353,15 @@ void Alpha16EVB::Configure(int runno)
    assert(imap >= 0);
    
    printf("Alpha16EVB::Configure: for run %d found map index %d for run %d\n", runno, imap, modmap[imap][0]);
-   
+
+#if 0
    fConfModMap.clear();
    for (int j=1; modmap[imap][j] != 0; j++) {
       fConfModMap.push_back(modmap[imap][j]);
    }
-   
+
    fConfNumChan = NUM_CHAN_ALPHA16 * fConfModMap.size();
+#endif
 }
 
 #if 0
@@ -332,7 +386,21 @@ bool Alpha16EVB::Match(const Alpha16Event* e, int imodule, uint32_t udpTs)
 static const int chanmap_top[] = { 7, 15, 6, 14, 5, 13, 4, 12, 3, 11, 2, 10, 1, 9, 0, 8 };
 static const int chanmap_bot[] = { 8, 0, 9, 1, 10, 2, 11, 3, 12, 4, 13, 5, 14, 6, 15, 7 };
 
-void Alpha16EVB::AddBank(Alpha16Event* e, int xmodule, const void* bkptr, int bklen)
+void Alpha16EVB::AddBank(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c)
+{
+   e->udp.push_back(p);
+   e->hits.push_back(c);
+
+#if 0
+   e->udpEventTs[chan] = e->udpPacket[chan].eventTimestamp;
+   e->udpEventTsIncr[chan] = e->udpEventTs[chan] - fLastUdpEventTs[chan];
+   fLastUdpEventTs[chan] = e->udpEventTs[chan];
+   e->numChan++;
+#endif
+}
+
+#if 0
+void Alpha16EVB::AddBank(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c)
 {
    int ymodule = -1;
    int top_bot = 0;
@@ -398,19 +466,71 @@ void Alpha16EVB::AddBank(Alpha16Event* e, int xmodule, const void* bkptr, int bk
 
    e->numChan++;
 }
+#endif
 
 Alpha16Event* Alpha16EVB::NewEvent()
 {
    Alpha16Event *e = new Alpha16Event();
    fEventCount++;
-   e->eventNo = fEventCount;
+   e->counter = fEventCount;
    return e;
 }
 
-const double TSCLK = 0.1; // GHz
+//const double TSCLK = 0.1; // GHz
 
 void Alpha16EVB::CheckEvent(Alpha16Event* e)
 {
+   e->Print();
+   printf("\n");
+
+   if (e->udp.size() != 160) {
+      e->error = true;
+      e->error_message = "incomplete";
+      e->complete = false;
+      return;
+   }
+   
+   assert(e->udp.size() == e->hits.size());
+
+   if (e->udp.size() > 0) {
+      int i=-1;
+      for (unsigned j=0; j<e->udp.size(); j++) {
+         if (e->hits[j]->adc_module == 1) {
+            i = j;
+            break;
+         }
+      }
+      assert(i>=0);
+      int module = e->hits[i]->adc_module;
+      uint32_t ets = e->udp[i]->eventTimestamp;
+
+      double ts_freq = 0;
+
+      if (module < 6)
+         ts_freq = 100*1e6; // old firmware has 100 MHz timestamp clock
+      else
+         ts_freq = 125*1e6; // new firmware has 125 MHz timestamp clock
+
+      bool wrap = false;
+      if (ets < fLastEventTs) {
+         wrap = true;
+         //printf("wrap!\n");
+      }
+
+      if (wrap) {
+         fTsEpoch++;
+      }
+
+      double eventTime = ets/ts_freq + fTsEpoch*(2.0*0x80000000/ts_freq);
+
+      e->time = eventTime;
+      e->timeIncr = eventTime - fLastEventTime;
+
+      fLastEventTs = ets;
+      fLastEventTime = eventTime;
+   }
+   
+#if 0
    int count = 0;
    unsigned num_samples = 0;
 
@@ -504,6 +624,7 @@ void Alpha16EVB::CheckEvent(Alpha16Event* e)
       e->eventTime = -2;
       e->prevEventTime = -2;
    }
+#endif
 }
 
 #if 0

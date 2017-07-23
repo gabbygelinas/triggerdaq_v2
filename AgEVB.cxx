@@ -164,9 +164,9 @@ void AgEVB::AddAlpha16Event(Alpha16Event* e)
 {
    fCountA16++;
 
-   if (fCountA16 > 1 && e->eventTime <= fLastA16Time) {
+   if (fCountA16 > 1 && e->time <= fLastA16Time) {
       fCountRejectedA16++;
-      printf("AgEVB::AddA16Event: Alpha16 event time did not increase: new time %f, last seen time %f\n", e->eventTime, fLastA16Time);
+      printf("AgEVB::AddA16Event: Alpha16 event time did not increase: new time %f, last seen time %f\n", e->time, fLastA16Time);
       delete e;
       return;
    }
@@ -177,8 +177,8 @@ void AgEVB::AddAlpha16Event(Alpha16Event* e)
    if (e->complete)
       fCountCompleteA16++;
 
-   fLastA16Time = e->eventTime;
-   uint32_t ts = e->eventTime*fSync.fModules[0].fFreqHz/1e9;
+   fLastA16Time = e->time;
+   uint32_t ts = e->time*fSync.fModules[0].fFreqHz;
    //printf("Alpha16Event: t %f, ts 0x%08x", e->eventTime, ts);
    //e->Print();
    //printf("\n");
@@ -286,7 +286,7 @@ AgEvent* AgEVB::Get()
       if (!c && fEvents.size() < fMaxSkew)
          return NULL;
       
-      printf("AgEVB:: popping in incomplete event! have %d buffered events, have complete %d\n", (int)fEvents.size(), c);
+      printf("AgEVB:: popping an incomplete event! have %d buffered events, have complete %d\n", (int)fEvents.size(), c);
    }
    
    AgEvent* e = fEvents.front();
