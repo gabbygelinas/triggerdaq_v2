@@ -173,7 +173,7 @@ public:
          uint32_t feam_ts = 0;
 
          if (1)
-            a16_ts = age->a16->udpPackets[0]->eventTimestamp;
+            a16_ts = age->a16->udp[0]->eventTimestamp;
 
          if (age->feam->modules[0])
             feam_ts = age->feam->modules[0]->ts_start;

@@ -71,18 +71,7 @@ struct Alpha16ModuleConfig
 
 Alpha16Channel* Unpack(const char* bankname, int module, const Alpha16Packet* p, const void* bkptr, int bklen8);
 
-#if 0
-typedef std::vector<int16_t> Alpha16WaveformVector;
-
-class Alpha16Waveform: public Alpha16WaveformVector
-{
- public:
-   void Unpack(const void* bkptr, int bklen8);
-};
-
-#define MAX_ALPHA16 32
 #define NUM_CHAN_ALPHA16 16
-#endif
 
 struct Alpha16Event
 {
@@ -96,31 +85,9 @@ struct Alpha16Event
    std::vector<Alpha16Packet*>  udp;
    std::vector<Alpha16Channel*> hits;
 
-#if 0
-   int      eventNo; // event counter, starting from 1
-   double   eventTime; // event time stamp, in ns, time of first event is zero
-   double   prevEventTime; // time of previous event, in ns, zero for first event
-   double   time; // event time in sec
-   double   timeIncr; // time from previous event, sec
-
-   bool     udpPresent[MAX_ALPHA16*NUM_CHAN_ALPHA16];  // udp packet received
-   uint32_t udpEventTs[MAX_ALPHA16*NUM_CHAN_ALPHA16];  // timestamp from udp packet
-   uint32_t udpEventTsIncr[MAX_ALPHA16*NUM_CHAN_ALPHA16];  // timestamp from udp packet increment from previous event
-
-   Alpha16Packet  udpPacket[MAX_ALPHA16*NUM_CHAN_ALPHA16];
-   Alpha16Waveform waveform[MAX_ALPHA16*NUM_CHAN_ALPHA16];
-
-   int  numChan;  // count of received channels
-
-   bool error;    // event has an error
-   std::string error_message; // error message
-   bool complete; // event is complete
-#endif
-   
    Alpha16Event(); // ctor
    ~Alpha16Event(); // dtor
 
-   //void Reset();
    void Print() const;
 };
 
