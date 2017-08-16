@@ -252,6 +252,25 @@ void TsSync::Check(unsigned inew)
    if (min < 3)
       return;
    
+   unsigned sync_with = 0;
+   for (unsigned i=0; i<fModules.size(); i++) {
+      if (fModules[i].fBuf.size() > 1) {
+         sync_with = i;
+         break;
+      }
+   }
+
+   for (unsigned i=0; i<fModules.size(); i++) {
+      if (fModules[i].fBuf.size() < 1)
+         continue;
+      if (inew != i && fModules[inew].fSyncedWith < 0) {
+         if (i==sync_with) {
+            CheckSync(inew, i);
+         }
+      }
+   }
+
+#if 0
    for (unsigned i=0; i<fModules.size(); i++) {
       if (fModules[i].fBuf.size() < 1)
          continue;
@@ -261,6 +280,7 @@ void TsSync::Check(unsigned inew)
          }
       }
    }
+#endif
 
    if (fTrace) {
       Dump();
