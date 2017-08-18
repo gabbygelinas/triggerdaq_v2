@@ -309,6 +309,7 @@ void Alpha16EVB::Reset()
 void Alpha16EVB::Configure(int runno)
 {
    const int modmap[][20] = {
+      { 789, -1,  -2,  -3,  -4,  -5,  -6,  -7,  -8, -11, -12, -14, 0 },
       { 439,  1,   2,   3,   4,   5,   6,   7,   8, 0 },
       { 382,  1,   2,   3,   -4, -5,  -6,   7,  -8, 0 },
       { 368,  1,   2,   3,   4,   5,   0},
@@ -484,12 +485,14 @@ void Alpha16EVB::CheckEvent(Alpha16Event* e)
    e->Print();
    printf("\n");
 
-   if (e->udp.size() != 160) {
+   if (e->udp.size() != 256) {
       e->error = true;
       e->error_message = "incomplete";
       e->complete = false;
       return;
    }
+
+   e->complete = true;
    
    assert(e->udp.size() == e->hits.size());
 
@@ -507,10 +510,13 @@ void Alpha16EVB::CheckEvent(Alpha16Event* e)
 
       double ts_freq = 0;
 
+#if 0
       if (module < 6)
          ts_freq = 100*1e6; // old firmware has 100 MHz timestamp clock
       else
          ts_freq = 125*1e6; // new firmware has 125 MHz timestamp clock
+#endif
+      ts_freq = 125*1e6; // new firmware has 125 MHz timestamp clock
 
       bool wrap = false;
       if (ets < fLastEventTs) {
