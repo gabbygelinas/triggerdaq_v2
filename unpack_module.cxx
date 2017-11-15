@@ -31,6 +31,23 @@ static std::string join(const char* sep, const std::vector<std::string> &v)
    return s;
 }
 
+static std::vector<std::string> split(const std::string& s, char seperator)
+{
+   std::vector<std::string> output;
+   
+   std::string::size_type prev_pos = 0, pos = 0;
+
+   while((pos = s.find(seperator, pos)) != std::string::npos)
+      {
+         std::string substring( s.substr(prev_pos, pos-prev_pos) );
+         output.push_back(substring);
+         prev_pos = ++pos;
+      }
+
+   output.push_back(s.substr(prev_pos, pos-prev_pos)); // Last word
+   return output;
+}
+
 class UnpackModule: public TARunObject
 {
 public:
@@ -40,6 +57,7 @@ public:
    AgEVB*      fAgEvb = NULL;
 
    std::vector<std::string> fFeamBanks;
+   std::vector<std::string> fAdcMap;
    
    UnpackModule(TARunInfo* runinfo)
       : TARunObject(runinfo)
@@ -67,6 +85,12 @@ public:
       printf("Loaded feam banks: %s\n", join(" ", fFeamBanks).c_str());
    }
 
+   void LoadAdcMap(int runno)
+   {
+      fAdcMap = fCfm->ReadFile("adc", "map", runno);
+      printf("Loaded adc map: %s\n", join(", ", fAdcMap).c_str());
+   }
+
    void BeginRun(TARunInfo* runinfo)
    {
       printf("UnpackRun::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
@@ -87,6 +111,9 @@ public:
          fA16Evb  = new Alpha16EVB();
          fA16Evb->Reset();
          fA16Evb->Configure(runinfo->fRunNo);
+         LoadAdcMap(runinfo->fRunNo);
+         fA16Evb->fMap.Init(fAdcMap);
+         fA16Evb->fMap.Print();
       }
 
       if (have_feam) {

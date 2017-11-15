@@ -42,13 +42,13 @@ struct Alpha16Packet
 struct Alpha16Channel
 {
    std::string bank;
-   int adc_module; // ADC module mod1..mod20
-   int adc_chan; // ADC channel: 0..15: GRIF16 onboard 100MHz, 16..47: FMC-ADC32 62.5MHz
-   int preamp_pos; // preamp position: 0..15: B0..B15, 16..31: T0..T15
-   int preamp_wire; // preamp wire number 1..16 or 0..15
-   int tpc_wire; // TPC anode wire 1..128 or 0..127
+   int adc_module = -1;  // ADC module mod1..mod20
+   int adc_chan = -1;    // ADC channel: 0..15: GRIF16 onboard 100MHz, 16..47: FMC-ADC32 62.5MHz
+   int preamp_pos = -1;  // preamp position: 0..15: B0..B15, 16..31: T0..T15
+   int preamp_wire = -1; // preamp wire number 0..15
+   int tpc_wire = -1;    // TPC anode wire 0..127 bottom, 128..255 top
 
-   int first_bin; /* usually 0 */
+   int first_bin = 0; /* usually 0 */
    std::vector<int> adc_samples;
 
    void Print() const;
@@ -68,6 +68,23 @@ struct Alpha16ModuleConfig
    int adc32b_preamp_pos = 0;
 };
 #endif
+
+struct Alpha16MapEntry
+{
+   int module = -1;   // ADC module number 1..20
+   int preamp_0 = -1; // preamp connector 0 ch 0..15, 100MHz ADC
+   int preamp_1 = -1; // preamp connector 1 ch 16..31, 62.5MHz ADC
+   int preamp_2 = -1; // preamp connector 2 ch 32..47, 62.5MHz ADC
+};
+
+class Alpha16Map
+{
+ public:
+   std::vector<Alpha16MapEntry> fMap;
+ public:
+   void Init(const std::vector<std::string>& map);
+   void Print() const;
+};
 
 Alpha16Channel* Unpack(const char* bankname, int module, const Alpha16Packet* p, const void* bkptr, int bklen8);
 
@@ -93,16 +110,16 @@ struct Alpha16Event
 
 struct Alpha16EVB
 {
-   int fEventCount; // event counter
+   int fEventCount = 0; // event counter
 
-   bool     fHaveEventTs;
+   bool     fHaveEventTs = false;
 #if 0
    uint32_t fFirstEventTs[MAX_ALPHA16*NUM_CHAN_ALPHA16]; // udp timestamp of first event
    uint32_t fLastUdpEventTs[MAX_ALPHA16*NUM_CHAN_ALPHA16];  // udp timestamp of last seen event
 #endif
-   uint32_t fLastEventTs;
-   double   fLastEventTime;
-   int      fTsEpoch;
+   uint32_t fLastEventTs = 0;
+   double   fLastEventTime = 0;
+   int      fTsEpoch = 0;
 
 #if 0
    int fConfNumChan;
@@ -124,6 +141,8 @@ struct Alpha16EVB
    //Alpha16Event* FindEvent(int imodule, uint32_t udpTs);
    //Alpha16Event* GetNextEvent();
    //static bool Match(const Alpha16Event* e, int imodule, uint32_t udpTs);
+
+   Alpha16Map fMap;
 };
 
 #endif

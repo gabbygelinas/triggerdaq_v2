@@ -183,7 +183,7 @@ void Alpha16Packet::Print() const
 
 void Alpha16Channel::Print() const
 {
-   printf("Alpha16Channel: bank %s, adc module %d chan %d, preamp pos %d, wire %d, tpc_wire %d, first_bin %d, samples %d", bank.c_str(), adc_module, adc_chan, preamp_pos, preamp_wire, tpc_wire, first_bin, (int)adc_samples.size());
+   printf("Alpha16Channel: bank %s, adc module %2d chan %2d, preamp pos %2d, wire %2d, tpc_wire %3d, first_bin %d, samples %d", bank.c_str(), adc_module, adc_chan, preamp_pos, preamp_wire, tpc_wire, first_bin, (int)adc_samples.size());
 }
 
 Alpha16Channel* Unpack(const char* bankname, int module, const Alpha16Packet* p, const void* bkptr, int bklen8)
@@ -197,10 +197,10 @@ Alpha16Channel* Unpack(const char* bankname, int module, const Alpha16Packet* p,
    } else {
       c->adc_chan = 16 + p->channelId;
    }
-   c->preamp_pos = 0;
-   c->preamp_wire = 0;
-   c->tpc_wire = 0;
-   c->first_bin = 0;
+   c->preamp_pos  = -1;
+   c->preamp_wire = -1;
+   c->tpc_wire    = -1;
+   c->first_bin   = 0;
 
    int nsamples = getUint16(bkptr, 28);
 
@@ -284,6 +284,116 @@ void Alpha16Event::Print() const
 #endif
 }
 
+std::vector<std::string> split(const std::string& s, char seperator)
+{
+   std::vector<std::string> output;
+   std::string::size_type prev_pos = 0, pos = 0;
+   while((pos = s.find(seperator, pos)) != std::string::npos) {
+      std::string substring( s.substr(prev_pos, pos-prev_pos) );
+      output.push_back(substring);
+      prev_pos = ++pos;
+   }
+   output.push_back(s.substr(prev_pos, pos-prev_pos));
+   return output;
+}
+
+static int xatoi(const char* s)
+{
+   while (*s) {
+      if (*s >= '0' && *s <= '9') {
+         return atoi(s);
+      }
+      s++;
+   }
+   return 0;
+}
+
+void Alpha16Map::Init(const std::vector<std::string>& map)
+{
+   for (unsigned i=0; i<map.size(); i++) {
+      //struct Alpha16MapEntry
+      //{
+      //   int module = 0; // ADC module number 1..20 for adc01..adc20
+      //   int connector = 0; // ADC connector: 0=16ch 100MHz ADC. 1,2=32ch 62.5MHz ADC
+      //   int preamp_pos = 0; // preamp position 0..15 for B0..B15, 16..31 for T0..T15
+      //};
+      //
+      //class Alpha16Map
+      //{
+      //public:
+      //   std::vector<Alpha16MapEntry> fMap;
+      //};
+      std::vector<std::string> s = split(map[i], ' ');
+      if (s.size() != 4) {
+         printf("invalid adc map entry %d: [%s]\n", i, map[i].c_str());
+         abort();
+         continue;
+      }
+
+      int imodule = xatoi(s[0].c_str());
+
+      if (imodule < 1 || imodule > 20) {
+         printf("invalid adc map entry %d: [%s], bad imodule %d\n", i, map[i].c_str(), imodule);
+         abort();
+      }
+
+      int iconn = atoi(s[1].c_str());
+      if (iconn < 0 || iconn > 2) {
+         printf("invalid adc map entry %d: [%s], bad iconn %d\n", i, map[i].c_str(), iconn);
+         abort();
+      }
+
+      int ipreamp = xatoi(s[3].c_str());
+      if (s[3][0] == 'T') {
+         ipreamp += 16;
+         if (ipreamp < 16 || ipreamp > 31) {
+            printf("invalid adc map entry %d: [%s], bad ipreamp %d\n", i, map[i].c_str(), ipreamp);
+            abort();
+         }
+      } else if (s[3][0] == 'B') {
+         ipreamp += 0;
+         if (ipreamp < 0 || ipreamp > 15) {
+            printf("invalid adc map entry %d: [%s], bad ipreamp %d\n", i, map[i].c_str(), ipreamp);
+            abort();
+         }
+      } else if (s[3][0] < '0' || s[3][0] > '9') {
+         printf("invalid adc map entry %d: [%s], bad preamp \"%s\"\n", i, map[i].c_str(), s[3].c_str());
+         abort();
+      }
+
+      if (ipreamp < 0 || ipreamp > 31) {
+         printf("invalid adc map entry %d: [%s], bad ipreamp %d\n", i, map[i].c_str(), ipreamp);
+         abort();
+      }
+
+      printf("map %d: [%s] split [%s] [%s] [%s] [%s], module %2d, connector %1d, preamp %2d\n", i, map[i].c_str(), s[0].c_str(), s[1].c_str(), s[2].c_str(), s[3].c_str(), imodule, iconn, ipreamp);
+
+      while ((int)fMap.size() <= imodule) {
+         Alpha16MapEntry e;
+         fMap.push_back(e);
+      }
+
+      fMap[imodule].module = imodule;
+      if (iconn == 0) {
+         fMap[imodule].preamp_0 = ipreamp;
+      } else if (iconn == 1) {
+         fMap[imodule].preamp_1 = ipreamp;
+      } else if (iconn == 2) {
+         fMap[imodule].preamp_2 = ipreamp;
+      } else {
+         abort();
+      }
+   }
+}
+
+void Alpha16Map::Print() const
+{
+   printf("ADC map:\n");
+   for (unsigned i=0; i<fMap.size(); i++) {
+      printf(" slot %2d: module %2d preamps %3d and %3d %3d\n", i, fMap[i].module, fMap[i].preamp_0, fMap[i].preamp_1, fMap[i].preamp_2);
+   }
+}
+
 Alpha16EVB::Alpha16EVB() // ctor
 {
    Reset();
@@ -305,6 +415,13 @@ void Alpha16EVB::Reset()
    fConfNumSamples = 0;
 #endif
 }
+
+//static const int chanmap_top[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+static const int chanmap_top[] = { 7, 15, 6, 14, 5, 13, 4, 12, 3, 11, 2, 10, 1, 9, 0, 8 };
+static const int chanmap_bot[] = { 8, 0, 9, 1, 10, 2, 11, 3, 12, 4, 13, 5, 14, 6, 15, 7 };
+
+static const int inv_chanmap_top[] = { 14, 12, 10, 8, 6, 4, 2, 0, 15, 13, 11, 9, 7, 5, 3, 1 };
+static const int inv_chanmap_bot[] = { 1, 3, 5, 7, 9, 11, 13, 15, 0, 2, 4, 6, 8, 10, 12, 14 };
 
 void Alpha16EVB::Configure(int runno)
 {
@@ -354,7 +471,39 @@ void Alpha16EVB::Configure(int runno)
    }
    
    assert(imap >= 0);
-   
+
+   for (int xchan=0; xchan<16; xchan++) {
+      int ychan = -1;
+      for (int i=0; i<16; i++)
+         if (chanmap_bot[i] == xchan) {
+            ychan = i;
+            break;
+         }
+      assert(inv_chanmap_bot[xchan] == ychan);
+
+      ychan = -1;
+      for (int i=0; i<16; i++)
+         if (chanmap_top[i] == xchan) {
+            ychan = i;
+            break;
+         }
+      assert(inv_chanmap_top[xchan] == ychan);
+   }
+
+#if 0
+   printf("inv_chanmap_bot: ");
+   for (int xchan=0; xchan<16; xchan++) {
+      printf(" %d,", inv_chanmap_bot[xchan]);
+   }
+   printf("\n");
+
+   printf("inv_chanmap_top: ");
+   for (int xchan=0; xchan<16; xchan++) {
+      printf(" %d,", inv_chanmap_top[xchan]);
+   }
+   printf("\n");
+#endif
+
    printf("Alpha16EVB::Configure: for run %d found map index %d for run %d\n", runno, imap, modmap[imap][0]);
 
 #if 0
@@ -385,12 +534,38 @@ bool Alpha16EVB::Match(const Alpha16Event* e, int imodule, uint32_t udpTs)
 }
 #endif
 
-//static const int chanmap_top[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
-static const int chanmap_top[] = { 7, 15, 6, 14, 5, 13, 4, 12, 3, 11, 2, 10, 1, 9, 0, 8 };
-static const int chanmap_bot[] = { 8, 0, 9, 1, 10, 2, 11, 3, 12, 4, 13, 5, 14, 6, 15, 7 };
-
 void Alpha16EVB::AddBank(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c)
 {
+   int imodule = c->adc_module;
+   if (imodule > 0 && imodule < (int)fMap.fMap.size()) {
+      int pos0 = fMap.fMap[imodule].preamp_0;
+      int pos1 = fMap.fMap[imodule].preamp_1;
+      int pos2 = fMap.fMap[imodule].preamp_2;
+      int xchan = -1;
+      if (c->adc_chan < 16) {
+         c->preamp_pos = pos0;
+         xchan = c->adc_chan;
+      } else if (c->adc_chan < 32) {
+         c->preamp_pos = pos1;
+         xchan = c->adc_chan-16;
+      } else if (c->adc_chan < 48) {
+         c->preamp_pos = pos2;
+         xchan = c->adc_chan-32;
+      }
+
+      if (xchan >= 0 && xchan < 16) {
+         if (c->preamp_pos < 16) {
+            // bot
+            c->preamp_wire = inv_chanmap_bot[xchan];
+         } else {
+            // top
+            c->preamp_wire = inv_chanmap_top[xchan];
+         }
+         c->tpc_wire = c->preamp_pos*16 + c->preamp_wire;
+      }
+   }
+
+   printf("AddBank: channel: "); c->Print(); printf("\n");
    e->udp.push_back(p);
    e->hits.push_back(c);
 
