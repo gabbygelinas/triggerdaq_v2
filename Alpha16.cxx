@@ -309,6 +309,7 @@ void Alpha16EVB::Reset()
 void Alpha16EVB::Configure(int runno)
 {
    const int modmap[][20] = {
+      { 859, -1,  -2,  -3,  -4,  -5,  -6,  -8, 0 },
       { 789, -1,  -2,  -3,  -4,  -5,  -6,  -7,  -8, -11, -12, -14, 0 },
       { 439,  1,   2,   3,   4,   5,   6,   7,   8, 0 },
       { 382,  1,   2,   3,   -4, -5,  -6,   7,  -8, 0 },
@@ -485,7 +486,7 @@ void Alpha16EVB::CheckEvent(Alpha16Event* e)
    e->Print();
    printf("\n");
 
-   if (e->udp.size() != 256) {
+   if (e->udp.size() != 144) {
       e->error = true;
       e->error_message = "incomplete";
       e->complete = false;
