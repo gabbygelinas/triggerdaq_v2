@@ -46,7 +46,7 @@ struct Alpha16Channel
    int adc_chan = -1;    // ADC channel: 0..15: GRIF16 onboard 100MHz, 16..47: FMC-ADC32 62.5MHz
    int preamp_pos = -1;  // preamp position: 0..15: B0..B15, 16..31: T0..T15
    int preamp_wire = -1; // preamp wire number 0..15
-   int tpc_wire = -1;    // TPC anode wire 0..127 bottom, 128..255 top
+   int tpc_wire = -1;    // TPC anode wire 0..255 bottom, 256..511 top
 
    int first_bin = 0; /* usually 0 */
    std::vector<int> adc_samples;
@@ -80,6 +80,8 @@ struct Alpha16MapEntry
 class Alpha16Map
 {
  public:
+   int fNumChan = 0;
+   int fFirstModule = 0;
    std::vector<Alpha16MapEntry> fMap;
  public:
    void Init(const std::vector<std::string>& map);

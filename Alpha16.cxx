@@ -310,6 +310,8 @@ static int xatoi(const char* s)
 
 void Alpha16Map::Init(const std::vector<std::string>& map)
 {
+   fNumChan = 0;
+
    for (unsigned i=0; i<map.size(); i++) {
       //struct Alpha16MapEntry
       //{
@@ -376,19 +378,26 @@ void Alpha16Map::Init(const std::vector<std::string>& map)
       fMap[imodule].module = imodule;
       if (iconn == 0) {
          fMap[imodule].preamp_0 = ipreamp;
+         fNumChan += 16;
       } else if (iconn == 1) {
          fMap[imodule].preamp_1 = ipreamp;
+         fNumChan += 16;
       } else if (iconn == 2) {
          fMap[imodule].preamp_2 = ipreamp;
+         fNumChan += 16;
       } else {
          abort();
+      }
+
+      if (fFirstModule <= 0) {
+         fFirstModule = imodule;
       }
    }
 }
 
 void Alpha16Map::Print() const
 {
-   printf("ADC map:\n");
+   printf("ADC map, %d modules, %d channels, first module %d:\n", (int)fMap.size(), fNumChan, fFirstModule);
    for (unsigned i=0; i<fMap.size(); i++) {
       printf(" slot %2d: module %2d preamps %3d and %3d %3d\n", i, fMap[i].module, fMap[i].preamp_0, fMap[i].preamp_1, fMap[i].preamp_2);
    }
@@ -537,7 +546,7 @@ bool Alpha16EVB::Match(const Alpha16Event* e, int imodule, uint32_t udpTs)
 void Alpha16EVB::AddBank(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c)
 {
    int imodule = c->adc_module;
-   if (imodule > 0 && imodule < (int)fMap.fMap.size()) {
+   if (imodule > 0 && imodule < (int)fMap.fMap.size() && fMap.fMap[imodule].module == imodule) {
       int pos0 = fMap.fMap[imodule].preamp_0;
       int pos1 = fMap.fMap[imodule].preamp_1;
       int pos2 = fMap.fMap[imodule].preamp_2;
@@ -564,8 +573,9 @@ void Alpha16EVB::AddBank(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c)
          c->tpc_wire = c->preamp_pos*16 + c->preamp_wire;
       }
    }
+   
+   //printf("AddBank: channel: "); c->Print(); printf("\n");
 
-   printf("AddBank: channel: "); c->Print(); printf("\n");
    e->udp.push_back(p);
    e->hits.push_back(c);
 
@@ -658,10 +668,9 @@ Alpha16Event* Alpha16EVB::NewEvent()
 
 void Alpha16EVB::CheckEvent(Alpha16Event* e)
 {
-   e->Print();
-   printf("\n");
+   //e->Print(); printf("\n");
 
-   if (e->udp.size() != 144) {
+   if ((int)e->udp.size() != fMap.fNumChan) {
       e->error = true;
       e->error_message = "incomplete";
       e->complete = false;
@@ -675,13 +684,13 @@ void Alpha16EVB::CheckEvent(Alpha16Event* e)
    if (e->udp.size() > 0) {
       int i=-1;
       for (unsigned j=0; j<e->udp.size(); j++) {
-         if (e->hits[j]->adc_module == 1) {
+         if (e->hits[j]->adc_module == fMap.fFirstModule) {
             i = j;
             break;
          }
       }
       assert(i>=0);
-      int module = e->hits[i]->adc_module;
+      //int module = e->hits[i]->adc_module;
       uint32_t ets = e->udp[i]->eventTimestamp;
 
       double ts_freq = 0;
