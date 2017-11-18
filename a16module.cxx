@@ -21,6 +21,7 @@
 // ALPHA-g common analysis code
 
 #define SHOW_ALPHA16 16
+#define NUM_WIRES 512
 
 #include <iostream>
 #include "TVirtualFFT.h"
@@ -58,10 +59,14 @@ struct PlotHistograms
    TH1D* fHbaselineRms;
    TProfile* fHbaselineRmsVsChan;
    TH1D* fHph;
-   TH1D* fHle;
    TH1D* fHph_r1;
    TH1D* fHph_r2;
    TH1D* fHph_r3;
+   TH1D* fHphHit;
+   TH1D* fHphHit_r1;
+   TH1D* fHphHit_r2;
+   TH1D* fHphHit_r3;
+   TH1D* fHle;
    TH1D* fHle_r1;
    TH1D* fHle_r2;
    TH1D* fHle_r3;
@@ -76,14 +81,16 @@ struct PlotHistograms
    TH1D* fHocc1;
    TH1D* fHocc2;
 
-   TH1D* fHtdiff;
-   TH1D* fHtdiff2;
+   //TH1D* fHtdiff;
+   //TH1D* fHtdiff2;
 
    TProfile* fHph2occ1;
    TProfile* fHph2occ2;
 
+   TH1D* fHphCal;
    TH1D* fHleCal;
    TH1D* fHoccCal;
+   TProfile* fHphVsChanCal;
    TProfile* fHleVsChanCal;
 
    PlotHistograms(TCanvas* c) // ctor
@@ -101,7 +108,7 @@ struct PlotHistograms
       fCanvas->cd();
       fCanvas->Divide(3,6);
 
-      int max_adc = 9000;
+      int max_adc = 32000;
 
       int i=1;
 
@@ -114,7 +121,7 @@ struct PlotHistograms
       fHbaselineRms->Draw();
 
       fCanvas->cd(i++);
-      fHbaselineRmsVsChan = new TProfile("baseline_rms_vs_chan", "baseline_rms_vs_chan", SHOW_ALPHA16*NUM_CHAN_ALPHA16, -0.5, SHOW_ALPHA16*NUM_CHAN_ALPHA16-0.5);
+      fHbaselineRmsVsChan = new TProfile("baseline_rms_vs_chan", "baseline_rms_vs_chan", NUM_WIRES, -0.5, NUM_WIRES-0.5);
       fHbaselineRmsVsChan->SetMinimum(0);
       fHbaselineRmsVsChan->Draw();
 
@@ -122,9 +129,14 @@ struct PlotHistograms
       fHph = new TH1D("pulse_height", "pulse_height", 100, 0, max_adc);
       fHph->Draw();
 
-      fHph_r1 = new TH1D("pulse_height_r1", "pulse_height_r1", 100, 0, max_adc);
-      fHph_r2 = new TH1D("pulse_height_r2", "pulse_height_r2", 100, 0, max_adc);
-      fHph_r3 = new TH1D("pulse_height_r3", "pulse_height_r3", 100, 0, max_adc);
+      fHph_r1 = new TH1D("pulse_height_r1", "pulse_height_r1", 500, 0, max_adc);
+      fHph_r2 = new TH1D("pulse_height_r2", "pulse_height_r2", 500, 0, max_adc);
+      fHph_r3 = new TH1D("pulse_height_r3", "pulse_height_r3", 500, 0, max_adc);
+      
+      fHphHit = new TH1D("pulse_height_hit", "pulse_height", 100, 0, max_adc);
+      fHphHit_r1 = new TH1D("pulse_height_hit_r1", "pulse_height_hit_r1", 500, 0, max_adc);
+      fHphHit_r2 = new TH1D("pulse_height_hit_r2", "pulse_height_hit_r2", 500, 0, max_adc);
+      fHphHit_r3 = new TH1D("pulse_height_hit_r3", "pulse_height_hit_r3", 500, 0, max_adc);
       
       fCanvas->cd(i++);
       fHle = new TH1D("pulse_time", "pulse_time", 100, 0, 1000);
@@ -139,7 +151,7 @@ struct PlotHistograms
       fHlex->Draw();
 
       fCanvas->cd(i++);
-      fHocc = new TH1D("channel_occupancy", "channel_occupancy", SHOW_ALPHA16*NUM_CHAN_ALPHA16, -0.5, SHOW_ALPHA16*NUM_CHAN_ALPHA16-0.5);
+      fHocc = new TH1D("channel_occupancy", "channel_occupancy", NUM_WIRES, -0.5, NUM_WIRES-0.5);
       fHocc->SetMinimum(0);
       fHocc->Draw();
 
@@ -156,41 +168,49 @@ struct PlotHistograms
       fHph3->Draw();
 
       fCanvas->cd(i++);
-      fHocc1 = new TH1D("channel_occupancy_pc", "channel_occupancy_pc", SHOW_ALPHA16*NUM_CHAN_ALPHA16, -0.5, SHOW_ALPHA16*NUM_CHAN_ALPHA16-0.5);
+      fHocc1 = new TH1D("channel_occupancy_pc", "channel_occupancy_pc", NUM_WIRES, -0.5, NUM_WIRES-0.5);
       fHocc1->SetMinimum(0);
       fHocc1->Draw();
 
       fCanvas->cd(i++);
-      fHocc2 = new TH1D("channel_occupancy_drift", "channel_occupancy_drift", SHOW_ALPHA16*NUM_CHAN_ALPHA16, -0.5, SHOW_ALPHA16*NUM_CHAN_ALPHA16-0.5);
+      fHocc2 = new TH1D("channel_occupancy_drift", "channel_occupancy_drift", NUM_WIRES, -0.5, NUM_WIRES-0.5);
       fHocc2->SetMinimum(0);
       fHocc2->Draw();
 
-      fCanvas->cd(i++);
-      fHtdiff = new TH1D("time_between_events", "time_between_events", 2000, 0, 2.0);
-      fHtdiff2 = new TH1D("time_between_events_expanded", "time_between_events_expanded", 1000, 0, 10.0);
-      fHtdiff2->Draw();
+      //fCanvas->cd(i++);
+      //fHtdiff = new TH1D("time_between_events", "time_between_events", 2000, 0, 2.0);
+      //fHtdiff2 = new TH1D("time_between_events_expanded", "time_between_events_expanded", 1000, 0, 10.0);
+      //fHtdiff2->Draw();
 
       fCanvas->cd(i++);
-      fHph2occ1 = new TProfile("pulse_height_profile_pc", "pulse_height_profile_pc", SHOW_ALPHA16*NUM_CHAN_ALPHA16, -0.5, SHOW_ALPHA16*NUM_CHAN_ALPHA16-0.5);
+      fHph2occ1 = new TProfile("pulse_height_profile_pc", "pulse_height_profile_pc", NUM_WIRES, -0.5, NUM_WIRES-0.5);
       fHph2occ1->SetMinimum(0);
       fHph2occ1->Draw();
 
       fCanvas->cd(i++);
-      fHph2occ2 = new TProfile("pulse_height_profile_drift", "pulse_height_profile_drift", SHOW_ALPHA16*NUM_CHAN_ALPHA16, -0.5, SHOW_ALPHA16*NUM_CHAN_ALPHA16-0.5);
+      fHph2occ2 = new TProfile("pulse_height_profile_drift", "pulse_height_profile_drift", NUM_WIRES, -0.5, NUM_WIRES-0.5);
       fHph2occ2->SetMinimum(0);
       fHph2occ2->Draw();
 
       fCanvas->cd(i++);
-      fHleCal = new TH1D("pulse_time_cal", "pulse_time_cal", 100, 100, 120);
+      fHphCal = new TH1D("pulse_height_cal", "pulse_height_cal", 100, 0, max_adc);
+      fHphCal->Draw();
+
+      fCanvas->cd(i++);
+      fHleCal = new TH1D("pulse_time_cal", "pulse_time_cal", 100, 100, 200);
       fHleCal->Draw();
 
       fCanvas->cd(i++);
-      fHoccCal = new TH1D("channel_occupancy_cal", "channel_occupancy_cal", SHOW_ALPHA16*NUM_CHAN_ALPHA16, -0.5, SHOW_ALPHA16*NUM_CHAN_ALPHA16-0.5);
+      fHoccCal = new TH1D("channel_occupancy_cal", "channel_occupancy_cal", NUM_WIRES, -0.5, NUM_WIRES-0.5);
       fHoccCal->SetMinimum(0);
       fHoccCal->Draw();
 
       fCanvas->cd(i++);
-      fHleVsChanCal = new TProfile("pulse_time_vs_chan_cal", "pulse_time_vs_chan_cal", SHOW_ALPHA16*NUM_CHAN_ALPHA16, -0.5, SHOW_ALPHA16*NUM_CHAN_ALPHA16-0.5);
+      fHphVsChanCal = new TProfile("pulse_height_vs_chan_cal", "pulse_height_vs_chan_cal", NUM_WIRES, -0.5, NUM_WIRES-0.5);
+      fHphVsChanCal->Draw();
+
+      fCanvas->cd(i++);
+      fHleVsChanCal = new TProfile("pulse_time_vs_chan_cal", "pulse_time_vs_chan_cal", NUM_WIRES, -0.5, NUM_WIRES-0.5);
       fHleVsChanCal->Draw();
 
       Draw();
@@ -209,103 +229,6 @@ struct PlotHistograms
       fCanvas->Update();
    }
 };
-
-#if 0
-struct PlotHistogramsPads
-{
-   TCanvas* fCanvas;
-
-   TH1D* fHbaseline;
-   TH1D* fHbaselineRms;
-   TH1D* fHph;
-   TH1D* fHle;
-   TH1D* fHlex;
-   TH1D* fHocc;
-
-   TH1D* fHocc1;
-   TH1D* fHocc2;
-
-   TH1D* fHph1;
-   TH1D* fHph2;
-
-   TH2D* fHph3;
-
-   PlotHistogramsPads(TCanvas* c) // ctor
-   {
-      if (!c) {
-         c = new TCanvas("HistogramsPads", "HistogramsPads", 1100, 850);
-         if (!(c->GetShowEventStatus()))
-            c->ToggleEventStatus();
-         if (!(c->GetShowToolBar()))
-            c->ToggleToolBar();
-      }
-
-      fCanvas = c;
-
-      fCanvas->cd();
-      fCanvas->Divide(3,4);
-
-      fCanvas->cd(1);
-      fHbaseline = new TH1D("pads_baseline", "baseline", 100, -1000, 1000);
-      fHbaseline->Draw();
-
-      fCanvas->cd(2);
-      fHbaselineRms = new TH1D("pads_baseline_rms", "baseline_rms", 50, 0, 50);
-      fHbaselineRms->Draw();
-
-      fCanvas->cd(3);
-      fHph = new TH1D("pads_pulse_height", "pulse_height", 100, 0, 500);
-      fHph->Draw();
-
-      fCanvas->cd(4);
-      fHle = new TH1D("pads_pulse_time", "pulse_time", 100, 0, 1000);
-      fHle->Draw();
-
-      fCanvas->cd(5);
-      fHlex = new TH1D("pads_pulse_time_expanded", "pulse_time_expanded", 100, 100, 200);
-      fHlex->Draw();
-
-      fCanvas->cd(6);
-      fHocc = new TH1D("pads_channel_occupancy", "channel_occupancy", SHOW_ALPHA16*NUM_CHAN_ALPHA16, 0, SHOW_ALPHA16*NUM_CHAN_ALPHA16-1);
-      fHocc->Draw();
-
-      fCanvas->cd(7);
-      fHph1 = new TH1D("pads_pulse_height_pc", "pulse_height_pc", 100, 0, 500);
-      fHph1->Draw();
-
-      fCanvas->cd(8);
-      fHph2 = new TH1D("pads_pulse_height_drift", "pulse_height_drift", 100, 0, 500);
-      fHph2->Draw();
-
-      fCanvas->cd(9);
-      fHph3 = new TH2D("pads_pulse_height_vs_drift", "pulse_height_vs_drift", 50, 0, 1000, 50, 0, 500);
-      fHph3->Draw();
-
-      fCanvas->cd(10);
-      fHocc1 = new TH1D("pads_channel_occupancy_pc", "channel_occupancy_pc", SHOW_ALPHA16*NUM_CHAN_ALPHA16, 0, SHOW_ALPHA16*NUM_CHAN_ALPHA16-1);
-      fHocc1->Draw();
-
-      fCanvas->cd(11);
-      fHocc2 = new TH1D("pads_channel_occupancy_drift", "channel_occupancy_drift", SHOW_ALPHA16*NUM_CHAN_ALPHA16, 0, SHOW_ALPHA16*NUM_CHAN_ALPHA16-1);
-      fHocc2->Draw();
-
-      Draw();
-   }
-
-   ~PlotHistogramsPads() // dtor
-   {
-      if (fCanvas)
-         delete fCanvas;
-   }
-
-   void Draw()
-   {
-      fCanvas->Modified();
-      fCanvas->Draw();
-      fCanvas->Update();
-   }
-};
-#endif
 
 class A16ChanHistograms
 {
@@ -1002,7 +925,7 @@ public:
                fH->fHph3->Fill(le, ph);
 
                int calStart = 160;
-               int calEnd = 180;
+               int calEnd = 200;
 
                if (le > calStart && le < calEnd) {
                   fH->fHleCal->Fill(le);
@@ -1030,7 +953,8 @@ public:
                   h.amp = ph;
                   hits->push_back(h);
                }
-                           // save biggest drift region waveform
+
+               // save biggest drift region waveform
 
                if (le > 180){
                   if(ph > fHC[i]->fMaxWampDrift) {
@@ -1040,6 +964,7 @@ public:
                      for (int j=0; j< w->nsamples; j++)
                         fHC[i]->hwaveform_max_drift->SetBinContent(j+1, w->samples[j]);
                   }
+
                   // add to average waveform
 
                   for (int j=0; j< w->nsamples; j++)
@@ -1262,9 +1187,16 @@ public:
 
    void AnalyzeHit(const Alpha16Channel* hit, std::vector<AgAwHit>* flow_hits)
    {
-      int i = 0;
+      int i = hit->tpc_wire;
       int r = 1;
 
+      if (hit->adc_chan >= 16) {
+         r = 2;
+      }
+
+#if 0
+      int i = 0;
+      int r = 1;
       if (hit->adc_module == 1) {
          i = 16*0 + hit->adc_chan;
          r = 1;
@@ -1316,6 +1248,7 @@ public:
       } else {
          i = -1;
       }
+#endif
       
       printf("hit: bank [%s], adc_module %d, adc_chan %d, preamp_pos %d, preamp_wire %d, tpc_wire %d. nbins %d+%d, seqno %d, region %d\n",
              hit->bank.c_str(),
@@ -1336,16 +1269,15 @@ public:
       
       ////// Plot waveforms
       
-      if (i >= fHC.size()) {
-         for (unsigned j=fHC.size(); j<=i; j++)
-            fHC.push_back(NULL);
+      while ((int)fHC.size() <= i) {
+         fHC.push_back(NULL);
       }
 
       if (fHC[i] == NULL){
          char xname[256];
          char xtitle[256];
-         sprintf(xname, "hawf_%03d", i);
-         sprintf(xtitle, "Waveform seqno %03d", i);
+         sprintf(xname, "m%02d_c%02d_w%03d", hit->adc_module, hit->adc_chan, hit->tpc_wire);
+         sprintf(xtitle, "AW Waveform ADC module %d, channel %d, tpc wire %d", hit->adc_module, hit->adc_chan, hit->tpc_wire);
          fHC[i] = new A16ChanHistograms(xname, xtitle, dwf, w->nsamples);
       }
 
@@ -1354,141 +1286,172 @@ public:
          AnalyzeNoise(w, i);
 #endif
 
-      double b, brms;
-      b = baseline(w, 0, 100, NULL, &brms);
-      
-      double wmin = min(w);
-      double wmax = max(w);
-
-      fH->fHbaseline->Fill(b);
-      fH->fHbaselineRms->Fill(brms);
-      fH->fHbaselineRmsVsChan->Fill(i, brms);
-      
-      double ph = b - wmin;
+      bool doPrint = false;
 
       // save first waveform
       
-      bool doPrint = false;
       if (fHC[i]->hwaveform_first->GetEntries() == 0) {
          if (doPrint)
             printf("saving first waveform %d\n", i);
          for (int j=0; j< w->nsamples; j++)
             fHC[i]->hwaveform_first->SetBinContent(j+1, w->samples[j]);
       }
+
+      // analyze baseline
       
-      // save biggest waveform
+      int is_start = 0;
+      int is_baseline = 100;
+
+      double b, brms;
+      b = baseline(w, is_start, is_baseline, NULL, &brms);
       
-      if (ph > fHC[i]->fMaxWamp) {
-         fHC[i]->fMaxWamp = ph;
-         if (doPrint)
-            printf("saving biggest waveform %d\n", i);
-         for (int j=0; j< w->nsamples; j++)
-            fHC[i]->hwaveform_max->SetBinContent(j+1, w->samples[j]);
+      double wmin = min(w);
+      double wmax = max(w);
+
+      bool good_baseline = true;
+
+      double max_brms = 180;
+
+      if (brms > max_brms) {
+         good_baseline = false;
+         fH->fHbaseline->Fill(0);
+         fH->fHbaselineRms->Fill(max_brms);
       }
-      
-      // add to average waveform
-      
-      for (int j=0; j< w->nsamples; j++)
-         fHC[i]->hwaveform_avg->AddBinContent(j+1, w->samples[j]);
-      fHC[i]->nwf++;
 
-      double ph_hit_thr = 250;
-
-      if (r == 1)
-         ph_hit_thr = 1000;
-      else if (r == 2)
-         ph_hit_thr = 500;
+      if (good_baseline) {
+         fH->fHbaseline->Fill(b);
+         fH->fHbaselineRms->Fill(brms);
+         fH->fHbaselineRmsVsChan->Fill(i, brms);
       
-      if (ph > ph_hit_thr) {
+         double ph = b - wmin;
+
+         // save biggest waveform
+         
+         if (ph > fHC[i]->fMaxWamp) {
+            fHC[i]->fMaxWamp = ph;
+            if (doPrint)
+               printf("saving biggest waveform %d\n", i);
+            for (int j=0; j< w->nsamples; j++)
+               fHC[i]->hwaveform_max->SetBinContent(j+1, w->samples[j]);
+         }
+      
+         // add to average waveform
+      
+         for (int j=0; j< w->nsamples; j++)
+            fHC[i]->hwaveform_avg->AddBinContent(j+1, w->samples[j]);
+         fHC[i]->nwf++;
+
          fH->fHph->Fill(ph);
-
+         
          if (r==1)
             fH->fHph_r1->Fill(ph);
          else if (r==2)
             fH->fHph_r2->Fill(ph);
          else if (r==3)
             fH->fHph_r3->Fill(ph);
-         
-         int le = led(w, b, -1.0, ph/2.0);
-         
-         fH->fHle->Fill(le);
 
-         if (r==1)
-            fH->fHle_r1->Fill(le);
-         else if (r==2)
-            fH->fHle_r2->Fill(le);
-         else if (r==3)
-            fH->fHle_r3->Fill(le);
+         double ph_hit_thr = 250;
 
-         fH->fHlex->Fill(le);
-         fH->fHocc->Fill(i);
+         if (r == 1)
+            ph_hit_thr = 1000;
+         else if (r == 2)
+            ph_hit_thr = 300;
+         else if (r == 3)
+            ph_hit_thr = 300;
          
-         if (le > 150 && le < 180) {
-            fH->fHocc1->Fill(i);
-            fH->fHph1->Fill(ph);
+         if (ph > ph_hit_thr) {
+            fH->fHphHit->Fill(ph);
             
-            if (ph < 7000)
-               fH->fHph2occ1->Fill(i, ph);
-         }
-         
-         if (le > 180 && le < 580) {
-            fH->fHocc2->Fill(i);
-            fH->fHph2->Fill(ph);
+            if (r==1)
+               fH->fHphHit_r1->Fill(ph);
+            else if (r==2)
+               fH->fHphHit_r2->Fill(ph);
+            else if (r==3)
+               fH->fHphHit_r3->Fill(ph);
+
+            int le = led(w, b, -1.0, ph/2.0);
             
-            if (ph < 7000) {
-               fH->fHph2occ2->Fill(i, ph);
+            fH->fHle->Fill(le);
+            
+            if (r==1)
+               fH->fHle_r1->Fill(le);
+            else if (r==2)
+               fH->fHle_r2->Fill(le);
+            else if (r==3)
+               fH->fHle_r3->Fill(le);
+            
+            fH->fHlex->Fill(le);
+            fH->fHocc->Fill(i);
+            
+            if (le > 150 && le < 180) {
+               fH->fHocc1->Fill(i);
+               fH->fHph1->Fill(ph);
+               
+               if (ph < 7000)
+                  fH->fHph2occ1->Fill(i, ph);
             }
-         }
-         
-         fH->fHph3->Fill(le, ph);
-         
-         int calStart = 160;
-         int calEnd = 180;
-         
-         if (le > calStart && le < calEnd) {
-            fH->fHleCal->Fill(le);
-            fH->fHoccCal->Fill(i);
-            fH->fHleVsChanCal->Fill(i, le);
-         }
-         
-         //if (ph > 4000) {
-         //nhits++;
-         //printf("samples %d %d, ", e->waveform[i].size(), w->nsamples);
-         if (1) {
-            printf("chan %4d: baseline %8.1f, rms %4.1f, range %8.1f %6.1f, pulse %6.1f, le %4d\n", i, b, brms, wmin, wmax, ph, le);
-         }
-         //}
-         
-         bool have_hit = false;
-         
-         if (le > 150 && le < 580 && ph > 600) {
-            have_hit = true;
-         }
-         
-         if (have_hit) {
-            AgAwHit h;
-            h.chan = i;
-            h.time = le;
-            h.amp = ph;
-            flow_hits->push_back(h);
-         }
+            
+            if (le > 180 && le < 580) {
+               fH->fHocc2->Fill(i);
+               fH->fHph2->Fill(ph);
+               
+               if (ph < 7000) {
+                  fH->fHph2occ2->Fill(i, ph);
+               }
+            }
+            
+            fH->fHph3->Fill(le, ph);
+            
+            int calStart = 160;
+            int calEnd = 200;
+            
+            if (le > calStart && le < calEnd) {
+               fH->fHleCal->Fill(le);
+               fH->fHphCal->Fill(ph);
+               fH->fHoccCal->Fill(i);
+               fH->fHleVsChanCal->Fill(i, le);
+               fH->fHphVsChanCal->Fill(i, ph);
+            }
+            
+            //if (ph > 4000) {
+            //nhits++;
+            //printf("samples %d %d, ", e->waveform[i].size(), w->nsamples);
+            if (1) {
+               printf("chan %4d: baseline %8.1f, rms %4.1f, range %8.1f %6.1f, pulse %6.1f, le %4d\n", i, b, brms, wmin, wmax, ph, le);
+            }
+            //}
+            
+            bool have_hit = false;
+            
+            if (le > 150 && le < 580 && ph > 600) {
+               have_hit = true;
+            }
+            
+            if (have_hit) {
+               AgAwHit h;
+               h.chan = i;
+               h.time = le;
+               h.amp = ph;
+               flow_hits->push_back(h);
+            }
 
-         // save biggest drift region waveform
-         
-         if (le > 180) {
-            if(ph > fHC[i]->fMaxWampDrift) {
-               fHC[i]->fMaxWampDrift = ph;
-               if (doPrint)
-                  printf("saving biggest drift waveform %d\n", i);
+            // save biggest drift region waveform
+            
+            if (le > 180) {
+               if(ph > fHC[i]->fMaxWampDrift) {
+                  fHC[i]->fMaxWampDrift = ph;
+                  if (doPrint)
+                     printf("saving biggest drift waveform %d\n", i);
+                  for (int j=0; j< w->nsamples; j++)
+                     fHC[i]->hwaveform_max_drift->SetBinContent(j+1, w->samples[j]);
+               }
+               
+               // add to average waveform
+               
                for (int j=0; j< w->nsamples; j++)
-                  fHC[i]->hwaveform_max_drift->SetBinContent(j+1, w->samples[j]);
+                  fHC[i]->hwaveform_avg_drift->AddBinContent(j+1, w->samples[j]);
+               fHC[i]->nwf_drift++;
             }
-
-            // add to average waveform
-            
-            for (int j=0; j< w->nsamples; j++)
-               fHC[i]->hwaveform_avg_drift->AddBinContent(j+1, w->samples[j]);
-            fHC[i]->nwf_drift++;
          }
       }
       
