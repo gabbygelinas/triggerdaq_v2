@@ -34,7 +34,7 @@ class AgEventFlow: public TAFlowEvent
 
 struct AgAwHit
 {
-   int chan;
+   int wire; // anode wire
    double time; // hit time
    double amp;  // hit amplitude
 };

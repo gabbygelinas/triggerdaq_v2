@@ -24,6 +24,10 @@
 #include "Unpack.h"
 #include "AgFlow.h"
 
+#define NUM_AW 512
+#define MAX_AW_AMP 16000
+#define MAX_TIME 7000
+
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
 
 #define MEMZERO(p) memset((p), 0, sizeof(p))
@@ -42,9 +46,30 @@ public:
    TH1D* h_aw_amp;
    TH2D* h_aw_amp_time;
 
+   TH1D* h_aw_map;
+   TH2D* h_aw_map_time;
+   TH2D* h_aw_map_amp;
+
    TH2D* h_aw_aw_hits;
    TH2D* h_aw_aw_time;
    TH2D* h_aw_aw_amp;
+
+   TH1D* h_aw_286;
+   TH1D* h_aw_287;
+   TH1D* h_aw_288;
+   TH1D* h_aw_289;
+   TH1D* h_aw_290;
+
+   TH1D* h_aw_299;
+   TH1D* h_aw_300;
+   TH1D* h_aw_301;
+
+   TH1D* h_aw_310;
+   TH1D* h_aw_320;
+   TH1D* h_aw_330;
+   TH1D* h_aw_340;
+
+   TH1D* h_aw_352;
 
    TH1D* h_pad_time;
    TH1D* h_pad_amp;
@@ -56,10 +81,8 @@ public:
    TH2D* h_aw_pad_hits;
 
    TH2D* h_aw_pad_time;
-   TH2D *h_aw_amp_aw;
-   TH2D *h_aw_time_aw;
-
    TH2D* h_aw_pad_time_drift;
+
    TH2D* h_aw_pad_amp_pc;
 
    FinalModule(TARunInfo* runinfo)
@@ -93,17 +116,36 @@ public:
       dir->mkdir("summary")->cd();
 
       h_num_aw_hits = new TH1D("h_num_aw_hits", "number of anode wire hits", 100, 0, 100);
+      h_aw_time = new TH1D("h_aw_time", "aw hit time", 100, 0, MAX_TIME);
+      h_aw_amp = new TH1D("h_aw_amp", "aw hit pulse height", 100, 0, MAX_AW_AMP);
+      h_aw_amp_time = new TH2D("h_aw_amp_time", "aw p.h. vs time", 100, 0, MAX_TIME, 50, 0, MAX_AW_AMP);
+
+      h_aw_map = new TH1D("h_aw_map", "aw hit occupancy", NUM_AW, -0.5, NUM_AW-0.5);
+      h_aw_map_time = new TH2D("h_aw_map_time", "aw hit time vs wire", NUM_AW, -0.5, NUM_AW-0.5, 50, 0, MAX_TIME);
+      h_aw_map_amp  = new TH2D("h_aw_map_amp", "aw hit p.h. vs wire", NUM_AW, -0.5, NUM_AW-0.5, 50, 0, MAX_AW_AMP);
+
+      h_aw_aw_hits = new TH2D("h_aw_aw_hits", "hits in aw vs aw", NUM_AW, -0.5, NUM_AW-0.5, NUM_AW, -0.5, NUM_AW-0.5);
+      h_aw_aw_time = new TH2D("h_aw_aw_time", "time in aw vs aw", 50, 0, MAX_TIME, 50, 0, MAX_TIME);
+      h_aw_aw_amp  = new TH2D("h_aw_aw_amp",  "p.h. in aw vs aw", 50, 0, MAX_AW_AMP, 50, 0, MAX_AW_AMP);
+
+      h_aw_286 = new TH1D("h_aw_286", "h_aw_286", NUM_AW, -0.5, NUM_AW-0.5);
+      h_aw_287 = new TH1D("h_aw_287", "h_aw_287", NUM_AW, -0.5, NUM_AW-0.5);
+      h_aw_288 = new TH1D("h_aw_288", "h_aw_288", NUM_AW, -0.5, NUM_AW-0.5);
+      h_aw_289 = new TH1D("h_aw_289", "h_aw_289", NUM_AW, -0.5, NUM_AW-0.5);
+      h_aw_290 = new TH1D("h_aw_290", "h_aw_290", NUM_AW, -0.5, NUM_AW-0.5);
+
+      h_aw_299 = new TH1D("h_aw_299", "h_aw_299", NUM_AW, -0.5, NUM_AW-0.5);
+      h_aw_300 = new TH1D("h_aw_300", "h_aw_300", NUM_AW, -0.5, NUM_AW-0.5);
+      h_aw_301 = new TH1D("h_aw_301", "h_aw_301", NUM_AW, -0.5, NUM_AW-0.5);
+
+      h_aw_310 = new TH1D("h_aw_310", "h_aw_310", NUM_AW, -0.5, NUM_AW-0.5);
+      h_aw_320 = new TH1D("h_aw_320", "h_aw_320", NUM_AW, -0.5, NUM_AW-0.5);
+      h_aw_330 = new TH1D("h_aw_330", "h_aw_330", NUM_AW, -0.5, NUM_AW-0.5);
+      h_aw_340 = new TH1D("h_aw_340", "h_aw_340", NUM_AW, -0.5, NUM_AW-0.5);
+
+      h_aw_352 = new TH1D("h_aw_352", "h_aw_352", NUM_AW, -0.5, NUM_AW-0.5);
+
       h_num_pad_hits = new TH1D("h_num_pad_hits", "number of cathode pad hits", 100, 0, 100);
-      h_num_aw_pad_hits = new TH2D("h_num_aw_pad_hits", "number of aw vs pad hits", 50, 0, 100, 100, 0, 50);
-
-      h_aw_time = new TH1D("h_aw_time", "aw hit time", 700, 0, 700);
-      h_aw_amp = new TH1D("h_aw_amp", "aw hit pulse height", 170, 0, 17000);
-      h_aw_amp_time = new TH2D("h_aw_amp_time", "aw p.h. vs time", 70, 0, 700, 50, 0, 17000);
-
-      h_aw_aw_hits = new TH2D("h_aw_aw_hits", "hits in aw vs aw", 256, -0.5, 256-0.5, 256, -0.5, 256-0.5);
-      h_aw_aw_time = new TH2D("h_aw_aw_time", "time in aw vs aw", 70, 0, 700, 70, 0, 700);
-      h_aw_aw_amp  = new TH2D("h_aw_aw_amp",  "p.h. in aw vs aw", 50, 0, 17000, 50, 0, 17000);
-
       h_pad_time = new TH1D("h_pad_time", "pad hit time", 500, 0, 500);
       h_pad_amp = new TH1D("h_pad_amp", "pad hit pulse height", 600, 0, 60000);
       h_pad_amp_time = new TH2D("h_pad_amp_time", "pad p.h vs time", 50, 0, 500, 50, 0, 60000);
@@ -113,13 +155,13 @@ public:
       fPH->cd(2);
       h_pad_amp_pad->Draw();
 
+      h_num_aw_pad_hits = new TH2D("h_num_aw_pad_hits", "number of aw vs pad hits", 50, 0, 100, 100, 0, 50);
+
       h_aw_pad_hits = new TH2D("h_aw_pad_hits", "hits in aw vs hits in pads", 4*8, -0.5, 4*8-0.5, 256, -0.5, 256-0.5);
 
       h_aw_pad_time = new TH2D("h_aw_pad_time", "time of hits in aw vs pads", 50, 0, 500, 70, 0, 700);
-      h_aw_amp_aw = new TH2D("h_aw_amp_aw", "aw p.h vs aw number", 256, -0.5, 256.-0.5, 1700, 0, 17000);
-      h_aw_time_aw = new TH2D("h_aw_time_aw", "aw time vs aw number",256 , -0.5, 256.-0.5, 700, 0, 700);
+
       fPH->cd(1);
-      h_aw_amp_aw->Draw();
 
       h_aw_pad_time_drift = new TH2D("h_aw_pad_time_drift", "time of hits in aw vs pads, drift region", 50, 0, 500, 70, 0, 700);
 
@@ -201,30 +243,55 @@ public:
          printf("Have AgEvent: %d %d, %f %f, diff %f, ts 0x%08x 0x%08x, ns: %12d %12d, diff %d\n", age->a16->counter, age->feam->counter, atr, ftr, dtr, a16_tsr, feam_tsr, a16_tsr_ns, feam_tsr_ns, dts_ns);
       }
 
-      if (eawh && eph) {
-         if (0) {
-            printf("UUU event %d, time %f, anode wire hits: %d, pad hits: %d\n", ef->fEvent->counter, ef->fEvent->time, (int)eawh->fAwHits.size(), (int)eph->fPadHits.size());
+      if (eawh) {
+         if (1) {
+            printf("AW event %d, time %f, anode wire hits: %d\n", ef->fEvent->counter, ef->fEvent->time, (int)eawh->fAwHits.size());
          }
 
          h_num_aw_hits->Fill(eawh->fAwHits.size());
-         h_num_pad_hits->Fill(eph->fPadHits.size());
-         h_num_aw_pad_hits->Fill(eph->fPadHits.size(), eawh->fAwHits.size());
 
          for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
             h_aw_time->Fill(eawh->fAwHits[j].time);
             h_aw_amp->Fill(eawh->fAwHits[j].amp);
             h_aw_amp_time->Fill(eawh->fAwHits[j].time, eawh->fAwHits[j].amp);
-            h_aw_amp_aw->Fill(eawh->fAwHits[j].chan, eawh->fAwHits[j].amp);
-            h_aw_time_aw->Fill(eawh->fAwHits[j].chan, eawh->fAwHits[j].time);
+
+            h_aw_map->Fill(eawh->fAwHits[j].wire);
+            h_aw_map_time->Fill(eawh->fAwHits[j].wire, eawh->fAwHits[j].time);
+            h_aw_map_amp->Fill(eawh->fAwHits[j].wire, eawh->fAwHits[j].amp);
 
             for (unsigned k=0; k<eawh->fAwHits.size(); k++) {
                if (k==j)
                   continue;
-               h_aw_aw_hits->Fill(eawh->fAwHits[j].chan, eawh->fAwHits[k].chan);
+               h_aw_aw_hits->Fill(eawh->fAwHits[j].wire, eawh->fAwHits[k].wire);
                h_aw_aw_time->Fill(eawh->fAwHits[j].time, eawh->fAwHits[k].time);
                h_aw_aw_amp->Fill(eawh->fAwHits[j].amp, eawh->fAwHits[k].amp);
+               
+               if (eawh->fAwHits[j].wire == 286) h_aw_286->Fill(eawh->fAwHits[k].wire);
+               if (eawh->fAwHits[j].wire == 287) h_aw_287->Fill(eawh->fAwHits[k].wire);
+               if (eawh->fAwHits[j].wire == 288) h_aw_288->Fill(eawh->fAwHits[k].wire);
+               if (eawh->fAwHits[j].wire == 289) h_aw_289->Fill(eawh->fAwHits[k].wire);
+               if (eawh->fAwHits[j].wire == 290) h_aw_290->Fill(eawh->fAwHits[k].wire);
+
+               if (eawh->fAwHits[j].wire == 299) h_aw_299->Fill(eawh->fAwHits[k].wire);
+               if (eawh->fAwHits[j].wire == 300) h_aw_300->Fill(eawh->fAwHits[k].wire);
+               if (eawh->fAwHits[j].wire == 301) h_aw_301->Fill(eawh->fAwHits[k].wire);
+
+               if (eawh->fAwHits[j].wire == 310) h_aw_310->Fill(eawh->fAwHits[k].wire);
+               if (eawh->fAwHits[j].wire == 320) h_aw_320->Fill(eawh->fAwHits[k].wire);
+               if (eawh->fAwHits[j].wire == 330) h_aw_330->Fill(eawh->fAwHits[k].wire);
+               if (eawh->fAwHits[j].wire == 340) h_aw_340->Fill(eawh->fAwHits[k].wire);
+
+               if (eawh->fAwHits[j].wire == 352) h_aw_352->Fill(eawh->fAwHits[k].wire);
             }
          }
+      }
+
+      if (eph) {
+         if (1) {
+            printf("PA event %d, time %f, pad hits: %d\n", ef->fEvent->counter, ef->fEvent->time, (int)eph->fPadHits.size());
+         }
+
+         h_num_pad_hits->Fill(eph->fPadHits.size());
 
          for (unsigned i=0; i<eph->fPadHits.size(); i++) {
             h_pad_time->Fill(eph->fPadHits[i].time);
@@ -233,11 +300,19 @@ public:
             h_pad_amp_pad->Fill(eph->fPadHits[i].col*MAX_FEAM_PAD_ROWS + eph->fPadHits[i].row, eph->fPadHits[i].amp);
             h_pad_time_pad->Fill(eph->fPadHits[i].col*MAX_FEAM_PAD_ROWS + eph->fPadHits[i].row, eph->fPadHits[i].time);
          }
+      }
+
+      if (eawh && eph) {
+         if (1) {
+            printf("AA event %d, time %f, anode wire hits: %d, pad hits: %d\n", ef->fEvent->counter, ef->fEvent->time, (int)eawh->fAwHits.size(), (int)eph->fPadHits.size());
+         }
+
+         h_num_aw_pad_hits->Fill(eph->fPadHits.size(), eawh->fAwHits.size());
 
          for (unsigned i=0; i<eph->fPadHits.size(); i++) {
             for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
                int xcol = (eph->fPadHits[i].ifeam%8)*4 + eph->fPadHits[i].col;
-               h_aw_pad_hits->Fill(xcol, eawh->fAwHits[j].chan);
+               h_aw_pad_hits->Fill(xcol, eawh->fAwHits[j].wire);
                h_aw_pad_time->Fill(eph->fPadHits[i].time, eawh->fAwHits[j].time);
 
                if ((eawh->fAwHits[j].time > 200) && eph->fPadHits[i].time > 200) {

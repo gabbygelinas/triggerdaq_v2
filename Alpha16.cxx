@@ -432,6 +432,98 @@ static const int chanmap_bot[] = { 8, 0, 9, 1, 10, 2, 11, 3, 12, 4, 13, 5, 14, 6
 static const int inv_chanmap_top[] = { 14, 12, 10, 8, 6, 4, 2, 0, 15, 13, 11, 9, 7, 5, 3, 1 };
 static const int inv_chanmap_bot[] = { 1, 3, 5, 7, 9, 11, 13, 15, 0, 2, 4, 6, 8, 10, 12, 14 };
 
+static const int xadc32_chanmap[32] = 
+   {
+      24, 19,
+      9, 7,
+      15, 3,
+      11, 6,
+      13, 2,
+      10, 1,
+      4, 12,
+      0, 5,
+      31, 28,
+      27, 23,
+      26, 21,
+      22, 30,
+      29, 20,
+      18, 17,
+      16, 14,
+      8, 25
+   };
+
+static const int xmap[32] = {
+   0,
+   10,//1
+   6,//2,
+   8,//3,
+   9,//4,//5,//4,
+   4,//9,//4,//5,
+   1,//2,//6,
+   7,
+   3,//8,
+   5,//4,//9,
+   2,//1,//10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18,
+   19,
+   20,
+   21,
+   22,
+   23,
+   24,
+   25,
+   28, //26,
+   30, //27,
+   26, //28,
+   27, //30, //29,
+   29, //30,
+   31
+};
+
+static const int adc32_chanmap[32] = {
+   0,
+   10,//1
+   6,//2,
+   8,//3,
+   5,//9,//4,//5,//4,
+   9,//1,//4,//9,//4,//5,
+   2,//1,//9,//5,//4,//1,//2,//6,
+   1,//2,//14,//7,
+   14,//2,//3,//8,
+   3,//4,//5,//4,//9,
+   13,//4,//3,//2,//1,//10,
+   15,//11,
+   11,//20,//11,//15,//12,
+   12,//4,//13,
+   20,//18,//20,//24,//18,//25,//28,//25,//20,//7,//14,
+   28,//20,//28,//16,//24,//20,//11,//20,//4,//25,//28,//18,//4,//12,//15,
+   4,//28,//4,//28,//24,//16,//25,//18,//4,//20,//16,
+   18,//4,//7,//4,//24,//28,//25,//7,//24,//17,
+   7,//18,//7,//24,//4,//7,//25,//4,//18,
+   25,//18,//24,//7,//4,//16,//20,//25,//19,
+   16,//25,//18,//24,//7,//20,
+   24,//25,//16,//4,//18,//28,//21,
+   17,//30,//22,
+   30,//17,//23,
+   23,//7,//24,
+   19,//25,
+   21,//28, //26,
+   26,//29,//22,//30, //27,
+   27,//29,//26, //28,
+   29,//27, //30, //29,
+   22,//29, //30,
+   31
+};
+
+static int inv_adc32_chanmap[32];
+
 void Alpha16EVB::Configure(int runno)
 {
    const int modmap[][20] = {
@@ -499,6 +591,21 @@ void Alpha16EVB::Configure(int runno)
       assert(inv_chanmap_top[xchan] == ychan);
    }
 
+   for (int xchan=0; xchan<32; xchan++) {
+      inv_adc32_chanmap[xchan] = -1;
+   }
+
+   for (int xchan=0; xchan<32; xchan++) {
+      int ychan = -1;
+      for (int i=0; i<32; i++)
+         if (adc32_chanmap[i] == xchan) {
+            ychan = i;
+            break;
+         }
+      assert(inv_adc32_chanmap[xchan] == -1);
+      inv_adc32_chanmap[xchan] = ychan;
+   }
+
 #if 0
    printf("inv_chanmap_bot: ");
    for (int xchan=0; xchan<16; xchan++) {
@@ -554,12 +661,39 @@ void Alpha16EVB::AddBank(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c)
       if (c->adc_chan < 16) {
          c->preamp_pos = pos0;
          xchan = c->adc_chan;
-      } else if (c->adc_chan < 32) {
-         c->preamp_pos = pos1;
-         xchan = c->adc_chan-16;
       } else if (c->adc_chan < 48) {
-         c->preamp_pos = pos2;
-         xchan = c->adc_chan-32;
+         int ichan = c->adc_chan-16; // 32ch ADC channel number
+         //int zchan = inv_adc32_chanmap[ichan];
+         //int zchan = ichan;
+         //int zchan = xmap[ichan];
+         int zchan = inv_adc32_chanmap[ichan];
+         if (zchan < 16) {
+            c->preamp_pos = pos1;
+            xchan = zchan;
+         } else if (zchan < 32) {
+            c->preamp_pos = pos2;
+            xchan = zchan-16;
+         } else {
+            abort(); // cannot happen
+         }
+         c->preamp_wire = xchan;
+         c->tpc_wire = c->preamp_pos*16 + c->preamp_wire;
+         if (0 && c->tpc_wire == 288) {
+            printf("remap: module %d, adc_chan %d, ichan %d, zchan %d, xchan %d, preamp pos %d, wire %d, tpc_wire %d\n",
+                   imodule,
+                   c->adc_chan,
+                   ichan,
+                   zchan,
+                   xchan,
+                   c->preamp_pos,
+                   c->preamp_wire,
+                   c->tpc_wire
+                   );
+         }
+         //if (ichan == 0) {
+         //   c->tpc_wire = 1;
+         //}
+         xchan = -1;
       }
 
       if (xchan >= 0 && xchan < 16) {

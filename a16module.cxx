@@ -87,6 +87,9 @@ struct PlotHistograms
    TProfile* fHph2occ1;
    TProfile* fHph2occ2;
 
+   TH1D* fHhitTime;
+   TH1D* fHhitAmp;
+
    TH1D* fHphCal;
    TH1D* fHleCal;
    TH1D* fHoccCal;
@@ -191,6 +194,9 @@ struct PlotHistograms
       fHph2occ2 = new TProfile("pulse_height_profile_drift", "pulse_height_profile_drift", NUM_WIRES, -0.5, NUM_WIRES-0.5);
       fHph2occ2->SetMinimum(0);
       fHph2occ2->Draw();
+
+      fHhitTime = new TH1D("hit_time", "hit time, ns", 100, 0, 7000);
+      fHhitAmp = new TH1D("hit_amp", "hit amplitude", 100, 0, max_adc);
 
       fCanvas->cd(i++);
       fHphCal = new TH1D("pulse_height_cal", "pulse_height_cal", 100, 0, max_adc);
@@ -854,6 +860,11 @@ public:
 
             double ph = b - wmin;
 
+            if (wmin <= -32000.0) {
+               printf("HERE!\n");
+               ph = 0xFFFF;
+            }
+
             ////// Plot waveforms
             if (i >= fHC.size()) {
                for (unsigned j=fHC.size(); j<=i; j++)
@@ -1190,8 +1201,12 @@ public:
       int i = hit->tpc_wire;
       int r = 1;
 
-      if (hit->adc_chan >= 16) {
+      if (hit->adc_module == 5 && hit->adc_chan >= 16) {
          r = 2;
+      }
+
+      if (hit->adc_module == 6 && hit->adc_chan >= 16) {
+         r = 3;
       }
 
 #if 0
@@ -1249,7 +1264,8 @@ public:
          i = -1;
       }
 #endif
-      
+
+#if 0      
       printf("hit: bank [%s], adc_module %d, adc_chan %d, preamp_pos %d, preamp_wire %d, tpc_wire %d. nbins %d+%d, seqno %d, region %d\n",
              hit->bank.c_str(),
              hit->adc_module,
@@ -1261,6 +1277,7 @@ public:
              (int)hit->adc_samples.size(),
              i,
              r);
+#endif
 
       if (i < 0)
          return;
@@ -1325,6 +1342,13 @@ public:
       
          double ph = b - wmin;
 
+         double cfd_thr = ph/2.0;
+
+         if (wmin == -32768.0) {
+            ph = 0xFFFF;
+            cfd_thr = 10000;
+         }
+
          // save biggest waveform
          
          if (ph > fHC[i]->fMaxWamp) {
@@ -1355,10 +1379,37 @@ public:
          if (r == 1)
             ph_hit_thr = 1000;
          else if (r == 2)
-            ph_hit_thr = 300;
+            ph_hit_thr = 600;
          else if (r == 3)
-            ph_hit_thr = 300;
+            ph_hit_thr = 600;
+
+         double time_bin = 0;
+         double time_offset = 0;
+
+         if (r == 1)
+            time_bin = 1000.0/100.0; // 100 MHz ADC
+         else if (r == 2)
+            time_bin = 1000.0/62.5; // 62.5 MHz ADC
+         else if (r == 3)
+            time_bin = 1000.0/62.5; // 62.5 MHz ADC
+
+         if (r == 1)
+            time_offset = 1000 - 1500;
+         else if (r == 2)
+            time_offset = 1000 - 2410;
+         else if (r == 3)
+            time_offset = 1000 - 2410;
+
+         double adc_gain = 1.0;
+         double adc_offset = 0.0;
          
+         if (r == 1)
+            adc_gain = 1.0;
+         else if (r == 2)
+            adc_gain = 4.0;
+         else if (r == 3)
+            adc_gain = 2.0;
+
          if (ph > ph_hit_thr) {
             fH->fHphHit->Fill(ph);
             
@@ -1369,7 +1420,7 @@ public:
             else if (r==3)
                fH->fHphHit_r3->Fill(ph);
 
-            int le = led(w, b, -1.0, ph/2.0);
+            int le = led(w, b, -1.0, cfd_thr);
             
             fH->fHle->Fill(le);
             
@@ -1416,23 +1467,30 @@ public:
             //if (ph > 4000) {
             //nhits++;
             //printf("samples %d %d, ", e->waveform[i].size(), w->nsamples);
-            if (1) {
-               printf("chan %4d: baseline %8.1f, rms %4.1f, range %8.1f %6.1f, pulse %6.1f, le %4d\n", i, b, brms, wmin, wmax, ph, le);
-            }
             //}
+
+            double hit_time = le * time_bin + time_offset;
+            double hit_amp = ph * adc_gain + adc_offset;
+
+            fH->fHhitTime->Fill(hit_time);
+            fH->fHhitAmp->Fill(hit_amp);
             
             bool have_hit = false;
             
-            if (le > 150 && le < 580 && ph > 600) {
+            if (le > 100 && le < 580 && ph > 100) {
                have_hit = true;
             }
             
             if (have_hit) {
                AgAwHit h;
-               h.chan = i;
-               h.time = le;
-               h.amp = ph;
+               h.wire = i;
+               h.time = hit_time;
+               h.amp = hit_amp;
                flow_hits->push_back(h);
+            }
+
+            if (have_hit) {
+               printf("wire %3d: baseline %8.1f, rms %4.1f, range %8.1f %6.1f, pulse %6.1f, le %4d, time %5.0f\n", i, b, brms, wmin, wmax, ph, le, hit_time);
             }
 
             // save biggest drift region waveform
