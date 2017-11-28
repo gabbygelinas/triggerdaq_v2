@@ -31,17 +31,6 @@
 
 #define MEMZERO(p) memset((p), 0, sizeof(p))
 
-#if 0
-Waveform* NewWaveform(const Alpha16Waveform* a, double scale)
-{
-   Waveform* w = new Waveform(a->size());
-   for (unsigned s=0; s<a->size(); s++) {
-      w->samples[s] = (*a)[s] * scale;
-   }
-   return w;
-}
-#endif
-
 Waveform* NewWaveform(const std::vector<int>* a, double scale)
 {
    Waveform* w = new Waveform(a->size());
@@ -80,9 +69,6 @@ struct PlotHistograms
 
    TH1D* fHocc1;
    TH1D* fHocc2;
-
-   //TH1D* fHtdiff;
-   //TH1D* fHtdiff2;
 
    TProfile* fHph2occ1;
    TProfile* fHph2occ2;
@@ -179,11 +165,6 @@ struct PlotHistograms
       fHocc2 = new TH1D("channel_occupancy_drift", "channel_occupancy_drift", NUM_WIRES, -0.5, NUM_WIRES-0.5);
       fHocc2->SetMinimum(0);
       fHocc2->Draw();
-
-      //fCanvas->cd(i++);
-      //fHtdiff = new TH1D("time_between_events", "time_between_events", 2000, 0, 2.0);
-      //fHtdiff2 = new TH1D("time_between_events_expanded", "time_between_events_expanded", 1000, 0, 10.0);
-      //fHtdiff2->Draw();
 
       fCanvas->cd(i++);
       fHph2occ1 = new TProfile("pulse_height_profile_pc", "pulse_height_profile_pc", NUM_WIRES, -0.5, NUM_WIRES-0.5);
@@ -436,196 +417,10 @@ struct PlotA16
 };
 
 #if 0
-struct PlotWire
-{
-   TCanvas* fCanvas;
-   TH1D* hh[3];
-
-   PlotWire(TCanvas* c) // ctor
-   {
-      if (!c) {
-         c = new TCanvas("ALPHA-g One-Wire TPC prototype", "ALPHA-g One-Wire TPC prototype", 900, 500);
-      }
-
-      fCanvas = c;
-
-      fCanvas->cd();
-      fCanvas->Divide(1, 1);
-
-      for (int i=0; i<3; i++) {
-         hh[i] = NULL;
-      }
-   }
-
-   void Fill(const Alpha16Event* e)
-   {
-#if 0
-      int diff = t2 - t1;
-      printf("slot %d, jitter %3d: %3d %3d\n", slot, diff, t1, t2);
-
-      if (hg[slot])
-         hg[slot]->Fill(diff);
-#endif
-   }
-
-   void Draw(const Alpha16Event* e)
-   {
-      // colors:
-      // 0 = white
-      // 1 = black
-      // 2 = red
-      // 3 = green
-      // 4 = blue
-
-      if (1) {
-         fCanvas->cd(1);
-
-         int color = 1;
-         for (int i=0; i<3; i++, color++) {
-            int ch = i;
-
-            if (!hh[i]) {
-               char name[256];
-               sprintf(name, "hh%d", i);
-               hh[i] = new TH1D(name, name, e->waveform[ch].size(), 0, e->waveform[ch].size());
-
-               if (color == 1)
-                  hh[i]->Draw();
-               else
-                  hh[i]->Draw("same");
-               hh[i]->SetMinimum(-(1<<15));
-               hh[i]->SetMaximum(1<<15);
-               hh[i]->SetLineColor(color);
-            }
-
-            for (unsigned s=0; s<e->waveform[ch].size(); s++)
-               hh[i]->SetBinContent(s+1, e->waveform[ch][s]);
-         }
-      }
-
-#if 0
-      if (1) {
-         fCanvas->cd(1+slot*3+2);
-
-         int ii = slot;
-         if (!hg[ii]) {
-            char name[256];
-            sprintf(name, "hg%d", ii);
-            hg[ii] = new TH1D(name, name, 21, -10, 10);
-         }
-
-         hg[ii]->Draw();
-      }
-#endif
-   }
-
-   void Update()
-   {
-      fCanvas->Modified();
-      fCanvas->Draw();
-      fCanvas->Update();
-   }
-};
-#endif
-
-#if 0
-struct FileWire
-{
-   FILE *fp1;
-   FILE *fp2;
-   FILE *fp3;
-
-   int chan1;
-   int chan2;
-   int chan3;
-
-   int max_write;
-   int count;
-
-   FileWire(int x_max_write) // ctor
-   {
-      chan1 = 0;
-      chan2 = 1;
-      chan3 = 2;
-      count = 0;
-      max_write = x_max_write;
-   }
-
-   void Open(int runno)
-   {
-      char buf[2560];
-      const char* dir = "/pool8tb/agdaq/wire/text";
-
-      sprintf(buf, "%s/run%05dchan%02d.txt", dir, runno, chan1);
-
-      fp1 = fopen(buf, "w");
-      assert(fp1);
-
-      sprintf(buf, "%s/run%05dchan%02d.txt", dir, runno, chan2);
-
-      fp2 = fopen(buf, "w");
-      assert(fp2);
-
-      sprintf(buf, "%s/run%05dchan%02d.txt", dir, runno, chan3);
-
-      fp3 = fopen(buf, "w");
-      assert(fp3);
-
-      count = 0;
-   }
-
-   void Close()
-   {
-      fclose(fp1);
-      fclose(fp2);
-      fclose(fp3);
-
-      fp1 = NULL;
-      fp2 = NULL;
-      fp3 = NULL;
-
-      printf("Write %d events\n", count);
-   }
-
-   void PrintWave(FILE* fp, int chan, const Alpha16Waveform* w)
-   {
-      fprintf(fp, "%d", chan);
-      for (unsigned s=0; s<w->size(); s++)
-         fprintf(fp, ",%d", (int)((*w)[s]));
-      fprintf(fp, "\n");
-   }
-
-   void Fill(const Alpha16Event* e)
-   {
-      PrintWave(fp1, chan1, &e->waveform[chan1]);
-      PrintWave(fp2, chan2, &e->waveform[chan2]);
-      PrintWave(fp3, chan3, &e->waveform[chan3]);
-      count++;
-
-      if (max_write)
-         if (count > max_write) {
-            Close();
-            exit(1);
-         }
-   }
-
-};
-#endif
-
-#if 0
 class AlphaTpcX
 {
 public:
    int fRunNo;
-
-   Alpha16EVB* fEvb;
-
-   //PlotA16* fPlotA16[SHOW_ALPHA16];
-
-   //Alpha16Event* fLastEvent;
-
-   //PlotHistograms* fH;
-   //PlotHistogramsPads* fP;
 
    int fCountEarlyBad;
    int fCountGood;
@@ -635,19 +430,10 @@ public:
    TDirectory *dwf = NULL;
    TCanvas *c;
    TH1D *hwf0, *hwf1, *hfftsum0, *hfftsum1, *hbase0, *hbase1, *hRMS0, *hRMS1;
-   std::vector<A16ChanHistograms*> fHC;
 
    int entries = 0;
 
-   AlphaTpcX()
-   {
-      //fH = new PlotHistograms(NULL);
-      //fP = NULL; // new PlotHistogramsPads(NULL);
-
-      fEvb = new Alpha16EVB();
-
       dnoise = gDirectory->mkdir("noise");
-      dwf = gDirectory->mkdir("waveforms");
       dnoise->cd();
       c = new TCanvas("cnoise","noise analysis",800,1200);
       c->Divide(1,6);
@@ -670,74 +456,6 @@ public:
       c->cd(6);
       hfftsum1->Draw();
       c->GetPad(6)->SetLogy();
-
-      hbase0 = new TH1D("hbase0", "baseline 0", 2000, -1000, 1000);
-      hbase1 = new TH1D("hbase1", "baseline 1", 2000, -1000, 1000);
-
-      hRMS0 = new TH1D("hRMS0", "RMS 0", 1000, 0, 100);
-      hRMS1 = new TH1D("hRMS1", "RMS 1", 1000, 0, 100);
-
-      //for (int i=0; i<SHOW_ALPHA16; i++)
-      //fPlotA16[i] = NULL;
-
-      //fLastEvent = NULL;
-
-      fCountEarlyBad = 0;
-      fCountGood = 0;
-      fCountBad = 0;
-   }
-
-   ~AlphaTpcX()
-   {
-      if (fEvb) {
-         delete fEvb;
-         fEvb = NULL;
-      }
-
-#if 0
-      for (int i=0; i<SHOW_ALPHA16; i++) {
-         if (fPlotA16[i]) {
-            delete fPlotA16[i];
-            fPlotA16[i] = NULL;
-         }
-      }
-#endif
-
-      //if (fLastEvent) {
-      //   delete fLastEvent;
-      //   fLastEvent = NULL;
-      //}
-
-#if 0
-      if (fH) {
-         delete fH;
-         fH = NULL;
-      }
-
-      if (fP) {
-         delete fP;
-         fP = NULL;
-      }
-#endif
-   }
-
-#if 0
-   void CreateA16Canvas()
-   {
-      for (int i=0; i<SHOW_ALPHA16; i++) {
-         char title[256];
-         sprintf(title, "ADC %2d", i+1);
-         TCanvas *c = new TCanvas(title, title, 900, 400);
-         fPlotA16[i] = new PlotA16(c, i*NUM_CHAN_ALPHA16);
-      }
-   }
-#endif
-
-   void BeginRun(int run)
-   {
-      fRunNo = run;
-      fEvb->Reset();
-      fEvb->Configure(run);
    }
 
    void EndRun()
@@ -750,308 +468,6 @@ public:
          if(hc->nwf_drift) hc->hwaveform_avg_drift->Scale(1./double(hc->nwf_drift));
       }
    }
-
-   int Event(Alpha16Event* e, std::vector<AgAwHit>* hits)
-   {
-      bool verbose = false;
-      
-      //printf("new event: "); e->Print();
-      //e->error = false;
-
-      if (e->error || !e->complete) {
-         if (fCountGood)
-            fCountBad++;
-         else
-            fCountEarlyBad++;
-         return 0;
-      }
-
-      fCountGood++;
-
-      if (0) {
-         //printf("event: "); e->Print();
-         printf("a16: event %4d, ts %14.3f usec, ts_incr %14.3f usec\n", e->counter, e->time*1e6, e->timeIncr*1e6);
-         return 0;
-      }
-
-      printf("Have Alpha16 event: "); e->Print(); printf("\n");
-
-      //if (fLastEvent) {
-      //   delete fLastEvent;
-      //   fLastEvent = NULL;
-      //}
-      //
-      //fLastEvent = e;
-
-      bool force_plot = false;
-
-      //printf("analyzing: "); e->Print();
-
-      // analyze the event
-
-      int nhits = 0;
-
-#if 0
-      for (int i=0; i<SHOW_ALPHA16*NUM_CHAN_ALPHA16; i++)
-         if (e->udpPresent[i]) {
-
-            //if (i != 76)
-            //   continue;
-
-            Waveform* w = NewWaveform(&e->waveform[i], 1.0/4.0);
-
-#if 0
-            if(i == 96 || i == 127)
-               AnalyzeNoise(w, i);
-#endif
-
-            double b, brms;
-            b = baseline(w, 0, 100, NULL, &brms);
-
-            double wmin = min(w);
-            double wmax = max(w);
-
-            if (0 && i>=0 && i<32) {
-               fP->fHbaseline->Fill(b);
-               fP->fHbaselineRms->Fill(brms);
-
-               int pph = wmax - b;
-
-               if (pph > 30) {
-
-                  fP->fHph->Fill(pph);
-
-                  if (pph > 100)
-                     force_plot = true;
-
-                  int ple = led(w, b, 1.0, pph/2.0);
-
-                  if (1 || pph > 100) {
-                     fP->fHle->Fill(ple);
-                     fP->fHlex->Fill(ple);
-                     fP->fHocc->Fill(i);
-
-                     if (ple > 150 && ple < 180) {
-                        fP->fHocc1->Fill(i);
-                        fP->fHph1->Fill(pph);
-                     }
-
-                     if (ple > 180 && ple < 580) {
-                        fP->fHocc2->Fill(i);
-                        fP->fHph2->Fill(pph);
-                     }
-
-                     fP->fHph3->Fill(ple, pph);
-                  }
-               }
-
-               delete w;
-               continue;
-            }
-
-            if (0 && i < 48) {
-               delete w;
-               continue;
-            }
-
-            fH->fHbaseline->Fill(b);
-            fH->fHbaselineRms->Fill(brms);
-            fH->fHbaselineRmsVsChan->Fill(i, brms);
-
-            double ph = b - wmin;
-
-            if (wmin <= -32000.0) {
-               printf("HERE!\n");
-               ph = 0xFFFF;
-            }
-
-            ////// Plot waveforms
-            if (i >= fHC.size()) {
-               for (unsigned j=fHC.size(); j<=i; j++)
-                  fHC.push_back(NULL);
-            }
-
-            if (fHC[i] == NULL){
-               char xname[256];
-               char xtitle[256];
-               sprintf(xname, "hawf_%03d", i);
-               sprintf(xtitle, "Waveform anode %03d", i);
-               fHC[i] = new A16ChanHistograms(xname, xtitle, dwf, w->nsamples);
-            }
-
-            // save first waveform
-
-            bool doPrint = false;
-            if (fHC[i]->hwaveform_first->GetEntries() == 0) {
-               if (doPrint)
-                  printf("saving first waveform %d\n", i);
-               for (int j=0; j< w->nsamples; j++)
-                  fHC[i]->hwaveform_first->SetBinContent(j+1, w->samples[j]);
-            }
-
-            // save biggest waveform
-
-            if (ph > fHC[i]->fMaxWamp) {
-               fHC[i]->fMaxWamp = ph;
-               if (doPrint)
-                  printf("saving biggest waveform %d\n", i);
-               for (int j=0; j< w->nsamples; j++)
-                  fHC[i]->hwaveform_max->SetBinContent(j+1, w->samples[j]);
-            }
-
-            // add to average waveform
-
-            for (int j=0; j< w->nsamples; j++)
-               fHC[i]->hwaveform_avg->AddBinContent(j+1, w->samples[j]);
-            fHC[i]->nwf++;
-
-            ////////
-
-            //if (ph > 120) {
-            if (ph > 250) {
-               fH->fHph->Fill(ph);
-
-               int le = led(w, b, -1.0, ph/2.0);
-
-               fH->fHle->Fill(le);
-               fH->fHlex->Fill(le);
-               fH->fHocc->Fill(i);
-
-               if (le > 150 && le < 180) {
-                  fH->fHocc1->Fill(i);
-                  fH->fHph1->Fill(ph);
-
-                  if (ph < 7000)
-                     fH->fHph2occ1->Fill(i, ph);
-               }
-
-               if (le > 180 && le < 580) {
-                  fH->fHocc2->Fill(i);
-                  fH->fHph2->Fill(ph);
-
-                  if (ph < 7000)
-                     fH->fHph2occ2->Fill(i, ph);
-               }
-
-               fH->fHph3->Fill(le, ph);
-
-               int calStart = 160;
-               int calEnd = 200;
-
-               if (le > calStart && le < calEnd) {
-                  fH->fHleCal->Fill(le);
-                  fH->fHoccCal->Fill(i);
-                  fH->fHleVsChanCal->Fill(i, le);
-               }
-
-               if (ph > 4000) {
-                  nhits++;
-                  //printf("samples %d %d, ", e->waveform[i].size(), w->nsamples);
-                  if (verbose)
-                     printf("chan %4d: baseline %8.1f, rms %4.1f, range %8.1f %6.1f, pulse %6.1f, le %4d\n", i, b, brms, wmin, wmax, ph, le);
-               }
-
-               bool hit = false;
-
-               if (le > 150 && le < 580 && ph > 600) {
-                  hit = true;
-               }
-
-               if (hit) {
-                  AgAwHit h;
-                  h.chan = i;
-                  h.time = le;
-                  h.amp = ph;
-                  hits->push_back(h);
-               }
-
-               // save biggest drift region waveform
-
-               if (le > 180){
-                  if(ph > fHC[i]->fMaxWampDrift) {
-                     fHC[i]->fMaxWampDrift = ph;
-                     if (doPrint)
-                        printf("saving biggest drift waveform %d\n", i);
-                     for (int j=0; j< w->nsamples; j++)
-                        fHC[i]->hwaveform_max_drift->SetBinContent(j+1, w->samples[j]);
-                  }
-
-                  // add to average waveform
-
-                  for (int j=0; j< w->nsamples; j++)
-                     fHC[i]->hwaveform_avg_drift->AddBinContent(j+1, w->samples[j]);
-                  fHC[i]->nwf_drift++;
-               }
-
-
-            }
-
-            delete w;
-         }
-#endif
-
-#if 0
-      double tdiff = e->timeIncr;
-      //printf("time diff %f sec\n", tdiff);
-
-      fH->fHtdiff->Fill(tdiff);
-      fH->fHtdiff2->Fill(tdiff);
-#endif
-
-      if (verbose)
-         printf("Found %d hits\n", nhits);
-
-      if (nhits >= 5)
-         force_plot = true;
-
-      return force_plot;
-   }
-
-#if 0
-   void Plot()
-   {
-      time_t tstart = time(NULL);
-
-      if (fH) {
-         printf("plot H start\n");
-         fH->Draw();
-         printf("plot H done\n");
-      }
-
-      if (fP) {
-         printf("plot P start\n");
-         fP->Draw();
-         printf("plot P done\n");
-      }
-
-      time_t tend = time(NULL);
-      int elapsed = tend-tstart;
-
-      printf("plotting: done, %d sec!\n", elapsed);
-   }
-#endif
-
-#if 0
-   void PlotA16Canvas(Alpha16Event* e)
-   {
-      time_t tstart = time(NULL);
-
-      printf("plotting:   "); e->Print();
-
-      for (int i=0; i<SHOW_ALPHA16; i++) {
-         if (fPlotA16[i]) {
-            printf("plot %d start\n", i);
-            fPlotA16[i]->Draw(e);
-            printf("plot %d done\n", i);
-         }
-      }
-
-      time_t tend = time(NULL);
-      int elapsed = tend-tstart;
-
-      printf("plotting: done, %d sec!\n", elapsed);
-   }
-#endif
 
    void AnalyzeNoise(Waveform *w, short i){
       TH1D *h, *hRMS, *hbase, *hfftsum;
@@ -1095,7 +511,6 @@ class A16Module: public TARunObject
 public:
    A16Flags* fFlags = NULL;
    int fCounter = 0;
-   //AlphaTpcX* fATX = NULL;
    bool fTrace = false;
 
    PlotHistograms* fH;
@@ -1123,7 +538,6 @@ public:
       dnoise = gDirectory->mkdir("noise");
       dwf = gDirectory->mkdir("waveforms");
 
-      //fATX = new AlphaTpcX();
 #if 0
       if (fFlags->fPlotWF)
          fATX->CreateA16Canvas();
@@ -1150,29 +564,32 @@ public:
       printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
       fCounter = 0;
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
-      //fATX->BeginRun(runinfo->fRunNo);
 
-      fPlotA16.push_back(new PlotA16(NULL, 1, 0));
-      fPlotA16.push_back(new PlotA16(NULL, 2, 0));
-      fPlotA16.push_back(new PlotA16(NULL, 3, 0));
-      fPlotA16.push_back(new PlotA16(NULL, 4, 0));
-      fPlotA16.push_back(new PlotA16(NULL, 5, 0));
-      fPlotA16.push_back(new PlotA16(NULL, 6, 0));
-      fPlotA16.push_back(new PlotA16(NULL, 6, 1));
-      fPlotA16.push_back(new PlotA16(NULL, 6, 2));
-      fPlotA16.push_back(new PlotA16(NULL, 7, 0));
-      fPlotA16.push_back(new PlotA16(NULL, 8, 0));
-
-      fPlotA16.push_back(new PlotA16(NULL, 9, 0));
-      fPlotA16.push_back(new PlotA16(NULL, 10, 0));
-      fPlotA16.push_back(new PlotA16(NULL, 11, 0));
-      fPlotA16.push_back(new PlotA16(NULL, 12, 0));
-      fPlotA16.push_back(new PlotA16(NULL, 13, 0));
-      fPlotA16.push_back(new PlotA16(NULL, 14, 0));
-      fPlotA16.push_back(new PlotA16(NULL, 15, 0));
-      fPlotA16.push_back(new PlotA16(NULL, 16, 0));
-      fPlotA16.push_back(new PlotA16(NULL, 17, 0));
-      fPlotA16.push_back(new PlotA16(NULL, 18, 0));
+      if (0) {
+         fPlotA16.push_back(new PlotA16(NULL, 1, 0));
+         fPlotA16.push_back(new PlotA16(NULL, 2, 0));
+         fPlotA16.push_back(new PlotA16(NULL, 3, 0));
+         fPlotA16.push_back(new PlotA16(NULL, 4, 0));
+         fPlotA16.push_back(new PlotA16(NULL, 5, 0));
+         fPlotA16.push_back(new PlotA16(NULL, 5, 1));
+         fPlotA16.push_back(new PlotA16(NULL, 5, 2));
+         fPlotA16.push_back(new PlotA16(NULL, 6, 0));
+         fPlotA16.push_back(new PlotA16(NULL, 6, 1));
+         fPlotA16.push_back(new PlotA16(NULL, 6, 2));
+         fPlotA16.push_back(new PlotA16(NULL, 7, 0));
+         fPlotA16.push_back(new PlotA16(NULL, 8, 0));
+         
+         fPlotA16.push_back(new PlotA16(NULL, 9, 0));
+         fPlotA16.push_back(new PlotA16(NULL, 10, 0));
+         fPlotA16.push_back(new PlotA16(NULL, 11, 0));
+         fPlotA16.push_back(new PlotA16(NULL, 12, 0));
+         fPlotA16.push_back(new PlotA16(NULL, 13, 0));
+         fPlotA16.push_back(new PlotA16(NULL, 14, 0));
+         fPlotA16.push_back(new PlotA16(NULL, 15, 0));
+         fPlotA16.push_back(new PlotA16(NULL, 16, 0));
+         fPlotA16.push_back(new PlotA16(NULL, 17, 0));
+         fPlotA16.push_back(new PlotA16(NULL, 18, 0));
+      }
    }
 
    void EndRun(TARunInfo* runinfo)
@@ -1180,10 +597,6 @@ public:
       printf("A16Module::EndRun, run %d, events %d\n", runinfo->fRunNo, fCounter);
       time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
       printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
-      //fATX->EndRun();
-      //char fname[1024];
-      //sprintf(fname, "output%05d.pdf", runinfo->fRunNo);
-      //fATX->fH->fCanvas->SaveAs(fname);
    }
 
    void PauseRun(TARunInfo* runinfo)
@@ -1549,36 +962,7 @@ public:
 
       *flags |= TAFlag_DISPLAY;
 
-      //int force_plot = fATX->Event(e, &hits->fAwHits);
-      //if (fFlags->fDoPlotAll)
-      //force_plot = true;
-
-      time_t now = time(NULL);
-
-#if 0
-      if (force_plot) {
-         static time_t plot_next = 0;
-         if (now > plot_next) {
-            fATX->PlotA16Canvas(e);
-            plot_next = time(NULL) + 15;
-         }
-      }
-#endif
-
-#if 0
-      static time_t t = 0;
-
-      if (now - t > 15) {
-         t = now;
-         fATX->Plot();
-      }
-#endif
-
       fCounter++;
-
-#if 0
-      delete e;
-#endif
 
       return flow;
    }
