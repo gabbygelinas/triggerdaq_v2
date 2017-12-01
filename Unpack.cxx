@@ -263,7 +263,7 @@ Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, TMEvent* me)
    return e;
 };
 
-FeamEvent* UnpackFeamEvent(FeamEVB* evb, TMEvent* event, const std::vector<std::string> &banks)
+FeamEvent* UnpackFeamEventNoEvb(FeamEVB* evb, TMEvent* event, const std::vector<std::string> &banks)
 {
    //printf("event id %d\n", event->event_id);
    
@@ -294,6 +294,43 @@ FeamEvent* UnpackFeamEvent(FeamEVB* evb, TMEvent* event, const std::vector<std::
             assert(!p->error);
             
             evb->AddPacket(b->name.c_str(), i, p, data + p->off, p->buf_len);
+         }
+      }
+   }
+   
+   return evb->Get();
+}
+
+FeamEvent* UnpackFeamEvent(FeamEVB* evb, TMEvent* event, const std::vector<std::string> &banks)
+{
+   //printf("event id %d\n", event->event_id);
+   
+   if (event->event_id != 1)
+      return NULL;
+      
+   for (unsigned k=0; k<event->banks.size(); k++) {
+      for (unsigned i=0; i<banks.size(); i++) {
+         const TMBank* b = &event->banks[k];
+         if (banks[i] == b->name) {
+            char *data = event->GetBankData(b);
+            if (data) {
+               //printf("Have bank %s\n", banks[i]);
+               //HandleFeam(i, data, b->data_size);
+               
+               if (b->data_size < 26) {
+                  printf("bad FEAM %d packet length %d\n", i, b->data_size);
+                  continue;
+               }
+               
+               FeamPacket* p = new FeamPacket();
+               
+               p->Unpack(data, b->data_size);
+               
+               assert(!p->error);
+            
+               evb->AddPacket(b->name.c_str(), i, p, data + p->off, p->buf_len);
+            }
+            break;
          }
       }
    }
