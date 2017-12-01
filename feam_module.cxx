@@ -41,6 +41,8 @@ class FeamHistograms
 public:
    TProfile* hbmean_prof  = NULL;
    TProfile* hbrms_prof   = NULL;
+   TH1D*     hbrms_pads   = NULL;
+   TH1D*     hbrms_fpn    = NULL;
    TProfile* hbrange_prof = NULL;
    TH1D* hnhitchan = NULL;
    TH1D* hnhitchan_map = NULL;
@@ -75,6 +77,14 @@ public:
       sprintf(name,  "pos%02d_baseline_rms_prof", position);
       sprintf(title, "feam pos %2d baseline rms vs (SCA*80 +  readout index)", position);
       hbrms_prof  = new TProfile(name, title,  NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
+
+      sprintf(name,  "pos%02d_baseline_rms_pads", position);
+      sprintf(title, "feam pos %2d baseline rms for pad channels vs (SCA*80 +  readout index)", position);
+      hbrms_pads  = new TH1D(name, title,  100, 0, ADC_RANGE_RMS);
+
+      sprintf(name,  "pos%02d_baseline_rms_fpn", position);
+      sprintf(title, "feam pos %2d baseline rms fpr fpn channels vs (SCA*80 +  readout index)", position);
+      hbrms_fpn   = new TH1D(name, title,  100, 0, ADC_RANGE_RMS);
 
       sprintf(name,  "pos%02d_baseline_range_prof", position);
       sprintf(title, "feam pos %2d baseline range (max-min) vs (SCA*80 +  readout index)", position);
@@ -1158,6 +1168,14 @@ public:
                   fHF[ifeam].hbmean_prof->Fill(seqsca, bmean);
                   fHF[ifeam].hbrms_prof->Fill(seqsca, brms);
                   fHF[ifeam].hbrange_prof->Fill(seqsca, bmax-bmin);
+
+                  if (scachan_is_pad) {
+                     fHF[ifeam].hbrms_pads->Fill(brms);
+                  }
+
+                  if (scachan_is_fpn) {
+                     fHF[ifeam].hbrms_fpn->Fill(brms);
+                  }
 
                   h2led2amp->Fill(wpos, wamp);
                }
