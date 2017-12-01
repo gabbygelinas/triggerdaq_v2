@@ -20,6 +20,8 @@
 #include "TH1D.h"
 #include "TH2D.h"
 #include "TProfile.h"
+#include "TMath.h"
+#include "TGraphPolar.h"
 
 #include "Unpack.h"
 #include "AgFlow.h"
@@ -90,9 +92,11 @@ public:
    {
       printf("FinalModule::ctor!\n");
 
-      //      fC = new TCanvas();
-      fPH = new TCanvas("fPH","Pulseheights",600,1000);
-      fPH->Divide(1,2);
+      fC = new TCanvas("fC", "FinalModule event display", 800, 800);
+      //fPH = new TCanvas("fPH","Pulseheights",600,1000);
+      if (fPH) {
+         fPH->Divide(1,2);
+      }
    }
 
    ~FinalModule()
@@ -152,8 +156,10 @@ public:
       int npads = MAX_FEAM*MAX_FEAM_PAD_COL*MAX_FEAM_PAD_ROWS;
       h_pad_amp_pad = new TH2D("h_pad_amp_pad", "pad p.h vs pad number",npads , -0.5, npads-0.5, 600, 0, 60000);
       h_pad_time_pad = new TH2D("h_pad_time_pad", "pad time vs pad number",npads , -0.5, npads-0.5, 500, 0, 500);
-      fPH->cd(2);
-      h_pad_amp_pad->Draw();
+      if (fPH) {
+         fPH->cd(2);
+         h_pad_amp_pad->Draw();
+      }
 
       h_num_aw_pad_hits = new TH2D("h_num_aw_pad_hits", "number of aw vs pad hits", 50, 0, 100, 100, 0, 50);
 
@@ -161,7 +167,9 @@ public:
 
       h_aw_pad_time = new TH2D("h_aw_pad_time", "time of hits in aw vs pads", 50, 0, 500, 70, 0, 700);
 
-      fPH->cd(1);
+      if (fPH) {
+         fPH->cd(1);
+      }
 
       h_aw_pad_time_drift = new TH2D("h_aw_pad_time_drift", "time of hits in aw vs pads, drift region", 50, 0, 500, 70, 0, 700);
 
@@ -331,9 +339,115 @@ public:
       bool do_plot = (runinfo->fRoot->fgApp != NULL);
 
       if (do_plot) {
-         fPH->GetPad(1)->Modified();
-         fPH->GetPad(2)->Modified();
-         fPH->Update();
+         if (fPH) {
+            fPH->GetPad(1)->Modified();
+            fPH->GetPad(2)->Modified();
+            fPH->Update();
+         }
+
+         if (fC) {
+            fC->Clear();
+            fC->Divide(2,2);
+
+            fC->cd(1);
+            TH1D* hh = new TH1D("hh", "hh", NUM_AW, -0.5, NUM_AW-0.5);
+            hh->SetMinimum(0);
+            hh->SetMaximum(7000);
+            hh->Draw();
+
+            fC->cd(2);
+            TH1D* ha = new TH1D("ha", "ha", NUM_AW, -0.5, NUM_AW-0.5);
+            ha->SetMinimum(0);
+            ha->SetMaximum(66000);
+            ha->Draw();
+
+            std::vector<Double_t> theta;
+            std::vector<Double_t> radius;
+            std::vector<Double_t> etheta;
+            std::vector<Double_t> eradius;
+
+            if (0) {
+               for (int i=0; i<8; i++) {
+                  theta.push_back((i+1)*(TMath::Pi()/4.));
+                  radius.push_back((i+1)*0.05);
+                  etheta.push_back(TMath::Pi()/8.);
+                  eradius.push_back(0.05);
+               }
+            }
+
+            if (eawh) {
+               //h_num_aw_hits->Fill(eawh->fAwHits.size());
+
+               for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
+                  //h_aw_map->Fill(eawh->fAwHits[j].wire);
+                  //h_aw_time->Fill(eawh->fAwHits[j].time);
+                  //h_aw_amp->Fill(eawh->fAwHits[j].amp);
+                  hh->SetBinContent(eawh->fAwHits[j].wire, eawh->fAwHits[j].time);
+                  ha->SetBinContent(eawh->fAwHits[j].wire, eawh->fAwHits[j].amp);
+
+                  int iwire = eawh->fAwHits[j].wire%256;
+                  int itb = eawh->fAwHits[j].wire/256;
+
+                  double dist = (eawh->fAwHits[j].time - 1000.0)/4000.0;
+                  if (dist < 0)
+                     dist = 0;
+                  if (dist > 1)
+                     dist = 1;
+
+                  double t = (iwire/256.0)*(2.0*TMath::Pi());
+                  double r = 1.0-dist*0.3;
+
+                  printf("hit %d, wire %d, tb %d, iwire %d, t %f (%f), r %f\n", j, eawh->fAwHits[j].wire, itb, iwire, t, t/TMath::Pi(), r);
+
+                  theta.push_back(t+0.5*TMath::Pi());
+                  radius.push_back(r);
+                  etheta.push_back(TMath::Pi()/32.);
+                  eradius.push_back(0.05);
+               }
+            }
+
+            if (1) {
+               theta.push_back(0+0.5*TMath::Pi());
+               radius.push_back(0.1);
+               etheta.push_back(TMath::Pi()/8.);
+               eradius.push_back(0.10);
+            }
+
+            if (1) {
+               theta.push_back(2.5*TMath::Pi());
+               radius.push_back(0.9);
+               etheta.push_back(TMath::Pi()/8.);
+               eradius.push_back(0.10);
+            }
+
+            fC->cd(3);
+            TGraphPolar * grP1 = new TGraphPolar(theta.size(), theta.data(), radius.data(), etheta.data(), eradius.data());
+            grP1->SetTitle("TGraphPolar Example");
+            grP1->SetMarkerStyle(20);
+            grP1->SetMarkerSize(1.);
+            grP1->SetMarkerColor(4);
+            grP1->SetLineColor(2);
+            grP1->SetLineWidth(3);
+            grP1->SetMinPolar(0);
+            grP1->SetMaxPolar(2.0*TMath::Pi());
+            grP1->SetMinRadial(0);
+            grP1->SetMaxRadial(1.0);
+            //grP1->SetMinimum(0);
+            //grP1->SetMaximum(1);
+            //grP1->Draw("PRE");
+            grP1->Draw("PE");
+            // Update, otherwise GetPolargram returns 0
+            gPad->Update();
+            grP1->GetPolargram()->SetToRadian();
+
+            //hh->Modified();
+            //ha->Modified();
+
+            fC->Modified();
+            fC->Draw();
+            fC->Update();
+         }
+
 #if 0
          // plot waveforms
 
