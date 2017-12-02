@@ -293,7 +293,15 @@ FeamEvent* UnpackFeamEventNoEvb(FeamEVB* evb, TMEvent* event, const std::vector<
                
             assert(!p->error);
             
-            evb->AddPacket(b->name.c_str(), i, p, data + p->off, p->buf_len);
+            int f = 0;
+            if (b->name[0] == 'P' && b->name[1] == 'A')
+               f = 1;
+            else if (b->name[0] == 'P' && b->name[1] == 'B')
+               f = 2;
+            else
+               assert(!"invalid PWB bank name");
+            
+            evb->AddPacket(b->name.c_str(), i, f, p, data + p->off, p->buf_len);
          }
       }
    }
@@ -327,8 +335,16 @@ FeamEvent* UnpackFeamEvent(FeamEVB* evb, TMEvent* event, const std::vector<std::
                p->Unpack(data, b->data_size);
                
                assert(!p->error);
+
+               int f = 0;
+               if (b->name[0] == 'P' && b->name[1] == 'A')
+                  f = 1;
+               else if (b->name[0] == 'P' && b->name[1] == 'B')
+                  f = 2;
+               else
+                  assert(!"invalid PWB bank name");
             
-               evb->AddPacket(b->name.c_str(), i, p, data + p->off, p->buf_len);
+               evb->AddPacket(b->name.c_str(), i, f, p, data + p->off, p->buf_len);
             }
             break;
          }

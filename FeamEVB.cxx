@@ -205,9 +205,9 @@ void FeamEVB::Flush(int position)
    }
 }
 
-void FeamEVB::AddPacket(const char* bank, int position, const FeamPacket* p, const char* ptr, int size)
+void FeamEVB::AddPacket(const char* bank, int position, int format, const FeamPacket* p, const char* ptr, int size)
 {
-   fAsm[position]->AddPacket(p, bank, position, ptr, size);
+   fAsm[position]->AddPacket(p, bank, position, format, ptr, size);
 
    Flush(position);
 

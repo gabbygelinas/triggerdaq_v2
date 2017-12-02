@@ -42,7 +42,7 @@ class FeamEVB
    void AddFeam(int position, FeamModuleData *m);
    void Build(bool force_build = false);
    void BuildLastEvent();
-   void AddPacket(const char* bank, int position, const FeamPacket* p, const char* ptr, int size);
+   void AddPacket(const char* bank, int position, int format, const FeamPacket* p, const char* ptr, int size);
    void Flush(int position);
    void Finalize(int position, FeamModuleData* m);
    void Print() const;

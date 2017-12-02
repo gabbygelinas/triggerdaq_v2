@@ -173,6 +173,7 @@ void FeamModuleData::Finalize()
 void FeamModuleData::Print(int level) const
 {
    printf("bank %s, module %2d, ", fBank.c_str(), fPosition);
+   printf("fmt %d, ", fDataFormat);
    printf("cnt %6d, ts_start 0x%08x, ts_trig 0x%08x, ",
           cnt,
           ts_start,
@@ -230,13 +231,14 @@ void FeamModuleData::AddData(const FeamPacket*p, const char* ptr, int size)
    fSize += size;
 }
 
-FeamModuleData::FeamModuleData(const FeamPacket* p, const char* bank, int position)
+FeamModuleData::FeamModuleData(const FeamPacket* p, const char* bank, int position, int format)
 {
    //printf("FeamModuleData: ctor! %d\n", x2count++);
    assert(p->n == 0);
 
    fBank = bank;
    fPosition = position;
+   fDataFormat = format;
 
    cnt = p->cnt;
    ts_start = p->ts_start;
@@ -291,7 +293,7 @@ void FeamAsm::Print() const
    printf("pos %d, bank %s, state %d, cnt %d, nextn %d, ig %d, fi %d, do %d (sy %d, tr %d, sk %d, wcnt %d), cur %p, buf %d (com %d, err %d)", fPosition, fBank.c_str(), fState, fCnt, fNextN, fCountIgnoredBeforeFirst, fCountFirst, fCountDone, fCountLostSync, fCountTruncated, fCountSkip, fCountWrongCnt, fCurrent, (int)fBuffer.size(), countComplete, countError);
 }
 
-void FeamAsm::StFirstPacket(const FeamPacket* p, const char* bank, int position, const char* ptr, int size)
+void FeamAsm::StFirstPacket(const FeamPacket* p, const char* bank, int position, int format, const char* ptr, int size)
 {
    fState = ST_DATA;
    fCnt = p->cnt;
@@ -299,11 +301,12 @@ void FeamAsm::StFirstPacket(const FeamPacket* p, const char* bank, int position,
    fCountFirst++;
 
    fPosition = position;
+   fDataFormat = format;
    fBank = bank;
 
    assert(fCurrent == NULL);
 
-   fCurrent = new FeamModuleData(p, bank, position);
+   fCurrent = new FeamModuleData(p, bank, position, format);
    fCurrent->fPacket = new FeamPacket(*p); // copy constructor
 
    fCurrent->AddData(p, ptr, size);
@@ -337,7 +340,7 @@ void FeamAsm::FlushIncomplete()
    fCurrent = NULL;
 }
 
-void FeamAsm::AddPacket(const FeamPacket* p, const char* bank, int position, const char* ptr, int size)
+void FeamAsm::AddPacket(const FeamPacket* p, const char* bank, int position, int format, const char* ptr, int size)
 {
    bool trace = false;
    bool traceNormal = false;
@@ -351,7 +354,7 @@ void FeamAsm::AddPacket(const FeamPacket* p, const char* bank, int position, con
       if (p->n==0) { // first packet
          if (trace)
             printf("ST_INIT: bank %s, packet cnt %d, n %d ---> first packet\n", bank, p->cnt, p->n);
-         StFirstPacket(p, bank, position, ptr, size);
+         StFirstPacket(p, bank, position, format, ptr, size);
       } else {
          if (traceNormal)
             printf("ST_INIT: bank %s, packet cnt %d, n %d\n", bank, p->cnt, p->n);
@@ -366,7 +369,7 @@ void FeamAsm::AddPacket(const FeamPacket* p, const char* bank, int position, con
             printf("ST_DATA: bank %s, packet cnt %d, n %d ---> unexpected first packet\n", bank, p->cnt, p->n);
          fCountTruncated++;
          FlushIncomplete();
-         StFirstPacket(p, bank, position, ptr, size);
+         StFirstPacket(p, bank, position, format, ptr, size);
       } else if (p->cnt != fCnt) { // packet from wrong event
          if (trace)
             printf("ST_DATA: bank %s, packet cnt %d, n %d ---> wrong cnt expected cnt %d\n", bank, p->cnt, p->n, fCnt);
@@ -397,7 +400,7 @@ void FeamAsm::AddPacket(const FeamPacket* p, const char* bank, int position, con
       if (p->n == 0) { // first packet
          if (trace)
             printf("ST_WAIT: bank %s, packet cnt %d, n %d ---> first packet\n", bank, p->cnt, p->n);
-         StFirstPacket(p, bank, position, ptr, size);
+         StFirstPacket(p, bank, position, format, ptr, size);
       } else {
          if (traceNormal)
             printf("ST_WAIT: bank %s, packet cnt %d, n %d\n", bank, p->cnt, p->n);
@@ -409,7 +412,7 @@ void FeamAsm::AddPacket(const FeamPacket* p, const char* bank, int position, con
       if (p->n == 0) { // first packet
          if (trace)
             printf("ST_DONE: bank %s, packet cnt %d, n %d ---> first packet\n", bank, p->cnt, p->n);
-         StFirstPacket(p, bank, position, ptr, size);
+         StFirstPacket(p, bank, position, format, ptr, size);
       } else {
          if (trace)
             printf("ST_DONE: bank %s, packet cnt %d, n %d ---> lost first packet\n", bank, p->cnt, p->n);
@@ -489,6 +492,9 @@ void FeamEvent::Print(int level) const
 
 void Unpack(FeamAdcData* a, FeamModuleData* m)
 {
+   int f = m->fDataFormat;
+   assert(f==1 || f==2);
+
    a->nsca  = 4; // 0,1,2,3
    a->nchan = 79; // 1..79 readout channels per table 2 in AFTER SCA manual
    a->nbins = 511; // 0..511
@@ -516,7 +522,12 @@ void Unpack(FeamAdcData* a, FeamModuleData* m)
             //if (isca == 0) {
             //   adc[ichan][ibin] = v;
             //}
-            a->adc[isca][ichan][ibin] = v;
+            if (f==1)
+               a->adc[isca][ichan][ibin] = v;
+            else if (f==2)
+               a->adc[isca][ichan][ibin] = v*16;
+            else
+               a->adc[isca][ichan][ibin] = 0xdead;
             ptr += 2;
             count += 2;
          }
