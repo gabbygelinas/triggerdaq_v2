@@ -523,9 +523,9 @@ void Unpack(FeamAdcData* a, FeamModuleData* m)
             //   adc[ichan][ibin] = v;
             //}
             if (f==1)
-               a->adc[isca][ichan][ibin] = v;
+               a->adc[isca][ichan][ibin] = v/16;
             else if (f==2)
-               a->adc[isca][ichan][ibin] = v*16;
+               a->adc[isca][ichan][ibin] = v;
             else
                a->adc[isca][ichan][ibin] = 0xdead;
             ptr += 2;

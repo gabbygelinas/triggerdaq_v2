@@ -30,9 +30,19 @@
 
 #define ADC_MIN -33000
 #define ADC_MAX  33000
-#define ADC_RANGE 65000
-#define ADC_RANGE_RMS 500
 #define ADC_RANGE_PED 2000
+
+// adjusted for 12-bit range 0xFFF = 4095
+#define ADC_BINS 410
+#define ADC_RANGE 4100
+
+#define ADC_BINS_PULSER 100
+#define ADC_RANGE_PULSER 300
+
+#define ADC_RANGE_RMS 50
+
+#define ADC_RMS_FPN_MIN 0
+#define ADC_RMS_FPN_MAX 3.25
 
 #define NUM_SEQSCA (3*80+79)
 
@@ -45,6 +55,7 @@ public:
    TH1D*     hbrms_fpn    = NULL;
    TProfile* hbrange_prof = NULL;
    TH1D*     h_fpn_shift[4] = { NULL, NULL, NULL, NULL };
+   TH1D*     h_amp = NULL;
    TH1D* hnhitchan = NULL;
    TH1D* h_nhitchan_seqsca = NULL;
    TH1D* h_spike_seqsca = NULL;
@@ -109,6 +120,10 @@ public:
       sprintf(title, "feam pos %2d fpn shift, sca 3", position);
       h_fpn_shift[3]  = new TH1D(name, title,  41, -20, 20);
 
+      sprintf(name,  "pos%02d_amp", position);
+      sprintf(title, "feam pos %2d waveform amplitude from baseline to minimum", position);
+      h_amp = new TH1D(name, title,  ADC_BINS, 0, ADC_RANGE);
+
       sprintf(name,  "pos%02d_nhitchan", position);
       sprintf(title, "feam pos %2d number of hit channels", position);
       hnhitchan = new TH1D(name, title, 100, 0, 100);
@@ -160,7 +175,7 @@ public:
       if (pulser) {
          sprintf(name,  "pos%02d_pulser_hit_amp", position);
          sprintf(title, "feam pos %2d pulser hit p.h.", position);
-         h_pulser_hit_amp = new TH1D(name, title, 100, 0, ADC_RANGE);
+         h_pulser_hit_amp = new TH1D(name, title, ADC_BINS_PULSER, 0, ADC_RANGE_PULSER);
 
          sprintf(name,  "pos%02d_pulser_hit_time", position);
          sprintf(title, "feam pos %2d pulser hit time", position);
@@ -350,11 +365,10 @@ bool fpn_rms_ok(int ichan, double brms)
    if (ichan < 4)
       return true;
 
-   if (brms < 15 || brms > 50) {
-      return false;
-   } else {
+   if (brms > ADC_RMS_FPN_MIN && brms < ADC_RMS_FPN_MAX)
       return true;
-   }
+
+   return false;
 }
 
 int fpn_wrap(int ifpn)
@@ -862,7 +876,7 @@ public:
       int ipulser_start = 400;
       int ipulser_end   = 500;
 
-      double hit_amp_threshold = 1000;
+      double hit_amp_threshold = 50;
 
       int nhitchan = 0;
 
@@ -1214,7 +1228,8 @@ public:
                // diagnostics
 
                if (scachan_is_fpn) {
-                  if (brms < 15 || brms > 50) {
+                  if (brms > ADC_RMS_FPN_MIN && brms < ADC_RMS_FPN_MAX) {
+                  } else {
                      printf("XXX bad fpn, feam %d, sca %d, readout %d, scachan %d, col %d, row %d, bmin %f, bmax %f, in hex 0x%04x, brms %f\n", ifeam, isca, ichan, scachan, col, row, bmin, bmax, (uint16_t)bmin, brms);
                      fpn_is_ok = false;
                   }
@@ -1250,6 +1265,9 @@ public:
                // find pulses
 
                double wamp = bmean - wmin;
+               
+               fHF[ifeam].h_amp->Fill(wamp);
+
                int wpos = find_pulse(aptr, nbins, bmean, -1.0, wamp/2.0);
 
                double damp = bmean - dmin;
