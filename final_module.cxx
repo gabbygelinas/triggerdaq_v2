@@ -30,6 +30,9 @@
 #define MAX_AW_AMP 16000
 #define MAX_TIME 7000
 
+// number of pad columns
+#define NUM_PC (8*4)
+
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
 
 #define MEMZERO(p) memset((p), 0, sizeof(p))
@@ -361,10 +364,19 @@ public:
             ha->SetMaximum(66000);
             ha->Draw();
 
+            fC->cd(4);
+            TH1D* hp = new TH1D("hp", "hp", NUM_PC, -0.5, NUM_PC-0.5);
+            hp->SetMinimum(0);
+            hp->SetMaximum(512);
+            hp->Draw();
+
             std::vector<Double_t> theta;
             std::vector<Double_t> radius;
             std::vector<Double_t> etheta;
             std::vector<Double_t> eradius;
+
+            double rmin = 0.6;
+            double rmax = 1.0;
 
             if (0) {
                for (int i=0; i<8; i++) {
@@ -382,11 +394,13 @@ public:
                   //h_aw_map->Fill(eawh->fAwHits[j].wire);
                   //h_aw_time->Fill(eawh->fAwHits[j].time);
                   //h_aw_amp->Fill(eawh->fAwHits[j].amp);
-                  hh->SetBinContent(eawh->fAwHits[j].wire, eawh->fAwHits[j].time);
-                  ha->SetBinContent(eawh->fAwHits[j].wire, eawh->fAwHits[j].amp);
+                  hh->SetBinContent(1+eawh->fAwHits[j].wire, eawh->fAwHits[j].time);
+                  ha->SetBinContent(1+eawh->fAwHits[j].wire, eawh->fAwHits[j].amp);
 
-                  int iwire = eawh->fAwHits[j].wire%256;
-                  int itb = eawh->fAwHits[j].wire/256;
+                  int num_wires = 256;
+
+                  int iwire = eawh->fAwHits[j].wire%num_wires;
+                  int itb = eawh->fAwHits[j].wire/num_wires;
 
                   double dist = (eawh->fAwHits[j].time - 1000.0)/4000.0;
                   if (dist < 0)
@@ -394,29 +408,95 @@ public:
                   if (dist > 1)
                      dist = 1;
 
-                  double t = (iwire/256.0)*(2.0*TMath::Pi());
-                  double r = 1.0-dist*0.3;
+                  double t = ((iwire-8.0)/(1.0*num_wires))*(2.0*TMath::Pi());
+                  double r = rmax-dist*(rmax-rmin);
 
                   printf("hit %d, wire %d, tb %d, iwire %d, t %f (%f), r %f\n", j, eawh->fAwHits[j].wire, itb, iwire, t, t/TMath::Pi(), r);
 
                   theta.push_back(t+0.5*TMath::Pi());
                   radius.push_back(r);
-                  etheta.push_back(TMath::Pi()/32.);
+                  etheta.push_back(2.0*TMath::Pi()/num_wires);
                   eradius.push_back(0.05);
+               }
+            }
+
+            if (eph) {
+               //h_num_aw_hits->Fill(eawh->fAwHits.size());
+
+               for (unsigned i=0; i<eph->fPadHits.size(); i++) {
+                  double time = eph->fPadHits[i].time;
+                  double amp = eph->fPadHits[i].amp;
+                  int pos = eph->fPadHits[i].ifeam;
+                  int col = eph->fPadHits[i].col;
+                  int row = eph->fPadHits[i].row;
+
+                  if (pos < 0)
+                     continue;
+                  if (col < 0)
+                     continue;
+
+                  int pc = pos*4 + col;
+
+                  printf("pad hit %d: pos %d col %d pc %d, row %d, time %f, amp %f\n", i, pos, col, pc, row, time, amp);
+
+                  //h_aw_map->Fill(eawh->fAwHits[j].wire);
+                  //h_aw_time->Fill(eawh->fAwHits[j].time);
+                  //h_aw_amp->Fill(eawh->fAwHits[j].amp);
+                  hp->SetBinContent(1+pc, time);
+                  //ha->SetBinContent(eawh->fAwHits[j].wire, eawh->fAwHits[j].amp);
+
+                  //double dist = (eawh->fAwHits[j].time - 1000.0)/4000.0;
+                  //if (dist < 0)
+                  //   dist = 0;
+                  //if (dist > 1)
+                  //   dist = 1;
+
+                  double dist = -0.1;
+
+                  double t = ((pc+0.5)/(1.0*NUM_PC))*(2.0*TMath::Pi());
+                  double r = rmax-dist*(rmax-rmin);
+
+                  //printf("hit %d, wire %d, tb %d, iwire %d, t %f (%f), r %f\n", j, eawh->fAwHits[j].wire, itb, iwire, t, t/TMath::Pi(), r);
+
+                  theta.push_back(t+0.5*TMath::Pi());
+                  radius.push_back(r);
+                  etheta.push_back(2.0*TMath::Pi()/NUM_PC/2.0);
+                  eradius.push_back(0.05);
+                  
+                  if (1) {
+                     double dist = (time - 150.0)/300.0;
+                     if (dist < 0)
+                        dist = 0;
+                     if (dist > 1)
+                        dist = 1;
+                     double r = rmax-dist*(rmax-rmin);
+                     
+                     theta.push_back(t+0.5*TMath::Pi());
+                     radius.push_back(r);
+                     etheta.push_back(2.0*TMath::Pi()/NUM_PC/2.0);
+                     eradius.push_back(0.05);
+                  }
                }
             }
 
             if (1) {
                theta.push_back(0+0.5*TMath::Pi());
-               radius.push_back(0.1);
+               radius.push_back(0);
                etheta.push_back(TMath::Pi()/8.);
                eradius.push_back(0.10);
             }
 
             if (1) {
+               theta.push_back(0+0.5*TMath::Pi());
+               radius.push_back(rmin);
+               etheta.push_back(2.0*TMath::Pi());
+               eradius.push_back(0.10);
+            }
+
+            if (1) {
                theta.push_back(2.5*TMath::Pi());
-               radius.push_back(0.9);
-               etheta.push_back(TMath::Pi()/8.);
+               radius.push_back(rmax);
+               etheta.push_back(2.0*TMath::Pi());
                eradius.push_back(0.10);
             }
 
@@ -424,7 +504,7 @@ public:
             TGraphPolar * grP1 = new TGraphPolar(theta.size(), theta.data(), radius.data(), etheta.data(), eradius.data());
             grP1->SetTitle("TGraphPolar Example");
             grP1->SetMarkerStyle(20);
-            grP1->SetMarkerSize(1.);
+            grP1->SetMarkerSize(0.75);
             grP1->SetMarkerColor(4);
             grP1->SetLineColor(2);
             grP1->SetLineWidth(3);
