@@ -30,6 +30,8 @@
 #define MAX_AW_AMP 16000
 #define MAX_TIME 7000
 
+#define MAX_PAD_AMP 4100
+
 // number of pad columns
 #define NUM_PC (8*4)
 
@@ -154,11 +156,11 @@ public:
 
       h_num_pad_hits = new TH1D("h_num_pad_hits", "number of cathode pad hits", 100, 0, 100);
       h_pad_time = new TH1D("h_pad_time", "pad hit time", 500, 0, 500);
-      h_pad_amp = new TH1D("h_pad_amp", "pad hit pulse height", 600, 0, 60000);
-      h_pad_amp_time = new TH2D("h_pad_amp_time", "pad p.h vs time", 50, 0, 500, 50, 0, 60000);
+      h_pad_amp = new TH1D("h_pad_amp", "pad hit pulse height", 100, 0, MAX_PAD_AMP);
+      h_pad_amp_time = new TH2D("h_pad_amp_time", "pad p.h vs time", 50, 0, 500, 50, 0, MAX_PAD_AMP);
       int npads = MAX_FEAM*MAX_FEAM_PAD_COL*MAX_FEAM_PAD_ROWS;
-      h_pad_amp_pad = new TH2D("h_pad_amp_pad", "pad p.h vs pad number",npads , -0.5, npads-0.5, 600, 0, 60000);
-      h_pad_time_pad = new TH2D("h_pad_time_pad", "pad time vs pad number",npads , -0.5, npads-0.5, 500, 0, 500);
+      h_pad_amp_pad = new TH2D("h_pad_amp_pad", "pad p.h vs pad number", npads, -0.5, npads-0.5, 100, 0, MAX_PAD_AMP);
+      h_pad_time_pad = new TH2D("h_pad_time_pad", "pad time vs pad number", npads, -0.5, npads-0.5, 500, 0, 500);
       if (fPH) {
          fPH->cd(2);
          h_pad_amp_pad->Draw();
@@ -176,7 +178,7 @@ public:
 
       h_aw_pad_time_drift = new TH2D("h_aw_pad_time_drift", "time of hits in aw vs pads, drift region", 50, 0, 500, 70, 0, 700);
 
-      h_aw_pad_amp_pc = new TH2D("h_aw_pad_amp_pc", "p.h. of hits in aw vs pads, pc region", 50, 0, 60000, 50, 0, 17000);
+      h_aw_pad_amp_pc = new TH2D("h_aw_pad_amp_pc", "p.h. of hits in aw vs pads, pc region", 50, 0, MAX_PAD_AMP, 50, 0, MAX_AW_AMP);
    }
 
    void EndRun(TARunInfo* runinfo)
