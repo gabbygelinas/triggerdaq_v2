@@ -550,7 +550,7 @@ public:
       hnhits = new TH1D("hnhits", "hits per channel", nchan, -0.5, nchan-0.5);
       hled_hit = new TH1D("hled_hit", "hit time, adc time bins", 100, 0, nbins);
       hamp_hit = new TH1D("hamp_hit", "hit pulse height", 100, 0, ADC_RANGE);
-      h_amp_hit_col = new TH2D("hamp_hit_col", "hit pulse height va column (ifeam*4+col)", 8*4, -0.5, 8*4-0.5, 100, 0, ADC_RANGE);
+      h_amp_hit_col = new TH2D("hamp_hit_col", "hit pulse height vs column (ifeam*4+col)", 8*4, -0.5, 8*4-0.5, 100, 0, ADC_RANGE);
 
       hnhitchan = new TH1D("hnhitchan", "number of hit channels per event", 100, 0, 1000);
 
@@ -945,7 +945,7 @@ public:
                }
             }
 
-            printf("XXX pos %2d, sca %d, fpn_shift %d\n", ifeam, isca, fpn_shift);
+            //printf("XXX pos %2d, sca %d, fpn_shift %d\n", ifeam, isca, fpn_shift);
 
             fHF[ifeam].h_fpn_shift[isca]->Fill(fpn_shift);
 
@@ -960,7 +960,7 @@ public:
                for (int i=0; i<MAX_FEAM_READOUT; i++) {
                   int j = (i+fpn_shift+MAX_FEAM_READOUT)%MAX_FEAM_READOUT;
 
-                  printf("fpn_shift %d, copy %d from %d, size %d, ptr %p from %p\n", fpn_shift, i, j, s, adst+i*s, asrc+j*s);
+                  //printf("fpn_shift %d, copy %d from %d, size %d, ptr %p from %p\n", fpn_shift, i, j, s, adst+i*s, asrc+j*s);
                   
                   memcpy(adst+i*s, asrc+j*s, s);
                }
@@ -1474,7 +1474,7 @@ public:
                      fHF[ifeam].h_amp_seqpad->Fill(seqpad, wamp);
                   }
 
-                  h_amp_hit_col->Fill((ifeam*4 + col +1)%(MAX_FEAM_PAD_COL*MAX_FEAM), wamp);   // There is a 1 column shift between anode and pad module boundaries
+                  h_amp_hit_col->Fill((ifeam*4 + col)%(MAX_FEAM_PAD_COL*MAX_FEAM), wamp);
 
                   if (seqpad >= 0) {
                      fHF[ifeam].h_nhits_seqpad->Fill(seqpad);
