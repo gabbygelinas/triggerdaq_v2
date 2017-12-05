@@ -53,7 +53,7 @@ class AgAwHitsFlow: public TAFlowEvent
 
 struct AgPadHit
 {
-   int ifeam; // feam position
+   int pos; // pad board position: ring*8+column, 0..63
    int seqsca; // sca*80+ri
    int col;
    int row;

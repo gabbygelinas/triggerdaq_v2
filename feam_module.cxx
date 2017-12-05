@@ -1321,7 +1321,7 @@ public:
 
                   if (hit) {
                      AgPadHit h;
-                     h.ifeam = ifeam;
+                     h.pos = ifeam;
                      h.seqsca = seqsca;
                      h.col = col;
                      h.row = row;

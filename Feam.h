@@ -167,12 +167,12 @@ struct FeamAdcData
 struct FeamChannel
 {
    std::string bank;
-   int position; /* 0..63, div8 is vertical position, mod8 is azimuthal position */
+   int position; /* 0..63, ring*8+column, div8 is vertical position, mod8 is azimuthal position */
    int sca; /* 0..3 */
-   int sca_readout; /* 1..79 */
+   int sca_readout; /* 1..79, includes 72 pad channels, 3 reset channels and 4 FPN channels */
    int sca_chan; /* 1..72 */
    int tpc_col; /* 0..3 */
-   int tpc_row; /* 0..72 */
+   int tpc_row; /* 0..71 */
    int first_bin; /* usually 0 */
    std::vector<int> adc_samples;
 };

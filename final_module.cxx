@@ -92,6 +92,10 @@ public:
 
    TH2D* h_aw_pad_amp_pc;
 
+   TH1D* h_cal_time_pos00_00_01 = NULL;
+   TH1D* h_cal_time_pos01_00_01 = NULL;
+   TH1D* h_cal_time_pos02_00_01 = NULL;
+
    FinalModule(TARunInfo* runinfo)
       : TARunObject(runinfo)
    {
@@ -179,6 +183,10 @@ public:
       h_aw_pad_time_drift = new TH2D("h_aw_pad_time_drift", "time of hits in aw vs pads, drift region", 50, 0, 500, 70, 0, 700);
 
       h_aw_pad_amp_pc = new TH2D("h_aw_pad_amp_pc", "p.h. of hits in aw vs pads, pc region", 50, 0, MAX_PAD_AMP, 50, 0, MAX_AW_AMP);
+
+      h_cal_time_pos00_00_01 = new TH1D("h_cal_time_pos00_00_01", "calibration pulse time, pos00 pad01-pad00", 101, -10, 10);
+      h_cal_time_pos01_00_01 = new TH1D("h_cal_time_pos01_00_01", "calibration pulse time, pos01 pad01-pad00", 101, -10, 10);
+      h_cal_time_pos02_00_01 = new TH1D("h_cal_time_pos02_00_01", "calibration pulse time, pos02 pad01-pad00", 101, -10, 10);
    }
 
    void EndRun(TARunInfo* runinfo)
@@ -324,7 +332,7 @@ public:
 
          for (unsigned i=0; i<eph->fPadHits.size(); i++) {
             for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
-               int xcol = (eph->fPadHits[i].ifeam%8)*4 + eph->fPadHits[i].col;
+               int xcol = (eph->fPadHits[i].pos%8)*4 + eph->fPadHits[i].col;
                h_aw_pad_hits->Fill(xcol, eawh->fAwHits[j].wire);
                h_aw_pad_time->Fill(eph->fPadHits[i].time, eawh->fAwHits[j].time);
 
@@ -428,7 +436,7 @@ public:
                for (unsigned i=0; i<eph->fPadHits.size(); i++) {
                   double time = eph->fPadHits[i].time;
                   double amp = eph->fPadHits[i].amp;
-                  int pos = eph->fPadHits[i].ifeam;
+                  int pos = eph->fPadHits[i].pos;
                   int col = eph->fPadHits[i].col;
                   int row = eph->fPadHits[i].row;
 
