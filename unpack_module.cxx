@@ -117,7 +117,7 @@ public:
       }
 
       if (have_feam) {
-         fFeamEvb = new FeamEVB(fFeamBanks.size(), 125.0*1e6, 10000/1e9);
+         fFeamEvb = new FeamEVB(fFeamBanks.size(), 125.0*1e6, 100000/1e9);
          //fFeamEvb->fSync.fTrace = true;
       }
       
