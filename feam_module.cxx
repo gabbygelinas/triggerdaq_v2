@@ -1010,11 +1010,11 @@ public:
                       && fpn_rms_ok(67, rms_fpn4)) {
                      
                      if (trace) {
-                        printf("XXX good fpn pos %d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f\n", ifeam, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4);
+                        printf("XXX good fpn pos %d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f, fpn_shift: %3d\n", ifeam, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4, fpn_shift);
                      }
                   } else {
                      if (trace) {
-                        printf("XXX bad  fpn pos %d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f\n", ifeam, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4);
+                        printf("XXX bad  fpn pos %d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f, fpn_shift: %3d\n", ifeam, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4, fpn_shift);
                      }
                   }
                }
@@ -1300,6 +1300,8 @@ public:
                //int wpos = find_pulse(aptr, nbins, bmean, -1.0, wamp/2.0);
                double wpos = find_pulse_time(aptr, nbins, bmean, -1.0, wamp/2.0);
 
+               double wpos_ns = wpos*16.0;
+
                double damp = bmean - dmin;
                int dpos = idrift_start + find_pulse(aptr+idrift_start, idrift_end-idrift_start, bmean, -1.0, damp/2.0);
 
@@ -1355,7 +1357,7 @@ public:
                      h.seqsca = seqsca;
                      h.col = col;
                      h.row = row;
-                     h.time = wpos;
+                     h.time = wpos_ns;
                      h.amp  = wamp;
                      hits->fPadHits.push_back(h);
                   }
