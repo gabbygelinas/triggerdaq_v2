@@ -44,6 +44,8 @@
 #define ADC_RMS_FPN_MIN 0
 #define ADC_RMS_FPN_MAX 3.25
 
+#define ADC_PULSER_TIME 450
+
 #define NUM_SEQSCA (3*80+79)
 
 class FeamHistograms
@@ -70,6 +72,8 @@ public:
    TProfile* h_amp_seqpad = NULL;
    TH1D* h_pulser_hit_amp = NULL;
    TH1D* h_pulser_hit_time = NULL;
+   TH1D* h_pulser_hit_time_zoom = NULL;
+   TH1D* h_pulser_hit_time_seqsca4_zoom = NULL;
    TProfile* h_pulser_hit_amp_seqpad = NULL;
    TProfile* h_pulser_hit_time_seqpad = NULL;
    TProfile* h_pulser_hit_time_seqsca = NULL;
@@ -181,6 +185,14 @@ public:
          sprintf(title, "feam pos %2d pulser hit time", position);
          h_pulser_hit_time = new TH1D(name, title, nbins, 0, nbins);
 
+         sprintf(name,  "pos%02d_pulser_hit_time_zoom", position);
+         sprintf(title, "feam pos %2d pulser hit time zoom", position);
+         h_pulser_hit_time_zoom = new TH1D(name, title, 100, ADC_PULSER_TIME-10, ADC_PULSER_TIME+10);
+
+         sprintf(name,  "pos%02d_pulser_hit_time_seqsca4_zoom", position);
+         sprintf(title, "feam pos %2d pulser hit time seqsca 4 zoom", position);
+         h_pulser_hit_time_seqsca4_zoom = new TH1D(name, title, 100, ADC_PULSER_TIME-10, ADC_PULSER_TIME+10);
+
          sprintf(name,  "pos%02d_pulser_hit_amp_seqpad", position);
          sprintf(title, "feam pos %2d pulser hit p.h. vs TPC seq.pad (col*4*18+row)", position);
          h_pulser_hit_amp_seqpad = new TProfile(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL+1, -1.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5);
@@ -201,6 +213,23 @@ static int find_pulse(const int* adc, int nbins, double baseline, double gain, d
    for (int i=0; i<nbins; i++) {
       if ((adc[i]-baseline)*gain > threshold) {
          return i;
+      }
+   }
+
+   return 0;
+}
+
+static double find_pulse_time(const int* adc, int nbins, double baseline, double gain, double threshold)
+{
+   for (int i=1; i<nbins; i++) {
+      double v1 = (adc[i]-baseline)*gain;
+      if (v1 > threshold) {
+         double v0 = (adc[i-1]-baseline)*gain;
+         if (!(v0 <= threshold))
+            return 0;
+         double ii = i-1+(v0-threshold)/(v0-v1);
+         //printf("find_pulse_time: %f %f %f, bins %d %f %d\n", v0, threshold, v1, i-1, ii, i);
+         return ii;
       }
    }
 
@@ -1268,7 +1297,8 @@ public:
                
                fHF[ifeam].h_amp->Fill(wamp);
 
-               int wpos = find_pulse(aptr, nbins, bmean, -1.0, wamp/2.0);
+               //int wpos = find_pulse(aptr, nbins, bmean, -1.0, wamp/2.0);
+               double wpos = find_pulse_time(aptr, nbins, bmean, -1.0, wamp/2.0);
 
                double damp = bmean - dmin;
                int dpos = idrift_start + find_pulse(aptr+idrift_start, idrift_end-idrift_start, bmean, -1.0, damp/2.0);
@@ -1332,7 +1362,7 @@ public:
                }
 
                if (doPrint) {
-                  printf("chan %3d: baseline %8.1f, rms %8.1f, min %8.1f, max %8.1f, amp %8.1f, wpos %3d, hit %d\n", ichan, bmean, brms, wmin, wmax, wamp, wpos, hit);
+                  printf("chan %3d: baseline %8.1f, rms %8.1f, min %8.1f, max %8.1f, amp %8.1f, wpos %5.1f, hit %d\n", ichan, bmean, brms, wmin, wmax, wamp, wpos, hit);
                }
 
                if (1 || (wpos > 0 && wpos < 4000 && wamp > 1000)) {
@@ -1462,6 +1492,9 @@ public:
                      fHF[ifeam].h_pulser_hit_time_seqsca->Fill(seqsca, wpos);
                      fHF[ifeam].h_pulser_hit_amp->Fill(wamp);
                      fHF[ifeam].h_pulser_hit_time->Fill(wpos);
+                     fHF[ifeam].h_pulser_hit_time_zoom->Fill(wpos);
+                     if (seqsca == 4)
+                        fHF[ifeam].h_pulser_hit_time_seqsca4_zoom->Fill(wpos);
                   }
 
                   fHF[ifeam].h_nhits_seqsca->Fill(seqsca);
