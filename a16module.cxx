@@ -506,6 +506,23 @@ public:
    bool fDoPlotAll = false;
 };
 
+static double find_pulse_time(const int* adc, int nbins, double baseline, double gain, double threshold)
+{
+   for (int i=1; i<nbins; i++) {
+      double v1 = (adc[i]-baseline)*gain;
+      if (v1 > threshold) {
+         double v0 = (adc[i-1]-baseline)*gain;
+         if (!(v0 <= threshold))
+            return 0;
+         double ii = i-1+(v0-threshold)/(v0-v1);
+         //printf("find_pulse_time: %f %f %f, bins %d %f %d\n", v0, threshold, v1, i-1, ii, i);
+         return ii;
+      }
+   }
+
+   return 0;
+}
+
 class A16Module: public TARunObject
 {
 public:
@@ -833,7 +850,8 @@ public:
             else if (r==3)
                fH->fHphHit_r3->Fill(ph);
 
-            int le = led(w, b, -1.0, cfd_thr);
+            //int le = led(w, b, -1.0, cfd_thr);
+            double le = find_pulse_time(hit->adc_samples.data(), hit->adc_samples.size(), b, -1.0, cfd_thr);
             
             fH->fHle->Fill(le);
             
@@ -896,6 +914,8 @@ public:
             
             if (have_hit) {
                AgAwHit h;
+               h.module = hit->adc_module;
+               h.channel = hit->adc_chan;
                h.wire = i;
                h.time = hit_time;
                h.amp = hit_amp;
@@ -903,7 +923,7 @@ public:
             }
 
             if (have_hit) {
-               printf("wire %3d: baseline %8.1f, rms %4.1f, range %8.1f %6.1f, pulse %6.1f, le %4d, time %5.0f\n", i, b, brms, wmin, wmax, ph, le, hit_time);
+               printf("wire %3d: baseline %8.1f, rms %4.1f, range %8.1f %6.1f, pulse %6.1f, le %6.1f, time %5.0f\n", i, b, brms, wmin, wmax, ph, le, hit_time);
             }
 
             // save biggest drift region waveform
