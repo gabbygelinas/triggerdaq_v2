@@ -92,9 +92,22 @@ public:
 
    TH2D* h_aw_pad_amp_pc;
 
-   TH1D* h_cal_time_pos00_00_01 = NULL;
-   TH1D* h_cal_time_pos01_00_01 = NULL;
-   TH1D* h_cal_time_pos02_00_01 = NULL;
+   // time across to next channel
+   TH1D* h_cal_time_pos00_seqsca_04_05 = NULL;
+   TH1D* h_cal_time_pos01_seqsca_04_05 = NULL;
+   TH1D* h_cal_time_pos02_seqsca_04_05 = NULL;
+
+   // time across to next SCA
+   TH1D* h_cal_time_pos01_seqsca_04_84 = NULL;
+   TH1D* h_cal_time_pos02_seqsca_04_84 = NULL;
+
+   // time across to next ADC
+   TH1D* h_cal_time_pos01_seqsca_04_164 = NULL;
+   TH1D* h_cal_time_pos02_seqsca_04_164 = NULL;
+
+   // time across 2 PWB boards
+   TH1D* h_cal_time_pos_01_02_seqsca04 = NULL;
+   TH1D* h_cal_time_pos_01_02_seqsca05 = NULL;
 
    FinalModule(TARunInfo* runinfo)
       : TARunObject(runinfo)
@@ -184,9 +197,18 @@ public:
 
       h_aw_pad_amp_pc = new TH2D("h_aw_pad_amp_pc", "p.h. of hits in aw vs pads, pc region", 50, 0, MAX_PAD_AMP, 50, 0, MAX_AW_AMP);
 
-      h_cal_time_pos00_00_01 = new TH1D("h_cal_time_pos00_00_01", "calibration pulse time, pos00 pad01-pad00", 101, -10, 10);
-      h_cal_time_pos01_00_01 = new TH1D("h_cal_time_pos01_00_01", "calibration pulse time, pos01 pad01-pad00", 101, -10, 10);
-      h_cal_time_pos02_00_01 = new TH1D("h_cal_time_pos02_00_01", "calibration pulse time, pos02 pad01-pad00", 101, -10, 10);
+      h_cal_time_pos00_seqsca_04_05 = new TH1D("h_cal_time_pos00_seqsca_04_05", "calibration pulse time, pos00 seqsca 05-04", 101, -10, 10);
+
+      h_cal_time_pos01_seqsca_04_05 = new TH1D("h_cal_time_pos01_seqsca_04_05", "calibration pulse time, pos01 seqsca 05-04", 101, -10, 10);
+      h_cal_time_pos01_seqsca_04_84 = new TH1D("h_cal_time_pos01_seqsca_04_84", "calibration pulse time, pos01 seqsca 84-04", 101, -10, 10);
+      h_cal_time_pos01_seqsca_04_164 = new TH1D("h_cal_time_pos01_seqsca_04_164", "calibration pulse time, pos01 seqsca 164-04", 101, -10, 10);
+
+      h_cal_time_pos02_seqsca_04_05 = new TH1D("h_cal_time_pos02_seqsca_04_05", "calibration pulse time, pos02 seqsca 05-04", 101, -10, 10);
+      h_cal_time_pos02_seqsca_04_84 = new TH1D("h_cal_time_pos02_seqsca_04_84", "calibration pulse time, pos02 seqsca 84-04", 101, -10, 10);
+      h_cal_time_pos02_seqsca_04_164 = new TH1D("h_cal_time_pos02_seqsca_04_164", "calibration pulse time, pos02 seqsca 164-04", 101, -10, 10);
+
+      h_cal_time_pos_01_02_seqsca04 = new TH1D("h_cal_time_pos_01_02_seqsca04", "calibration pulse time, pos02-pos01 seqsca 04", 101, -10, 10);
+      h_cal_time_pos_01_02_seqsca05 = new TH1D("h_cal_time_pos_01_02_seqsca05", "calibration pulse time, pos02-pos01 seqsca 05", 101, -10, 10);
    }
 
    void EndRun(TARunInfo* runinfo)
@@ -307,6 +329,19 @@ public:
          }
       }
 
+      double pos00_seqsca04 = -10;
+      double pos00_seqsca05 = -20;
+
+      double pos01_seqsca04 = -30;
+      double pos01_seqsca05 = -40;
+      double pos01_seqsca84 = -130;
+      double pos01_seqsca164 = -140;
+
+      double pos02_seqsca04 = -50;
+      double pos02_seqsca05 = -60;
+      double pos02_seqsca84 = -150;
+      double pos02_seqsca164 = -160;
+
       if (eph) {
          if (1) {
             printf("PA event %d, time %f, pad hits: %d\n", ef->fEvent->counter, ef->fEvent->time, (int)eph->fPadHits.size());
@@ -315,11 +350,45 @@ public:
          h_num_pad_hits->Fill(eph->fPadHits.size());
 
          for (unsigned i=0; i<eph->fPadHits.size(); i++) {
-            h_pad_time->Fill(eph->fPadHits[i].time);
-            h_pad_amp->Fill(eph->fPadHits[i].amp);
-            h_pad_amp_time->Fill(eph->fPadHits[i].time, eph->fPadHits[i].amp);
-            h_pad_amp_pad->Fill(eph->fPadHits[i].col*MAX_FEAM_PAD_ROWS + eph->fPadHits[i].row, eph->fPadHits[i].amp);
-            h_pad_time_pad->Fill(eph->fPadHits[i].col*MAX_FEAM_PAD_ROWS + eph->fPadHits[i].row, eph->fPadHits[i].time);
+            int col = eph->fPadHits[i].col;
+            int row = eph->fPadHits[i].row;
+
+            if (col < 0 || row < 0)
+               continue;
+
+            int pos = eph->fPadHits[i].pos;
+            int seqsca = eph->fPadHits[i].seqsca;
+            int seqpad = col*MAX_FEAM_PAD_ROWS + row;
+
+            double time = eph->fPadHits[i].time;
+            double amp = eph->fPadHits[i].amp;
+
+            //printf("pos %d, seqsca %d, time %f\n", pos, seqsca, time);
+
+            if (pos==0) {
+               if (seqsca == 4) pos00_seqsca04 = time;
+               if (seqsca == 5) pos00_seqsca05 = time;
+            }
+
+            if (pos==1) {
+               if (seqsca == 4) pos01_seqsca04 = time;
+               if (seqsca == 5) pos01_seqsca05 = time;
+               if (seqsca == 84) pos01_seqsca84 = time;
+               if (seqsca == 164) pos01_seqsca164 = time;
+            }
+
+            if (pos==2) {
+               if (seqsca == 4) pos02_seqsca04 = time;
+               if (seqsca == 5) pos02_seqsca05 = time;
+               if (seqsca == 84) pos02_seqsca84 = time;
+               if (seqsca == 164) pos02_seqsca164 = time;
+            }
+
+            h_pad_time->Fill(time);
+            h_pad_amp->Fill(amp);
+            h_pad_amp_time->Fill(time, amp);
+            h_pad_amp_pad->Fill(seqpad, amp);
+            h_pad_time_pad->Fill(seqpad, time);
          }
       }
 
@@ -346,6 +415,29 @@ public:
             }
          }
       }
+
+      if (1 || ((pos00_seqsca04 > 0)
+                && (pos00_seqsca05 > 0)
+                && (pos01_seqsca04 > 0)
+                && (pos01_seqsca05 > 0)
+                && (pos02_seqsca04 > 0)
+                && (pos02_seqsca05 > 0))) {
+
+         h_cal_time_pos00_seqsca_04_05->Fill(pos00_seqsca05-pos00_seqsca04);
+
+         h_cal_time_pos01_seqsca_04_05->Fill(pos01_seqsca05-pos01_seqsca04);
+         h_cal_time_pos01_seqsca_04_84->Fill(pos01_seqsca84-pos01_seqsca04);
+         h_cal_time_pos01_seqsca_04_164->Fill(pos01_seqsca164-pos01_seqsca04);
+
+         h_cal_time_pos02_seqsca_04_05->Fill(pos02_seqsca05-pos02_seqsca04);
+         h_cal_time_pos02_seqsca_04_05->Fill(pos02_seqsca05-pos02_seqsca04);
+         h_cal_time_pos02_seqsca_04_84->Fill(pos02_seqsca84-pos02_seqsca04);
+         h_cal_time_pos02_seqsca_04_164->Fill(pos02_seqsca164-pos02_seqsca04);
+
+         h_cal_time_pos_01_02_seqsca04->Fill(pos02_seqsca04-pos01_seqsca04);
+         h_cal_time_pos_01_02_seqsca05->Fill(pos02_seqsca05-pos01_seqsca05);
+      }
+
 
       //hamp[ichan]->Fill(wamp);
 
