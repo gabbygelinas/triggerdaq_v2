@@ -343,6 +343,7 @@ public:
    bool fDoPads = true;
    int  fPlotPad = -1;
    TCanvas* fPlotPadCanvas = NULL;
+   bool fExportWaveforms = false;
 
 public:
    FeamFlags() // ctor
@@ -1132,6 +1133,30 @@ public:
                   sprintf(xtitle, "FEAM pos %d, sca %d, readout chan %d", ifeam, isca, ichan);
                }
 
+               if (fFlags->fExportWaveforms) {
+                  TDirectory* dir = runinfo->fRoot->fgDir;
+                  const char* dirname = "Pad waveforms";
+                  
+                  if (!dir->cd(dirname)) {
+                     TDirectory* awdir = dir->mkdir(dirname);
+                     awdir->cd();
+                  }
+                  
+                  dir = dir->CurrentDirectory();
+                  
+                  std::string wname = std::string(xname) + "_waveform";
+                  std::string wtitle = std::string(xtitle) + " current waveform";
+                  
+                  TH1D* hwf = (TH1D*)dir->FindObject(wname.c_str());
+                  if (!hwf) {
+                     hwf = new TH1D(wname.c_str(), wtitle.c_str(), nbins, 0, nbins);
+                  }
+                  
+                  for (int i=0; i<nbins; i++) {
+                     hwf->SetBinContent(i+1, aptr[i]);
+                  }
+               }
+
                // create per-channel data
 
                if (seqchan >= fHC.size()) {
@@ -1690,6 +1715,8 @@ public:
             fFlags.fDoPads = false;
          if (args[i] == "--plot1")
             fFlags.fPlotPad = atoi(args[i+1].c_str());
+         if (args[i] == "--wfexport")
+            fFlags.fExportWaveforms = true;
       }
    }
 

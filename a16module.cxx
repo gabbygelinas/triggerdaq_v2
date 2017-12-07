@@ -504,6 +504,7 @@ class A16Flags
 public:
    bool fPlotWF = false;
    bool fDoPlotAll = false;
+   bool fExportWaveforms = false;
 };
 
 static double find_pulse_time(const int* adc, int nbins, double baseline, double gain, double threshold)
@@ -626,8 +627,37 @@ public:
       printf("A16Module::ResumeRun, run %d\n", runinfo->fRunNo);
    }
 
-   void AnalyzeHit(const Alpha16Channel* hit, std::vector<AgAwHit>* flow_hits)
+   void AnalyzeHit(const TARunInfo* runinfo, const Alpha16Channel* hit, std::vector<AgAwHit>* flow_hits)
    {
+      char xname[256];
+      char xtitle[256];
+      sprintf(xname, "m%02d_c%02d_w%03d", hit->adc_module, hit->adc_chan, hit->tpc_wire);
+      sprintf(xtitle, "AW Waveform ADC module %d, channel %d, tpc wire %d", hit->adc_module, hit->adc_chan, hit->tpc_wire);
+
+      if (fFlags->fExportWaveforms) {
+         TDirectory* dir = runinfo->fRoot->fgDir;
+         const char* dirname = "AW waveforms";
+
+         if (!dir->cd(dirname)) {
+            TDirectory* awdir = dir->mkdir(dirname);
+            awdir->cd();
+         }
+
+         dir = dir->CurrentDirectory();
+
+         std::string wname = std::string(xname) + "_waveform";
+         std::string wtitle = std::string(xtitle) + " current waveform";
+
+         TH1D* hwf = (TH1D*)dir->FindObject(wname.c_str());
+         if (!hwf) {
+            hwf = new TH1D(wname.c_str(), wtitle.c_str(), hit->adc_samples.size(), 0, hit->adc_samples.size());
+         }
+         
+         for (unsigned i=0; i< hit->adc_samples.size(); i++) {
+            hwf->SetBinContent(i+1, hit->adc_samples[i]);
+         }
+      }
+
       int i = hit->tpc_wire;
       int r = 1;
 
@@ -721,10 +751,6 @@ public:
       }
 
       if (fHC[i] == NULL){
-         char xname[256];
-         char xtitle[256];
-         sprintf(xname, "m%02d_c%02d_w%03d", hit->adc_module, hit->adc_chan, hit->tpc_wire);
-         sprintf(xtitle, "AW Waveform ADC module %d, channel %d, tpc wire %d", hit->adc_module, hit->adc_chan, hit->tpc_wire);
          fHC[i] = new A16ChanHistograms(xname, xtitle, dwf, w->nsamples);
       }
 
@@ -977,7 +1003,7 @@ public:
       flow = flow_hits;
 
       for (unsigned i=0; i<e->hits.size(); i++) {
-         AnalyzeHit(e->hits[i], &flow_hits->fAwHits);
+         AnalyzeHit(runinfo, e->hits[i], &flow_hits->fAwHits);
       }
 
       *flags |= TAFlag_DISPLAY;
@@ -1011,6 +1037,9 @@ public:
          if (args[i] == "--wfall") {
             fFlags.fDoPlotAll = true;
             fFlags.fPlotWF = true;
+         }
+         if (args[i] == "--wfexport") {
+            fFlags.fExportWaveforms = true;
          }
       }
       
