@@ -32,6 +32,9 @@
 
 #define MAX_PAD_AMP 4100
 
+#define AW_PULSER_TIME_100 1800
+#define AW_PULSER_TIME_625 1800
+
 // number of pad columns
 #define NUM_PC (8*4)
 
@@ -92,6 +95,12 @@ public:
 
    TH2D* h_aw_pad_amp_pc;
 
+   // time of calibration pulse relative to ADC trigger
+
+   TH1D* h_cal_adc05_0 = NULL;
+   TH1D* h_cal_adc05_16 = NULL;
+   TH1D* h_cal_adc05_17 = NULL;
+
    // time across to next channel
    TH1D* h_cal_adc05_0_1 = NULL;
 
@@ -111,6 +120,9 @@ public:
    TH1D* h_cal_adc05_16_24 = NULL;
    TH1D* h_cal_adc05_16_32 = NULL;
    TH1D* h_cal_adc05_16_40 = NULL;
+
+   // time across all 32 channels pf 62.5 MHz ADC
+   TProfile* h_cal_adc05_16_xx = NULL;
 
    // time across to the next module, 100 MHz and 62.5 MHz ADC
    TH1D* h_cal_adc_05_06_chan0 = NULL;
@@ -233,6 +245,10 @@ public:
 
       // ADC timing
 
+      h_cal_adc05_0 = new TH1D("h_cal_time_adc05_0", "calibration pulse time, adc05 chan 0; time, ns", 100, AW_PULSER_TIME_100-50, AW_PULSER_TIME_100+50);
+      h_cal_adc05_16 = new TH1D("h_cal_time_adc05_16", "calibration pulse time, adc05 chan 16; time, ns", 100, AW_PULSER_TIME_625-50, AW_PULSER_TIME_625+50);
+      h_cal_adc05_17 = new TH1D("h_cal_time_adc05_17", "calibration pulse time, adc05 chan 17; time, ns", 100, AW_PULSER_TIME_625-50, AW_PULSER_TIME_625+50);
+
       h_cal_adc05_0_1 = new TH1D("h_cal_time_adc05_0_1", "calibration pulse time, adc05 chan 1-0; time, ns", 101, -50, 50);
       h_cal_adc05_0_4 = new TH1D("h_cal_time_adc05_0_4", "calibration pulse time, adc05 chan 4-0; time, ns", 101, -50, 50);
       h_cal_adc05_0_8 = new TH1D("h_cal_time_adc05_0_8", "calibration pulse time, adc05 chan 8-0; time, ns", 101, -50, 50);
@@ -248,6 +264,8 @@ public:
       h_cal_adc05_16_24 = new TH1D("h_cal_time_adc05_16_24", "calibration pulse time, adc05 chan 24-16; time, ns", 101, -50, 50);
       h_cal_adc05_16_32 = new TH1D("h_cal_time_adc05_16_32", "calibration pulse time, adc05 chan 32-16; time, ns", 101, -50, 50);
       h_cal_adc05_16_40 = new TH1D("h_cal_time_adc05_16_40", "calibration pulse time, adc05 chan 40-16; time, ns", 101, -50, 50);
+
+      h_cal_adc05_16_xx = new TProfile("h_cal_time_adc05_16_xx", "calibration pulse time, adc05 chan 16..47-16; adc chan; time, ns", 32, 16-0.5, 48-0.5);
 
 
       // PWB timing
@@ -373,6 +391,8 @@ public:
          h_num_aw_hits->Fill(eawh->fAwHits.size());
 
          for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
+            int adc_module = eawh->fAwHits[j].adc_module;
+            int adc_chan = eawh->fAwHits[j].adc_chan;
             int wire = eawh->fAwHits[j].wire;
             double time = eawh->fAwHits[j].time;
             double amp = eawh->fAwHits[j].amp;
@@ -385,23 +405,23 @@ public:
             h_aw_map_time->Fill(wire, time);
             h_aw_map_amp->Fill(wire, amp);
 
-            if (eawh->fAwHits[j].module == 5) {
-               if (eawh->fAwHits[j].channel == 0) adc5_0 = time;
-               if (eawh->fAwHits[j].channel == 1) adc5_1 = time;
-               if (eawh->fAwHits[j].channel == 4) adc5_4 = time;
-               if (eawh->fAwHits[j].channel == 8) adc5_8 = time;
-               if (eawh->fAwHits[j].channel == 12) adc5_12 = time;
-               if (eawh->fAwHits[j].channel == 16) adc5_16 = time;
-               if (eawh->fAwHits[j].channel == 17) adc5_17 = time;
-               if (eawh->fAwHits[j].channel == 24) adc5_24 = time;
-               if (eawh->fAwHits[j].channel == 32) adc5_32 = time;
-               if (eawh->fAwHits[j].channel == 40) adc5_40 = time;
+            if (adc_module == 5) {
+               if (adc_chan ==  0) adc5_0  = time;
+               if (adc_chan ==  1) adc5_1  = time;
+               if (adc_chan ==  4) adc5_4  = time;
+               if (adc_chan ==  8) adc5_8  = time;
+               if (adc_chan == 12) adc5_12 = time;
+               if (adc_chan == 16) adc5_16 = time;
+               if (adc_chan == 17) adc5_17 = time;
+               if (adc_chan == 24) adc5_24 = time;
+               if (adc_chan == 32) adc5_32 = time;
+               if (adc_chan == 40) adc5_40 = time;
             }
 
-            if (eawh->fAwHits[j].module == 6) {
-               if (eawh->fAwHits[j].channel == 0) adc6_0 = time;
-               if (eawh->fAwHits[j].channel == 16) adc6_16 = time;
-               if (eawh->fAwHits[j].channel == 20) adc6_20 = time;
+            if (adc_module == 6) {
+               if (adc_chan ==  0) adc6_0  = time;
+               if (adc_chan == 16) adc6_16 = time;
+               if (adc_chan == 20) adc6_20 = time;
             }
 
             for (unsigned k=0; k<eawh->fAwHits.size(); k++) {
@@ -533,18 +553,24 @@ public:
                 && (pos02_seqsca04 > 0)
                 && (pos02_seqsca05 > 0))) {
 
-#if 0
-         printf("ADC times: adc05: %f %f %f %f %f, adc06: %f\n",
+#if 1
+         printf("ADC times: adc05: 100MHz: %f %f %f %f %f, 62.5MHz: %f %f, adc06: %f\n",
                 adc5_0,
                 adc5_1,
                 adc5_4,
                 adc5_8,
                 adc5_12,
+                adc5_16,
+                adc5_17,
                 adc6_0
                 );
 #endif
 
          if (adc5_0 > 0) {
+            h_cal_adc05_0->Fill(adc5_0);
+            h_cal_adc05_16->Fill(adc5_16);
+            h_cal_adc05_17->Fill(adc5_17);
+
             h_cal_adc05_0_1->Fill(adc5_1-adc5_0);
             h_cal_adc05_0_4->Fill(adc5_4-adc5_0);
             h_cal_adc05_0_8->Fill(adc5_8-adc5_0);
@@ -556,6 +582,21 @@ public:
             h_cal_adc05_16_32->Fill(adc5_32-adc5_16);
             h_cal_adc05_16_40->Fill(adc5_40-adc5_16);
 
+            for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
+               int adc_module = eawh->fAwHits[j].adc_module;
+               int adc_chan = eawh->fAwHits[j].adc_chan;
+               //int wire = eawh->fAwHits[j].wire;
+               double time = eawh->fAwHits[j].time;
+               //double amp = eawh->fAwHits[j].amp;
+
+               if (adc_module == 5) {
+                  if (adc_chan >= 16 && adc_chan < 48) {
+                     //printf("AAA ADC chan %d, %f %f, %f\n", adc_chan, time, adc5_16, time-adc5_16);
+                     h_cal_adc05_16_xx->Fill(adc_chan, time-adc5_16);
+                  }
+               }
+            }
+
             h_cal_adc06_16_20->Fill(adc6_20-adc6_16);
 
             h_cal_adc_05_06_chan0->Fill(adc6_0-adc5_0);
@@ -563,9 +604,9 @@ public:
          }
 
          double pulse_width = 5350.0 + 30.0;
-         double xpad = pos01_seqsca04;
-         double t = xpad - adc5_0 - pulse_width;
-         printf("aw %.1f pad %.1f %.1f, diff %.1f\n", adc5_0, pos01_seqsca04, xpad, t);
+         //double xpad = pos01_seqsca04;
+         // double t = xpad - adc5_0 - pulse_width;
+         //printf("aw %.1f pad %.1f %.1f, diff %.1f\n", adc5_0, pos01_seqsca04, xpad, t);
 
          h_cal_time_pos00_seqsca_04_05->Fill(pos00_seqsca05-pos00_seqsca04);
 

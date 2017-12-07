@@ -34,10 +34,10 @@ class AgEventFlow: public TAFlowEvent
 
 struct AgAwHit
 {
-   int module; // ADC module, 1..20
-   int channel; // ADC channel, 0..15 and 16..47.
-   int wire; // anode wire
-   double time; // hit time
+   int adc_module; // ADC module, 1..20
+   int adc_chan; // ADC channel, 0..15 and 16..47.
+   int wire; // anode wire, 0..255 bottom, 256..511 top
+   double time; // hit time, ns
    double amp;  // hit amplitude
 };
 

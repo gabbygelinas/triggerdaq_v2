@@ -940,8 +940,8 @@ public:
             
             if (have_hit) {
                AgAwHit h;
-               h.module = hit->adc_module;
-               h.channel = hit->adc_chan;
+               h.adc_module = hit->adc_module;
+               h.adc_chan = hit->adc_chan;
                h.wire = i;
                h.time = hit_time;
                h.amp = hit_amp;
