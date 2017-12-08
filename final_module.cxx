@@ -28,12 +28,13 @@
 
 #define NUM_AW 512
 #define MAX_AW_AMP 16000
-#define MAX_TIME 7000
+#define MAX_TIME 8200
 
 #define MAX_PAD_AMP 4100
 
 #define AW_PULSER_TIME_100 1800
 #define AW_PULSER_TIME_625 1800
+#define PAD_PULSER_TIME_625 7200
 
 // number of pad columns
 #define NUM_PC (8*4)
@@ -97,6 +98,9 @@ public:
 
    // time of calibration pulse relative to ADC trigger
 
+   TH1D* h_cal_adc05_0_full_range = NULL;
+   TH1D* h_cal_adc05_16_full_range = NULL;
+
    TH1D* h_cal_adc05_0 = NULL;
    TH1D* h_cal_adc05_16 = NULL;
    TH1D* h_cal_adc05_17 = NULL;
@@ -127,6 +131,14 @@ public:
    // time across to the next module, 100 MHz and 62.5 MHz ADC
    TH1D* h_cal_adc_05_06_chan0 = NULL;
    TH1D* h_cal_adc_05_06_chan16 = NULL;
+
+   // time of PWB calibration pulse
+   TH1D* h_cal_time_pos00_seqsca_04_full_range = NULL;
+   TH1D* h_cal_time_pos01_seqsca_04_full_range = NULL;
+   TH1D* h_cal_time_pos02_seqsca_04_full_range = NULL;
+   TH1D* h_cal_time_pos00_seqsca_04 = NULL;
+   TH1D* h_cal_time_pos01_seqsca_04 = NULL;
+   TH1D* h_cal_time_pos02_seqsca_04 = NULL;
 
    // time across to next channel
    TH1D* h_cal_time_pos00_seqsca_04_05 = NULL;
@@ -245,40 +257,51 @@ public:
 
       // ADC timing
 
-      h_cal_adc05_0 = new TH1D("h_cal_time_adc05_0", "calibration pulse time, adc05 chan 0; time, ns", 100, AW_PULSER_TIME_100-50, AW_PULSER_TIME_100+50);
-      h_cal_adc05_16 = new TH1D("h_cal_time_adc05_16", "calibration pulse time, adc05 chan 16; time, ns", 100, AW_PULSER_TIME_625-50, AW_PULSER_TIME_625+50);
-      h_cal_adc05_17 = new TH1D("h_cal_time_adc05_17", "calibration pulse time, adc05 chan 17; time, ns", 100, AW_PULSER_TIME_625-50, AW_PULSER_TIME_625+50);
+      h_cal_adc05_0_full_range = new TH1D("h_cal_time_adc05_0_full_range", "calibration pulse time, adc05 chan 0, full time range; time, ns", 200, 0, MAX_TIME);
+      h_cal_adc05_16_full_range = new TH1D("h_cal_time_adc05_16_ful_range", "calibration pulse time, adc05 chan 16, full time range; time, ns", 200, 0, MAX_TIME);
 
-      h_cal_adc05_0_1 = new TH1D("h_cal_time_adc05_0_1", "calibration pulse time, adc05 chan 1-0; time, ns", 101, -50, 50);
-      h_cal_adc05_0_4 = new TH1D("h_cal_time_adc05_0_4", "calibration pulse time, adc05 chan 4-0; time, ns", 101, -50, 50);
-      h_cal_adc05_0_8 = new TH1D("h_cal_time_adc05_0_8", "calibration pulse time, adc05 chan 8-0; time, ns", 101, -50, 50);
-      h_cal_adc05_0_12 = new TH1D("h_cal_time_adc05_0_12", "calibration pulse time, adc05 chan 12-0; time, ns", 101, -50, 50);
-      h_cal_adc05_0_16 = new TH1D("h_cal_time_adc05_0_16", "calibration pulse time, adc05 chan 16-0; time, ns", 101, -50, 50);
+      h_cal_adc05_0 = new TH1D("h_cal_time_adc05_0", "calibration pulse time, adc05 chan 0; time, ns", 200, AW_PULSER_TIME_100-50, AW_PULSER_TIME_100+50);
+      h_cal_adc05_16 = new TH1D("h_cal_time_adc05_16", "calibration pulse time, adc05 chan 16; time, ns", 200, AW_PULSER_TIME_625-50, AW_PULSER_TIME_625+50);
+      h_cal_adc05_17 = new TH1D("h_cal_time_adc05_17", "calibration pulse time, adc05 chan 17; time, ns", 200, AW_PULSER_TIME_625-50, AW_PULSER_TIME_625+50);
 
-      h_cal_adc_05_06_chan0 = new TH1D("h_cal_time_adc_05_06_chan0", "calibration pulse time, adc06 - adc05 chan 0; time, ns", 101, -50, 50);
-      h_cal_adc_05_06_chan16 = new TH1D("h_cal_time_adc_05_06_chan16", "calibration pulse time, adc06 - adc05 chan 16; time, ns", 101, -50, 50);
+      h_cal_adc05_0_1 = new TH1D("h_cal_time_adc05_0_1", "calibration pulse time, adc05 chan 1-0; time, ns", 201, -50, 50);
+      h_cal_adc05_0_4 = new TH1D("h_cal_time_adc05_0_4", "calibration pulse time, adc05 chan 4-0; time, ns", 201, -50, 50);
+      h_cal_adc05_0_8 = new TH1D("h_cal_time_adc05_0_8", "calibration pulse time, adc05 chan 8-0; time, ns", 201, -50, 50);
+      h_cal_adc05_0_12 = new TH1D("h_cal_time_adc05_0_12", "calibration pulse time, adc05 chan 12-0; time, ns", 201, -50, 50);
+      h_cal_adc05_0_16 = new TH1D("h_cal_time_adc05_0_16", "calibration pulse time, adc05 chan 16-0; time, ns", 201, -50, 50);
 
-      h_cal_adc05_16_17 = new TH1D("h_cal_time_adc05_16_17", "calibration pulse time, adc05 chan 17-16; time, ns", 101, -50, 50);
-      h_cal_adc06_16_20 = new TH1D("h_cal_time_adc06_16_20", "calibration pulse time, adc06 chan 20-16; time, ns", 101, -50, 50);
+      h_cal_adc_05_06_chan0 = new TH1D("h_cal_time_adc_05_06_chan0", "calibration pulse time, adc06 - adc05 chan 0; time, ns", 201, -50, 50);
+      h_cal_adc_05_06_chan16 = new TH1D("h_cal_time_adc_05_06_chan16", "calibration pulse time, adc06 - adc05 chan 16; time, ns", 201, -50, 50);
 
-      h_cal_adc05_16_24 = new TH1D("h_cal_time_adc05_16_24", "calibration pulse time, adc05 chan 24-16; time, ns", 101, -50, 50);
-      h_cal_adc05_16_32 = new TH1D("h_cal_time_adc05_16_32", "calibration pulse time, adc05 chan 32-16; time, ns", 101, -50, 50);
-      h_cal_adc05_16_40 = new TH1D("h_cal_time_adc05_16_40", "calibration pulse time, adc05 chan 40-16; time, ns", 101, -50, 50);
+      h_cal_adc05_16_17 = new TH1D("h_cal_time_adc05_16_17", "calibration pulse time, adc05 chan 17-16; time, ns", 201, -50, 50);
+      h_cal_adc06_16_20 = new TH1D("h_cal_time_adc06_16_20", "calibration pulse time, adc06 chan 20-16; time, ns", 201, -50, 50);
+
+      h_cal_adc05_16_24 = new TH1D("h_cal_time_adc05_16_24", "calibration pulse time, adc05 chan 24-16; time, ns", 201, -50, 50);
+      h_cal_adc05_16_32 = new TH1D("h_cal_time_adc05_16_32", "calibration pulse time, adc05 chan 32-16; time, ns", 201, -50, 50);
+      h_cal_adc05_16_40 = new TH1D("h_cal_time_adc05_16_40", "calibration pulse time, adc05 chan 40-16; time, ns", 201, -50, 50);
 
       h_cal_adc05_16_xx = new TProfile("h_cal_time_adc05_16_xx", "calibration pulse time, adc05 chan 16..47-16; adc chan; time, ns", 32, 16-0.5, 48-0.5);
 
 
       // PWB timing
 
-      h_cal_time_pos00_seqsca_04_05 = new TH1D("h_cal_time_pos00_seqsca_04_05", "calibration pulse time, pos00 seqsca 05-04", 101, -50, 50);
+      h_cal_time_pos00_seqsca_04_full_range = new TH1D("h_cal_time_pos00_seqsca_04_full_range", "calibration pulse time, pos00 seqsca 04, full range; time, ns", 200, 0, MAX_TIME);
+      h_cal_time_pos01_seqsca_04_full_range = new TH1D("h_cal_time_pos01_seqsca_04_full_range", "calibration pulse time, pos01 seqsca 04, full range; time, ns", 200, 0, MAX_TIME);
+      h_cal_time_pos02_seqsca_04_full_range = new TH1D("h_cal_time_pos02_seqsca_04_full_range", "calibration pulse time, pos02 seqsca 04, full range; time, ns", 200, 0, MAX_TIME);
 
-      h_cal_time_pos01_seqsca_04_05 = new TH1D("h_cal_time_pos01_seqsca_04_05", "calibration pulse time, pos01 seqsca 05-04", 101, -50, 50);
-      h_cal_time_pos01_seqsca_04_84 = new TH1D("h_cal_time_pos01_seqsca_04_84", "calibration pulse time, pos01 seqsca 84-04", 101, -50, 50);
-      h_cal_time_pos01_seqsca_04_164 = new TH1D("h_cal_time_pos01_seqsca_04_164", "calibration pulse time, pos01 seqsca 164-04", 101, -50, 50);
+      h_cal_time_pos00_seqsca_04 = new TH1D("h_cal_time_pos00_seqsca_04", "calibration pulse time, pos00 seqsca 04; time, ns", 200, PAD_PULSER_TIME_625-50.0, PAD_PULSER_TIME_625+50.0);
+      h_cal_time_pos01_seqsca_04 = new TH1D("h_cal_time_pos01_seqsca_04", "calibration pulse time, pos01 seqsca 04; time, ns", 200, PAD_PULSER_TIME_625-50.0, PAD_PULSER_TIME_625+50.0);
+      h_cal_time_pos02_seqsca_04 = new TH1D("h_cal_time_pos02_seqsca_04", "calibration pulse time, pos02 seqsca 04; time, ns", 200, PAD_PULSER_TIME_625-50.0, PAD_PULSER_TIME_625+50.0);
 
-      h_cal_time_pos02_seqsca_04_05 = new TH1D("h_cal_time_pos02_seqsca_04_05", "calibration pulse time, pos02 seqsca 05-04", 101, -50, 50);
-      h_cal_time_pos02_seqsca_04_84 = new TH1D("h_cal_time_pos02_seqsca_04_84", "calibration pulse time, pos02 seqsca 84-04", 101, -50, 50);
-      h_cal_time_pos02_seqsca_04_164 = new TH1D("h_cal_time_pos02_seqsca_04_164", "calibration pulse time, pos02 seqsca 164-04", 101, -50, 50);
+      h_cal_time_pos00_seqsca_04_05 = new TH1D("h_cal_time_pos00_seqsca_04_05", "calibration pulse time, pos00 seqsca 05-04; time, ns", 101, -50, 50);
+
+      h_cal_time_pos01_seqsca_04_05 = new TH1D("h_cal_time_pos01_seqsca_04_05", "calibration pulse time, pos01 seqsca 05-04; time, ns", 101, -50, 50);
+      h_cal_time_pos01_seqsca_04_84 = new TH1D("h_cal_time_pos01_seqsca_04_84", "calibration pulse time, pos01 seqsca 84-04; time, ns", 101, -50, 50);
+      h_cal_time_pos01_seqsca_04_164 = new TH1D("h_cal_time_pos01_seqsca_04_164", "calibration pulse time, pos01 seqsca 164-04; time, ns", 101, -50, 50);
+
+      h_cal_time_pos02_seqsca_04_05 = new TH1D("h_cal_time_pos02_seqsca_04_05", "calibration pulse time, pos02 seqsca 05-04; time, ns", 101, -50, 50);
+      h_cal_time_pos02_seqsca_04_84 = new TH1D("h_cal_time_pos02_seqsca_04_84", "calibration pulse time, pos02 seqsca 84-04; time, ns", 101, -50, 50);
+      h_cal_time_pos02_seqsca_04_164 = new TH1D("h_cal_time_pos02_seqsca_04_164", "calibration pulse time, pos02 seqsca 164-04; time, ns", 101, -50, 50);
 
       h_cal_time_pos_01_02_seqsca04 = new TH1D("h_cal_time_pos_01_02_seqsca04", "calibration pulse time, pos02-pos01 seqsca 04; time, ns", 101, -50, 50);
       h_cal_time_pos_01_02_seqsca05 = new TH1D("h_cal_time_pos_01_02_seqsca05", "calibration pulse time, pos02-pos01 seqsca 05; time, ns", 101, -50, 50);
@@ -553,7 +576,7 @@ public:
                 && (pos02_seqsca04 > 0)
                 && (pos02_seqsca05 > 0))) {
 
-#if 1
+#if 0
          printf("ADC times: adc05: 100MHz: %f %f %f %f %f, 62.5MHz: %f %f, adc06: %f\n",
                 adc5_0,
                 adc5_1,
@@ -567,6 +590,9 @@ public:
 #endif
 
          if (adc5_0 > 0) {
+            h_cal_adc05_0_full_range->Fill(adc5_0);
+            h_cal_adc05_16_full_range->Fill(adc5_16);
+
             h_cal_adc05_0->Fill(adc5_0);
             h_cal_adc05_16->Fill(adc5_16);
             h_cal_adc05_17->Fill(adc5_17);
@@ -592,7 +618,10 @@ public:
                if (adc_module == 5) {
                   if (adc_chan >= 16 && adc_chan < 48) {
                      //printf("AAA ADC chan %d, %f %f, %f\n", adc_chan, time, adc5_16, time-adc5_16);
-                     h_cal_adc05_16_xx->Fill(adc_chan, time-adc5_16);
+                     double dt = time-adc5_16;
+                     if (fabs(dt) < 50.0) {
+                        h_cal_adc05_16_xx->Fill(adc_chan, dt);
+                     }
                   }
                }
             }
@@ -603,10 +632,22 @@ public:
             h_cal_adc_05_06_chan16->Fill(adc6_16-adc5_16);
          }
 
-         double pulse_width = 5350.0 + 30.0;
+         double pulse_width = 5350.0 + 30.0 + 40.0;
          //double xpad = pos01_seqsca04;
          // double t = xpad - adc5_0 - pulse_width;
          //printf("aw %.1f pad %.1f %.1f, diff %.1f\n", adc5_0, pos01_seqsca04, xpad, t);
+
+#if 0
+         printf("PAD times: %f %f %f\n", pos00_seqsca04, pos01_seqsca04, pos02_seqsca04);
+#endif
+
+         h_cal_time_pos00_seqsca_04_full_range->Fill(pos00_seqsca04);
+         h_cal_time_pos01_seqsca_04_full_range->Fill(pos01_seqsca04);
+         h_cal_time_pos02_seqsca_04_full_range->Fill(pos02_seqsca04);
+
+         h_cal_time_pos00_seqsca_04->Fill(pos00_seqsca04);
+         h_cal_time_pos01_seqsca_04->Fill(pos01_seqsca04);
+         h_cal_time_pos02_seqsca_04->Fill(pos02_seqsca04);
 
          h_cal_time_pos00_seqsca_04_05->Fill(pos00_seqsca05-pos00_seqsca04);
 
@@ -631,9 +672,6 @@ public:
          h_cal_time_pos02_seqsca_04_minus_adc5_0->Fill(pos02_seqsca04 - adc5_0 - pulse_width);
          h_cal_time_pos02_seqsca_04_minus_adc5_16->Fill(pos02_seqsca04 - adc5_16 - pulse_width);
       }
-
-
-      //hamp[ichan]->Fill(wamp);
 
       bool do_plot = (runinfo->fRoot->fgApp != NULL);
 
