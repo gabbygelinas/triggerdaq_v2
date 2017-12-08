@@ -30,11 +30,11 @@
 
 #define ADC_MIN -33000
 #define ADC_MAX  33000
-#define ADC_RANGE_PED 2000
 
 // adjusted for 12-bit range 0xFFF = 4095
 #define ADC_BINS 410
 #define ADC_RANGE 4100
+#define ADC_RANGE_PED 200
 
 #define ADC_BINS_PULSER 100
 #define ADC_RANGE_PULSER 300
@@ -47,6 +47,10 @@
 #define ADC_PULSER_TIME 450
 
 #define NUM_SEQSCA (3*80+79)
+
+#define NUM_TIME_BINS 512
+#define MAX_TIME_BINS 512
+#define MAX_TIME_NS 8200
 
 class FeamHistograms
 {
@@ -434,10 +438,11 @@ public:
    TH1D* h_adc_range_baseline = NULL;
    TH1D* h_adc_range_drift = NULL;
 
-   TH1D* hamp_all;
-   TH1D* hamp_all_pedestal;
-   TH1D* hamp_all_above_pedestal;
-   TH1D* hled_all;
+   TH1D* hamp_pad;
+   TH1D* hamp_pad_pedestal;
+   TH1D* hamp_pad_above_pedestal;
+   TH1D* hled_pad_amp;
+   TH1D* hled_pad_amp_ns;
 
    TH1D* hled_all_hits;
    TH1D* hamp_all_hits;
@@ -560,13 +565,14 @@ public:
       h_adc_range_baseline = new TH1D("adc_range_baseline", "waveform range (max-min), baseline region",  100, 0, ADC_RANGE_PED);
       h_adc_range_drift    = new TH1D("adc_range_drift",    "waveform range (max-min), drift region",  100, 0, ADC_RANGE_PED);
 
-      hamp_all          = new TH1D("hamp",   "pulse height", 100, 0, ADC_RANGE);
-      hamp_all_pedestal = new TH1D("hamp_pedestal", "pulse height, zoom on pedestal area", 100, 0, ADC_RANGE_PED);
-      hamp_all_above_pedestal = new TH1D("hamp_above_pedestal", "pulse height, away from pedestal area", 100, ADC_RANGE_PED, ADC_RANGE);
+      hamp_pad         = new TH1D("hamp_pad",   "pad channels pulse height; adc counts", 100, 0, ADC_RANGE);
+      hamp_pad_pedestal = new TH1D("hamp_pad_pedestal", "pad channels pulse height, zoom on pedestal area; adc counts", 100, 0, ADC_RANGE_PED);
+      hamp_pad_above_pedestal = new TH1D("hamp_pad_above_pedestal", "pad channels pulse height, away from pedestal area; adc counts", 100, ADC_RANGE_PED, ADC_RANGE);
 
-      hled_all   = new TH1D("hled",   "pulse leading edge, adc time bins", 100, 0, nbins);
+      hled_pad_amp = new TH1D("hled_pad_amp",   "pad channels above threshold, pulse leading edge; adc time bins", 100, 0, MAX_TIME_BINS);
+      hled_pad_amp_ns = new TH1D("hled_pad_amp_ns",   "pad channels above threshold, pulse leading edge; time, ns", 100, 0, MAX_TIME_NS);
 
-      h2led2amp  = new TH2D("h2led2amp", "pulse amp vs time, adc time bins", 100, 0, nbins, 100, 0, ADC_RANGE);
+      h2led2amp  = new TH2D("h2led2amp", "pulse amp vs time, adc time bins", 100, 0, MAX_TIME_BINS, 100, 0, ADC_RANGE);
 
       hled_all_hits = new TH1D("hled_all_hits",   "pulse leading edge, adc time bins, with p.h. cut", 100, 0, nbins);
       hamp_all_hits = new TH1D("hamp_all_hits",   "pulse height, with time cut", 100, 0, ADC_RANGE);
@@ -896,17 +902,17 @@ public:
       int ibaseline_start = 10;
       int ibaseline_end = 100;
 
-      int iwire_start = 175;
-      int iwire_end = 200;
+      int iwire_start = 130;
+      int iwire_end = 160;
 
-      int idrift_start = 200;
-      int idrift_cut = 200;
-      int idrift_end = 450;
+      int idrift_start = iwire_end;
+      int idrift_cut = iwire_end;
+      int idrift_end = 410;
 
       int ipulser_start = 400;
       int ipulser_end   = 500;
 
-      double hit_amp_threshold = 50;
+      double hit_amp_threshold = 100;
 
       int nhitchan = 0;
 
@@ -1448,10 +1454,16 @@ public:
                if (scachan_is_pad || scachan_is_fpn) {
                   hbmean_all->Fill(bmean);
                   hbrms_all->Fill(brms);
-                  hamp_all->Fill(wamp);
-                  hamp_all_pedestal->Fill(wamp);
-                  hamp_all_above_pedestal->Fill(wamp);
-                  hled_all->Fill(wpos);
+               }
+
+               if (scachan_is_pad) {
+                  hamp_pad->Fill(wamp);
+                  hamp_pad_pedestal->Fill(wamp);
+                  hamp_pad_above_pedestal->Fill(wamp);
+                  if (hit_amp) {
+                     hled_pad_amp->Fill(wpos);
+                     hled_pad_amp_ns->Fill(wpos_ns);
+                  }
                }
 
                if (scachan_is_pad) {
