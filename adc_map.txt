@@ -1,0 +1,5 @@
+# adc_map.txt
+# run..run rev
+1000 0 1
+1123 0 1123
+#end
