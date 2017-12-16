@@ -1,0 +1,10 @@
+# feam banks, run 1207
+PB10
+PB01
+PA02
+PB03
+PB04
+PB23
+PB06
+PB07
+#end
