@@ -120,11 +120,11 @@ public:
       sprintf(title, "feam pos %2d fpn shift, sca 1", position);
       h_fpn_shift[1]  = new TH1D(name, title,  41, -20, 20);
 
-      sprintf(name,  "pos%02d_fpn_shift_sca3", position);
+      sprintf(name,  "pos%02d_fpn_shift_sca2", position);
       sprintf(title, "feam pos %2d fpn shift, sca 2", position);
       h_fpn_shift[2]  = new TH1D(name, title,  41, -20, 20);
 
-      sprintf(name,  "pos%02d_fpn_shift_sca4", position);
+      sprintf(name,  "pos%02d_fpn_shift_sca3", position);
       sprintf(title, "feam pos %2d fpn shift, sca 3", position);
       h_fpn_shift[3]  = new TH1D(name, title,  41, -20, 20);
 
