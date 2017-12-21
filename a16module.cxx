@@ -102,15 +102,15 @@ struct PlotHistograms
       int i=1;
 
       fCanvas->cd(i++);
-      fHbaseline = new TH1D("baseline", "baseline", 100, -1000, 1000);
+      fHbaseline = new TH1D("baseline", "waveform baseline mean; ADC counts", 100, -2000, 2000);
       fHbaseline->Draw();
 
       fCanvas->cd(i++);
-      fHbaselineRms = new TH1D("baseline_rms", "baseline_rms", 100, 0, 200);
+      fHbaselineRms = new TH1D("baseline_rms", "waveform baseline rms; ADC counts", 100, 0, 600);
       fHbaselineRms->Draw();
 
       fCanvas->cd(i++);
-      fHbaselineRmsVsChan = new TProfile("baseline_rms_vs_chan", "baseline_rms_vs_chan", NUM_WIRES, -0.5, NUM_WIRES-0.5);
+      fHbaselineRmsVsChan = new TProfile("baseline_rms_vs_wire", "waveform baseline rms vs wire number; wire number; ADC counts", NUM_WIRES, -0.5, NUM_WIRES-0.5);
       fHbaselineRmsVsChan->SetMinimum(0);
       fHbaselineRmsVsChan->Draw();
 
@@ -555,11 +555,6 @@ public:
 
       dnoise = gDirectory->mkdir("noise");
       dwf = gDirectory->mkdir("waveforms");
-
-#if 0
-      if (fFlags->fPlotWF)
-         fATX->CreateA16Canvas();
-#endif
    }
 
    ~A16Module()
@@ -570,9 +565,6 @@ public:
          delete fH;
          fH = NULL;
       }
-      //if (fATX)
-      //   delete fATX;
-      //fATX = NULL;
    }
 
    void BeginRun(TARunInfo* runinfo)
@@ -783,7 +775,7 @@ public:
 
       bool good_baseline = true;
 
-      double max_brms = 180;
+      double max_brms = 500;
 
       if (brms > max_brms) {
          good_baseline = false;
