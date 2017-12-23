@@ -36,6 +36,9 @@
 #define ADC_RANGE 4100
 #define ADC_RANGE_PED 200
 
+#define ADC_MIN_ADC -2048
+#define ADC_OVERFLOW 4099
+
 #define ADC_BINS_PULSER 100
 #define ADC_RANGE_PULSER 300
 
@@ -1325,7 +1328,18 @@ public:
                // find pulses
 
                double wamp = bmean - wmin;
+
+               if (wmin == ADC_MIN_ADC)
+                  wamp = ADC_OVERFLOW;
                
+               if (0) {
+                  static double xwmin = 0;
+                  if (wmin < xwmin) {
+                     xwmin = wmin;
+                     printf("MMM --- mean %f, wmin %f, wamp %f\n", bmean, wmin, wamp);
+                  }
+               }
+
                fHF[ifeam].h_amp->Fill(wamp);
 
                //int wpos = find_pulse(aptr, nbins, bmean, -1.0, wamp/2.0);
