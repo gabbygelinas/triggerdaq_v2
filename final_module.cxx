@@ -694,13 +694,13 @@ public:
             p->Divide(1, 2);
 
             p->cd(1);
-            TH1D* hh = new TH1D("hh", "hh", NUM_AW, -0.5, NUM_AW-0.5);
+            TH1D* hh = new TH1D("hh_aw_wire_time", "AW wire hit drift time; TPC wire number; drift time, ns", NUM_AW, -0.5, NUM_AW-0.5);
             hh->SetMinimum(0);
             hh->SetMaximum(MAX_TIME);
             hh->Draw();
 
             p->cd(2);
-            TH1D* ha = new TH1D("ha", "ha", NUM_AW, -0.5, NUM_AW-0.5);
+            TH1D* ha = new TH1D("hh_aw_wire_amp", "AW wire hit amplitude; TPC wire number; AW ADC counts", NUM_AW, -0.5, NUM_AW-0.5);
             ha->SetMinimum(0);
             ha->SetMaximum(66000);
             ha->Draw();
@@ -708,30 +708,6 @@ public:
             TVirtualPad *p_pad = fC->cd(2);
 
             p_pad->Divide(1, 2);
-
-#if 0
-            p_pad->cd(1);
-            TH1D* hpt = new TH1D("hpadtime", "hpadtime", NUM_PC, -0.5, NUM_PC-0.5);
-            hpt->SetMinimum(0);
-            hpt->SetMaximum(MAX_TIME);
-            hpt->Draw();
-#endif
-
-#if 0
-            p_pad->cd(2);
-            TH1D* hpa = new TH1D("hpadamp", "hpadamp", NUM_PC, -0.5, NUM_PC-0.5);
-            hpa->SetMinimum(0);
-            hpa->SetMaximum(MAX_PAD_AMP);
-            hpa->Draw();
-#endif
-
-#if 0
-            fC->cd(4);
-            TH1D* hprt = new TH1D("hpadrowtime", "hpadrowtime", NUM_PR, -0.5, NUM_PR-0.5);
-            hprt->SetMinimum(0);
-            hprt->SetMaximum(MAX_TIME);
-            hprt->Draw();
-#endif
 
             std::vector<Double_t> theta;
             std::vector<Double_t> radius;
@@ -742,6 +718,11 @@ public:
             std::vector<Double_t> pad_row;
             std::vector<Double_t> pad_time;
             std::vector<Double_t> pad_amp;
+
+            std::vector<Double_t> zpad_col[NUM_PC];
+            std::vector<Double_t> zpad_row[NUM_PC];
+            std::vector<Double_t> zpad_time[NUM_PC];
+            std::vector<Double_t> zpad_amp[NUM_PC];
 
             double rmin = 0.6;
             double rmax = 1.0;
@@ -779,7 +760,7 @@ public:
                   double t = ((iwire-8.0)/(1.0*num_wires))*(2.0*TMath::Pi());
                   double r = rmax-dist*(rmax-rmin);
 
-                  printf("hit %d, wire %d, tb %d, iwire %d, t %f (%f), r %f\n", j, eawh->fAwHits[j].wire, itb, iwire, t, t/TMath::Pi(), r);
+                  printf("aw hit %d, wire %d, tb %d, iwire %d, t %f (%f), r %f\n", j, eawh->fAwHits[j].wire, itb, iwire, t, t/TMath::Pi(), r);
 
                   theta.push_back(t+0.5*TMath::Pi());
                   radius.push_back(r);
@@ -811,14 +792,17 @@ public:
 
                   printf("pad hit %d: pos %d col %d pc %d, row %d, time %f, amp %f\n", i, pos, col, pc, row, time, amp);
 
-                  //hpt->SetBinContent(1+pc, time);
-                  //hpa->SetBinContent(1+pc, amp);
-                  //hprt->SetBinContent(1+pr, time);
-
                   pad_col.push_back(pc);
                   pad_row.push_back(pr);
                   pad_time.push_back(time);
                   pad_amp.push_back(amp);
+
+                  assert(pc >= 0 && pc < NUM_PC);
+
+                  zpad_col[pc].push_back(pc);
+                  zpad_row[pc].push_back(pr);
+                  zpad_time[pc].push_back(time);
+                  zpad_amp[pc].push_back(amp);
 
                   double dist = -0.1;
 
@@ -871,7 +855,7 @@ public:
 
             fC->cd(3);
             TGraphPolar * grP1 = new TGraphPolar(theta.size(), theta.data(), radius.data(), etheta.data(), eradius.data());
-            grP1->SetTitle("TGraphPolar Example");
+            grP1->SetTitle("TPC end view from T side, wire 0 is at pi/2");
             grP1->SetMarkerStyle(20);
             grP1->SetMarkerSize(0.75);
             grP1->SetMarkerColor(4);
@@ -890,32 +874,52 @@ public:
             grP1->GetPolargram()->SetToRadian();
 
             TVirtualPad *p_pad_row = fC->cd(4);
-            p_pad_row->Divide(1, 2);
+            p_pad_row->Divide(1, 4);
+
+            int zpad_colour[NUM_PC];
+            int zpad_side[NUM_PC];
 
             if (1) {
-               p_pad_row->cd(1);
-               TGraph* hprt = new TGraph(pad_row.size(), pad_row.data(), pad_time.data());
-               hprt->SetMarkerStyle(20);
-               hprt->SetMarkerSize(0.75);
-               hprt->SetMarkerColor(4);
-               hprt->GetXaxis()->SetLimits(0, NUM_PR);
-               hprt->SetMinimum(0);
-               hprt->SetMaximum(MAX_TIME);
-               //hprt->Draw("AC*");
-               hprt->Draw("A*");
+               int col = 1;
+               for (int i=0; i<NUM_PC; i++) {
+                  zpad_side[i] = -1;
+                  if (zpad_col[i].size() == 0) {
+                     zpad_colour[i] = 0;
+                  } else {
+                     zpad_colour[i] = col;
+                     col++;
+                     if (col == 5)
+                        col++;
+                     if (col > 8) {
+                        col = 1;
+                     }
+                  }
+               }
             }
 
             if (1) {
-               p_pad_row->cd(2);
-               TGraph* hprt = new TGraph(pad_row.size(), pad_row.data(), pad_amp.data());
-               hprt->SetMarkerStyle(20);
-               hprt->SetMarkerSize(0.75);
-               hprt->SetMarkerColor(4);
-               hprt->GetXaxis()->SetLimits(0, NUM_PR);
-               hprt->SetMinimum(0);
-               hprt->SetMaximum(MAX_PAD_AMP);
-               //hprt->Draw("AC*");
-               hprt->Draw("A*");
+               double max_time = -1;
+               int max_pc = -1;
+               for (int i=0; i<NUM_PC; i++) {
+                  if (zpad_col[i].size() == 0)
+                     continue;
+                  for (unsigned j=0; j<zpad_col[i].size(); j++) {
+                     if (zpad_time[i][j] > max_time) {
+                        printf("max_pc %d->%d, time %f->%f\n", max_pc, i, max_time, zpad_time[i][j]);
+                        max_time = zpad_time[i][j];
+                        max_pc = i;
+                     }
+                  }
+               }
+               if (max_pc >= 0) {
+                  for (int i=0; i<NUM_PC; i++) {
+                     if (i<max_pc) {
+                        zpad_side[i] = 1;
+                     } else {
+                        zpad_side[i] = -1;
+                     }
+                  }
+               }
             }
 
             if (1) {
@@ -929,6 +933,21 @@ public:
                hpct->SetMaximum(MAX_TIME);
                //hpct->Draw("AC*");
                hpct->Draw("A*");
+
+               for (int i=0; i<NUM_PC; i++) {
+                  if (zpad_col[i].size() == 0)
+                     continue;
+
+                  TGraph* g = new TGraph(zpad_col[i].size(), zpad_col[i].data(), zpad_time[i].data());
+                  g->SetMarkerStyle(20);
+                  g->SetMarkerSize(0.75);
+                  g->SetMarkerColor(zpad_colour[i]);
+                  g->GetXaxis()->SetLimits(-0.5, NUM_PC-0.5);
+                  g->SetMinimum(0);
+                  g->SetMaximum(MAX_TIME);
+                  //hpct->Draw("AC*");
+                  g->Draw("*");
+               }
             }
 
             if (1) {
@@ -942,6 +961,180 @@ public:
                hpca->SetMaximum(MAX_PAD_AMP);
                //hpct->Draw("AC*");
                hpca->Draw("A*");
+
+               for (int i=0; i<NUM_PC; i++) {
+                  if (zpad_col[i].size() == 0)
+                     continue;
+
+                  TGraph* g = new TGraph(zpad_col[i].size(), zpad_col[i].data(), zpad_amp[i].data());
+                  g->SetMarkerStyle(20);
+                  g->SetMarkerSize(0.75);
+                  g->SetMarkerColor(zpad_colour[i]);
+                  g->GetXaxis()->SetLimits(-0.5, NUM_PC-0.5);
+                  g->SetMinimum(0);
+                  g->SetMaximum(MAX_PAD_AMP);
+                  //hpct->Draw("AC*");
+                  g->Draw("*");
+               }
+            }
+
+            if (1) {
+               p_pad_row->cd(1);
+               
+               //TGraph* hprt = new TGraph();
+               //hprt->SetMarkerStyle(20);
+               //hprt->SetMarkerSize(0.75);
+               //hprt->SetMarkerColor(4);
+               //hprt->GetXaxis()->SetLimits(-0.5, NUM_PR-0.5);
+               //hprt->SetMinimum(0);
+               //hprt->SetMaximum(MAX_PAD_AMP);
+               //hprt->Draw("AC*");
+               //hprt->Draw("A*");
+
+               bool first = true;
+
+               for (int i=0; i<NUM_PC; i++) {
+                  if (zpad_col[i].size() == 0)
+                     continue;
+                  if (zpad_side[i] != 1)
+                     continue;
+
+                  //printf("111 col %d, size %d\n", i, zpad_row[i].size());
+                  TGraph* g = new TGraph(zpad_row[i].size(), zpad_row[i].data(), zpad_amp[i].data());
+                  g->SetMarkerStyle(20);
+                  g->SetMarkerSize(0.75);
+                  g->SetMarkerColor(zpad_colour[i]);
+                  g->GetXaxis()->SetLimits(-0.5, NUM_PR-0.5);
+                  g->SetMinimum(0);
+                  g->SetMaximum(MAX_PAD_AMP);
+                  if (first) {
+                     g->Draw("A*");
+                     first = false;
+                  } else {
+                     g->Draw("*");
+                  }
+               }
+            }
+
+            if (1) {
+               p_pad_row->cd(2);
+
+               //TGraph* hprt = new TGraph(pad_row.size(), pad_row.data(), pad_time.data());
+               //hprt->SetTitle("XXX; aaa; bbb");
+               //hprt->SetMarkerStyle(20);
+               //hprt->SetMarkerSize(0.75);
+               //hprt->SetMarkerColor(4);
+               //hprt->GetXaxis()->SetLimits(-0.5, NUM_PR-0.5);
+               //hprt->SetMinimum(-MAX_TIME);
+               //hprt->SetMaximum(0);
+               //hprt->Draw("AC*");
+               //hprt->Draw("A*");
+
+               bool first = true;
+
+               for (int i=0; i<NUM_PC; i++) {
+                  if (zpad_row[i].size() == 0)
+                     continue;
+                  if (zpad_side[i] != 1)
+                     continue;
+
+                  for (unsigned j=0; j<zpad_row[i].size(); j++) {
+                     zpad_time[i][j] = -zpad_time[i][j];
+                  }
+
+                  //printf("222 col %d, size %d\n", i, zpad_row[i].size());
+                  TGraph* g = new TGraph(zpad_row[i].size(), zpad_row[i].data(), zpad_time[i].data());
+                  g->SetMarkerStyle(20);
+                  g->SetMarkerSize(0.75);
+                  g->SetMarkerColor(zpad_colour[i]);
+                  g->GetXaxis()->SetLimits(-0.5, NUM_PR-0.5);
+                  g->SetMinimum(-MAX_TIME);
+                  g->SetMaximum(0);
+
+                  if (first) {
+                     g->Draw("A*");
+                     first = false;
+                  } else {
+                     g->Draw("*");
+                  }
+               }
+            }
+
+            if (1) {
+               p_pad_row->cd(3);
+               
+               //TGraph* hprt = new TGraph(pad_row.size(), pad_row.data(), pad_time.data());
+               //hprt->SetTitle("XXX; aaa; bbb");
+               //hprt->SetMarkerStyle(20);
+               //hprt->SetMarkerSize(0.75);
+               //hprt->SetMarkerColor(4);
+               //hprt->GetXaxis()->SetLimits(-0.5, NUM_PR-0.5);
+               //hprt->SetMinimum(0);
+               //hprt->SetMaximum(MAX_TIME);
+               //hprt->Draw("AC*");
+               //hprt->Draw("A*");
+
+               bool first = true;
+
+               for (int i=0; i<NUM_PC; i++) {
+                  if (zpad_row[i].size() == 0)
+                     continue;
+                  if (zpad_side[i] != -1)
+                     continue;
+
+                  //printf("333 col %d, size %d\n", i, zpad_row[i].size());
+                  TGraph* g = new TGraph(zpad_row[i].size(), zpad_row[i].data(), zpad_time[i].data());
+                  g->SetMarkerStyle(20);
+                  g->SetMarkerSize(0.75);
+                  g->SetMarkerColor(zpad_colour[i]);
+                  g->GetXaxis()->SetLimits(-0.5, NUM_PR-0.5);
+                  g->SetMinimum(0);
+                  g->SetMaximum(MAX_TIME);
+                  if (first) {
+                     g->Draw("A*");
+                     first = false;
+                  } else {
+                     g->Draw("*");
+                  }
+               }
+            }
+
+            if (1) {
+               p_pad_row->cd(4);
+
+               //TGraph* hprt = new TGraph(pad_row.size(), pad_row.data(), pad_amp.data());
+               //hprt->SetMarkerStyle(20);
+               //hprt->SetMarkerSize(0.75);
+               //hprt->SetMarkerColor(4);
+               //hprt->GetXaxis()->SetLimits(-0.5, NUM_PR-0.5);
+               //hprt->SetMinimum(0);
+               //hprt->SetMaximum(MAX_PAD_AMP);
+               //hprt->Draw("AC*");
+               //hprt->Draw("A*");
+
+               bool first = true;
+
+               for (int i=0; i<NUM_PC; i++) {
+                  if (zpad_row[i].size() == 0)
+                     continue;
+                  if (zpad_side[i] != -1)
+                     continue;
+
+                  //printf("444 col %d, size %d\n", i, zpad_row[i].size());
+                  TGraph* g = new TGraph(zpad_row[i].size(), zpad_row[i].data(), zpad_amp[i].data());
+                  g->SetMarkerStyle(20);
+                  g->SetMarkerSize(0.75);
+                  g->SetMarkerColor(zpad_colour[i]);
+                  g->GetXaxis()->SetLimits(-0.5, NUM_PR-0.5);
+                  g->SetMinimum(0);
+                  g->SetMaximum(MAX_PAD_AMP);
+                  if (first) {
+                     g->Draw("A*");
+                     first = false;
+                  } else {
+                     g->Draw("*");
+                  }
+               }
             }
 
             fC->Modified();
