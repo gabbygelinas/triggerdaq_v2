@@ -85,6 +85,9 @@ public:
 
    TH1D* h_aw_352;
 
+   TH1D* h_adc16_bits;
+   TH2D* h_adc16_bits_vs_aw;
+
    TH1D* h_pad_time;
    TH1D* h_pad_amp;
    TH2D* h_pad_amp_time;
@@ -230,6 +233,9 @@ public:
 
       h_aw_352 = new TH1D("h_aw_352", "h_aw_352", NUM_AW, -0.5, NUM_AW-0.5);
 
+      h_adc16_bits = new TH1D("h_adc16_bits", "FPGA adc16_coinc_dff bits; link bit 0..15", 16, -0.5, 16-0.5);
+      h_adc16_bits_vs_aw = new TH2D("h_adc16_bits_vs_aw", "FPGA adc16_coinc_dff bits vs AW tpc wire number; tpc wire number; link bit 0..15", NUM_AW, -0.5, NUM_AW-0.5, 16, -0.5, 16-0.5);
+
       h_num_pad_hits = new TH1D("h_num_pad_hits", "number of cathode pad hits", 100, 0, 100);
       h_pad_time = new TH1D("h_pad_time", "pad hit time; time, ns", 100, 0, MAX_TIME);
       h_pad_amp = new TH1D("h_pad_amp", "pad hit pulse height; adc counts", 100, 0, MAX_PAD_AMP);
@@ -341,6 +347,23 @@ public:
    {
       //printf("FinalModule::Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
 
+      std::vector<uint32_t> atat;
+
+      TMBank* atat_bank = event->FindBank("ATAT");
+      if (atat_bank) {
+         const char* p8 = event->GetBankData(atat_bank);
+         const uint32_t *p32 = (const uint32_t*)p8;
+         for (unsigned i=0; i<atat_bank->data_size/4; i++) {
+            printf("ATAT[%d]: 0x%08x (%d)\n", i, p32[i], p32[i]);
+            atat.push_back(p32[i]);
+         }
+      }
+
+      uint32_t adc16_coinc_dff = 0;
+      if (atat.size() > 7) {
+         adc16_coinc_dff = (atat[6]>>8)&0xFFFF;
+      }
+
       AgEventFlow *ef = flow->Find<AgEventFlow>();
 
       if (!ef || !ef->fEvent)
@@ -395,6 +418,17 @@ public:
          printf("Have AgEvent: %d %d, %f %f, diff %f, ts 0x%08x 0x%08x, ns: %12d %12d, diff %d\n", age->a16->counter, age->feam->counter, atr, ftr, dtr, a16_tsr, feam_tsr, a16_tsr_ns, feam_tsr_ns, dts_ns);
       }
 
+      if (adc16_coinc_dff) {
+         printf("adc16_coinc_dff: 0x%04x: ", adc16_coinc_dff);
+         for (int i=0; i<16; i++) {
+            if (adc16_coinc_dff & (1<<i)) {
+               printf(" link%d", i);
+               h_adc16_bits->Fill(i);
+            }
+         }
+         printf("\n");
+      }
+
       double adc5_0  = -1010;
       double adc5_1  = -1020;
       double adc5_4  = -1030;
@@ -430,6 +464,18 @@ public:
             h_aw_map->Fill(wire);
             h_aw_map_time->Fill(wire, time);
             h_aw_map_amp->Fill(wire, amp);
+
+            if (adc16_coinc_dff) {
+               //printf("adc16_coinc_dff: 0x%04x: ", adc16_coinc_dff);
+               for (int i=0; i<16; i++) {
+                  if (adc16_coinc_dff & (1<<i)) {
+                     //printf(" link%d", i);
+                     //h_adc16_bits->Fill(i);
+                     h_adc16_bits_vs_aw->Fill(wire, i);
+                  }
+               }
+               //printf("\n");
+            }
 
             if (adc_module == 5) {
                if (adc_chan ==  0) adc5_0  = time;
@@ -925,6 +971,7 @@ public:
             if (1) {
                p_pad->cd(1);
                TGraph* hpct = new TGraph(pad_col.size(), pad_col.data(), pad_time.data());
+               hpct->SetTitle("Pads hit time per pad column; pad column; hit time, ns");
                hpct->SetMarkerStyle(20);
                hpct->SetMarkerSize(0.75);
                hpct->SetMarkerColor(4);
@@ -953,6 +1000,7 @@ public:
             if (1) {
                p_pad->cd(2);
                TGraph* hpca = new TGraph(pad_col.size(), pad_col.data(), pad_amp.data());
+               hpca->SetTitle("Pads hit amplitude per pad column; pad column; hit amplitude, ADC counts");
                hpca->SetMarkerStyle(20);
                hpca->SetMarkerSize(0.75);
                hpca->SetMarkerColor(4);
@@ -967,6 +1015,7 @@ public:
                      continue;
 
                   TGraph* g = new TGraph(zpad_col[i].size(), zpad_col[i].data(), zpad_amp[i].data());
+                  g->SetTitle("Pads hit amplitude per pad row; pad row; hit amplitude, ADC counts");
                   g->SetMarkerStyle(20);
                   g->SetMarkerSize(0.75);
                   g->SetMarkerColor(zpad_colour[i]);
@@ -1001,6 +1050,7 @@ public:
 
                   //printf("111 col %d, size %d\n", i, zpad_row[i].size());
                   TGraph* g = new TGraph(zpad_row[i].size(), zpad_row[i].data(), zpad_amp[i].data());
+                  g->SetTitle("Pads hit time per pad row; pad row; hit time, ns");
                   g->SetMarkerStyle(20);
                   g->SetMarkerSize(0.75);
                   g->SetMarkerColor(zpad_colour[i]);
@@ -1044,6 +1094,7 @@ public:
 
                   //printf("222 col %d, size %d\n", i, zpad_row[i].size());
                   TGraph* g = new TGraph(zpad_row[i].size(), zpad_row[i].data(), zpad_time[i].data());
+                  g->SetTitle("Pads hit time per pad row; pad row; hit time, ns");
                   g->SetMarkerStyle(20);
                   g->SetMarkerSize(0.75);
                   g->SetMarkerColor(zpad_colour[i]);
@@ -1084,6 +1135,7 @@ public:
 
                   //printf("333 col %d, size %d\n", i, zpad_row[i].size());
                   TGraph* g = new TGraph(zpad_row[i].size(), zpad_row[i].data(), zpad_time[i].data());
+                  g->SetTitle("Pads hit time per pad row; pad row; hit time, ns");
                   g->SetMarkerStyle(20);
                   g->SetMarkerSize(0.75);
                   g->SetMarkerColor(zpad_colour[i]);
@@ -1122,6 +1174,7 @@ public:
 
                   //printf("444 col %d, size %d\n", i, zpad_row[i].size());
                   TGraph* g = new TGraph(zpad_row[i].size(), zpad_row[i].data(), zpad_amp[i].data());
+                  g->SetTitle("Pads hit amplitude per pad row; pad row; hit amplitude, ADC counts");
                   g->SetMarkerStyle(20);
                   g->SetMarkerSize(0.75);
                   g->SetMarkerColor(zpad_colour[i]);
@@ -1140,6 +1193,10 @@ public:
             fC->Modified();
             fC->Draw();
             fC->Update();
+         }
+
+         for (unsigned i=0; i<atat.size(); i++) {
+            printf("ATAT[%d]: 0x%08x (%d)\n", i, atat[i], atat[i]);
          }
 
 #if 0
