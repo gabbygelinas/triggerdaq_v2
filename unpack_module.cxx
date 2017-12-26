@@ -79,16 +79,18 @@ public:
       DELETE(fAgEvb);
    }
 
-   void LoadFeamBanks(int runno)
+   bool LoadFeamBanks(int runno)
    {
       fFeamBanks = fCfm->ReadFile("feam", "banks", runno);
       printf("Loaded feam banks: %s\n", join(" ", fFeamBanks).c_str());
+      return fFeamBanks.size() > 0;
    }
 
-   void LoadAdcMap(int runno)
+   bool LoadAdcMap(int runno)
    {
       fAdcMap = fCfm->ReadFile("adc", "map", runno);
       printf("Loaded adc map: %s\n", join(", ", fAdcMap).c_str());
+      return fAdcMap.size() > 0;
    }
 
    void BeginRun(TARunInfo* runinfo)
@@ -98,20 +100,17 @@ public:
       printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
 
-      LoadFeamBanks(runinfo->fRunNo);
+      bool have_feam = LoadFeamBanks(runinfo->fRunNo);
+      bool have_a16  = LoadAdcMap(runinfo->fRunNo);
 
-      bool have_a16  = true;
-      bool have_feam = true;
-
-      if (runinfo->fRunNo == 537) {
-         have_a16 = false;
-      }
+      //if (runinfo->fRunNo == 537) {
+      //   have_a16 = false;
+      //}
 
       if (have_a16) {
          fA16Evb  = new Alpha16EVB();
          fA16Evb->Reset();
          fA16Evb->Configure(runinfo->fRunNo);
-         LoadAdcMap(runinfo->fRunNo);
          fA16Evb->fMap.Init(fAdcMap);
          fA16Evb->fMap.Print();
       }
@@ -120,8 +119,14 @@ public:
          fFeamEvb = new FeamEVB(fFeamBanks.size(), 125.0*1e6, 100000/1e9);
          //fFeamEvb->fSync.fTrace = true;
       }
+
+      int agevb_max_dead = 90;
+
+      if (!have_a16 || !have_feam) {
+         agevb_max_dead = 1;
+      }
       
-      fAgEvb = new AgEVB(100.0*1e6, 125.0*1e6, 50.0*1e-6, 100, 90, true);
+      fAgEvb = new AgEVB(100.0*1e6, 125.0*1e6, 50.0*1e-6, 100, agevb_max_dead, true);
    }
 
    void EndRun(TARunInfo* runinfo)
