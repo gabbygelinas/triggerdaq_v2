@@ -952,21 +952,25 @@ public:
                gPad->Update();
                grP1->GetPolargram()->SetToRadian();
 
-               TGraphPolar* gpads = new TGraphPolar(pads_theta.size(), pads_theta.data(), pads_radius.data(), pads_etheta.data(), pads_eradius.data());
-               gpads->SetMarkerStyle(20);
-               gpads->SetMarkerSize(0.75);
-               gpads->SetMarkerColor(7);
-               gpads->SetLineColor(3);
-               gpads->SetLineWidth(3);
-               gpads->Draw("PE");
+               if (pads_theta.size() > 0) {
+                  TGraphPolar* gpads = new TGraphPolar(pads_theta.size(), pads_theta.data(), pads_radius.data(), pads_etheta.data(), pads_eradius.data());
+                  gpads->SetMarkerStyle(20);
+                  gpads->SetMarkerSize(0.75);
+                  gpads->SetMarkerColor(7);
+                  gpads->SetLineColor(3);
+                  gpads->SetLineWidth(3);
+                  gpads->Draw("PE");
+               }
 
-               TGraphPolar* gaw = new TGraphPolar(aw_theta.size(), aw_theta.data(), aw_radius.data(), aw_etheta.data(), aw_eradius.data());
-               gaw->SetMarkerStyle(20);
-               gaw->SetMarkerSize(0.75);
-               gaw->SetMarkerColor(4);
-               gaw->SetLineColor(2);
-               gaw->SetLineWidth(3);
-               gaw->Draw("PE");
+               if (aw_theta.size() > 0) {
+                  TGraphPolar* gaw = new TGraphPolar(aw_theta.size(), aw_theta.data(), aw_radius.data(), aw_etheta.data(), aw_eradius.data());
+                  gaw->SetMarkerStyle(20);
+                  gaw->SetMarkerSize(0.75);
+                  gaw->SetMarkerColor(4);
+                  gaw->SetLineColor(2);
+                  gaw->SetLineWidth(3);
+                  gaw->Draw("PE");
+               }
             }
 
             TVirtualPad *p_pad_row = fC->cd(4);
@@ -1018,7 +1022,7 @@ public:
                }
             }
 
-            if (1) {
+            if (pad_col.size() > 0) {
                p_pad->cd(1);
                TGraph* hpct = new TGraph(pad_col.size(), pad_col.data(), pad_time.data());
                hpct->SetTitle("Pads hit time per pad column; pad column; hit time, ns");
@@ -1047,7 +1051,7 @@ public:
                }
             }
 
-            if (1) {
+            if (pad_col.size() > 0) {
                p_pad->cd(2);
                TGraph* hpca = new TGraph(pad_col.size(), pad_col.data(), pad_amp.data());
                hpca->SetTitle("Pads hit amplitude per pad column; pad column; hit amplitude, ADC counts");
