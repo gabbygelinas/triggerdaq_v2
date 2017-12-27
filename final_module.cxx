@@ -781,9 +781,20 @@ public:
                std::vector<Double_t> pads_etheta;
                std::vector<Double_t> pads_eradius;
                
+               bool preamp_hits[16];
+               for (unsigned j=0; j<16; j++) {
+                  preamp_hits[j] = 0;
+               }
+
+               std::vector<Double_t> preamp_theta;
+               std::vector<Double_t> preamp_radius;
+               std::vector<Double_t> preamp_etheta;
+               std::vector<Double_t> preamp_eradius;
+               
                double rmin = 0.6;
                double rmax = 1.0;
                double r_aw = 1.1;
+               double r_preamp = 1.15;
                double r_pads = 1.2;
                
                if (0) {
@@ -797,7 +808,7 @@ public:
                
                if (eawh) {
                   //h_num_aw_hits->Fill(eawh->fAwHits.size());
-                  
+
                   for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
                      //h_aw_map->Fill(eawh->fAwHits[j].wire);
                      //h_aw_time->Fill(eawh->fAwHits[j].time);
@@ -810,6 +821,8 @@ public:
                      int iwire = eawh->fAwHits[j].wire%num_wires;
                      int itb = eawh->fAwHits[j].wire/num_wires;
                      
+                     int ipreamp = iwire/16;
+                     
                      double dist = (eawh->fAwHits[j].time - 1000.0)/4000.0;
                      if (dist < 0)
                         dist = 0;
@@ -819,7 +832,9 @@ public:
                      double t = ((iwire-8.0)/(1.0*num_wires))*(2.0*TMath::Pi());
                      double r = rmax-dist*(rmax-rmin);
                      
-                     printf("aw hit %d, wire %d, tb %d, iwire %d, t %f (%f), r %f\n", j, eawh->fAwHits[j].wire, itb, iwire, t, t/TMath::Pi(), r);
+                     printf("aw hit %3d, wire %3d, tb %d, preamp %2d, iwire %3d, t %f (%f), r %f\n", j, eawh->fAwHits[j].wire, itb, ipreamp, iwire, t, t/TMath::Pi(), r);
+
+                     preamp_hits[ipreamp] = true;
                      
                      //theta.push_back(t+0.5*TMath::Pi());
                      //radius.push_back(r);
@@ -912,6 +927,21 @@ public:
                }
                
                if (1) {
+                  printf("preamp hits:");
+                  for (unsigned ipreamp=0; ipreamp<16; ipreamp++) {
+                     if (preamp_hits[ipreamp]) {
+                        printf(" %d", ipreamp);
+                        double t = ((ipreamp)/(1.0*16))*(2.0*TMath::Pi());
+                        preamp_theta.push_back(t+0.5*TMath::Pi());
+                        preamp_radius.push_back(r_preamp);
+                        preamp_etheta.push_back(16*2.0*TMath::Pi()/256.0/2.0);
+                        preamp_eradius.push_back(0.0);
+                     }
+                  }
+                  printf("\n");
+               }
+
+               if (1) {
                   theta.push_back(0+0.5*TMath::Pi());
                   radius.push_back(0);
                   etheta.push_back(TMath::Pi()/8.);
@@ -970,6 +1000,16 @@ public:
                   gaw->SetLineColor(2);
                   gaw->SetLineWidth(3);
                   gaw->Draw("PE");
+               }
+
+               if (preamp_theta.size() > 0) {
+                  TGraphPolar* gpreamp = new TGraphPolar(preamp_theta.size(), preamp_theta.data(), preamp_radius.data(), preamp_etheta.data(), preamp_eradius.data());
+                  gpreamp->SetMarkerStyle(20);
+                  gpreamp->SetMarkerSize(0.75);
+                  gpreamp->SetMarkerColor(4);
+                  gpreamp->SetLineColor(4);
+                  gpreamp->SetLineWidth(3);
+                  gpreamp->Draw("PE");
                }
             }
 
