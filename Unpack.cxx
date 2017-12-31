@@ -80,8 +80,8 @@ Alpha16Event* UnpackAlpha16Event(Alpha16Asm* adcasm, TMEvent* me)
 
    if (e) {
       adcasm->CheckEvent(e);
-      e->Print();
-      printf("\n");
+      //e->Print();
+      //printf("\n");
    }
 
    return e;

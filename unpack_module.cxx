@@ -31,6 +31,7 @@ static std::string join(const char* sep, const std::vector<std::string> &v)
    return s;
 }
 
+#if 0
 static std::vector<std::string> split(const std::string& s, char seperator)
 {
    std::vector<std::string> output;
@@ -47,6 +48,7 @@ static std::vector<std::string> split(const std::string& s, char seperator)
    output.push_back(s.substr(prev_pos, pos-prev_pos)); // Last word
    return output;
 }
+#endif
 
 class UnpackModule: public TARunObject
 {
@@ -102,10 +104,6 @@ public:
 
       bool have_feam = LoadFeamBanks(runinfo->fRunNo);
       bool have_a16  = LoadAdcMap(runinfo->fRunNo);
-
-      //if (runinfo->fRunNo == 537) {
-      //   have_a16 = false;
-      //}
 
       if (have_a16) {
          fAdcAsm  = new Alpha16Asm();
