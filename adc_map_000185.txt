@@ -1,0 +1,11 @@
+# adc map, run 185
+# module connector cable preamp
+adc09 0 A B0
+adc12 0 B B1
+adc04 0 C B2
+adc11 0 D B3
+adc10 0 E B4
+adc15 0 F B5
+adc17 0 G B6
+adc18 0 H B7
+#end
