@@ -143,7 +143,7 @@ public:
                break;
             
             if (1) {
-               printf("Unpacked FEAM event: ");
+               printf("Unpacked PWB event: ");
                e->Print();
                printf("\n");
             }
@@ -227,7 +227,7 @@ public:
 
          if (e) {
             if (1) {
-               printf("Unpacked Alpha16 event: ");
+               printf("Unpacked ADC event: ");
                e->Print();
                printf("\n");
             }
@@ -245,7 +245,7 @@ public:
          FeamEvent *e = UnpackFeamEvent(fFeamEvb, event, fFeamBanks);
          if (e) {
             if (1) {
-               printf("Unpacked FEAM event: ");
+               printf("Unpacked PWB event: ");
                e->Print();
                printf("\n");
             }

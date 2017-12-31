@@ -109,7 +109,7 @@ class Alpha16Asm
  public: // internal state
    int fEventCount = 0; // event counter
 
-   //bool     fHaveEventTs = false;
+   double   fFirstEventTime = 0;
    uint32_t fLastEventTs = 0;
    double   fLastEventTime = 0;
    int      fTsEpoch = 0;

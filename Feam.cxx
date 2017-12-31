@@ -480,7 +480,7 @@ FeamEvent::~FeamEvent() // dtor
 
 void FeamEvent::Print(int level) const
 {
-   printf("FeamEvent %d, time %f, incr %f, complete %d, error %d, modules: ", counter, time, timeIncr, complete, error);
+   printf("PwbEvent %d, time %f, incr %f, complete %d, error %d, modules: ", counter, time, timeIncr, complete, error);
    for (unsigned i=0; i<modules.size(); i++) {
       if (modules[i] == NULL) {
             printf(" null");

@@ -236,17 +236,7 @@ void Alpha16Event::Print() const
       e += ")";
    }
 
-   printf("Alpha16Event: %d, time %.6f, incr %.6f, complete %d, error %s, hits: %d, udp: %d", counter, time, timeIncr, complete, e.c_str(), (int)hits.size(), (int)udp.size());
-
-#if 0
-   for (int i=0; i<MAX_ALPHA16*NUM_CHAN_ALPHA16; i+=NUM_CHAN_ALPHA16) {
-      uint32_t ts = udpEventTsIncr[i];
-      if (ts) {
-         //printf(" 0x%08x (0x%08x)", ts, (int)((ts*100.0)/125.0));
-         printf(" 0x%08x", ts);
-      }
-   }
-#endif
+   printf("AdcEvent %d, time %.6f, incr %.6f, complete %d, error %s, hits: %d, udp: %d", counter, time, timeIncr, complete, e.c_str(), (int)hits.size(), (int)udp.size());
 }
 
 static std::vector<std::string> split(const std::string& s, char seperator)
@@ -649,6 +639,12 @@ void Alpha16Asm::CheckEvent(Alpha16Event* e)
       }
 
       double eventTime = ets/ts_freq + fTsEpoch*(2.0*0x80000000/ts_freq);
+
+      if (e->counter <= 1) {
+         fFirstEventTime = eventTime;
+      }
+
+      eventTime -= fFirstEventTime;
 
       e->time = eventTime;
       e->timeIncr = eventTime - fLastEventTime;

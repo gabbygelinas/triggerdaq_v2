@@ -74,7 +74,7 @@ FeamEvent* FeamEVB::FindEvent(double t)
    FeamEvent* e = new FeamEvent();
    e->complete = false;
    e->error = false;
-   e->counter = fCounter++;
+   e->counter = (++fCounter);
    e->time = t;
    
    for (unsigned i=0; i<fNumModules; i++) {
