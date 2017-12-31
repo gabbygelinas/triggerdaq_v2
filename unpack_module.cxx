@@ -52,7 +52,7 @@ class UnpackModule: public TARunObject
 {
 public:
    Ncfm*       fCfm = NULL;
-   Alpha16EVB* fA16Evb = NULL;
+   Alpha16Asm* fAdcAsm = NULL;
    FeamEVB*    fFeamEvb = NULL;
    AgEVB*      fAgEvb = NULL;
 
@@ -65,7 +65,7 @@ public:
       printf("UnpackModule::ctor!\n");
 
       fCfm     = new Ncfm(getenv("AG_CFM"));
-      fA16Evb  = NULL;
+      fAdcAsm  = NULL;
       fFeamEvb = NULL;
       fAgEvb   = NULL;
    }
@@ -74,7 +74,7 @@ public:
    {
       printf("UnpackModule::dtor!\n");
       DELETE(fCfm);
-      DELETE(fA16Evb);
+      DELETE(fAdcAsm);
       DELETE(fFeamEvb);
       DELETE(fAgEvb);
    }
@@ -108,11 +108,9 @@ public:
       //}
 
       if (have_a16) {
-         fA16Evb  = new Alpha16EVB();
-         fA16Evb->Reset();
-         fA16Evb->Configure(runinfo->fRunNo);
-         fA16Evb->fMap.Init(fAdcMap);
-         fA16Evb->fMap.Print();
+         fAdcAsm  = new Alpha16Asm();
+         fAdcAsm->fMap.Init(fAdcMap);
+         fAdcAsm->fMap.Print();
       }
 
       if (have_feam) {
@@ -226,8 +224,8 @@ public:
       if (event->event_id != 1)
          return flow;
 
-      if (fA16Evb) {
-         Alpha16Event* e = UnpackAlpha16Event(fA16Evb, event);
+      if (fAdcAsm) {
+         Alpha16Event* e = UnpackAlpha16Event(fAdcAsm, event);
 
          if (e) {
             if (1) {

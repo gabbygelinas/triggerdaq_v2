@@ -20,7 +20,7 @@ static int bank_name_to_module(const char* s)
    }
 }
 
-Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, TMEvent* me)
+Alpha16Event* UnpackAlpha16Event(Alpha16Asm* adcasm, TMEvent* me)
 {
    me->FindAllBanks();
    
@@ -69,9 +69,9 @@ Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, TMEvent* me)
             //printf("\n");
             
             if (!e) {
-               e = evb->NewEvent();
+               e = adcasm->NewEvent();
             }
-            evb->AddChannel(e, p, c);
+            adcasm->AddChannel(e, p, c);
          } else {
             printf("unknown packet type %d, version %d\n", packetType, packetVersion);
          }
@@ -79,7 +79,7 @@ Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, TMEvent* me)
    }
 
    if (e) {
-      evb->CheckEvent(e);
+      adcasm->CheckEvent(e);
       e->Print();
       printf("\n");
    }

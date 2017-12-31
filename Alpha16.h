@@ -93,20 +93,15 @@ struct Alpha16Event
    void Print() const;
 };
 
-class Alpha16EVB
+class Alpha16Asm
 {
  public: // configuration
    Alpha16Map fMap;
 
- public: // constructor
-   Alpha16EVB(); // ctor
+ public:
+   Alpha16Asm(); // ctor
 
  public: // member functions
-   void Reset();
-   //void Print() const;
-
-   void Configure(int runno);
-
    Alpha16Event* NewEvent();
    void AddChannel(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c);
    void CheckEvent(Alpha16Event* e);
@@ -114,10 +109,13 @@ class Alpha16EVB
  public: // internal state
    int fEventCount = 0; // event counter
 
-   bool     fHaveEventTs = false;
+   //bool     fHaveEventTs = false;
    uint32_t fLastEventTs = 0;
    double   fLastEventTime = 0;
    int      fTsEpoch = 0;
+
+ public: // internal functions
+   void Init();
 };
 
 #endif

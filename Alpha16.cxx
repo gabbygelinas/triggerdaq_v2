@@ -356,82 +356,17 @@ void Alpha16Map::Print() const
    }
 }
 
-Alpha16EVB::Alpha16EVB() // ctor
+Alpha16Asm::Alpha16Asm() // ctor
 {
-   Reset();
+   Init();
 }
    
-void Alpha16EVB::Reset()
-{
-   //printf("Alpha16EVB::Reset!\n");
-   fEventCount = 0;
-   fHaveEventTs = false;
-   fTsEpoch = 0;
-   fLastEventTs = 0;
-   fLastEventTime = 0;
-}
-
 //static const int chanmap_top[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
 static const int chanmap_top[] = { 7, 15, 6, 14, 5, 13, 4, 12, 3, 11, 2, 10, 1, 9, 0, 8 };
 static const int chanmap_bot[] = { 8, 0, 9, 1, 10, 2, 11, 3, 12, 4, 13, 5, 14, 6, 15, 7 };
 
 static const int inv_chanmap_top[] = { 14, 12, 10, 8, 6, 4, 2, 0, 15, 13, 11, 9, 7, 5, 3, 1 };
 static const int inv_chanmap_bot[] = { 1, 3, 5, 7, 9, 11, 13, 15, 0, 2, 4, 6, 8, 10, 12, 14 };
-
-static const int xadc32_chanmap[32] = 
-   {
-      24, 19,
-      9, 7,
-      15, 3,
-      11, 6,
-      13, 2,
-      10, 1,
-      4, 12,
-      0, 5,
-      31, 28,
-      27, 23,
-      26, 21,
-      22, 30,
-      29, 20,
-      18, 17,
-      16, 14,
-      8, 25
-   };
-
-static const int xmap[32] = {
-   0,
-   10,//1
-   6,//2,
-   8,//3,
-   9,//4,//5,//4,
-   4,//9,//4,//5,
-   1,//2,//6,
-   7,
-   3,//8,
-   5,//4,//9,
-   2,//1,//10,
-   11,
-   12,
-   13,
-   14,
-   15,
-   16,
-   17,
-   18,
-   19,
-   20,
-   21,
-   22,
-   23,
-   24,
-   25,
-   28, //26,
-   30, //27,
-   26, //28,
-   27, //30, //29,
-   29, //30,
-   31
-};
 
 static const int adc32_chanmap[32] = {
    0,
@@ -470,7 +405,7 @@ static const int adc32_chanmap[32] = {
 
 static int inv_adc32_chanmap[32];
 
-void Alpha16EVB::Configure(int runno)
+void Alpha16Asm::Init()
 {
    // construct or check the inverted adc16 map
    
@@ -524,25 +459,7 @@ void Alpha16EVB::Configure(int runno)
 #endif
 }
 
-#if 0
-void Alpha16EVB::Print() const
-{
-   printf("EVB contents:\n");
-   for (unsigned i=0; i<fEvents.size(); i++) {
-      printf("Entry %d: ", i);
-      fEvents[i]->Print();
-   }
-}
-#endif
-
-#if 0
-bool Alpha16EVB::Match(const Alpha16Event* e, int imodule, uint32_t udpTs)
-{
-   return (e->udpEventTs[imodule] == udpTs);
-}
-#endif
-
-void Alpha16EVB::AddChannel(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c)
+void Alpha16Asm::AddChannel(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c)
 {
    int imodule = c->adc_module;
    if (imodule > 0 && imodule < (int)fMap.fMap.size() && fMap.fMap[imodule].module == imodule) {
@@ -557,7 +474,6 @@ void Alpha16EVB::AddChannel(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c
          int ichan = c->adc_chan-16; // 32ch ADC channel number
          //int zchan = inv_adc32_chanmap[ichan];
          //int zchan = ichan;
-         //int zchan = xmap[ichan];
          int zchan = inv_adc32_chanmap[ichan];
          if (zchan < 16) {
             c->preamp_pos = pos1;
@@ -675,7 +591,7 @@ void Alpha16EVB::AddBank(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c)
 }
 #endif
 
-Alpha16Event* Alpha16EVB::NewEvent()
+Alpha16Event* Alpha16Asm::NewEvent()
 {
    Alpha16Event *e = new Alpha16Event();
    fEventCount++;
@@ -685,7 +601,7 @@ Alpha16Event* Alpha16EVB::NewEvent()
 
 //const double TSCLK = 0.1; // GHz
 
-void Alpha16EVB::CheckEvent(Alpha16Event* e)
+void Alpha16Asm::CheckEvent(Alpha16Event* e)
 {
    //e->Print(); printf("\n");
 
