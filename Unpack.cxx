@@ -71,7 +71,7 @@ Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, TMEvent* me)
             if (!e) {
                e = evb->NewEvent();
             }
-            evb->AddBank(e, p, c);
+            evb->AddChannel(e, p, c);
          } else {
             printf("unknown packet type %d, version %d\n", packetType, packetVersion);
          }

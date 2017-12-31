@@ -218,45 +218,10 @@ Alpha16Channel* Unpack(const char* bankname, int module, const Alpha16Packet* p,
    return c;
 };
 
-#if 0
-void Alpha16Waveform::Unpack(const void* bkptr, int bklen8)
-{
-   int nsamples = getUint16(bkptr, 28);
-
-   this->reserve(nsamples);
-   this->clear();
-   
-   //printf("Unpacking: "); Print();
-   for (int i=0; i<nsamples; i++) {
-      int16_t v = getUint16(bkptr, 30 + i*2);
-      //printf("sample %d: 0x%02x (%d)\n", i, v, v);
-      this->push_back(v);
-   }
-};
-#endif
-
 Alpha16Event::Alpha16Event() // ctor
 {
-   //Reset();
 }
 
-#if 0
-void Alpha16Event::Reset()
-{
-   eventNo = 0;
-   eventTime = 0;
-   prevEventTime = 0;
-   time = 0;
-   timeIncr = 0;
-   MEMZERO(udpPresent);
-   MEMZERO(udpEventTs);
-   MEMZERO(udpEventTsIncr);
-   numChan = 0;
-   error    = false;
-   complete = false;
-}
-#endif
-   
 Alpha16Event::~Alpha16Event() // dtor
 {
 }
@@ -284,7 +249,7 @@ void Alpha16Event::Print() const
 #endif
 }
 
-std::vector<std::string> split(const std::string& s, char seperator)
+static std::vector<std::string> split(const std::string& s, char seperator)
 {
    std::vector<std::string> output;
    std::string::size_type prev_pos = 0, pos = 0;
@@ -313,18 +278,6 @@ void Alpha16Map::Init(const std::vector<std::string>& map)
    fNumChan = 0;
 
    for (unsigned i=0; i<map.size(); i++) {
-      //struct Alpha16MapEntry
-      //{
-      //   int module = 0; // ADC module number 1..20 for adc01..adc20
-      //   int connector = 0; // ADC connector: 0=16ch 100MHz ADC. 1,2=32ch 62.5MHz ADC
-      //   int preamp_pos = 0; // preamp position 0..15 for B0..B15, 16..31 for T0..T15
-      //};
-      //
-      //class Alpha16Map
-      //{
-      //public:
-      //   std::vector<Alpha16MapEntry> fMap;
-      //};
       std::vector<std::string> s = split(map[i], ' ');
       if (s.size() != 4) {
          printf("invalid adc map entry %d: [%s]\n", i, map[i].c_str());
@@ -413,16 +366,9 @@ void Alpha16EVB::Reset()
    //printf("Alpha16EVB::Reset!\n");
    fEventCount = 0;
    fHaveEventTs = false;
-   //   MEMZERO(fFirstEventTs);
-   //   MEMZERO(fLastUdpEventTs);
    fTsEpoch = 0;
    fLastEventTs = 0;
    fLastEventTime = 0;
-#if 0
-   fConfModMap.clear();
-   fConfNumChan = 0;
-   fConfNumSamples = 0;
-#endif
 }
 
 //static const int chanmap_top[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
@@ -526,57 +472,8 @@ static int inv_adc32_chanmap[32];
 
 void Alpha16EVB::Configure(int runno)
 {
-#if 0
-   const int modmap[][20] = {
-      //{ 859, -1,  -2,  -3,  -4,  -5,  -6,  -8, 0 },
-      //{ 789, -1,  -2,  -3,  -4,  -5,  -6,  -7,  -8, -11, -12, -14, 0 },
-      //{ 439,  1,   2,   3,   4,   5,   6,   7,   8, 0 },
-      //{ 382,  1,   2,   3,   -4, -5,  -6,   7,  -8, 0 },
-      //{ 368,  1,   2,   3,   4,   5,   0},
-      //{ 269,  1,   2,   3,   4,   5,   6,   7,   8, 0 },
-      //{ 264,  1,   2,   3,   4,  -5,  -6,  -7,  -8, 0 },
-      //{ 257,  1,   2,   3,   4, -18,  -6,  -7,  -8, 9, 10, 11, 12, 17, 14, 15, 16, 0 },
-      //{ 245,  1,   2,   3,   4, -19,  -6,  -7,  -8, 9, 10, 11, 12, 18, 14, 15, 16, 0 },
-      //{ 238,  1,   2,   9,   4, -10,  -6, -14, -19, 0 },
-      //{ 227, 14,  19,   9,   4, -10,  -6,  -7,  -8, 0 },
-      //{ 220,  1,   2,   9,   4, -10,  -6,  -7,  -8, 0 },
-      //{ 218,  1,   2,   8,   4,  -9, -10, -11, -12, 0 },
-      //{ 194,  1,   2,  13,   4,  -9, -10, -11, -12, 0 },
-      //{ 186,  1,   2,  12,   4, -10, -15, -17, -18, 0 },
-      //{ 184, -9, -12,  -4, -11, -10, -15, -17, -18, 0 },
-      //{ 183, -9, -12,  -4, -11, -14, -10, -15, -18, 0 },
-      //{ 180, -9, -12,  -4,  -7,  -8, -10, -15, -16, 0 },
-      //{ 177,  9,  12,   4,   7,   8,  10,  15,  16, 0 },
-      //{ 173,  9,  12,   4,   6,   8,  10,  15,  16, 0 },
-      //{ 171,  9,  12,   4,  19,   8,  10,  15,  16, 0 },
-      //{ 158,  1,   2,   4,   7,  -8, -10, -15, -16, 0 },
-      //{ 154, -1,  -2,  -4,  -7,  -8, -10, -15, -16, 0 },
-      //{ 151,  1,   2,   4,   7,   8,  10,  15,  16, 0 },
-      //{ 147,  1,   2,   3,   4,   6,   7,   8,  16, 0 },
-      //{ 140,  4,  10,  13,  15,   1,  16,  17,   2, 0 },
-      { 0 }
-   };
-#endif
-
-   // ensure modmap is sorted by run number in descending order
-
-#if 0
-   for (int i=0; modmap[i][0] != 0; i++) {
-      assert(modmap[i][0] > modmap[i+1][0]);
-   }
-
-   int imap = -1;
+   // construct or check the inverted adc16 map
    
-   for (int i=0; modmap[i][0] != 0; i++) {
-      if (runno >= modmap[i][0]) {
-         imap = i;
-         break;
-      }
-   }
-   
-   assert(imap >= 0);
-#endif
-
    for (int xchan=0; xchan<16; xchan++) {
       int ychan = -1;
       for (int i=0; i<16; i++)
@@ -594,6 +491,8 @@ void Alpha16EVB::Configure(int runno)
          }
       assert(inv_chanmap_top[xchan] == ychan);
    }
+
+   // construct the inverted adc32 map
 
    for (int xchan=0; xchan<32; xchan++) {
       inv_adc32_chanmap[xchan] = -1;
@@ -623,19 +522,6 @@ void Alpha16EVB::Configure(int runno)
    }
    printf("\n");
 #endif
-
-#if 0
-   printf("Alpha16EVB::Configure: for run %d found map index %d for run %d\n", runno, imap, modmap[imap][0]);
-#endif
-
-#if 0
-   fConfModMap.clear();
-   for (int j=1; modmap[imap][j] != 0; j++) {
-      fConfModMap.push_back(modmap[imap][j]);
-   }
-
-   fConfNumChan = NUM_CHAN_ALPHA16 * fConfModMap.size();
-#endif
 }
 
 #if 0
@@ -656,7 +542,7 @@ bool Alpha16EVB::Match(const Alpha16Event* e, int imodule, uint32_t udpTs)
 }
 #endif
 
-void Alpha16EVB::AddBank(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c)
+void Alpha16EVB::AddChannel(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c)
 {
    int imodule = c->adc_module;
    if (imodule > 0 && imodule < (int)fMap.fMap.size() && fMap.fMap[imodule].module == imodule) {
@@ -718,13 +604,6 @@ void Alpha16EVB::AddBank(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c)
 
    e->udp.push_back(p);
    e->hits.push_back(c);
-
-#if 0
-   e->udpEventTs[chan] = e->udpPacket[chan].eventTimestamp;
-   e->udpEventTsIncr[chan] = e->udpEventTs[chan] - fLastUdpEventTs[chan];
-   fLastUdpEventTs[chan] = e->udpEventTs[chan];
-   e->numChan++;
-#endif
 }
 
 #if 0
@@ -958,55 +837,6 @@ void Alpha16EVB::CheckEvent(Alpha16Event* e)
    }
 #endif
 }
-
-#if 0
-Alpha16Event* Alpha16EVB::FindEvent(int imodule, uint32_t udpTs)
-{
-   // loop over buffered events, look for match
-   
-   for (unsigned i=0; i<fEvents.size(); i++) {
-      if (Match(fEvents[i], imodule, udpTs)) {
-         return fEvents[i];
-      }
-   }
-   
-   Alpha16Event *e = new Alpha16Event();
-   fEventCount++;
-   e->eventNo = fEventCount;
-   e->udpEventTs[imodule] = udpTs;
-   if (fFirstEventTs[imodule] == 0) {
-      fFirstEventTs[imodule] = udpTs;
-      fLastEventTs[imodule] = fFirstEventTs[imodule];
-   }
-   e->eventTs = udpTs - fFirstEventTs[imodule];
-   e->prevEventTs = fLastEventTs[imodule] - fFirstEventTs[imodule];
-   
-   fLastEventTs[imodule] = udpTs;
-   
-   //printf("Event %d ts 0x%08x: new!\n", e->eventNo, e->eventTs);
-   
-   fEvents.push_front(e);
-
-   return e;
-}
-#endif
-
-#if 0
-Alpha16Event* Alpha16EVB::GetNextEvent()
-{
-   if (fEvents.size() < 1)
-      return NULL;
-   
-   Alpha16Event* e = fEvents.back();
-   
-   if (e->complete || fEvents.size() > 10) {
-      fEvents.pop_back();
-      return e;
-   }
-  
-   return NULL;
-}
-#endif
 
 /* emacs
  * Local Variables:

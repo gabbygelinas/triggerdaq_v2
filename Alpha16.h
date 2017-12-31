@@ -54,21 +54,6 @@ struct Alpha16Channel
    void Print() const;
 };
 
-#if 0
-struct Alpha16ModuleConfig
-{
-   double adc16_ts_freq = 0;
-   double adc32_ts_freq = 0;
-   
-   int adc16_num_samples = 0;
-   int adc32_num_samples = 0;
-
-   int adc16_preamp_pos = 0;
-   int adc32a_preamp_pos = 0;
-   int adc32b_preamp_pos = 0;
-};
-#endif
-
 struct Alpha16MapEntry
 {
    int module = -1;   // ADC module number 1..20
@@ -90,8 +75,6 @@ class Alpha16Map
 
 Alpha16Channel* Unpack(const char* bankname, int module, const Alpha16Packet* p, const void* bkptr, int bklen8);
 
-#define NUM_CHAN_ALPHA16 16
-
 struct Alpha16Event
 {
    bool complete = false; // event is complete
@@ -110,41 +93,31 @@ struct Alpha16Event
    void Print() const;
 };
 
-struct Alpha16EVB
+class Alpha16EVB
 {
-   int fEventCount = 0; // event counter
+ public: // configuration
+   Alpha16Map fMap;
 
-   bool     fHaveEventTs = false;
-#if 0
-   uint32_t fFirstEventTs[MAX_ALPHA16*NUM_CHAN_ALPHA16]; // udp timestamp of first event
-   uint32_t fLastUdpEventTs[MAX_ALPHA16*NUM_CHAN_ALPHA16];  // udp timestamp of last seen event
-#endif
-   uint32_t fLastEventTs = 0;
-   double   fLastEventTime = 0;
-   int      fTsEpoch = 0;
-
-#if 0
-   int fConfNumChan;
-   int fConfNumSamples;
-   std::vector<int> fConfModMap;
-#endif
-   
+ public: // constructor
    Alpha16EVB(); // ctor
-   
+
+ public: // member functions
    void Reset();
    //void Print() const;
 
    void Configure(int runno);
 
    Alpha16Event* NewEvent();
-   void AddBank(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c);
+   void AddChannel(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c);
    void CheckEvent(Alpha16Event* e);
 
-   //Alpha16Event* FindEvent(int imodule, uint32_t udpTs);
-   //Alpha16Event* GetNextEvent();
-   //static bool Match(const Alpha16Event* e, int imodule, uint32_t udpTs);
+ public: // internal state
+   int fEventCount = 0; // event counter
 
-   Alpha16Map fMap;
+   bool     fHaveEventTs = false;
+   uint32_t fLastEventTs = 0;
+   double   fLastEventTime = 0;
+   int      fTsEpoch = 0;
 };
 
 #endif
