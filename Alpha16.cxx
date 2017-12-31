@@ -530,8 +530,8 @@ void Alpha16EVB::Configure(int runno)
       { 859, -1,  -2,  -3,  -4,  -5,  -6,  -8, 0 },
       { 789, -1,  -2,  -3,  -4,  -5,  -6,  -7,  -8, -11, -12, -14, 0 },
       { 439,  1,   2,   3,   4,   5,   6,   7,   8, 0 },
-      { 382,  1,   2,   3,   -4, -5,  -6,   7,  -8, 0 },
-      { 368,  1,   2,   3,   4,   5,   0},
+      //{ 382,  1,   2,   3,   -4, -5,  -6,   7,  -8, 0 },
+      //{ 368,  1,   2,   3,   4,   5,   0},
       //{ 269,  1,   2,   3,   4,   5,   6,   7,   8, 0 },
       //{ 264,  1,   2,   3,   4,  -5,  -6,  -7,  -8, 0 },
       //{ 257,  1,   2,   3,   4, -18,  -6,  -7,  -8, 9, 10, 11, 12, 17, 14, 15, 16, 0 },
@@ -558,6 +558,7 @@ void Alpha16EVB::Configure(int runno)
 
    // ensure modmap is sorted by run number in descending order
 
+#if 0
    for (int i=0; modmap[i][0] != 0; i++) {
       assert(modmap[i][0] > modmap[i+1][0]);
    }
@@ -572,6 +573,7 @@ void Alpha16EVB::Configure(int runno)
    }
    
    assert(imap >= 0);
+#endif
 
    for (int xchan=0; xchan<16; xchan++) {
       int ychan = -1;
@@ -620,7 +622,9 @@ void Alpha16EVB::Configure(int runno)
    printf("\n");
 #endif
 
+#if 0
    printf("Alpha16EVB::Configure: for run %d found map index %d for run %d\n", runno, imap, modmap[imap][0]);
+#endif
 
 #if 0
    fConfModMap.clear();

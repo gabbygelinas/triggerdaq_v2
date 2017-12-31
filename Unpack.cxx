@@ -208,6 +208,8 @@ Alpha16Event* UnpackAlpha16Event(Alpha16EVB* evb, TMEvent* me)
       const TMBank* b = &me->banks[i];
       if (b->name[0] == 'A') {
          // UDP packet bank from feudp
+      } else if (b->name[0] == 'B' && b->name[1] == 'B') {
+         // obsolete bank "BBnn" from FEAM rev0 board
       } else if (b->name[0] == 'B' || b->name[0] == 'C') {
          // ALPHA16 bank from feevb
          int module = bank_name_to_module(b->name.c_str());
@@ -298,6 +300,8 @@ FeamEvent* UnpackFeamEventNoEvb(FeamEVB* evb, TMEvent* event, const std::vector<
                f = 1;
             else if (b->name[0] == 'P' && b->name[1] == 'B')
                f = 2;
+            else if (b->name[0] == 'B' && b->name[1] == 'B')
+               f = 1;
             else
                assert(!"invalid PWB bank name");
             
@@ -341,6 +345,8 @@ FeamEvent* UnpackFeamEvent(FeamEVB* evb, TMEvent* event, const std::vector<std::
                   f = 1;
                else if (b->name[0] == 'P' && b->name[1] == 'B')
                   f = 2;
+               else if (b->name[0] == 'B' && b->name[1] == 'B')
+                  f = 1;
                else
                   assert(!"invalid PWB bank name");
             
