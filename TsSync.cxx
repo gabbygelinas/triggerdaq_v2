@@ -266,6 +266,7 @@ void TsSync::Check(unsigned inew)
       if (inew != i && fModules[inew].fSyncedWith < 0) {
          if (i==sync_with) {
             CheckSync(inew, i);
+            CheckSync(i, inew);
          }
       }
    }
