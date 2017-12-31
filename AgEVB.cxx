@@ -105,6 +105,8 @@ void AgEVB::Build(int index, AgEvbBuf *m)
 {
    m->time = fSync.fModules[index].GetTime(m->ts, m->epoch);
 
+   //printf("AgEvb::Build: index %d, ts 0x%08x, epoch %d, time %f\n", index, m->ts, m->epoch, m->time);
+
    AgEvent* e = FindEvent(m->time);
 
    if (0 && index == 1) {
@@ -180,11 +182,10 @@ void AgEVB::AddAlpha16Event(Alpha16Event* e)
    if (e->complete)
       fCountCompleteA16++;
 
-   fLastA16Time = e->time;
-   uint32_t ts = e->time*fSync.fModules[0].fFreqHz;
-   //printf("Alpha16Event: t %f, ts 0x%08x", e->eventTime, ts);
-   //e->Print();
-   //printf("\n");
+   double t = e->time + 0.1;
+
+   fLastA16Time = t;
+   uint32_t ts = t*fSync.fModules[0].fFreqHz;
    fSync.Add(0, ts);
    AgEvbBuf* m = new AgEvbBuf;
    m->a16 = e;
@@ -213,10 +214,10 @@ void AgEVB::AddFeamEvent(FeamEvent* e)
    if (e->complete)
       fCountCompleteFeam++;
 
-   fLastFeamTime = e->time;
-   uint32_t ts = e->time*fSync.fModules[1].fFreqHz;
-   //printf("FeamEvent: t %f, ts 0x%08x", e->time, ts);
-   //printf("\n");
+   double t = e->time + 0.1;
+
+   fLastFeamTime = t;
+   uint32_t ts = t*fSync.fModules[1].fFreqHz;
    fSync.Add(1, ts);
    AgEvbBuf* m = new AgEvbBuf;
    m->a16 = NULL;

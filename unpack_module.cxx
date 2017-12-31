@@ -125,7 +125,7 @@ public:
          agevb_max_dead = 1;
       }
       
-      fAgEvb = new AgEVB(100.0*1e6, 125.0*1e6, 50.0*1e-6, 100, agevb_max_dead, true);
+      fAgEvb = new AgEVB(125.0*1e6, 125.0*1e6, 50.0*1e-6, 100, agevb_max_dead, true);
       //fAgEvb->fSync.fTrace = true;
    }
 
