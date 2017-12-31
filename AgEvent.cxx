@@ -35,7 +35,11 @@ AgEvent::~AgEvent() // dtor
 
 void AgEvent::Print() const
 {
-   printf("AgEvent: complete %d, error %d, counter %d, time %f, incr %f", complete, error, counter, time, timeIncr);
+   printf("AgEvent: %d, time %f, incr %f, complete %d, error %d", counter, time, timeIncr, complete, error);
+   if (a16)
+      printf(", adc: %d", a16->counter);
+   if (feam)
+      printf(", pwb: %d", feam->counter);
    printf("\n");
    printf("  ");
    if (a16) {

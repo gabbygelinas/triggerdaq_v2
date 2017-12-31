@@ -67,9 +67,12 @@ AgEvent* AgEVB::FindEvent(double t)
    AgEvent* e = new AgEvent();
    e->complete = false;
    e->error = false;
-   e->counter = fCounter++;
+   e->counter = (++fCounter);
    e->time = t;
-   
+   e->timeIncr = t - fLastEventTime;
+
+   fLastEventTime = e->time;
+
    fEvents.push_back(e);
    
    //printf("New event for time %f\n", t);

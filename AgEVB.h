@@ -36,6 +36,7 @@ class AgEVB
  public: // event builder state
    TsSync fSync;
    int    fCounter;
+   double fLastEventTime = 0;
    std::deque<AgEvbBuf*> fBuf[2];
    std::deque<AgEvent*> fEvents;
    double fLastA16Time;
