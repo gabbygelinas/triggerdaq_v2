@@ -109,7 +109,7 @@ public:
          fAdcAsm  = new Alpha16Asm();
          fAdcAsm->fMap.Init(fAdcMap);
          fAdcAsm->fMap.Print();
-         if (runinfo->fRunNo < 459) {
+         if (runinfo->fRunNo < 808) {
             fAdcAsm->fTsFreq = 100e6;
          }
       }
