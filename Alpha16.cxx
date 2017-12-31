@@ -618,16 +618,6 @@ void Alpha16Asm::CheckEvent(Alpha16Event* e)
       //int module = e->hits[i]->adc_module;
       uint32_t ets = e->udp[i]->eventTimestamp;
 
-      double ts_freq = 0;
-
-#if 0
-      if (module < 6)
-         ts_freq = 100*1e6; // old firmware has 100 MHz timestamp clock
-      else
-         ts_freq = 125*1e6; // new firmware has 125 MHz timestamp clock
-#endif
-      ts_freq = 125*1e6; // new firmware has 125 MHz timestamp clock
-
       bool wrap = false;
       if (ets < fLastEventTs) {
          wrap = true;
@@ -638,7 +628,7 @@ void Alpha16Asm::CheckEvent(Alpha16Event* e)
          fTsEpoch++;
       }
 
-      double eventTime = ets/ts_freq + fTsEpoch*(2.0*0x80000000/ts_freq);
+      double eventTime = ets/fTsFreq + fTsEpoch*(2.0*0x80000000/fTsFreq);
 
       if (e->counter <= 1) {
          fFirstEventTime = eventTime;

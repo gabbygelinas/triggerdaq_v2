@@ -96,6 +96,7 @@ struct Alpha16Event
 class Alpha16Asm
 {
  public: // configuration
+   double fTsFreq = 125000000; // 125 MHz timestamp clock
    Alpha16Map fMap;
 
  public:
