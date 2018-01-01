@@ -1,5 +1,5 @@
 //
-// MIDAS analyzer example 2: ROOT analyzer
+// adc_module.cxx - q.a. for the ADC data
 //
 // K.Olchanski
 //
@@ -416,7 +416,7 @@ static double find_pulse_time(const int* adc, int nbins, double baseline, double
    return 0;
 }
 
-class A16Module: public TARunObject
+class AdcModule: public TARunObject
 {
 public:
    A16Flags* fFlags = NULL;
@@ -430,12 +430,12 @@ public:
    TDirectory *dnoise = NULL;
 
 public:
-   A16Module(TARunInfo* runinfo, A16Flags* f)
+   AdcModule(TARunInfo* runinfo, A16Flags* f)
       : TARunObject(runinfo)
    {
       fTrace = false;
       if (fTrace)
-         printf("A16Module::ctor!\n");
+         printf("AdcModule::ctor!\n");
       fFlags = f;
 
       runinfo->fRoot->fOutputFile->cd();
@@ -447,10 +447,10 @@ public:
       dnoise = gDirectory->mkdir("noise");
    }
 
-   ~A16Module()
+   ~AdcModule()
    {
       if (fTrace)
-         printf("A16Module::dtor!\n");
+         printf("AdcModule::dtor!\n");
       if (fH) {
          delete fH;
          fH = NULL;
@@ -459,7 +459,7 @@ public:
 
    void BeginRun(TARunInfo* runinfo)
    {
-      printf("A16Module::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
+      printf("AdcModule::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
       time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
       printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
       fCounter = 0;
@@ -494,19 +494,19 @@ public:
 
    void EndRun(TARunInfo* runinfo)
    {
-      printf("A16Module::EndRun, run %d, events %d\n", runinfo->fRunNo, fCounter);
+      printf("AdcModule::EndRun, run %d, events %d\n", runinfo->fRunNo, fCounter);
       time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
       printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
    }
 
    void PauseRun(TARunInfo* runinfo)
    {
-      printf("A16Module::PauseRun, run %d\n", runinfo->fRunNo);
+      printf("AdcModule::PauseRun, run %d\n", runinfo->fRunNo);
    }
 
    void ResumeRun(TARunInfo* runinfo)
    {
-      printf("A16Module::ResumeRun, run %d\n", runinfo->fRunNo);
+      printf("AdcModule::ResumeRun, run %d\n", runinfo->fRunNo);
    }
 
    void AnalyzeHit(const TARunInfo* runinfo, const Alpha16Channel* hit, std::vector<AgAwHit>* flow_hits)
@@ -826,7 +826,7 @@ public:
    TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
    {
       if (fTrace)
-         printf("A16Module::Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
+         printf("AdcModule::Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
 
       AgEventFlow *ef = flow->Find<AgEventFlow>();
 
@@ -869,7 +869,7 @@ public:
    }
 };
 
-class A16ModuleFactory: public TAFactory
+class AdcModuleFactory: public TAFactory
 {
 public:
    A16Flags fFlags;
@@ -877,7 +877,7 @@ public:
 public:
    void Init(const std::vector<std::string> &args)
    {
-      printf("A16ModuleFactory::Init!\n");
+      printf("AdcModuleFactory::Init!\n");
       
       fFlags.fPlotWF = false;
       
@@ -900,19 +900,19 @@ public:
    
    void Finish()
    {
-      printf("A16ModuleFactory::Finish!\n");
+      printf("AdcModuleFactory::Finish!\n");
    }
    
    TARunObject* NewRunObject(TARunInfo* runinfo)
    {
-      printf("A16ModuleFactory::NewRunObject, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
-      return new A16Module(runinfo, &fFlags);
+      printf("AdcModuleFactory::NewRunObject, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
+      return new AdcModule(runinfo, &fFlags);
    }
 
 public:
 };
 
-static TARegister tar(new A16ModuleFactory);
+static TARegister tar(new AdcModuleFactory);
 
 /* emacs
  * Local Variables:

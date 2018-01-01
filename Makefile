@@ -39,7 +39,7 @@ MAIN := $(ROOTANASYS)/obj/manalyzer_main.o
 #RMODULES = reco_module.o
 #RLIBS = -L$(ANALYSIS_TPC) -lAGTPC -lAGUTILS -lGeom -lRGL
 
-MODULES += ncfm.o unpack_module.o a16module.o Alpha16.o feam_module.o TsSync.o Feam.o FeamEVB.o AgEvent.o AgEVB.o Unpack.o $(RMODULES) final_module.o
+MODULES += ncfm.o unpack_module.o adc_module.o Alpha16.o feam_module.o TsSync.o Feam.o FeamEVB.o AgEvent.o AgEVB.o Unpack.o $(RMODULES) final_module.o
 
 ALL     += agana.exe
 #ALL     += ncfm.exe
