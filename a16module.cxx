@@ -695,12 +695,23 @@ public:
                fH->fHped_adc32->Fill(ph);
          }
 
-         double ph_hit_thr = 250;
+         double ph_hit_thr_adc16 = 0;
+         double ph_hit_thr_adc32 = 0;
+
+         if (runinfo->fRunNo < 1244) {
+            ph_hit_thr_adc16 = 1200;
+            ph_hit_thr_adc32 =  600;
+         } else {
+            ph_hit_thr_adc16 =  500;
+            ph_hit_thr_adc32 =  500;
+         }
+
+         double ph_hit_thr = 0;
 
          if (is_adc16)
-            ph_hit_thr = 1200;
+            ph_hit_thr = ph_hit_thr_adc16;
          else if (is_adc32)
-            ph_hit_thr = 600;
+            ph_hit_thr = ph_hit_thr_adc32;
 
          double time_bin = 0;
          double time_offset = 0;
@@ -710,7 +721,19 @@ public:
          else if (is_adc32)
             time_bin = 1000.0/62.5; // 62.5 MHz ADC
 
-         double pulse_time_middle_adc16 = 160; // ADC time bins
+         double pulse_time_middle_adc16 = 0; // ADC time bins
+         double pulse_time_middle_adc32 = 0; // ADC time bins
+
+         if (runinfo->fRunNo < 458) {
+            pulse_time_middle_adc16 = 160; // ADC time bins
+            pulse_time_middle_adc32 = 160; // ADC time bins
+         } else if (runinfo->fRunNo < 1244) {
+            pulse_time_middle_adc16 = 165; // ADC time bins
+            pulse_time_middle_adc32 = 165; // ADC time bins
+         } else if (runinfo->fRunNo < 9999) {
+            pulse_time_middle_adc16 = 147; // ADC time bins
+            pulse_time_middle_adc32 = 150; // ADC time bins
+         }
 
          double time_pc = 1000.0; // place PC drift times at 1000ns.
 
@@ -776,7 +799,7 @@ public:
 
             fH->fHawHitTime0->Fill(hit_time);
             
-            if (hit_time > 800 && hit_time < 6000) {
+            if (hit_time > 700 && hit_time < 6000) {
                have_hit = true;
 
                fH->fHawHitTime->Fill(hit_time);
@@ -817,7 +840,7 @@ public:
       }
 
       if (1) {
-         printf("Have A16 event: ");
+         printf("Have ADC event:  ");
          e->Print();
          printf("\n");
       }
