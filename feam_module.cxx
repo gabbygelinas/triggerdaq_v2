@@ -363,7 +363,7 @@ public:
    }
 };
 
-static double compute_rms(const int* aptr, int start, int end)
+static void compute_mean_rms(const int* aptr, int start, int end, double* xmean, double* xrms, double* xmin, double* xmax)
 {
    double sum0 = 0;
    double sum1 = 0;
@@ -394,7 +394,21 @@ static double compute_rms(const int* aptr, int start, int end)
          brms = sqrt(bvar);
    }
 
-   return brms;
+   if (xmean)
+      *xmean = bmean;
+   if (xrms)
+      *xrms = brms;
+   if (xmin)
+      *xmin = bmin;
+   if (xmax)
+      *xmax = bmax;
+}
+
+static double compute_rms(const int* aptr, int start, int end)
+{
+   double mean, rms;
+   compute_mean_rms(aptr, start, end, &mean, &rms, NULL, NULL);
+   return rms;
 }
 
 bool fpn_rms_ok(int ichan, double brms)

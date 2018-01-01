@@ -25,22 +25,7 @@
 
 #include "Unpack.h"
 #include "AgFlow.h"
-
-#define NUM_AW 512
-#define MAX_AW_AMP 16000
-#define MAX_TIME 8200
-
-#define MAX_PAD_AMP 4100
-
-#define AW_PULSER_TIME_100 1800
-#define AW_PULSER_TIME_625 1800
-#define PAD_PULSER_TIME_625 7200
-
-// number of pad columns
-#define NUM_PC (8*4)
-
-// number of pad rows
-#define NUM_PR (18*4)
+#include "ko_limits.h"
 
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
 

@@ -17,64 +17,93 @@
 #include "Alpha16.h"
 #include "Unpack.h"
 #include "AgFlow.h"
+#include "ko_limits.h"
 
-// ALPHA-g common analysis code
-
-#define SHOW_ALPHA16 16
-#define NUM_WIRES 512
+#define MAX_AW_BRMS 600
+#define MAX_AW_BRANGE 2000
+// zoom on the ADC pedestal
+#define MAX_AW_PED 2000
 
 #include <iostream>
 #include "TVirtualFFT.h"
-#include "Waveform.h"
 
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
 
 #define MEMZERO(p) memset((p), 0, sizeof(p))
 
-Waveform* NewWaveform(const std::vector<int>* a, double scale)
+static void compute_mean_rms(const int* aptr, int start, int end, double* xmean, double* xrms, double* xmin, double* xmax)
 {
-   Waveform* w = new Waveform(a->size());
-   for (unsigned s=0; s<a->size(); s++) {
-      w->samples[s] = (*a)[s] * scale;
+   double sum0 = 0;
+   double sum1 = 0;
+   double sum2 = 0;
+   
+   double bmin = aptr[start]; // baseline minimum
+   double bmax = aptr[start]; // baseline maximum
+   
+   for (int i=start; i<end; i++) {
+      double a = aptr[i];
+      sum0 += 1;
+      sum1 += a;
+      sum2 += a*a;
+      if (a < bmin)
+         bmin = a;
+      if (a > bmax)
+         bmax = a;
    }
-   return w;
+   
+   double bmean = 0;
+   double bvar = 0;
+   double brms = 0;
+   
+   if (sum0 > 0) {
+      bmean = sum1/sum0;
+      bvar = sum2/sum0 - bmean*bmean;
+      if (bvar>0)
+         brms = sqrt(bvar);
+   }
+
+   if (xmean)
+      *xmean = bmean;
+   if (xrms)
+      *xrms = brms;
+   if (xmin)
+      *xmin = bmin;
+   if (xmax)
+      *xmax = bmax;
 }
 
 struct PlotHistograms
 {
-   TCanvas* fCanvas;
-
-   TH1D* fHbaseline;
+   TH1D* fHbaselineMean;
    TH1D* fHbaselineRms;
-   TProfile* fHbaselineRmsVsChan;
+   TH1D* fHbaselineRange;
+   TProfile* fHbaselineMeanAwMap;
+   TProfile* fHbaselineRmsAwMap;
+
+   TH1D* fHrange;
+
    TH1D* fHph;
-   TH1D* fHph_r1;
-   TH1D* fHph_r2;
-   TH1D* fHph_r3;
+   TH1D* fHph_adc16;
+   TH1D* fHph_adc32;
+
+   TH1D* fHped;
+   TH1D* fHped_adc16;
+   TH1D* fHped_adc32;
+
    TH1D* fHphHit;
-   TH1D* fHphHit_r1;
-   TH1D* fHphHit_r2;
-   TH1D* fHphHit_r3;
+   TH1D* fHphHit_adc16;
+   TH1D* fHphHit_adc32;
+
+   TH1D* fHphHitAwMap;
+
    TH1D* fHle;
-   TH1D* fHle_r1;
-   TH1D* fHle_r2;
-   TH1D* fHle_r3;
-   TH1D* fHlex;
-   TH1D* fHocc;
+   TH1D* fHle_adc16;
+   TH1D* fHle_adc32;
 
-   TH1D* fHph1;
-   TH1D* fHph2;
-
-   TH2D* fHph3;
-
-   TH1D* fHocc1;
-   TH1D* fHocc2;
-
-   TProfile* fHph2occ1;
-   TProfile* fHph2occ2;
-
-   TH1D* fHhitTime;
-   TH1D* fHhitAmp;
+   TH1D* fHawHitTime0;
+   TH1D* fHawHitTime;
+   TH1D* fHawHitAmp;
+   TH1D* fHawHitMap;
 
    TH1D* fHphCal;
    TH1D* fHleCal;
@@ -82,138 +111,54 @@ struct PlotHistograms
    TProfile* fHphVsChanCal;
    TProfile* fHleVsChanCal;
 
-   PlotHistograms(TCanvas* c) // ctor
+   PlotHistograms() // ctor
    {
-      if (!c) {
-         c = new TCanvas("Histograms", "Histograms", 1100, 850);
-         if (!(c->GetShowEventStatus()))
-            c->ToggleEventStatus();
-         if (!(c->GetShowToolBar()))
-            c->ToggleToolBar();
-      }
+      TDirectory *dir = gDirectory->mkdir("summary");
+      dir->cd();
 
-      fCanvas = c;
+      fHbaselineMean = new TH1D("adc_baseline_mean", "waveform baseline mean; ADC counts", 100, -2000, 2000);
+      fHbaselineRms = new TH1D("adc_baseline_rms", "waveform baseline rms; ADC counts", 100, 0, MAX_AW_BRMS);
+      fHbaselineRange = new TH1D("adc_baseline_range", "waveform baseline range; ADC counts", 100, 0, MAX_AW_BRANGE);
 
-      fCanvas->cd();
-      fCanvas->Divide(3,6);
+      fHbaselineMeanAwMap = new TProfile("adc_baseline_mean_vs_aw", "waveform baseline mean; TPC wire number; ADC counts", NUM_AW, -0.5, NUM_AW-0.5);
+      fHbaselineRmsAwMap = new TProfile("adc_baseline_rms_vs_aw", "waveform baseline rms vs wire number; TPC wire number; ADC counts", NUM_AW, -0.5, NUM_AW-0.5);
+      fHbaselineRmsAwMap->SetMinimum(0);
 
-      int max_adc = 32000;
+      fHrange = new TH1D("adc_range", "waveform range, max-min; ADC counts", 100, 0, MAX_AW_AMP);
 
-      int i=1;
+      fHph = new TH1D("adc_pulse_height", "waveform pulse height; ADC counts", 100, 0, MAX_AW_AMP);
 
-      fCanvas->cd(i++);
-      fHbaseline = new TH1D("baseline", "waveform baseline mean; ADC counts", 100, -2000, 2000);
-      fHbaseline->Draw();
-
-      fCanvas->cd(i++);
-      fHbaselineRms = new TH1D("baseline_rms", "waveform baseline rms; ADC counts", 100, 0, 600);
-      fHbaselineRms->Draw();
-
-      fCanvas->cd(i++);
-      fHbaselineRmsVsChan = new TProfile("baseline_rms_vs_wire", "waveform baseline rms vs wire number; wire number; ADC counts", NUM_WIRES, -0.5, NUM_WIRES-0.5);
-      fHbaselineRmsVsChan->SetMinimum(0);
-      fHbaselineRmsVsChan->Draw();
-
-      fCanvas->cd(i++);
-      fHph = new TH1D("pulse_height", "pulse_height", 100, 0, max_adc);
-      fHph->Draw();
-
-      fHph_r1 = new TH1D("pulse_height_r1", "pulse_height_r1", 500, 0, max_adc);
-      fHph_r2 = new TH1D("pulse_height_r2", "pulse_height_r2", 500, 0, max_adc);
-      fHph_r3 = new TH1D("pulse_height_r3", "pulse_height_r3", 500, 0, max_adc);
+      fHph_adc16 = new TH1D("adc16_pulse_height", "adc16 pulse height (100MHz); ADC counts", 100, 0, MAX_AW_AMP);
+      fHph_adc32 = new TH1D("adc32_pulse_height", "adc32 pulse height (62.5MHz); ADC counts", 100, 0, MAX_AW_AMP);
       
-      fHphHit = new TH1D("pulse_height_hit", "pulse_height", 100, 0, max_adc);
-      fHphHit_r1 = new TH1D("pulse_height_hit_r1", "pulse_height_hit_r1", 500, 0, max_adc);
-      fHphHit_r2 = new TH1D("pulse_height_hit_r2", "pulse_height_hit_r2", 500, 0, max_adc);
-      fHphHit_r3 = new TH1D("pulse_height_hit_r3", "pulse_height_hit_r3", 500, 0, max_adc);
+      fHped = new TH1D("adc_pedstal_pulse_height", "waveform pulse height, zoom on the pedestal; ADC counts", 100, 0, MAX_AW_PED);
+
+      fHped_adc16 = new TH1D("adc16_pedestal_pulse_height", "adc16 pulse height (100MHz), zoom on the pedestal; ADC counts", 100, 0, MAX_AW_PED);
+      fHped_adc32 = new TH1D("adc32_pedestal_pulse_height", "adc32 pulse height (62.5MHz), zoom on the pedestal; ADC counts", 100, 0, MAX_AW_PED);
       
-      fCanvas->cd(i++);
-      fHle = new TH1D("pulse_time", "pulse_time", 100, 0, 1000);
-      fHle->Draw();
+      fHphHit = new TH1D("adc_pulse_height_hit", "pulse height, after ADC cut; ADC counts", 100, 0, MAX_AW_AMP);
+      
+      fHphHit_adc16 = new TH1D("adc16_pulse_height_hit", "adc16 pulse height (100MHz), after ADC cut; ADC counts", 100, 0, MAX_AW_AMP);
+      fHphHit_adc32 = new TH1D("adc32_pulse_height_hit", "adc32 pulse height (62.5MHz), after ADC cut; ADC counts", 100, 0, MAX_AW_AMP);
+      
+      fHphHitAwMap = new TH1D("adc_pulse_height_hit_vs_aw", "TPC wire map, after ADC cut; TPC wire number", NUM_AW, -0.5, NUM_AW-0.5);
 
-      fHle_r1 = new TH1D("pulse_time_r1", "pulse_time_r1", 100, 0, 1000);
-      fHle_r2 = new TH1D("pulse_time_r2", "pulse_time_r2", 100, 0, 1000);
-      fHle_r3 = new TH1D("pulse_time_r3", "pulse_time_r3", 100, 0, 1000);
+      fHle = new TH1D("adc_pulse_time", "waveform pulse time, after ADC cut; ADC time bins", 200, 0, 1000);
 
-      fCanvas->cd(i++);
-      fHlex = new TH1D("pulse_time_expanded", "pulse_time_expanded", 100, 100, 200);
-      fHlex->Draw();
+      fHle_adc16 = new TH1D("adc16_pulse_time", "adc16 pulse time (100MHz); ADC time bins", 200, 0, 1000);
+      fHle_adc32 = new TH1D("adc32_pulse_time", "adc32 pulse time (62.5MHz); ADC time bins", 200, 0, 1000);
 
-      fCanvas->cd(i++);
-      fHocc = new TH1D("channel_occupancy", "channel_occupancy", NUM_WIRES, -0.5, NUM_WIRES-0.5);
-      fHocc->SetMinimum(0);
-      fHocc->Draw();
+      fHawHitTime0 = new TH1D("aw_hit_time0", "hit time, after ADC cut; time, ns", 200, 0, MAX_TIME);
+      fHawHitTime = new TH1D("aw_hit_time", "hit time, after ADC and time cut; time, ns", 200, 0, MAX_TIME);
+      fHawHitAmp = new TH1D("aw_hit_amp", "hit amplitude, after ADC and time cut; pulse height, ADC c.u.", 200, 0, MAX_AW_AMP);
+      fHawHitMap = new TH1D("aw_hit_map", "hit map, after ADC and time cut; TPC wire", NUM_AW, -0.5, NUM_AW-0.5);
 
-      fCanvas->cd(i++);
-      fHph1 = new TH1D("pulse_height_pc", "pulse_height_pc", 100, 0, max_adc);
-      fHph1->Draw();
-
-      fCanvas->cd(i++);
-      fHph2 = new TH1D("pulse_height_drift", "pulse_height_drift", 100, 0, max_adc);
-      fHph2->Draw();
-
-      fCanvas->cd(i++);
-      fHph3 = new TH2D("pulse_height_vs_drift", "pulse_height_vs_drift", 50, 0, 1000, 50, 0, max_adc);
-      fHph3->Draw();
-
-      fCanvas->cd(i++);
-      fHocc1 = new TH1D("channel_occupancy_pc", "channel_occupancy_pc", NUM_WIRES, -0.5, NUM_WIRES-0.5);
-      fHocc1->SetMinimum(0);
-      fHocc1->Draw();
-
-      fCanvas->cd(i++);
-      fHocc2 = new TH1D("channel_occupancy_drift", "channel_occupancy_drift", NUM_WIRES, -0.5, NUM_WIRES-0.5);
-      fHocc2->SetMinimum(0);
-      fHocc2->Draw();
-
-      fCanvas->cd(i++);
-      fHph2occ1 = new TProfile("pulse_height_profile_pc", "pulse_height_profile_pc", NUM_WIRES, -0.5, NUM_WIRES-0.5);
-      fHph2occ1->SetMinimum(0);
-      fHph2occ1->Draw();
-
-      fCanvas->cd(i++);
-      fHph2occ2 = new TProfile("pulse_height_profile_drift", "pulse_height_profile_drift", NUM_WIRES, -0.5, NUM_WIRES-0.5);
-      fHph2occ2->SetMinimum(0);
-      fHph2occ2->Draw();
-
-      fHhitTime = new TH1D("hit_time", "hit time, ns", 100, 0, 7000);
-      fHhitAmp = new TH1D("hit_amp", "hit amplitude", 100, 0, max_adc);
-
-      fCanvas->cd(i++);
-      fHphCal = new TH1D("pulse_height_cal", "pulse_height_cal", 100, 0, max_adc);
-      fHphCal->Draw();
-
-      fCanvas->cd(i++);
-      fHleCal = new TH1D("pulse_time_cal", "pulse_time_cal", 100, 100, 200);
-      fHleCal->Draw();
-
-      fCanvas->cd(i++);
-      fHoccCal = new TH1D("channel_occupancy_cal", "channel_occupancy_cal", NUM_WIRES, -0.5, NUM_WIRES-0.5);
+      fHphCal = new TH1D("adccal_pulse_height", "pulse_height_cal; ADC counts", 100, 0, MAX_AW_AMP);
+      fHleCal = new TH1D("adccal_pulse_time", "pulse_time_cal; ADC time bins", 100, 100, 200);
+      fHoccCal = new TH1D("adccal_channel_occupancy", "channel_occupancy_cal; TPC wire number", NUM_AW, -0.5, NUM_AW-0.5);
       fHoccCal->SetMinimum(0);
-      fHoccCal->Draw();
-
-      fCanvas->cd(i++);
-      fHphVsChanCal = new TProfile("pulse_height_vs_chan_cal", "pulse_height_vs_chan_cal", NUM_WIRES, -0.5, NUM_WIRES-0.5);
-      fHphVsChanCal->Draw();
-
-      fCanvas->cd(i++);
-      fHleVsChanCal = new TProfile("pulse_time_vs_chan_cal", "pulse_time_vs_chan_cal", NUM_WIRES, -0.5, NUM_WIRES-0.5);
-      fHleVsChanCal->Draw();
-
-      Draw();
-   }
-
-   ~PlotHistograms() // dtor
-   {
-      if (fCanvas)
-         delete fCanvas;
-   }
-
-   void Draw()
-   {
-      fCanvas->Modified();
-      fCanvas->Draw();
-      fCanvas->Update();
+      fHphVsChanCal = new TProfile("adccal_pulse_height_vs_wire", "pulse_height_vs_chan_cal; TPC wire number; ADC counts", NUM_AW, -0.5, NUM_AW-0.5);
+      fHleVsChanCal = new TProfile("adccal_pulse_time_vs_wire", "pulse_time_vs_chan_cal; TPC wire number; ADC time bins", NUM_AW, -0.5, NUM_AW-0.5);
    }
 };
 
@@ -227,66 +172,17 @@ public:
    TH1D* hbmean = NULL;
    TH1D* hbrms  = NULL;
 
-   TH1D* hwaveform_first = NULL;
-   TH1D* hwaveform_max   = NULL;
-   TH1D* hwaveform_max_drift = NULL;
-   TH1D* hwaveform_avg   = NULL;
-   TH1D* hwaveform_avg_drift = NULL;
-
-   int nwf = 0;
-   int nwf_drift = 0;
-   double fMaxWamp = 0;
-   double fMaxWampDrift = 0;
-
-
 public:
-   A16ChanHistograms(const char* xname, const char* xtitle, TDirectory* dir, int nbins) // ctor
+   A16ChanHistograms(const char* xname, const char* xtitle, int nbins) // ctor
    {
       printf("Create name [%s] title [%s] with %d bins\n", xname, xtitle, nbins);
-      
-      TDirectory* dir_first = dir->GetDirectory("achan_waveform_first");
-      if(!dir_first) dir_first = dir->mkdir("achan_waveform_first");
-      TDirectory* dir_max = dir->GetDirectory("achan_waveform_max");
-      if(!dir_max) dir_max = dir->mkdir("achan_waveform_max");
-      TDirectory* dir_max_drift = dir->GetDirectory("achan_waveform_max_drift");
-      if(!dir_max_drift) dir_max_drift = dir->mkdir("achan_waveform_max_drift");
-      TDirectory* dir_avg = dir->GetDirectory("achan_waveform_avg");
-      if(!dir_avg) dir_avg = dir->mkdir("achan_waveform_avg");
-      TDirectory* dir_avg_drift = dir->GetDirectory("achan_waveform_avg_drift");
-      if(!dir_avg_drift) dir_avg_drift = dir->mkdir("achan_waveform_avg_drift");
 
       fNameBase = xname;
       fTitleBase = xtitle;
       fNbins = nbins;
 
-      char name[256];
-      char title[256];
-
-      sprintf(name, "hawf_first_%s", xname);
-      sprintf(title, "%s first waveform", xtitle);
-
-      dir_first->cd();
-      hwaveform_first = new TH1D(name, title, nbins, -0.5, nbins-0.5);
-
-      sprintf(name, "hawf_max_%s", xname);
-      sprintf(title, "%s biggest waveform", xtitle);
-      dir_max->cd();
-      hwaveform_max = new TH1D(name, title, nbins, -0.5, nbins-0.5);
-
-      sprintf(name, "hawf_max_drift_%s", xname);
-      sprintf(title, "%s biggest waveform, drift region", xtitle);
-      dir_max_drift->cd();
-      hwaveform_max_drift = new TH1D(name, title, nbins, -0.5, nbins-0.5);
-
-      sprintf(name, "hawf_avg_%s", xname);
-      sprintf(title, "%s average waveform", xtitle);
-      dir_avg->cd();
-      hwaveform_avg = new TH1D(name, title, nbins, -0.5, nbins-0.5);
-
-      sprintf(name, "hawf_avg_drift_%s", xname);
-      sprintf(title, "%s average waveform, drift region", xtitle);
-      dir_avg_drift->cd();
-      hwaveform_avg_drift = new TH1D(name, title, nbins, -0.5, nbins-0.5);
+      //char name[256];
+      //char title[256];
    }
 
    ~A16ChanHistograms() // dtor
@@ -427,7 +323,6 @@ public:
    int fCountBad;
 
    TDirectory *dnoise = NULL;
-   TDirectory *dwf = NULL;
    TCanvas *c;
    TH1D *hwf0, *hwf1, *hfftsum0, *hfftsum1, *hbase0, *hbase1, *hRMS0, *hRMS1;
 
@@ -463,10 +358,6 @@ public:
       printf("AlphaTpcX::EndRun: early bad events: %d, good events: %d, bad events: %d, total %d events\n", fCountEarlyBad, fCountGood, fCountBad, fCountEarlyBad + fCountGood + fCountBad);
       hfftsum0->Scale(1./double(hbase0->GetEntries()*sqrt(701.)));
       hfftsum1->Scale(1./double(hbase1->GetEntries()*sqrt(701.)));
-      for(auto *hc: fHC){
-         if(hc->nwf) hc->hwaveform_avg->Scale(1./double(hc->nwf));
-         if(hc->nwf_drift) hc->hwaveform_avg_drift->Scale(1./double(hc->nwf_drift));
-      }
    }
 
    void AnalyzeNoise(Waveform *w, short i){
@@ -502,6 +393,7 @@ public:
 class A16Flags
 {
 public:
+   bool fPrint = false;
    bool fPlotWF = false;
    bool fDoPlotAll = false;
    bool fExportWaveforms = false;
@@ -531,12 +423,11 @@ public:
    int fCounter = 0;
    bool fTrace = false;
 
-   PlotHistograms* fH;
+   PlotHistograms* fH = NULL;
    std::vector<A16ChanHistograms*> fHC;
    std::vector<PlotA16*> fPlotA16;
 
    TDirectory *dnoise = NULL;
-   TDirectory *dwf = NULL;
 
 public:
    A16Module(TARunInfo* runinfo, A16Flags* f)
@@ -551,10 +442,9 @@ public:
       TDirectory* aw = gDirectory->mkdir("aw");
       aw->cd(); // select correct ROOT directory
 
-      fH = new PlotHistograms(NULL);
+      fH = new PlotHistograms();
 
       dnoise = gDirectory->mkdir("noise");
-      dwf = gDirectory->mkdir("waveforms");
    }
 
    ~A16Module()
@@ -661,62 +551,6 @@ public:
          r = 3;
       }
 
-#if 0
-      int i = 0;
-      int r = 1;
-      if (hit->adc_module == 1) {
-         i = 16*0 + hit->adc_chan;
-         r = 1;
-      } else if (hit->adc_module == 2) {
-         i = 16*1 + hit->adc_chan;
-         r = 1;
-      } else if (hit->adc_module == 3) {
-         i = 16*2 + hit->adc_chan;
-         r = 1;
-      } else if (hit->adc_module == 4) {
-         i = 16*3 + hit->adc_chan;
-         r = 1;
-      } else if (hit->adc_module == 5) {
-         i = 16*4 + hit->adc_chan;
-         r = 1;
-      } else if (hit->adc_module == 6) {
-         if (hit->adc_chan < 16) {
-            i = 16*5 + hit->adc_chan;
-            r = 1;
-         } else {
-            // 32ch ADC
-            i = 16*8 + hit->adc_chan - 16;
-            r = 2;
-         }
-      } else if (hit->adc_module == 7) {
-         i = 16*6 + hit->adc_chan;
-         r = 1;
-      } else if (hit->adc_module == 8) {
-         i = 16*7 + hit->adc_chan;
-         r = 1;
-      } else if (hit->adc_module == 11) {
-         i = 16*10 + hit->adc_chan;
-         r = 3;
-      } else if (hit->adc_module == 12) {
-         i = 16*11 + hit->adc_chan;
-         r = 3;
-      } else if (hit->adc_module == 9) {
-         i = 16*12 + hit->adc_chan;
-         r = 3;
-      } else if (hit->adc_module == 14) {
-         i = 16*13 + hit->adc_chan;
-         r = 3;
-      } else if (hit->adc_module == 15) {
-         i = 16*14 + hit->adc_chan;
-         r = 3;
-      } else if (hit->adc_module == 18) {
-         i = 16*15 + hit->adc_chan;
-         r = 3;
-      } else {
-         i = -1;
-      }
-#endif
-
 #if 0      
       printf("hit: bank [%s], adc_module %d, adc_chan %d, preamp_pos %d, preamp_wire %d, tpc_wire %d. nbins %d+%d, seqno %d, region %d\n",
              hit->bank.c_str(),
@@ -734,8 +568,12 @@ public:
       if (i < 0)
          return;
 
-      Waveform* w = NewWaveform(&hit->adc_samples, 1.0);
-      
+      int iwire = i;
+
+      bool is_aw = true;
+      bool is_adc16 = (hit->adc_chan < 16);
+      bool is_adc32 = (hit->adc_chan >= 16);
+
       ////// Plot waveforms
       
       while ((int)fHC.size() <= i) {
@@ -743,7 +581,7 @@ public:
       }
 
       if (fHC[i] == NULL){
-         fHC[i] = new A16ChanHistograms(xname, xtitle, dwf, w->nsamples);
+         fHC[i] = new A16ChanHistograms(xname, xtitle, hit->adc_samples.size());
       }
 
 #if 0
@@ -751,107 +589,140 @@ public:
          AnalyzeNoise(w, i);
 #endif
 
-      bool doPrint = false;
-
-      // save first waveform
-      
-      if (fHC[i]->hwaveform_first->GetEntries() == 0) {
-         if (doPrint)
-            printf("saving first waveform %d\n", i);
-         for (int j=0; j< w->nsamples; j++)
-            fHC[i]->hwaveform_first->SetBinContent(j+1, w->samples[j]);
-      }
-
       // analyze baseline
       
       int is_start = 0;
       int is_baseline = 100;
+      int calStart = 160;
+      int calEnd = 200;
 
-      double b, brms;
-      b = baseline(w, is_start, is_baseline, NULL, &brms);
+      double bmean, brms, bmin, bmax;
+
+      compute_mean_rms(hit->adc_samples.data(), is_start, is_baseline, &bmean, &brms, &bmin, &bmax);
+
+      double brange = bmax-bmin;
       
-      double wmin = min(w);
-      double wmax = max(w);
+      double wmin = hit->adc_samples[0];
+      double wmax = hit->adc_samples[0];
 
-      bool good_baseline = true;
-
-      double max_brms = 500;
-
-      if (brms > max_brms) {
-         good_baseline = false;
-         fH->fHbaseline->Fill(0);
-         fH->fHbaselineRms->Fill(max_brms);
+      for (unsigned s=0; s<hit->adc_samples.size(); s++) {
+         double a = hit->adc_samples[s];
+         if (a < wmin)
+            wmin = a;
+         if (a > wmax)
+            wmax = a;
       }
 
-      if (good_baseline) {
-         fH->fHbaseline->Fill(b);
-         fH->fHbaselineRms->Fill(brms);
-         fH->fHbaselineRmsVsChan->Fill(i, brms);
+      double wrange = wmax-wmin;
       
-         double ph = b - wmin;
+      bool have_baseline = false;
+      bool have_pulse = false;
+      bool have_hit = false;
+
+      double ph = 0;
+      double le = 0;
+      double hit_time = 0;
+      double hit_amp = 0;
+
+      double cut_brms = 500;
+
+      if (brms > cut_brms) {
+         if (fH) {
+            fH->fHbaselineMean->Fill(0);
+
+            if (brms < MAX_AW_BRMS)
+               fH->fHbaselineRms->Fill(brms);
+            else
+               fH->fHbaselineRms->Fill(MAX_AW_BRMS-1);
+            
+            if (brange < MAX_AW_BRANGE)
+               fH->fHbaselineRange->Fill(brange);
+            else
+               fH->fHbaselineRange->Fill(MAX_AW_BRANGE-1);
+         }
+      } else {
+         have_baseline = true;
+
+         if (fH) {
+            fH->fHbaselineMean->Fill(bmean);
+
+            if (brms < MAX_AW_BRMS)
+               fH->fHbaselineRms->Fill(brms);
+            else
+               fH->fHbaselineRms->Fill(MAX_AW_BRMS-1);
+
+            if (brange < MAX_AW_BRANGE)
+               fH->fHbaselineRange->Fill(brange);
+            else
+               fH->fHbaselineRange->Fill(MAX_AW_BRANGE-1);
+
+            if (is_aw) {
+               fH->fHbaselineMeanAwMap->Fill(iwire, bmean);
+               fH->fHbaselineRmsAwMap->Fill(iwire, brms);
+            }
+
+            if (wrange < MAX_AW_AMP)
+               fH->fHrange->Fill(wrange);
+            else
+               fH->fHrange->Fill(MAX_AW_AMP-1);
+         }
+      
+         ph = bmean - wmin;
 
          double cfd_thr = ph/2.0;
 
          if (wmin == -32768.0) {
-            ph = 0xFFFF;
+            ph = MAX_AW_AMP-1;
             cfd_thr = 10000;
          }
 
-         // save biggest waveform
-         
-         if (ph > fHC[i]->fMaxWamp) {
-            fHC[i]->fMaxWamp = ph;
-            if (doPrint)
-               printf("saving biggest waveform %d\n", i);
-            for (int j=0; j< w->nsamples; j++)
-               fHC[i]->hwaveform_max->SetBinContent(j+1, w->samples[j]);
+         if (ph > MAX_AW_AMP) {
+            ph = MAX_AW_AMP-1;
          }
-      
-         // add to average waveform
-      
-         for (int j=0; j< w->nsamples; j++)
-            fHC[i]->hwaveform_avg->AddBinContent(j+1, w->samples[j]);
-         fHC[i]->nwf++;
 
-         fH->fHph->Fill(ph);
+         if (fH) {
+            fH->fHph->Fill(ph);
+            fH->fHped->Fill(ph);
          
-         if (r==1)
-            fH->fHph_r1->Fill(ph);
-         else if (r==2)
-            fH->fHph_r2->Fill(ph);
-         else if (r==3)
-            fH->fHph_r3->Fill(ph);
+            if (is_adc16)
+               fH->fHph_adc16->Fill(ph);
+            else if (is_adc32)
+               fH->fHph_adc32->Fill(ph);
+
+            if (is_adc16)
+               fH->fHped_adc16->Fill(ph);
+            else if (is_adc32)
+               fH->fHped_adc32->Fill(ph);
+         }
 
          double ph_hit_thr = 250;
 
-         if (r == 1)
-            ph_hit_thr = 1000;
-         else if (r == 2)
-            ph_hit_thr = 600;
-         else if (r == 3)
+         if (is_adc16)
+            ph_hit_thr = 1200;
+         else if (is_adc32)
             ph_hit_thr = 600;
 
          double time_bin = 0;
          double time_offset = 0;
 
-         if (r == 1)
+         if (is_adc16)
             time_bin = 1000.0/100.0; // 100 MHz ADC
-         else if (r == 2)
-            time_bin = 1000.0/62.5; // 62.5 MHz ADC
-         else if (r == 3)
+         else if (is_adc32)
             time_bin = 1000.0/62.5; // 62.5 MHz ADC
 
-         if (r == 1)
-            time_offset = 1000 - 1500;
-         else if (r == 2)
-            time_offset = 1000 - 2410;
-         else if (r == 3)
-            time_offset = 1000 - 2410;
+         double pulse_time_middle_adc16 = 160; // ADC time bins
+
+         double time_pc = 1000.0; // place PC drift times at 1000ns.
+
+         if (is_adc16)
+            time_offset = time_pc - pulse_time_middle_adc16*time_bin;
+         else if (is_adc32)
+            time_offset = time_pc - 2410;
 
          double adc_gain = 1.0;
          double adc_offset = 0.0;
          
-         if (r == 1)
+         if (is_adc16)
             adc_gain = 1.0;
          else if (r == 2)
             adc_gain = 4.0;
@@ -859,58 +730,40 @@ public:
             adc_gain = 2.0;
 
          if (ph > ph_hit_thr) {
-            fH->fHphHit->Fill(ph);
-            
-            if (r==1)
-               fH->fHphHit_r1->Fill(ph);
-            else if (r==2)
-               fH->fHphHit_r2->Fill(ph);
-            else if (r==3)
-               fH->fHphHit_r3->Fill(ph);
+            have_pulse = true;
+
+            if (fH) {
+               fH->fHphHit->Fill(ph);
+
+               if (is_aw)
+                  fH->fHphHitAwMap->Fill(iwire);
+               
+               if (is_adc16)
+                  fH->fHphHit_adc16->Fill(ph);
+               else if (is_adc32)
+                  fH->fHphHit_adc32->Fill(ph);
+            }
 
             //int le = led(w, b, -1.0, cfd_thr);
-            double le = find_pulse_time(hit->adc_samples.data(), hit->adc_samples.size(), b, -1.0, cfd_thr);
+            le = find_pulse_time(hit->adc_samples.data(), hit->adc_samples.size(), bmean, -1.0, cfd_thr);
+
+            if (fH) {
+               fH->fHle->Fill(le);
             
-            fH->fHle->Fill(le);
-            
-            if (r==1)
-               fH->fHle_r1->Fill(le);
-            else if (r==2)
-               fH->fHle_r2->Fill(le);
-            else if (r==3)
-               fH->fHle_r3->Fill(le);
-            
-            fH->fHlex->Fill(le);
-            fH->fHocc->Fill(i);
-            
-            if (le > 150 && le < 180) {
-               fH->fHocc1->Fill(i);
-               fH->fHph1->Fill(ph);
-               
-               if (ph < 7000)
-                  fH->fHph2occ1->Fill(i, ph);
+               if (is_adc16)
+                  fH->fHle_adc16->Fill(le);
+               else if (is_adc32)
+                  fH->fHle_adc32->Fill(le);
             }
-            
-            if (le > 180 && le < 580) {
-               fH->fHocc2->Fill(i);
-               fH->fHph2->Fill(ph);
-               
-               if (ph < 7000) {
-                  fH->fHph2occ2->Fill(i, ph);
-               }
-            }
-            
-            fH->fHph3->Fill(le, ph);
-            
-            int calStart = 160;
-            int calEnd = 200;
             
             if (le > calStart && le < calEnd) {
                fH->fHleCal->Fill(le);
                fH->fHphCal->Fill(ph);
-               fH->fHoccCal->Fill(i);
-               fH->fHleVsChanCal->Fill(i, le);
-               fH->fHphVsChanCal->Fill(i, ph);
+               if (is_aw) {
+                  fH->fHoccCal->Fill(iwire);
+                  fH->fHleVsChanCal->Fill(iwire, le);
+                  fH->fHphVsChanCal->Fill(iwire, ph);
+               }
             }
             
             //if (ph > 4000) {
@@ -918,53 +771,33 @@ public:
             //printf("samples %d %d, ", e->waveform[i].size(), w->nsamples);
             //}
 
-            double hit_time = le * time_bin + time_offset;
-            double hit_amp = ph * adc_gain + adc_offset;
+            hit_time = le * time_bin + time_offset;
+            hit_amp = ph * adc_gain + adc_offset;
 
-            fH->fHhitTime->Fill(hit_time);
-            fH->fHhitAmp->Fill(hit_amp);
+            fH->fHawHitTime0->Fill(hit_time);
             
-            bool have_hit = false;
-            
-            if (le > 100 && le < 580 && ph > 100) {
+            if (hit_time > 800 && hit_time < 6000) {
                have_hit = true;
-            }
-            
-            if (have_hit) {
+
+               fH->fHawHitTime->Fill(hit_time);
+               fH->fHawHitAmp->Fill(hit_amp);
+               fH->fHawHitMap->Fill(iwire);
+
                AgAwHit h;
                h.adc_module = hit->adc_module;
                h.adc_chan = hit->adc_chan;
-               h.wire = i;
+               h.wire = iwire;
                h.time = hit_time;
                h.amp = hit_amp;
+
                flow_hits->push_back(h);
-            }
-
-            if (have_hit) {
-               printf("wire %3d: baseline %8.1f, rms %4.1f, range %8.1f %6.1f, pulse %6.1f, le %6.1f, time %5.0f\n", i, b, brms, wmin, wmax, ph, le, hit_time);
-            }
-
-            // save biggest drift region waveform
-            
-            if (le > 180) {
-               if(ph > fHC[i]->fMaxWampDrift) {
-                  fHC[i]->fMaxWampDrift = ph;
-                  if (doPrint)
-                     printf("saving biggest drift waveform %d\n", i);
-                  for (int j=0; j< w->nsamples; j++)
-                     fHC[i]->hwaveform_max_drift->SetBinContent(j+1, w->samples[j]);
-               }
-               
-               // add to average waveform
-               
-               for (int j=0; j< w->nsamples; j++)
-                  fHC[i]->hwaveform_avg_drift->AddBinContent(j+1, w->samples[j]);
-               fHC[i]->nwf_drift++;
             }
          }
       }
       
-      delete w;
+      if (fFlags->fPrint) {
+         printf("wire %3d: baseline mean %8.1f, rms %4.1f, range %8.1f %6.1f, pulse %6.1f, le %6.1f, time %5.0f, amp %6.1f, flags: baseline %d, pulse %d, hit %d\n", i, bmean, brms, wmin, wmax, ph, le, hit_time, hit_amp, have_baseline, have_pulse, have_hit);
+      }
    }
    
    TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
@@ -983,9 +816,11 @@ public:
          return flow;
       }
 
-      printf("---> in a16module: ");
-      e->Print();
-      printf("\n");
+      if (1) {
+         printf("Have A16 event: ");
+         e->Print();
+         printf("\n");
+      }
 
       for (unsigned i=0; i<fPlotA16.size(); i++) {
          fPlotA16[i]->Draw(e);
@@ -998,7 +833,7 @@ public:
          AnalyzeHit(runinfo, e->hits[i], &flow_hits->fAwHits);
       }
 
-      *flags |= TAFlag_DISPLAY;
+      //*flags |= TAFlag_DISPLAY;
 
       fCounter++;
 
@@ -1024,6 +859,8 @@ public:
       fFlags.fPlotWF = false;
       
       for (unsigned i=0; i<args.size(); i++) {
+         if (args[i] == "--adcprint")
+            fFlags.fPrint = true;
          if (args[i] == "--wf")
             fFlags.fPlotWF = true;
          if (args[i] == "--wfall") {
