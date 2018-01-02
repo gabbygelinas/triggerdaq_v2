@@ -1022,7 +1022,71 @@ public:
                }
             }
 
+
+            if (1) { // split into two groups based on a gap
+               int ifirst = -1;
+               for (int i=0; i<NUM_PC; i++) {
+                  if (zpad_col[i].size() == 0)
+                     continue;
+                  ifirst = i;
+                  break;
+               }
+               
+               zpad_side[ifirst] = 1;
+
+               int igap = 0;
+               for (int j=0; j<NUM_PC; j++) {
+                  int i = (ifirst+j)%NUM_PC;
+                  if (zpad_col[i].size() == 0) {
+                     igap++;
+                     printf("ifirst %d, j %d, i %d, igap %d\n", ifirst, j, i, igap);
+                     if (igap>1)
+                        break;
+                     continue;
+                  }
+                  igap=0;
+                  printf("ifirst %d, j %d, i %d, igap %d\n", ifirst, j, i, igap);
+                  zpad_side[i] = 1;
+               }
+
+               igap = 0;
+               for (int j=0; j<NUM_PC; j++) {
+                  int i = (ifirst-j)%NUM_PC;
+                  if (i<0)
+                     i+=NUM_PC;
+                  if (zpad_col[i].size() == 0) {
+                     igap++;
+                     printf("ifirst %d, j %d, i %d, igap %d\n", ifirst, j, i, igap);
+                     if (igap>1)
+                        break;
+                     continue;
+                  }
+                  igap=0;
+                  printf("ifirst %d, j %d, i %d, igap %d\n", ifirst, j, i, igap);
+                  zpad_side[i] = 1;
+               }
+            }
+
+            bool split_by_max_drift = false;
+
             if (1) {
+               int count_plus = 0;
+               int count_minus = 0;
+
+               for (int i=0; i<NUM_PC; i++) {
+                  if (zpad_col[i].size() == 0)
+                     continue;
+                  if (zpad_side[i]>0) count_plus++;
+                  if (zpad_side[i]<0) count_minus++;
+               }
+               printf("counts: plus %d, minus %d\n", count_plus, count_minus);
+               if (count_plus>0 && count_minus>0)
+                  split_by_max_drift = false;
+               else
+                  split_by_max_drift = true;
+            }
+
+            if (split_by_max_drift) { // split into two groups separated by biggest drift time
                double max_time = -1;
                int max_pc = -1;
                for (int i=0; i<NUM_PC; i++) {
