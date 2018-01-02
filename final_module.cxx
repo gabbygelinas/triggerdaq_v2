@@ -27,6 +27,9 @@
 #include "AgFlow.h"
 #include "ko_limits.h"
 
+// histogram limit for number of hits in aw and pads
+#define MAX_HITS 250
+
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
 
 #define MEMZERO(p) memset((p), 0, sizeof(p))
@@ -35,11 +38,11 @@ class FinalModule: public TARunObject
 {
 public:
    TCanvas* fC = NULL;
-   TCanvas* fPH = NULL;
 
-   TH1D* h_num_aw_hits;
-   TH1D* h_num_pad_hits;
-   TH2D* h_num_aw_pad_hits;
+   TH1D* h_time_between_events = NULL;
+   TH1D* h_time_between_events_zoom = NULL;
+
+   TH1D* h_aw_num_hits;
 
    TH1D* h_aw_time;
    TH1D* h_aw_amp;
@@ -73,6 +76,8 @@ public:
    TH1D* h_adc16_bits;
    TH2D* h_adc16_bits_vs_aw;
 
+   TH1D* h_pad_num_hits;
+
    TH1D* h_pad_time;
    TH1D* h_pad_amp;
    TH2D* h_pad_amp_time;
@@ -80,12 +85,14 @@ public:
    TH2D *h_pad_amp_pad;
    TH2D *h_pad_time_pad;
 
+   //TH2D* h_pad_pad_num_hits;
+
+   TH2D* h_aw_pad_num_hits;
    TH2D* h_aw_pad_hits;
-
    TH2D* h_aw_pad_time;
-   TH2D* h_aw_pad_time_drift;
 
-   TH2D* h_aw_pad_amp_pc;
+   //TH2D* h_aw_pad_time_drift;
+   //TH2D* h_aw_pad_amp_pc;
 
    // time of calibration pulse relative to ADC trigger
 
@@ -161,18 +168,13 @@ public:
    {
       printf("FinalModule::ctor!\n");
 
-      fC = new TCanvas("fC", "FinalModule event display", 800, 800);
-      //fPH = new TCanvas("fPH","Pulseheights",600,1000);
-      if (fPH) {
-         fPH->Divide(1,2);
-      }
+      fC = new TCanvas("fC", "event display", 800, 800);
    }
 
    ~FinalModule()
    {
       printf("FinalModule::dtor!\n");
       DELETE(fC);
-      DELETE(fPH);
    }
 
    void BeginRun(TARunInfo* runinfo)
@@ -188,8 +190,11 @@ public:
 
       dir->mkdir("summary")->cd();
 
-      h_num_aw_hits = new TH1D("h_num_aw_hits", "number of anode wire hits", 100, 0, 100);
-      h_aw_time = new TH1D("h_aw_time", "aw hit time", 100, 0, MAX_TIME);
+      h_time_between_events = new TH1D("h_time_between_events", "time between events; time, sec", 100, 0, 3.0);
+      h_time_between_events_zoom = new TH1D("h_time_between_events_zoom", "time between events, early part; time, sec", 100, 0, 1.0);
+
+      h_aw_num_hits = new TH1D("h_aw_num_hits", "number of anode wire hits", 100, 0, MAX_HITS);
+      h_aw_time = new TH1D("h_aw_time", "aw hit time; time, ns", 100, 0, MAX_TIME);
       h_aw_amp = new TH1D("h_aw_amp", "aw hit pulse height", 100, 0, MAX_AW_AMP);
       h_aw_amp_time = new TH2D("h_aw_amp_time", "aw p.h. vs time", 100, 0, MAX_TIME, 50, 0, MAX_AW_AMP);
 
@@ -221,31 +226,22 @@ public:
       h_adc16_bits = new TH1D("h_adc16_bits", "FPGA adc16_coinc_dff bits; link bit 0..15", 16, -0.5, 16-0.5);
       h_adc16_bits_vs_aw = new TH2D("h_adc16_bits_vs_aw", "FPGA adc16_coinc_dff bits vs AW tpc wire number; tpc wire number; link bit 0..15", NUM_AW, -0.5, NUM_AW-0.5, 16, -0.5, 16-0.5);
 
-      h_num_pad_hits = new TH1D("h_num_pad_hits", "number of cathode pad hits", 100, 0, 100);
+      h_pad_num_hits = new TH1D("h_pad_num_hits", "number of pad hits; number of hits in pads", 100, 0, MAX_HITS);
       h_pad_time = new TH1D("h_pad_time", "pad hit time; time, ns", 100, 0, MAX_TIME);
       h_pad_amp = new TH1D("h_pad_amp", "pad hit pulse height; adc counts", 100, 0, MAX_PAD_AMP);
       h_pad_amp_time = new TH2D("h_pad_amp_time", "pad p.h vs time; time, ns; adc counts", 50, 0, MAX_TIME, 50, 0, MAX_PAD_AMP);
       int npads = MAX_FEAM*MAX_FEAM_PAD_COL*MAX_FEAM_PAD_ROWS;
-      h_pad_amp_pad = new TH2D("h_pad_amp_pad", "pad p.h vs pad number", npads, -0.5, npads-0.5, 100, 0, MAX_PAD_AMP);
-      h_pad_time_pad = new TH2D("h_pad_time_pad", "pad time vs pad number", npads, -0.5, npads-0.5, 100, 0, MAX_TIME);
-      if (fPH) {
-         fPH->cd(2);
-         h_pad_amp_pad->Draw();
-      }
+      //h_pad_pad_num_hits = new TH2D("h_pad_pad_num_hits", "pad number vs pad number; pad number, col*N+row; pad number, col*N+row", npads, -0.5, npads-0.5, npads, -0.5, npads-0.5);
+      h_pad_amp_pad = new TH2D("h_pad_amp_pad", "pad p.h vs pad number; pad number, col*N+row; adc counts", npads, -0.5, npads-0.5, 100, 0, MAX_PAD_AMP);
+      h_pad_time_pad = new TH2D("h_pad_time_pad", "pad time vs pad number; pad number, col*N+row; time, ns", npads, -0.5, npads-0.5, 100, 0, MAX_TIME);
 
-      h_num_aw_pad_hits = new TH2D("h_num_aw_pad_hits", "number of aw vs pad hits", 50, 0, 100, 100, 0, 50);
+      h_aw_pad_num_hits = new TH2D("h_aw_pad_num_hits", "number of aw vs pad hits; number if hits in aw; number of hits in pads", 50, 0, MAX_HITS, 50, 0, MAX_HITS);
+      h_aw_pad_hits = new TH2D("h_aw_pad_hits", "hits in aw vs hits in pads; tpc wire; pad column", NUM_AW, -0.5, NUM_AW-0.5, NUM_PC, -0.5, NUM_PC);
+      h_aw_pad_time = new TH2D("h_aw_pad_time", "time of hits in aw vs pads; time in aw, ns; time in pads, ns", 50, 0, MAX_TIME, 50, 0, MAX_TIME);
 
-      h_aw_pad_hits = new TH2D("h_aw_pad_hits", "hits in aw vs hits in pads", 4*8, -0.5, 4*8-0.5, 256, -0.5, 256-0.5);
+      //h_aw_pad_time_drift = new TH2D("h_aw_pad_time_drift", "time of hits in aw vs pads, drift region", 50, 0, 500, 50, 0, MAX_TIME);
 
-      h_aw_pad_time = new TH2D("h_aw_pad_time", "time of hits in aw vs pads", 50, 0, MAX_TIME, 50, 0, MAX_TIME);
-
-      if (fPH) {
-         fPH->cd(1);
-      }
-
-      h_aw_pad_time_drift = new TH2D("h_aw_pad_time_drift", "time of hits in aw vs pads, drift region", 50, 0, 500, 50, 0, MAX_TIME);
-
-      h_aw_pad_amp_pc = new TH2D("h_aw_pad_amp_pc", "p.h. of hits in aw vs pads, pc region", 50, 0, MAX_PAD_AMP, 50, 0, MAX_AW_AMP);
+      //h_aw_pad_amp_pc = new TH2D("h_aw_pad_amp_pc", "p.h. of hits in aw vs pads, pc region", 50, 0, MAX_PAD_AMP, 50, 0, MAX_AW_AMP);
 
       dir->mkdir("pulser")->cd();
 
@@ -361,6 +357,9 @@ public:
 
       AgEvent* age = ef->fEvent;
 
+      h_time_between_events->Fill(age->timeIncr);
+      h_time_between_events_zoom->Fill(age->timeIncr);
+
       if (age->a16 && age->feam) {
          static bool first = true;
          static double a16_time0 = 0;
@@ -392,15 +391,7 @@ public:
          double ftr = feam_time-feam_time0;
          double dtr = atr-ftr;
 
-         uint32_t a16_tsr = a16_ts - a16_ts0;
-         uint32_t feam_tsr = feam_ts - feam_ts0;
-
-         uint32_t a16_tsr_ns = a16_tsr * 10.0;
-         uint32_t feam_tsr_ns = feam_tsr * 8.0;
-
-         int dts_ns = (a16_tsr_ns%0x80000000) - (feam_tsr_ns%0x80000000);
-
-         printf("Have AgEvent: %d %d, %f %f, diff %f, ts 0x%08x 0x%08x, ns: %12d %12d, diff %d\n", age->a16->counter, age->feam->counter, atr, ftr, dtr, a16_tsr, feam_tsr, a16_tsr_ns, feam_tsr_ns, dts_ns);
+         printf("Have AgEvent: %d %d, %f %f, diff %f\n", age->a16->counter, age->feam->counter, atr, ftr, dtr);
       }
 
       if (adc16_coinc_dff) {
@@ -433,7 +424,7 @@ public:
             printf("AW event %d, time %f, anode wire hits: %d\n", ef->fEvent->counter, ef->fEvent->time, (int)eawh->fAwHits.size());
          }
 
-         h_num_aw_hits->Fill(eawh->fAwHits.size());
+         h_aw_num_hits->Fill(eawh->fAwHits.size());
 
          for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
             int adc_module = eawh->fAwHits[j].adc_module;
@@ -529,7 +520,7 @@ public:
             printf("PA event %d, time %f, pad hits: %d\n", ef->fEvent->counter, ef->fEvent->time, (int)eph->fPadHits.size());
          }
 
-         h_num_pad_hits->Fill(eph->fPadHits.size());
+         h_pad_num_hits->Fill(eph->fPadHits.size());
 
          for (unsigned i=0; i<eph->fPadHits.size(); i++) {
             int col = eph->fPadHits[i].col;
@@ -540,7 +531,8 @@ public:
 
             int pos = eph->fPadHits[i].pos;
             int seqsca = eph->fPadHits[i].seqsca;
-            int seqpad = col*MAX_FEAM_PAD_ROWS + row;
+            int xcol = (pos%8)*4 + col;
+            int seqpad = xcol*MAX_FEAM_PAD_ROWS + row;
 
             double time = eph->fPadHits[i].time;
             double amp = eph->fPadHits[i].amp;
@@ -576,29 +568,46 @@ public:
             h_pad_amp_time->Fill(time, amp);
             h_pad_amp_pad->Fill(seqpad, amp);
             h_pad_time_pad->Fill(seqpad, time);
+
+#if 0
+            for (unsigned ii=0; ii<eph->fPadHits.size(); ii++) {
+               int col = eph->fPadHits[ii].col;
+               int row = eph->fPadHits[ii].row;
+               
+               if (col < 0 || row < 0)
+                  continue;
+               
+               int iipos = eph->fPadHits[ii].pos;
+               int iixcol = (iipos%8)*4 + col;
+               //int iiseqsca = eph->fPadHits[ii].seqsca;
+               int iiseqpad = iixcol*MAX_FEAM_PAD_ROWS + row;
+
+               h_pad_pad_num_hits->Fill(seqpad, iiseqpad);
+            }
+#endif
          }
       }
 
       if (eawh && eph) {
-         if (1) {
+         if (0) {
             printf("AA event %d, time %f, anode wire hits: %d, pad hits: %d\n", ef->fEvent->counter, ef->fEvent->time, (int)eawh->fAwHits.size(), (int)eph->fPadHits.size());
          }
 
-         h_num_aw_pad_hits->Fill(eph->fPadHits.size(), eawh->fAwHits.size());
+         h_aw_pad_num_hits->Fill(eawh->fAwHits.size(), eph->fPadHits.size());
 
          for (unsigned i=0; i<eph->fPadHits.size(); i++) {
             for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
                int xcol = (eph->fPadHits[i].pos%8)*4 + eph->fPadHits[i].col;
-               h_aw_pad_hits->Fill(xcol, eawh->fAwHits[j].wire);
-               h_aw_pad_time->Fill(eph->fPadHits[i].time, eawh->fAwHits[j].time);
+               h_aw_pad_hits->Fill(eawh->fAwHits[j].wire, xcol);
+               h_aw_pad_time->Fill(eawh->fAwHits[j].time, eph->fPadHits[i].time);
 
-               if ((eawh->fAwHits[j].time > 200) && eph->fPadHits[i].time > 200) {
-                  h_aw_pad_time_drift->Fill(eph->fPadHits[i].time, eawh->fAwHits[j].time);
-               }
+               //if ((eawh->fAwHits[j].time > 200) && eph->fPadHits[i].time > 200) {
+               //   h_aw_pad_time_drift->Fill(eph->fPadHits[i].time, eawh->fAwHits[j].time);
+               //}
 
-               if ((eawh->fAwHits[j].time < 200) && eph->fPadHits[i].time < 200) {
-                  h_aw_pad_amp_pc->Fill(eph->fPadHits[i].amp, eawh->fAwHits[j].amp);
-               }
+               //if ((eawh->fAwHits[j].time < 200) && eph->fPadHits[i].time < 200) {
+               //   h_aw_pad_amp_pc->Fill(eph->fPadHits[i].amp, eawh->fAwHits[j].amp);
+               //}
             }
          }
       }
@@ -710,12 +719,6 @@ public:
       bool do_plot = (runinfo->fRoot->fgApp != NULL);
 
       if (do_plot) {
-         if (fPH) {
-            fPH->GetPad(1)->Modified();
-            fPH->GetPad(2)->Modified();
-            fPH->Update();
-         }
-
          if (fC) {
             fC->Clear();
             fC->Divide(2,2);
@@ -792,12 +795,7 @@ public:
                }
                
                if (eawh) {
-                  //h_num_aw_hits->Fill(eawh->fAwHits.size());
-
                   for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
-                     //h_aw_map->Fill(eawh->fAwHits[j].wire);
-                     //h_aw_time->Fill(eawh->fAwHits[j].time);
-                     //h_aw_amp->Fill(eawh->fAwHits[j].amp);
                      hh->SetBinContent(1+eawh->fAwHits[j].wire, eawh->fAwHits[j].time);
                      ha->SetBinContent(1+eawh->fAwHits[j].wire, eawh->fAwHits[j].amp);
                      
@@ -839,8 +837,6 @@ public:
                }
 
                if (eph) {
-                  //h_num_aw_hits->Fill(eawh->fAwHits.size());
-                  
                   for (unsigned i=0; i<eph->fPadHits.size(); i++) {
                      double time = eph->fPadHits[i].time;
                      double amp = eph->fPadHits[i].amp;
