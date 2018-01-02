@@ -13,6 +13,7 @@
 #include "TH1D.h"
 #include "TH2D.h"
 #include "TProfile.h"
+#include "TVirtualFFT.h"
 
 #include "Alpha16.h"
 #include "Unpack.h"
@@ -23,13 +24,6 @@
 #define MAX_AW_BRANGE 2000
 // zoom on the ADC pedestal
 #define MAX_AW_PED 2000
-
-#include <iostream>
-#include "TVirtualFFT.h"
-
-#define DELETE(x) if (x) { delete (x); (x) = NULL; }
-
-#define MEMZERO(p) memset((p), 0, sizeof(p))
 
 static void compute_mean_rms(const int* aptr, int start, int end, double* xmean, double* xrms, double* xmin, double* xmax)
 {
@@ -159,6 +153,95 @@ struct PlotHistograms
       fHoccCal->SetMinimum(0);
       fHphVsChanCal = new TProfile("adccal_pulse_height_vs_wire", "pulse_height_vs_chan_cal; TPC wire number; ADC counts", NUM_AW, -0.5, NUM_AW-0.5);
       fHleVsChanCal = new TProfile("adccal_pulse_time_vs_wire", "pulse_time_vs_chan_cal; TPC wire number; ADC time bins", NUM_AW, -0.5, NUM_AW-0.5);
+   }
+};
+
+class AnalyzeNoise
+{
+public:
+   TDirectory* fDirTmp = NULL;
+   TDirectory* fDirFile = NULL;
+   TH1D* fWaveform = NULL;
+   TH1* fFft = NULL;
+   TH1D* fFftSum = NULL;
+   int fCount = 0;
+
+public:
+   AnalyzeNoise(const char* prefix, TDirectory* file, TDirectory* tmp, int nbins = 701) // ctor
+   {
+      fDirFile = file;
+      fDirFile->cd();
+
+      fFftSum = new TH1D((std::string(prefix) + "_fftsum").c_str(), (std::string(prefix) + " FFT sum").c_str(), nbins, 0, nbins);
+
+      fDirTmp = tmp;
+      fDirTmp->cd();
+
+      fWaveform = new TH1D((std::string(prefix) + "_waveform").c_str(), (std::string(prefix) + " waveform").c_str(), nbins, 0, nbins);
+   }
+
+   void AddWaveform(const std::vector<int>& w)
+   {
+      for(int b = 0; b < w.size(); b++) {
+         double a = w[b];
+         //a += 1000*sin(b*2.0*M_PI/(700.0/20.0));
+         //a += 100*sin(b*2.0*M_PI/(700.0/100.0));
+         fWaveform->SetBinContent(b+1, a);
+      }
+
+      fDirTmp->cd();
+      
+      TVirtualFFT::SetTransform(0);
+      fFft = fWaveform->FFT(fFft, "MAG");
+      fFftSum->Add(fFft);
+      fCount++;
+   }
+
+   void Finish()
+   {
+      if (fCount > 0) {
+         fFftSum->Scale(1./(fCount*sqrt(701.)));
+      }
+   }
+};
+
+class PlotNoise
+{
+public:
+   TCanvas* c = NULL;
+
+   PlotNoise(const char* prefix) // ctor
+   {
+      std::string name = std::string(prefix) + "_cnoise";
+      std::string title = std::string(prefix) + " noise analysis";
+      c = new TCanvas(name.c_str(), title.c_str(), 700, 700);
+   }
+
+   ~PlotNoise() // dtor
+   {
+      if (c)
+         delete c;
+      c = NULL;
+   }
+
+   void Plot(AnalyzeNoise *n)
+   {
+      c->Clear();
+      c->Divide(1,3);
+      c->cd(1);
+      n->fWaveform->Draw();
+
+      c->cd(2);
+      gPad->SetLogy();
+      n->fFft->Draw();
+
+      c->cd(3);
+      gPad->SetLogy();
+      n->fFftSum->Draw();
+      
+      c->Modified();
+      c->Draw();
+      c->Update();
    }
 };
 
@@ -312,88 +395,11 @@ struct PlotA16
    }
 };
 
-#if 0
-class AlphaTpcX
-{
-public:
-   int fRunNo;
-
-   int fCountEarlyBad;
-   int fCountGood;
-   int fCountBad;
-
-   TDirectory *dnoise = NULL;
-   TCanvas *c;
-   TH1D *hwf0, *hwf1, *hfftsum0, *hfftsum1, *hbase0, *hbase1, *hRMS0, *hRMS1;
-
-   int entries = 0;
-
-      dnoise = gDirectory->mkdir("noise");
-      dnoise->cd();
-      c = new TCanvas("cnoise","noise analysis",800,1200);
-      c->Divide(1,6);
-      hwf0 = new TH1D("hwf0","waveform 0",701,0,701);
-      c->cd(1);
-      hwf0->Draw();
-      c->GetPad(2)->SetLogy();
-
-      hwf1 = new TH1D("hwf1","waveform 1",701,0,701);
-      c->cd(3);
-      hwf1->Draw();
-      c->GetPad(4)->SetLogy();
-
-      hfftsum0 = new TH1D("hfftsum0","FFT sum",701,0,701);
-      c->cd(5);
-      hfftsum0->Draw();
-      c->GetPad(5)->SetLogy();
-
-      hfftsum1 = new TH1D("hfftsum1","FFT sum",701,0,701);
-      c->cd(6);
-      hfftsum1->Draw();
-      c->GetPad(6)->SetLogy();
-   }
-
-   void EndRun()
-   {
-      printf("AlphaTpcX::EndRun: early bad events: %d, good events: %d, bad events: %d, total %d events\n", fCountEarlyBad, fCountGood, fCountBad, fCountEarlyBad + fCountGood + fCountBad);
-      hfftsum0->Scale(1./double(hbase0->GetEntries()*sqrt(701.)));
-      hfftsum1->Scale(1./double(hbase1->GetEntries()*sqrt(701.)));
-   }
-
-   void AnalyzeNoise(Waveform *w, short i){
-      TH1D *h, *hRMS, *hbase, *hfftsum;
-      short index;
-      switch(i){
-      case 96: h = hwf0; hbase = hbase0; hRMS = hRMS0; hfftsum = hfftsum0; index = 2; break;
-      case 127: h = hwf1; hbase = hbase1; hRMS = hRMS1; hfftsum = hfftsum1; index = 4; break;
-      default: std::cerr << "Something's wrong!" << std::endl;
-      }
-      for(int b = 0; b < w->nsamples; b++)
-         h->SetBinContent(b+1, w->samples[b]);
-
-      double b, brms;
-      b = baseline(w, 0, w->nsamples, NULL, &brms);
-      hbase->Fill(b);
-      hRMS->Fill(brms);
-
-      TH1 *hfft = 0;
-      TVirtualFFT::SetTransform(0);
-      hfft = h->FFT(hfft, "MAG");
-      c->cd(index);
-      hfft->Draw();
-      hfftsum->Add(hfft);
-      entries++;
-      for(int p = 1; p <= 6; p++)
-         c->GetPad(p)->Modified();
-      c->Update();
-   }
-};
-#endif
-
 class A16Flags
 {
 public:
    bool fPrint = false;
+   bool fFft = false;
    bool fPlotWF = false;
    bool fDoPlotAll = false;
    bool fExportWaveforms = false;
@@ -424,10 +430,12 @@ public:
    bool fTrace = false;
 
    PlotHistograms* fH = NULL;
+   PlotNoise* fPN16 = NULL;
+   AnalyzeNoise* fAN16 = NULL;
+   PlotNoise* fPN32 = NULL;
+   AnalyzeNoise* fAN32 = NULL;
    std::vector<A16ChanHistograms*> fHC;
    std::vector<PlotA16*> fPlotA16;
-
-   TDirectory *dnoise = NULL;
 
 public:
    AdcModule(TARunInfo* runinfo, A16Flags* f)
@@ -444,7 +452,18 @@ public:
 
       fH = new PlotHistograms();
 
-      dnoise = gDirectory->mkdir("noise");
+      TDirectory* fft_file = aw->mkdir("noise_fft");
+      TDirectory* fft_tmp = runinfo->fRoot->fgDir->mkdir("noise_fft");
+
+      if (fFlags->fFft) {
+         fAN16 = new AnalyzeNoise("adc16", fft_file, fft_tmp, 701);
+         fPN16 = new PlotNoise("adc16");
+
+         fAN32 = new AnalyzeNoise("adc32", fft_file, fft_tmp, 511);
+         fPN32 = new PlotNoise("adc32");
+      }
+
+      aw->cd(); // select correct ROOT directory
    }
 
    ~AdcModule()
@@ -495,6 +514,10 @@ public:
    void EndRun(TARunInfo* runinfo)
    {
       printf("AdcModule::EndRun, run %d, events %d\n", runinfo->fRunNo, fCounter);
+      if (fAN16)
+         fAN16->Finish();
+      if (fAN32)
+         fAN32->Finish();
       time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
       printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
    }
@@ -508,6 +531,9 @@ public:
    {
       printf("AdcModule::ResumeRun, run %d\n", runinfo->fRunNo);
    }
+
+   bool fft_first_adc16 = true;
+   bool fft_first_adc32 = true;
 
    void AnalyzeHit(const TARunInfo* runinfo, const Alpha16Channel* hit, std::vector<AgAwHit>* flow_hits)
    {
@@ -584,10 +610,25 @@ public:
          fHC[i] = new A16ChanHistograms(xname, xtitle, hit->adc_samples.size());
       }
 
-#if 0
-      if(i == 96 || i == 127)
-         AnalyzeNoise(w, i);
-#endif
+      int max_fft_count = 30; // FFT is slow, limit number of events analyzed
+
+      if (is_adc16 && fft_first_adc16) {
+         fft_first_adc16 = false;
+         if (fAN16 && fAN16->fCount < max_fft_count) {
+            fAN16->AddWaveform(hit->adc_samples);
+            if (fPN16)
+               fPN16->Plot(fAN16);
+         }
+      }
+
+      if (is_adc32 && fft_first_adc32) {
+         fft_first_adc32 = false;
+         if (fAN32 && fAN32->fCount < max_fft_count) {
+            fAN32->AddWaveform(hit->adc_samples);
+            if (fPN32)
+               fPN32->Plot(fAN32);
+         }
+      }
 
       // analyze baseline
       
@@ -852,6 +893,9 @@ public:
       AgAwHitsFlow* flow_hits = new AgAwHitsFlow(flow);
       flow = flow_hits;
 
+      fft_first_adc16 = true;
+      fft_first_adc32 = true;
+
       for (unsigned i=0; i<e->hits.size(); i++) {
          AnalyzeHit(runinfo, e->hits[i], &flow_hits->fAwHits);
       }
@@ -884,6 +928,8 @@ public:
       for (unsigned i=0; i<args.size(); i++) {
          if (args[i] == "--adcprint")
             fFlags.fPrint = true;
+         if (args[i] == "--adcfft")
+            fFlags.fFft = true;
          if (args[i] == "--wf")
             fFlags.fPlotWF = true;
          if (args[i] == "--wfall") {
