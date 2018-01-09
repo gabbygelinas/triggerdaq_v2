@@ -182,7 +182,7 @@ public:
 
    void AddWaveform(const std::vector<int>& w)
    {
-      for(int b = 0; b < w.size(); b++) {
+      for(unsigned b = 0; b < w.size(); b++) {
          double a = w[b];
          //a += 1000*sin(b*2.0*M_PI/(700.0/20.0));
          //a += 100*sin(b*2.0*M_PI/(700.0/100.0));
@@ -400,9 +400,9 @@ class A16Flags
 public:
    bool fPrint = false;
    bool fFft = false;
-   bool fPlotWF = false;
-   bool fDoPlotAll = false;
    bool fExportWaveforms = false;
+   std::vector<int> fPlotAdc16;
+   std::vector<int> fPlotAdc32;
 };
 
 static double find_pulse_time(const int* adc, int nbins, double baseline, double gain, double threshold)
@@ -484,30 +484,13 @@ public:
       fCounter = 0;
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
 
-      if (0) {
-         fPlotA16.push_back(new PlotA16(NULL, 1, 0));
-         fPlotA16.push_back(new PlotA16(NULL, 2, 0));
-         fPlotA16.push_back(new PlotA16(NULL, 3, 0));
-         fPlotA16.push_back(new PlotA16(NULL, 4, 0));
-         fPlotA16.push_back(new PlotA16(NULL, 5, 0));
-         fPlotA16.push_back(new PlotA16(NULL, 5, 1));
-         fPlotA16.push_back(new PlotA16(NULL, 5, 2));
-         fPlotA16.push_back(new PlotA16(NULL, 6, 0));
-         fPlotA16.push_back(new PlotA16(NULL, 6, 1));
-         fPlotA16.push_back(new PlotA16(NULL, 6, 2));
-         fPlotA16.push_back(new PlotA16(NULL, 7, 0));
-         fPlotA16.push_back(new PlotA16(NULL, 8, 0));
-         
-         fPlotA16.push_back(new PlotA16(NULL, 9, 0));
-         fPlotA16.push_back(new PlotA16(NULL, 10, 0));
-         fPlotA16.push_back(new PlotA16(NULL, 11, 0));
-         fPlotA16.push_back(new PlotA16(NULL, 12, 0));
-         fPlotA16.push_back(new PlotA16(NULL, 13, 0));
-         fPlotA16.push_back(new PlotA16(NULL, 14, 0));
-         fPlotA16.push_back(new PlotA16(NULL, 15, 0));
-         fPlotA16.push_back(new PlotA16(NULL, 16, 0));
-         fPlotA16.push_back(new PlotA16(NULL, 17, 0));
-         fPlotA16.push_back(new PlotA16(NULL, 18, 0));
+      for (unsigned i=0; i<fFlags->fPlotAdc16.size(); i++) {
+         fPlotA16.push_back(new PlotA16(NULL, fFlags->fPlotAdc16[i], 0));
+      }
+
+      for (unsigned i=0; i<fFlags->fPlotAdc32.size(); i++) {
+         fPlotA16.push_back(new PlotA16(NULL, fFlags->fPlotAdc32[i], 1));
+         fPlotA16.push_back(new PlotA16(NULL, fFlags->fPlotAdc32[i], 2));
       }
    }
 
@@ -923,18 +906,20 @@ public:
    {
       printf("AdcModuleFactory::Init!\n");
       
-      fFlags.fPlotWF = false;
-      
       for (unsigned i=0; i<args.size(); i++) {
          if (args[i] == "--adcprint")
             fFlags.fPrint = true;
          if (args[i] == "--adcfft")
             fFlags.fFft = true;
-         if (args[i] == "--wf")
-            fFlags.fPlotWF = true;
-         if (args[i] == "--wfall") {
-            fFlags.fDoPlotAll = true;
-            fFlags.fPlotWF = true;
+         if (args[i] == "--adc16") {
+            int imodule = atoi(args[i+1].c_str());
+            i++;
+            fFlags.fPlotAdc16.push_back(imodule);
+         }
+         if (args[i] == "--adc32") {
+            int imodule = atoi(args[i+1].c_str());
+            i++;
+            fFlags.fPlotAdc32.push_back(imodule);
          }
          if (args[i] == "--wfexport") {
             fFlags.fExportWaveforms = true;
