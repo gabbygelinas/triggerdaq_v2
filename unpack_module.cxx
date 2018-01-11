@@ -50,9 +50,18 @@ static std::vector<std::string> split(const std::string& s, char seperator)
 }
 #endif
 
+class UnpackFlags
+{
+public:
+   bool fPrint = false;
+   bool fNoAdc = false;
+   bool fNoPwb = false;
+};
+
 class UnpackModule: public TARunObject
 {
 public:
+   UnpackFlags* fFlags = NULL;
    Ncfm*       fCfm = NULL;
    Alpha16Asm* fAdcAsm = NULL;
    FeamEVB*    fFeamEvb = NULL;
@@ -61,11 +70,12 @@ public:
    std::vector<std::string> fFeamBanks;
    std::vector<std::string> fAdcMap;
    
-   UnpackModule(TARunInfo* runinfo)
+   UnpackModule(TARunInfo* runinfo, UnpackFlags* flags)
       : TARunObject(runinfo)
    {
       printf("UnpackModule::ctor!\n");
 
+      fFlags   = flags;
       fCfm     = new Ncfm(getenv("AG_CFM"));
       fAdcAsm  = NULL;
       fFeamEvb = NULL;
@@ -102,10 +112,22 @@ public:
       printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
 
-      bool have_feam = LoadFeamBanks(runinfo->fRunNo);
-      bool have_a16  = LoadAdcMap(runinfo->fRunNo);
+      bool have_adc = true;
+      bool have_pwb = true;
 
-      if (have_a16) {
+      if (fFlags->fNoAdc)
+         have_adc = false;
+
+      if (fFlags->fNoPwb)
+         have_pwb = false;
+
+      if (have_adc)
+         have_adc &= LoadAdcMap(runinfo->fRunNo);
+
+      if (have_pwb)
+         have_pwb &= LoadFeamBanks(runinfo->fRunNo);
+
+      if (have_adc) {
          fAdcAsm  = new Alpha16Asm();
          fAdcAsm->fMap.Init(fAdcMap);
          fAdcAsm->fMap.Print();
@@ -114,14 +136,14 @@ public:
          }
       }
 
-      if (have_feam) {
+      if (have_pwb) {
          fFeamEvb = new FeamEVB(fFeamBanks.size(), 125.0*1e6, 100000/1e9);
          //fFeamEvb->fSync.fTrace = true;
       }
 
       int agevb_max_dead = 90;
 
-      if (!have_a16 || !have_feam) {
+      if (!have_adc || !have_pwb) {
          agevb_max_dead = 1;
       }
       
@@ -226,6 +248,11 @@ public:
       if (event->event_id != 1)
          return flow;
 
+      const time_t now = time(NULL);
+      const time_t t = event->time_stamp;
+      int dt = now - t;
+      printf("UnpackModule: serial %d, time %d, age %d, date %s\n", event->serial_number, event->time_stamp, dt, ctime(&t));
+
       if (fAdcAsm) {
          Alpha16Event* e = UnpackAlpha16Event(fAdcAsm, event);
 
@@ -304,17 +331,20 @@ public:
 class UnpackModuleFactory: public TAFactory
 {
 public:
+   UnpackFlags fFlags;
+
+public:
    void Init(const std::vector<std::string> &args)
    {
       printf("UnpackModuleFactory::Init!\n");
 
       for (unsigned i=0; i<args.size(); i++) {
-#if 0
-         if (args[i] == "--nopads")
-            fDoPads = false;
-         if (args[i] == "--plot1")
-            fPlotPad = atoi(args[i+1].c_str());
-#endif
+         if (args[i] == "--print")
+            fFlags.fPrint = true;
+         if (args[i] == "--noadc")
+            fFlags.fNoAdc = true;
+         if (args[i] == "--nopwb")
+            fFlags.fNoPwb = true;
       }
    }
 
@@ -326,7 +356,7 @@ public:
    TARunObject* NewRunObject(TARunInfo* runinfo)
    {
       printf("UnpackModuleFactory::NewRunObject, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
-      return new UnpackModule(runinfo);
+      return new UnpackModule(runinfo, &fFlags);
    }
 };
 
