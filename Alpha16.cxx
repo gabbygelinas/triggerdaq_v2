@@ -350,15 +350,19 @@ Alpha16Asm::Alpha16Asm() // ctor
 {
    Init();
 }
-   
+
+// wire number -> adc16 channel
 //static const int chanmap_top[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
 static const int chanmap_top[] = { 7, 15, 6, 14, 5, 13, 4, 12, 3, 11, 2, 10, 1, 9, 0, 8 };
 static const int chanmap_bot[] = { 8, 0, 9, 1, 10, 2, 11, 3, 12, 4, 13, 5, 14, 6, 15, 7 };
 
+// adc16 channel -> wire number
 static const int inv_chanmap_top[] = { 14, 12, 10, 8, 6, 4, 2, 0, 15, 13, 11, 9, 7, 5, 3, 1 };
 static const int inv_chanmap_bot[] = { 1, 3, 5, 7, 9, 11, 13, 15, 0, 2, 4, 6, 8, 10, 12, 14 };
 
-static const int adc32_chanmap[32] = {
+#if 0
+// wire number -> adc32 channel, map by K.O.
+static const int adc32_chanmap_ko[32] = {
    0,
    10,//1
    6,//2,
@@ -392,8 +396,24 @@ static const int adc32_chanmap[32] = {
    22,//29, //30,
    31
 };
+#endif
 
-static int inv_adc32_chanmap[32];
+// adc32 channel -> wire number, map from Keith Ong
+// verified to be correct by K.O. by pulsing preamp inputs, one at a time
+static const int inv_adc32_chanmap_top[32] = {
+   1, 6, 3, 8,
+   16+1, 5, 2, 16+2,
+   4, 10, 0, 12,
+   13, 9, 7, 11,
+   16+3, 16+5, 16+6, 16+9,
+   15, 16+11, 16+14, 16+8,
+   16+4, 14, 16+10, 16+12,
+   16+0, 16+13, 16+7, 16+15
+};
+
+#if 0
+static int inv_adc32_chanmap_ko[32];
+#endif
 
 void Alpha16Asm::Init()
 {
@@ -417,6 +437,7 @@ void Alpha16Asm::Init()
       assert(inv_chanmap_top[xchan] == ychan);
    }
 
+#if 0
    // construct the inverted adc32 map
 
    for (int xchan=0; xchan<32; xchan++) {
@@ -433,6 +454,27 @@ void Alpha16Asm::Init()
       assert(inv_adc32_chanmap[xchan] == -1);
       inv_adc32_chanmap[xchan] = ychan;
    }
+#endif
+
+#if 0
+   printf("inv_adc32_chanmap: ");
+   for (int xchan=0; xchan<32; xchan++) {
+      printf(" %d,", inv_adc32_chanmap[xchan]);
+   }
+   printf("\n");
+#endif
+
+#if 0
+   printf("inv_adc32_chanmap: ");
+   for (int xchan=0; xchan<32; xchan++) {
+      int wire = inv_adc32_chanmap[xchan];
+      int conn = wire/16;
+      int wire16 = wire%16;
+      int chan16 = chanmap_top[wire16];
+      printf(" %d/%d/%d,", wire, conn, chan16);
+   }
+   printf("\n");
+#endif
 
 #if 0
    printf("inv_chanmap_bot: ");
@@ -464,7 +506,7 @@ void Alpha16Asm::AddChannel(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c
          int ichan = c->adc_chan-16; // 32ch ADC channel number
          //int zchan = inv_adc32_chanmap[ichan];
          //int zchan = ichan;
-         int zchan = inv_adc32_chanmap[ichan];
+         int zchan = inv_adc32_chanmap_top[ichan];
          if (zchan < 16) {
             c->preamp_pos = pos1;
             xchan = zchan;
