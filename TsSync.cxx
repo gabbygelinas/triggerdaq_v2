@@ -299,7 +299,7 @@ void TsSync::Check(unsigned inew)
    }
 
    if (fTrace)
-      printf("modules: %d, with data: %d, no_sync: %d\n", (int)fModules.size(), modules_with_data, no_sync);
+      printf("modules: %d, with data: %d, no_sync: %d; min %d, dead_min %d\n", (int)fModules.size(), modules_with_data, no_sync, min, fDeadMin);
 
    if (modules_with_data > 1 && no_sync <= 1) {
       // at least one module has data and
