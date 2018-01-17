@@ -1,0 +1,10 @@
+# feam banks, run 1300
+PB00
+PB01
+PA02
+PB03
+PB04
+PB10
+PB06
+PB07
+#end
