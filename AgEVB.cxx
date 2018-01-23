@@ -11,17 +11,17 @@
 #include <math.h> // fabs()
 #include <assert.h> // assert()
 
-AgEVB::AgEVB(double a16_ts_freq, double feam_ts_freq, double eps_sec, int max_skew, int max_dead, bool clock_drift)
+AgEVB::AgEVB(double trig_ts_freq, double a16_ts_freq, double feam_ts_freq, double eps_sec, int max_skew, int max_dead, bool clock_drift)
 {
    fMaxSkew = max_skew;
-   fMaxDead = max_dead;
    fEpsSec = eps_sec;
    fClockDrift = clock_drift;
 
    fCounter = 0;
-   fSync.SetDeadMin(fMaxDead);
-   fSync.Configure(0, a16_ts_freq,  0, 10.0*1e-6, fMaxSkew);
-   fSync.Configure(1, feam_ts_freq, 0, 10.0*1e-6, fMaxSkew);
+   fSync.SetDeadMin(max_dead);
+   fSync.Configure(AGEVB_TRG_SLOT, trig_ts_freq, 0, 10.0*1e-6, fMaxSkew);
+   fSync.Configure(AGEVB_ADC_SLOT, a16_ts_freq,  0, 10.0*1e-6, fMaxSkew);
+   fSync.Configure(AGEVB_PWB_SLOT, feam_ts_freq, 0, 10.0*1e-6, fMaxSkew);
    fLastA16Time = 0;
    fLastFeamTime = 0;
    fMaxDt = 0;
@@ -84,13 +84,19 @@ void AgEVB::CheckEvent(AgEvent *e)
 {
    e->complete = true;
 
-   if (!e->a16 && !fSync.fModules[0].fDead)
+   if (!e->trig && !fSync.fModules[AGEVB_TRG_SLOT].fDead)
       e->complete = false;
 
-   if (!e->feam && !fSync.fModules[1].fDead)
+   if (!e->a16 && !fSync.fModules[AGEVB_ADC_SLOT].fDead)
+      e->complete = false;
+
+   if (!e->feam && !fSync.fModules[AGEVB_PWB_SLOT].fDead)
       e->complete = false;
 
    e->error = false;
+
+   if (e->trig && e->trig->error)
+      e->error = true;
 
    if (e->a16 && e->a16->error)
       e->error = true;
@@ -117,6 +123,19 @@ void AgEVB::Build(int index, AgEvbBuf *m)
       double off = e->time - m->time;
       //printf("offset: %f %f, diff %f, index %d\n", e->time, m->time, off, index);
       fSync.fModules[index].fOffsetSec += off/2.0;
+   }
+
+   if (m->trig) {
+      if (e->trig) {
+         // FIXME: duplicate data
+         printf("AgEVB: TRG duplicate data!\n");
+         // FIXME memory leak
+         delete m;
+         return;
+      }
+
+      e->trig = m->trig;
+      m->trig = NULL;
    }
 
    if (m->a16) {
@@ -152,17 +171,30 @@ void AgEVB::Build(int index, AgEvbBuf *m)
 
 void AgEVB::Build()
 {
-   while (fBuf[0].size() > 0) {
-      AgEvbBuf* m = fBuf[0].front();
-      fBuf[0].pop_front();
-      Build(0, m);
+   for (int i=0; i<3; i++) {
+      while (fBuf[i].size() > 0) {
+         AgEvbBuf* m = fBuf[i].front();
+         fBuf[i].pop_front();
+         Build(i, m);
+      }
    }
+}
 
-   while (fBuf[1].size() > 0) {
-      AgEvbBuf* m = fBuf[1].front();
-      fBuf[1].pop_front();
-      Build(1, m);
-   }
+void AgEVB::AddTrigEvent(TrigEvent* e)
+{
+   fCountTrg++;
+
+   double t = e->time + 0.1;
+
+   uint32_t ts = t*fSync.fModules[AGEVB_TRG_SLOT].fFreqHz;
+   fSync.Add(AGEVB_TRG_SLOT, ts);
+   AgEvbBuf* m = new AgEvbBuf;
+   m->trig = e;
+   m->ts = fSync.fModules[AGEVB_TRG_SLOT].fLastTs;
+   m->epoch = fSync.fModules[AGEVB_TRG_SLOT].fEpoch;
+   m->time = 0;
+   m->timeIncr = fSync.fModules[AGEVB_TRG_SLOT].fLastTimeSec - fSync.fModules[AGEVB_TRG_SLOT].fPrevTimeSec;
+   fBuf[AGEVB_TRG_SLOT].push_back(m);
 }
 
 void AgEVB::AddAlpha16Event(Alpha16Event* e)
@@ -185,16 +217,15 @@ void AgEVB::AddAlpha16Event(Alpha16Event* e)
    double t = e->time + 0.1;
 
    fLastA16Time = t;
-   uint32_t ts = t*fSync.fModules[0].fFreqHz;
-   fSync.Add(0, ts);
+   uint32_t ts = t*fSync.fModules[AGEVB_ADC_SLOT].fFreqHz;
+   fSync.Add(AGEVB_ADC_SLOT, ts);
    AgEvbBuf* m = new AgEvbBuf;
    m->a16 = e;
-   m->feam = NULL;
-   m->ts = fSync.fModules[0].fLastTs;
-   m->epoch = fSync.fModules[0].fEpoch;
+   m->ts = fSync.fModules[AGEVB_ADC_SLOT].fLastTs;
+   m->epoch = fSync.fModules[AGEVB_ADC_SLOT].fEpoch;
    m->time = 0;
-   m->timeIncr = fSync.fModules[0].fLastTimeSec - fSync.fModules[0].fPrevTimeSec;
-   fBuf[0].push_back(m);
+   m->timeIncr = fSync.fModules[AGEVB_ADC_SLOT].fLastTimeSec - fSync.fModules[AGEVB_ADC_SLOT].fPrevTimeSec;
+   fBuf[AGEVB_ADC_SLOT].push_back(m);
 }
 
 void AgEVB::AddFeamEvent(FeamEvent* e)
@@ -217,22 +248,23 @@ void AgEVB::AddFeamEvent(FeamEvent* e)
    double t = e->time + 0.1;
 
    fLastFeamTime = t;
-   uint32_t ts = t*fSync.fModules[1].fFreqHz;
-   fSync.Add(1, ts);
+   uint32_t ts = t*fSync.fModules[AGEVB_PWB_SLOT].fFreqHz;
+   fSync.Add(AGEVB_PWB_SLOT, ts);
    AgEvbBuf* m = new AgEvbBuf;
    m->a16 = NULL;
    m->feam = e;
-   m->ts = fSync.fModules[1].fLastTs;
-   m->epoch = fSync.fModules[1].fEpoch;
+   m->ts = fSync.fModules[AGEVB_PWB_SLOT].fLastTs;
+   m->epoch = fSync.fModules[AGEVB_PWB_SLOT].fEpoch;
    m->time = 0;
-   m->timeIncr = fSync.fModules[1].fLastTimeSec - fSync.fModules[1].fPrevTimeSec;
-   fBuf[1].push_back(m);
+   m->timeIncr = fSync.fModules[AGEVB_PWB_SLOT].fLastTimeSec - fSync.fModules[AGEVB_PWB_SLOT].fPrevTimeSec;
+   fBuf[AGEVB_PWB_SLOT].push_back(m);
 }
 
 void AgEVB::Print() const
 {
    printf("AgEVB status:\n");
    printf("  Sync: "); fSync.Print(); printf("\n");
+   printf("  Trg events: in %d\n", fCountTrg);
    printf("  A16 events: in %d, rejected %d, complete %d, error %d\n", fCountA16, fCountRejectedA16, fCountCompleteA16, fCountErrorA16);
    printf("  Feam events: in %d, rejected %d, complete %d, error %d\n", fCountFeam, fCountRejectedFeam, fCountCompleteFeam, fCountErrorFeam);
    printf("  Buffered A16:  %d\n", (int)fBuf[0].size());

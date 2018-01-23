@@ -75,6 +75,18 @@ class AgPadHitsFlow: public TAFlowEvent
    }
 };
 
+class AgTrigUdpFlow: public TAFlowEvent
+{
+ public:
+   std::vector<uint32_t> fData;
+   
+ public:
+ AgTrigUdpFlow(TAFlowEvent* flow) // ctor
+    : TAFlowEvent(flow)
+   {
+   }
+};
+
 #endif
 
 /* emacs

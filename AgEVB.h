@@ -16,14 +16,19 @@
 
 struct AgEvbBuf
 {
-   Alpha16Event* a16;
-   FeamEvent* feam;
+   TrigEvent*    trig = NULL;
+   Alpha16Event* a16  = NULL;
+   FeamEvent*    feam = NULL;
 
-   uint32_t ts;
-   int epoch;
-   double time;
-   double timeIncr;
+   uint32_t ts  = 0;
+   int    epoch = 0;
+   double time  = 0;
+   double timeIncr = 0;
 };
+
+#define AGEVB_TRG_SLOT 0
+#define AGEVB_ADC_SLOT 1
+#define AGEVB_PWB_SLOT 2
 
 class AgEVB
 {
@@ -37,7 +42,7 @@ class AgEVB
    TsSync fSync;
    int    fCounter;
    double fLastEventTime = 0;
-   std::deque<AgEvbBuf*> fBuf[2];
+   std::deque<AgEvbBuf*> fBuf[3];
    std::deque<AgEvent*> fEvents;
    double fLastA16Time;
    double fLastFeamTime;
@@ -53,6 +58,7 @@ class AgEVB
    int fCountIncomplete = 0;
    int fCountIncompleteA16  = 0;
    int fCountIncompleteFeam = 0;
+   int fCountTrg = 0;
    int fCountA16 = 0;
    int fCountFeam = 0;
    int fCountRejectedA16 = 0;
@@ -63,8 +69,9 @@ class AgEVB
    int fCountErrorFeam = 0;
 
  public: // member functions
-   AgEVB(double a16_ts_freq, double feam_ts_freq, double eps_sec, int max_skew, int max_dead, bool clock_drift); // ctor
+   AgEVB(double trig_ts_freq, double a16_ts_freq, double feam_ts_freq, double eps_sec, int max_skew, int max_dead, bool clock_drift); // ctor
    ~AgEVB(); // dtor
+   void AddTrigEvent(TrigEvent *e);
    void AddAlpha16Event(Alpha16Event *e);
    void AddFeamEvent(FeamEvent *e);
    AgEvent* FindEvent(double t);

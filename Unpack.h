@@ -9,11 +9,13 @@
 #ifndef UNPACK_H
 #define UNPACK_H
 
+#include "Trig.h"
 #include "Alpha16.h"
 #include "Feam.h"
 #include "FeamEVB.h"
 #include "midasio.h"
 
+TrigEvent* UnpackTrigEvent(TMEvent* event, TMBank* atat_bank);
 Alpha16Event* UnpackAlpha16Event(Alpha16Asm* adcasm, TMEvent* me);
 FeamEvent* UnpackFeamEvent(FeamEVB* evb, TMEvent* me, const std::vector<std::string>& banks);
 

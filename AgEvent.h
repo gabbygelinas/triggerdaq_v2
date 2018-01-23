@@ -8,19 +8,21 @@
 #ifndef AgEvent_H
 #define AgEvent_H
 
+#include "Trig.h"
 #include "Alpha16.h"
 #include "Feam.h"
 
 struct AgEvent
 {
-   bool   complete;
-   bool   error;
-   int    counter;
-   double time;
-   double timeIncr;
+   bool   complete = false;
+   bool   error    = false;
+   int    counter  = 0;
+   double time     = 0;
+   double timeIncr = 0;
 
-   Alpha16Event* a16;
-   FeamEvent*    feam;
+   TrigEvent*    trig = NULL;
+   Alpha16Event* a16  = NULL;
+   FeamEvent*    feam = NULL;
 
    AgEvent(); // ctor
    ~AgEvent(); // dtor

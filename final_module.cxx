@@ -328,22 +328,6 @@ public:
    {
       //printf("FinalModule::Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
 
-      std::vector<uint32_t> atat;
-
-      TMBank* atat_bank = event->FindBank("ATAT");
-      if (atat_bank) {
-         const char* p8 = event->GetBankData(atat_bank);
-         const uint32_t *p32 = (const uint32_t*)p8;
-         for (unsigned i=0; i<atat_bank->data_size/4; i++) {
-            printf("ATAT[%d]: 0x%08x (%d)\n", i, p32[i], p32[i]);
-            atat.push_back(p32[i]);
-         }
-      }
-
-      uint32_t adc16_coinc_dff = 0;
-      if (atat.size() > 7) {
-         adc16_coinc_dff = (atat[6]>>8)&0xFFFF;
-      }
 
       AgEventFlow *ef = flow->Find<AgEventFlow>();
 
@@ -359,6 +343,12 @@ public:
 
       h_time_between_events->Fill(age->timeIncr);
       h_time_between_events_zoom->Fill(age->timeIncr);
+
+      uint32_t adc16_coinc_dff = 0;
+
+      if (age->trig && age->trig->udpData.size() > 7) {
+         adc16_coinc_dff = (age->trig->udpData[6]>>8)&0xFFFF;
+      }
 
       if (age->a16 && age->feam) {
          static bool first = true;
@@ -395,14 +385,12 @@ public:
       }
 
       if (adc16_coinc_dff) {
-         printf("adc16_coinc_dff: 0x%04x: ", adc16_coinc_dff);
+         //printf("adc16_coinc_dff: 0x%04x\n", adc16_coinc_dff);
          for (int i=0; i<16; i++) {
             if (adc16_coinc_dff & (1<<i)) {
-               printf(" link%d", i);
                h_adc16_bits->Fill(i);
             }
          }
-         printf("\n");
       }
 
       double adc5_0  = -1010;
@@ -923,6 +911,16 @@ public:
                }
 
                if (1) {
+                  printf("adc16_coinc_dff: 0x%04x: link hits: ", adc16_coinc_dff);
+                  for (int i=0; i<16; i++) {
+                     if (adc16_coinc_dff & (1<<i)) {
+                        printf(" %d", i);
+                     }
+                  }
+                  printf("\n");
+               }
+
+               if (1) {
                   theta.push_back(0+0.5*TMath::Pi());
                   radius.push_back(0);
                   etheta.push_back(TMath::Pi()/8.);
@@ -1334,8 +1332,10 @@ public:
             fC->Update();
          }
 
-         for (unsigned i=0; i<atat.size(); i++) {
-            printf("ATAT[%d]: 0x%08x (%d)\n", i, atat[i], atat[i]);
+         if (age->trig && age->trig->udpData.size() > 0) {
+            for (unsigned i=0; i<age->trig->udpData.size(); i++) {
+               printf("ATAT[%d]: 0x%08x (%d)\n", i, age->trig->udpData[i], age->trig->udpData[i]);
+            }
          }
 
 #if 0

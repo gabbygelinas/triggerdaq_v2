@@ -231,10 +231,13 @@ void TsSync::CheckSync(unsigned ii, unsigned i)
 
 void TsSync::Check(unsigned inew)
 {
+   unsigned tot = 0;
    unsigned min = 0;
    unsigned max = 0;
    
    for (unsigned i=0; i<fModules.size(); i++) {
+      if (!fModules[i].fDead)
+         tot += 1;
       unsigned s = fModules[i].fBuf.size();
       if (s > 0) {
          if (min == 0)
@@ -247,7 +250,7 @@ void TsSync::Check(unsigned inew)
    }
 
    if (fTrace)
-      printf("TsSync::Check: min %d, max %d\n", min, max);
+      printf("TsSync::Check: tot %d, min %d, max %d\n", tot, min, max);
    
    if (min < 3)
       return;
@@ -299,10 +302,21 @@ void TsSync::Check(unsigned inew)
    }
 
    if (fTrace)
-      printf("modules: %d, with data: %d, no_sync: %d; min %d, dead_min %d\n", (int)fModules.size(), modules_with_data, no_sync, min, fDeadMin);
+      printf("modules: %d, tot %d, with data: %d, no_sync: %d; min %d, dead_min %d\n", (int)fModules.size(), tot, modules_with_data, no_sync, min, fDeadMin);
 
-   if (modules_with_data > 1 && no_sync <= 1) {
-      // at least one module has data and
+   if (tot == modules_with_data && no_sync == 1) {
+      fSyncOk = true;
+   } else if (fModules.size() == 3) {
+      // total 3 modules
+      if (modules_with_data == 3 && no_sync == 1) {
+         fSyncOk = true; // run 1244
+      } else if (modules_with_data == 2 && no_sync == 1) {
+         fSyncOk = true; // run 458
+      } else if (min > fDeadMin && modules_with_data == 1) {
+         fSyncOk = true;
+      }
+   } else if (modules_with_data > 1 && no_sync <= 1) {
+      // at least two modules have data and
       // only one unsynced module (all other modules synced to it)
       fSyncOk = true;
    } else if (min > fDeadMin && fModules.size() == 2 && modules_with_data == 1 && no_sync == 1) {

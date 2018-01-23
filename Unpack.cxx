@@ -20,6 +20,79 @@ static int bank_name_to_module(const char* s)
    }
 }
 
+TrigEvent::TrigEvent() // ctor
+{
+   // empty
+}
+
+TrigEvent::~TrigEvent() // dtor
+{
+   // empty
+}
+
+void TrigEvent::Print(int level) const
+{
+   printf("TrgEvent %d, time %f, incr %f, complete %d, error %d ", counter, time, timeIncr, complete, error);
+   if (level > 0) {
+      printf("\n");
+      for (unsigned i=0; i<udpData.size(); i++) {
+         printf("udpData[%d]: 0x%08x (%d)\n", i, udpData[i], udpData[i]);
+      }
+   }
+}
+
+TrigEvent* UnpackTrigEvent(TMEvent* event, TMBank* atat_bank)
+{
+   TrigEvent* e = new TrigEvent;
+   
+   const char* p8 = event->GetBankData(atat_bank);
+   const uint32_t *p32 = (const uint32_t*)p8;
+   for (unsigned i=0; i<atat_bank->data_size/4; i++) {
+      //printf("ATAT[%d]: 0x%08x (%d)\n", i, p32[i], p32[i]);
+      e->udpData.push_back(p32[i]);
+   }
+
+   if (e->udpData.size() < 9) {
+      e->complete = false;
+      e->error = true;
+      return e;
+   }
+
+   e->complete = true;
+   e->error = false;
+
+   static uint32_t gFirstCounter = 0;
+
+   if (gFirstCounter == 0)
+      gFirstCounter = e->udpData[0];
+   
+   e->counter = e->udpData[0] + 1 - gFirstCounter; // udp packet counter counts from 0, we want our counter to count from 1
+
+   double ts_freq = 62.5*1e6; // timestamp is 62.5 MHz
+
+   static double gFirstTime = 0;
+   static double gPrevTime = 0;
+   static uint32_t gLastTs = 0;
+   static int gEpoch = 0;
+
+   uint32_t ts = e->udpData[2];
+
+   if (ts < gLastTs)
+      gEpoch++;
+   gLastTs = ts;
+
+   if (gFirstTime == 0) {
+      gFirstTime = ts/ts_freq;
+      gPrevTime = 0;
+   }
+   
+   e->time = ts/ts_freq - gFirstTime + gEpoch*2.0*0x80000000/ts_freq;
+   e->timeIncr = e->time - gPrevTime;
+   gPrevTime = e->time;
+
+   return e;
+}
+
 Alpha16Event* UnpackAlpha16Event(Alpha16Asm* adcasm, TMEvent* me)
 {
    me->FindAllBanks();
