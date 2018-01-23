@@ -253,10 +253,12 @@ public:
       if (event->event_id != 1)
          return flow;
 
-      const time_t now = time(NULL);
-      const time_t t = event->time_stamp;
-      int dt = now - t;
-      printf("UnpackModule: serial %d, time %d, age %d, date %s\n", event->serial_number, event->time_stamp, dt, ctime(&t));
+      if (1) {
+         const time_t now = time(NULL);
+         const time_t t = event->time_stamp;
+         int dt = now - t;
+         printf("UnpackModule: serial %d, time %d, age %d, date %s\n", event->serial_number, event->time_stamp, dt, ctime(&t));
+      }
 
       if (1) {
          TMBank* atat_bank = event->FindBank("ATAT");
@@ -302,13 +304,16 @@ public:
 
       if (fFeamEvb) {
          FeamEvent *e = UnpackFeamEvent(fFeamEvb, event, fFeamBanks);
-         if (e) {
+         while (1) {
+            if (!e)
+               break;
+
             if (1) {
                printf("Unpacked PWB event: ");
                e->Print();
                printf("\n");
             }
-
+            
             if (0) {
                for (unsigned i=0; i<e->modules.size(); i++) {
                   if (!e->modules[i])
@@ -319,31 +324,31 @@ public:
                   //printf("\n");
                }
             }
-
+            
             if (fAgEvb) {
                fAgEvb->AddFeamEvent(e);
                e = NULL;
             }
-
+            
             DELETE(e);
+
+            e = fFeamEvb->Get();
          }
       }
 
       if (fAgEvb) {
-         AgEvent* e = fAgEvb->Get();
+         while (1) {
+            AgEvent* e = fAgEvb->Get();
+            if (!e)
+               break;
 
-         if (e) {
-            printf("Unpacked AgEvent:   ");
-            e->Print();
-            printf("\n");
-
-            if (e->complete && e->a16 && e->feam) {
-               double ta = e->a16->timeIncr;
-               double tf = e->feam->timeIncr;
-               printf("  incr %f %f sec, diff %f ns, count %d\n", ta, tf, (tf-ta)*1e9, e->counter);
+            if (1) {
+               printf("Unpacked AgEvent:   ");
+               e->Print();
+               printf("\n");
             }
 
-            flow = new AgEventFlow(flow, e);
+            runinfo->fFlowQueue.push_back(new AgEventFlow(NULL, e));
          }
       }
 
