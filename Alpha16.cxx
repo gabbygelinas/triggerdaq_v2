@@ -654,14 +654,9 @@ void Alpha16Asm::CheckEvent(Alpha16Event* e)
       return;
    }
 
-   if ((int)e->udp.size() != fMap.fNumChan) {
-      e->error = true;
-      e->error_message = "incomplete";
-      e->complete = false;
-      return;
+   if ((int)e->udp.size() == fMap.fNumChan) {
+      e->complete = true;
    }
-
-   e->complete = true;
    
    if (fFirstUdpTs.size() < 1) {
       fFirstUdpTs.reserve(ADC_MODULE_LAST+1);
