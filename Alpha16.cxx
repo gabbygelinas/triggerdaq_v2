@@ -226,7 +226,7 @@ Alpha16Event::~Alpha16Event() // dtor
 {
 }
 
-void Alpha16Event::Print() const
+void Alpha16Event::Print(int level) const
 {
    std::string e;
    e += toString(error);
@@ -237,6 +237,14 @@ void Alpha16Event::Print() const
    }
 
    printf("AdcEvent %d, time %.6f, incr %.6f, complete %d, error %s, hits: %d, udp: %d", counter, time, timeIncr, complete, e.c_str(), (int)hits.size(), (int)udp.size());
+   if (level > 0) {
+      printf("\n");
+      for (unsigned i=0; i<hits.size(); i++) {
+         printf("  hits[%d]: ", i);
+         hits[i]->Print();
+         printf("\n");
+      }
+   }
 }
 
 static std::vector<std::string> split(const std::string& s, char seperator)
@@ -277,7 +285,7 @@ void Alpha16Map::Init(const std::vector<std::string>& map)
 
       int imodule = xatoi(s[0].c_str());
 
-      if (imodule < 1 || imodule > 20) {
+      if (imodule < ADC_MODULE_FIRST || imodule > ADC_MODULE_LAST) {
          printf("invalid adc map entry %d: [%s], bad imodule %d\n", i, map[i].c_str(), imodule);
          abort();
       }
@@ -331,16 +339,12 @@ void Alpha16Map::Init(const std::vector<std::string>& map)
       } else {
          abort();
       }
-
-      if (fFirstModule <= 0) {
-         fFirstModule = imodule;
-      }
    }
 }
 
 void Alpha16Map::Print() const
 {
-   printf("ADC map, %d modules, %d channels, first module %d:\n", (int)fMap.size(), fNumChan, fFirstModule);
+   printf("ADC map, %d modules, %d channels:\n", (int)fMap.size(), fNumChan);
    for (unsigned i=0; i<fMap.size(); i++) {
       printf(" slot %2d: module %2d preamps %3d and %3d %3d\n", i, fMap[i].module, fMap[i].preamp_0, fMap[i].preamp_1, fMap[i].preamp_2);
    }
@@ -637,6 +641,19 @@ void Alpha16Asm::CheckEvent(Alpha16Event* e)
 {
    //e->Print(); printf("\n");
 
+   if (e->udp.size() != e->hits.size()) {
+      e->error = true;
+      e->error_message = "unpacking internal error: ";
+      char buf[256];
+      sprintf(buf, "udp.size is %d", (int)e->udp.size());
+      e->error_message += buf;
+      e->error_message += " while ";
+      sprintf(buf, "hits.size is %d", (int)e->hits.size());
+      e->error_message += buf;
+      e->complete = false;
+      return;
+   }
+
    if ((int)e->udp.size() != fMap.fNumChan) {
       e->error = true;
       e->error_message = "incomplete";
@@ -646,140 +663,122 @@ void Alpha16Asm::CheckEvent(Alpha16Event* e)
 
    e->complete = true;
    
-   assert(e->udp.size() == e->hits.size());
-
-   if (e->udp.size() > 0) {
-      int i=-1;
-      for (unsigned j=0; j<e->udp.size(); j++) {
-         if (e->hits[j]->adc_module == fMap.fFirstModule) {
-            i = j;
-            break;
-         }
+   if (fFirstUdpTs.size() < 1) {
+      fFirstUdpTs.reserve(ADC_MODULE_LAST+1);
+      
+      for (unsigned i=0; i<e->hits.size(); i++) {
+         int adc_module = e->hits[i]->adc_module;
+         uint32_t ts = e->udp[i]->eventTimestamp;
+         if (fFirstUdpTs[adc_module] == 0)
+            fFirstUdpTs[adc_module] = ts;
       }
-      assert(i>=0);
-      //int module = e->hits[i]->adc_module;
-      uint32_t ets = e->udp[i]->eventTimestamp;
-
-      bool wrap = false;
-      if (ets < fLastEventTs) {
-         wrap = true;
-         //printf("wrap!\n");
-      }
-
-      if (wrap) {
-         fTsEpoch++;
-      }
-
-      double eventTime = ets/fTsFreq + fTsEpoch*(2.0*0x80000000/fTsFreq);
-
-      if (e->counter <= 1) {
-         fFirstEventTime = eventTime;
-      }
-
-      eventTime -= fFirstEventTime;
-
-      e->time = eventTime;
-      e->timeIncr = eventTime - fLastEventTime;
-
-      fLastEventTs = ets;
-      fLastEventTime = eventTime;
    }
    
-#if 0
-   int count = 0;
-   unsigned num_samples = 0;
-
-   for (int i=0; i<MAX_ALPHA16 * NUM_CHAN_ALPHA16; i++) {
-      if (e->udpPresent[i]) {
-         count++;
-         if (num_samples == 0)
-            num_samples = e->waveform[i].size();
-         if (e->waveform[i].size() != num_samples) {
-            // wrong number of ADC samples
-            e->error_message += "| wrong number of ADC samples ";
-            e->error_message += toString(e->waveform[i].size());
-            e->error_message += " should be ";
-            e->error_message += toString(num_samples);
-            e->error = true;
+   // check the number of samples
+   
+   int count_bad_num_samples = 0;
+   
+   for (unsigned i=0; i<e->hits.size(); i++) {
+      int adc_module = e->hits[i]->adc_module;
+      int adc_chan   = e->hits[i]->adc_chan;
+      unsigned num_samples = e->hits[i]->adc_samples.size();
+      
+      bool ok = false;
+      if (adc_chan < 16) {
+         if (fFirstNumSamples16 == 0) {
+            fFirstNumSamples16 = num_samples;
          }
-      }
-   }
-
-   if (fConfNumSamples == 0)
-      fConfNumSamples = num_samples;
-
-   if ((int)num_samples != fConfNumSamples) {
-      // wrong number of ADC samples
-      e->error_message += "| wrong number of ADC samples ";
-      e->error_message += toString(num_samples);
-      e->error_message += " should be fConfNumSamples ";
-      e->error_message += toString(fConfNumSamples);
-      e->error = true;
-   }
-
-   if ((count == fConfNumChan) && (e->numChan == fConfNumChan)) {
-      e->complete = true;
-   }
-
-   if (!fHaveEventTs && e->complete) {
-      fHaveEventTs = true;
-      // set timestamp offsets from the first complete event
-      for (int i=0; i<MAX_ALPHA16 * NUM_CHAN_ALPHA16; i++) {
-         if (e->udpPresent[i]) {
-            fFirstEventTs[i] = e->udpEventTs[i];
-            //printf("XXX %d -> 0x%08x\n", i, fFirstEventTs[i]);
+         ok |= (num_samples == fFirstNumSamples16);
+      } else {
+         if (fFirstNumSamples32 == 0) {
+            fFirstNumSamples32 = num_samples;
          }
+         ok |= (num_samples == fFirstNumSamples32);
+      }
+      
+      //uint32_t diff = event_ts-ts_adj;
+      //printf("hits[%3d]: adc_module %2d, adc_chan %2d, udp_ts 0x%08x, first 0x%08x, adj 0x%08x, expected 0x%08x, diff %3d, ts_ok %d\n", i, adc_module, adc_chan, ts, fts[adc_module], ts_adj, event_ts, (int)diff, ts_ok);
+      
+      if (!ok) {
+         e->error = true;
+         count_bad_num_samples++;
+         char buf[256];
+         sprintf(buf, "adc_module %d channel %d samples %d ", adc_module, adc_chan, num_samples);
+         e->error_message += "| wrong number of ADC samples " + std::string(buf);
       }
    }
-
-   if (fHaveEventTs && e->complete) {
-      uint32_t ets = 0;
-      // check timestamps
-      for (int i=0; i<MAX_ALPHA16 * NUM_CHAN_ALPHA16; i++) {
-         if (e->udpPresent[i]) {
-            uint32_t ts = e->udpEventTs[i] - fFirstEventTs[i];
-            if (ets == 0)
-               ets = ts;
-            if (ts != ets && ts != ets+1 && ts+1 != ets) {
-               double ts125 = ts*100.0/125.0;
-               ts = ts125;
-               if (ts != ets && ts != ets+1 && ts+1 != ets) {
-                  printf("ts mismatch %d: 0x%08x vs 0x%08x diff %d\n", i, ts, ets, ts-ets);
-                  e->error_message += "| timestamp mismatch ";
-                  e->error = true;
-               }
-            }
-         }
-      }
-
-      bool wrap = false;
-      if (ets < fLastEventTs) {
-         wrap = true;
-         //printf("wrap!\n");
-      }
-
-      if (wrap) {
-         fTsEpoch++;
-      }
-
-      double eventTime = ets/TSCLK + fTsEpoch*(2.0*0x80000000/TSCLK);
-
-      e->eventTime = eventTime;
-      e->prevEventTime = fLastEventTime;
-
-      e->time = e->eventTime * 1e-9; // ns to sec
-      e->timeIncr = (e->eventTime-e->prevEventTime) * 1e-9; // ns to sec
-
-      fLastEventTs = ets;
-      fLastEventTime = eventTime;
-   } else if (e->numChan <= 16) { // unsynchronized A16 event
-      e->eventTime = -1;
-      e->prevEventTime = -1;
-   } else { // incomplete event
-      e->eventTime = -2;
-      e->prevEventTime = -2;
+   
+   if (count_bad_num_samples > 0) {
+      char buf[256];
+      sprintf(buf, "%d channels with bad number of ADC samples ", count_bad_num_samples);
+      e->error_message += "| " + std::string(buf);
    }
-#endif
+   
+   // check the timestamps
+   
+   uint32_t event_ts = 0;
+   
+   int count_bad_ts = 0;
+   
+   for (unsigned i=0; i<e->hits.size(); i++) {
+      int adc_module = e->hits[i]->adc_module;
+      int adc_chan   = e->hits[i]->adc_chan;
+      uint32_t ts = e->udp[i]->eventTimestamp;
+      uint32_t ts_adj = ts - fFirstUdpTs[adc_module] + 1;
+      if (event_ts == 0) {
+         event_ts = ts_adj;
+      }
+      
+      bool ts_ok = false;
+      ts_ok |= (ts_adj == event_ts);
+      ts_ok |= (ts_adj+1 == event_ts);
+      ts_ok |= (ts_adj == event_ts+1);
+      ts_ok |= (ts_adj+2 == event_ts);
+      ts_ok |= (ts_adj == event_ts+2);
+      ts_ok |= (ts_adj+3 == event_ts);
+      ts_ok |= (ts_adj == event_ts+3);
+      
+      //uint32_t diff = event_ts-ts_adj;
+      //printf("hits[%3d]: adc_module %2d, adc_chan %2d, udp_ts 0x%08x, first 0x%08x, adj 0x%08x, expected 0x%08x, diff %3d, ts_ok %d\n", i, adc_module, adc_chan, ts, fts[adc_module], ts_adj, event_ts, (int)diff, ts_ok);
+      
+      if (!ts_ok) {
+         e->error = true;
+         count_bad_ts++;
+         char buf[256];
+         sprintf(buf, "adc_module %d channel %d ", adc_module, adc_chan);
+         e->error_message += "| timestamp mismatch " + std::string(buf);
+      }
+   }
+   
+   if (count_bad_ts > 0) {
+      char buf[256];
+      sprintf(buf, "%d bad timestamps", count_bad_ts);
+      e->error_message += "| " + std::string(buf);
+   }
+   
+   bool wrap = false;
+   if (event_ts < fLastEventTs) {
+      wrap = true;
+      //printf("wrap!\n");
+   }
+   
+   if (wrap) {
+      fTsEpoch++;
+   }
+   
+   double eventTime = event_ts/fTsFreq + fTsEpoch*(2.0*0x80000000/fTsFreq);
+   
+   if (e->counter <= 1) {
+      fFirstEventTime = eventTime;
+   }
+   
+   eventTime -= fFirstEventTime;
+   
+   e->time = eventTime;
+   e->timeIncr = eventTime - fLastEventTime;
+   
+   fLastEventTs = event_ts;
+   fLastEventTime = eventTime;
 }
 
 /* emacs

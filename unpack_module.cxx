@@ -253,7 +253,7 @@ public:
       if (event->event_id != 1)
          return flow;
 
-      if (1) {
+      if (0) {
          const time_t now = time(NULL);
          const time_t t = event->time_stamp;
          int dt = now - t;

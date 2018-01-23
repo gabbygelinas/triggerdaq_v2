@@ -13,6 +13,9 @@
 #include <vector>
 #include <string>
 
+#define ADC_MODULE_FIRST  1 // smallest ADC serial number
+#define ADC_MODULE_LAST  20 // biggest ADC serial number
+
 struct Alpha16Packet
 {
    int bankLength;
@@ -66,7 +69,6 @@ class Alpha16Map
 {
  public:
    int fNumChan = 0;
-   int fFirstModule = 0;
    std::vector<Alpha16MapEntry> fMap;
  public:
    void Init(const std::vector<std::string>& map);
@@ -90,7 +92,7 @@ struct Alpha16Event
    Alpha16Event(); // ctor
    ~Alpha16Event(); // dtor
 
-   void Print() const;
+   void Print(int level=0) const;
 };
 
 class Alpha16Asm
@@ -114,6 +116,10 @@ class Alpha16Asm
    uint32_t fLastEventTs = 0;
    double   fLastEventTime = 0;
    int      fTsEpoch = 0;
+
+   std::vector<uint32_t> fFirstUdpTs;
+   int      fFirstNumSamples16 = 0;
+   int      fFirstNumSamples32 = 0;
 
  public: // internal functions
    void Init();
