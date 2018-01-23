@@ -324,10 +324,9 @@ public:
       printf("FinalModule::ResumeRun, run %d\n", runinfo->fRunNo);
    }
 
-   TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
+   TAFlowEvent* AnalyzeFlowEvent(TARunInfo* runinfo, TAFlags* flags, TAFlowEvent* flow)
    {
       //printf("FinalModule::Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
-
 
       AgEventFlow *ef = flow->Find<AgEventFlow>();
 

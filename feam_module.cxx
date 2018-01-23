@@ -645,7 +645,7 @@ public:
       printf("ResumeRun, run %d\n", runinfo->fRunNo);
    }
 
-   TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
+   TAFlowEvent* AnalyzeFlowEvent(TARunInfo* runinfo, TAFlags* flags, TAFlowEvent* flow)
    {
       bool verbose = false;
       
@@ -730,6 +730,7 @@ public:
 
          //delete e;
 
+#if 0
       } else if (event->event_id == 2) {
 
          const char* banks[] = { "YP01", "YP02", NULL };
@@ -840,8 +841,9 @@ public:
          //int t1 = strtoul(s, &s, 0);
          //int t2 = strtoul(s, &s, 0);
          //printf("event %d, t %d %d %d\n", event_no, t0, t1, t2);
+#endif
       }
-
+      
       //
 
       bool doPrint = false;
