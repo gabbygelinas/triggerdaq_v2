@@ -441,7 +441,6 @@ public:
    AdcModule(TARunInfo* runinfo, A16Flags* f)
       : TARunObject(runinfo)
    {
-      fTrace = false;
       if (fTrace)
          printf("AdcModule::ctor!\n");
       fFlags = f;
@@ -478,9 +477,10 @@ public:
 
    void BeginRun(TARunInfo* runinfo)
    {
-      printf("AdcModule::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
-      time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
-      printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
+      if (fTrace)
+         printf("AdcModule::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
+      //time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
+      //printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
       fCounter = 0;
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
 
@@ -496,23 +496,26 @@ public:
 
    void EndRun(TARunInfo* runinfo)
    {
-      printf("AdcModule::EndRun, run %d, events %d\n", runinfo->fRunNo, fCounter);
+      if (fTrace)
+         printf("AdcModule::EndRun, run %d, events %d\n", runinfo->fRunNo, fCounter);
       if (fAN16)
          fAN16->Finish();
       if (fAN32)
          fAN32->Finish();
-      time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
-      printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
+      //time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
+      //printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
    }
 
    void PauseRun(TARunInfo* runinfo)
    {
-      printf("AdcModule::PauseRun, run %d\n", runinfo->fRunNo);
+      if (fTrace)
+         printf("AdcModule::PauseRun, run %d\n", runinfo->fRunNo);
    }
 
    void ResumeRun(TARunInfo* runinfo)
    {
-      printf("AdcModule::ResumeRun, run %d\n", runinfo->fRunNo);
+      if (fTrace)
+         printf("AdcModule::ResumeRun, run %d\n", runinfo->fRunNo);
    }
 
    bool fft_first_adc16 = true;
@@ -892,7 +895,8 @@ public:
 
    void AnalyzeSpecialEvent(TARunInfo* runinfo, TMEvent* event)
    {
-      printf("AnalyzeSpecialEvent, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
+      if (fTrace)
+         printf("AnalyzeSpecialEvent, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
    }
 };
 

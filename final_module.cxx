@@ -163,28 +163,33 @@ public:
    TH1D* h_cal_time_pos02_seqsca_04_minus_adc5_0 = NULL;
    TH1D* h_cal_time_pos02_seqsca_04_minus_adc5_16 = NULL;
 
+   bool fTrace = false;
+
    FinalModule(TARunInfo* runinfo)
       : TARunObject(runinfo)
    {
-      printf("FinalModule::ctor!\n");
+      if (fTrace)
+         printf("FinalModule::ctor!\n");
 
       fC = new TCanvas("fC", "event display", 800, 800);
    }
 
    ~FinalModule()
    {
-      printf("FinalModule::dtor!\n");
+      if (fTrace)
+         printf("FinalModule::dtor!\n");
       DELETE(fC);
    }
 
    void BeginRun(TARunInfo* runinfo)
    {
-      printf("FinalModule::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
-      time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
-      printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
+      if (fTrace)
+         printf("FinalModule::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
+      //time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
+      //printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
+
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
 
-      runinfo->fRoot->fOutputFile->cd();
       TDirectory* dir = gDirectory->mkdir("final");
       dir->cd(); // select correct ROOT directory
 
@@ -309,19 +314,22 @@ public:
 
    void EndRun(TARunInfo* runinfo)
    {
-      printf("FinalModule::EndRun, run %d\n", runinfo->fRunNo);
+      if (fTrace)
+         printf("FinalModule::EndRun, run %d\n", runinfo->fRunNo);
       //time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
       //printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
    }
 
    void PauseRun(TARunInfo* runinfo)
    {
-      printf("FinalModule::PauseRun, run %d\n", runinfo->fRunNo);
+      if (fTrace)
+         printf("FinalModule::PauseRun, run %d\n", runinfo->fRunNo);
    }
 
    void ResumeRun(TARunInfo* runinfo)
    {
-      printf("FinalModule::ResumeRun, run %d\n", runinfo->fRunNo);
+      if (fTrace)
+         printf("FinalModule::ResumeRun, run %d\n", runinfo->fRunNo);
    }
 
    TAFlowEvent* AnalyzeFlowEvent(TARunInfo* runinfo, TAFlags* flags, TAFlowEvent* flow)
@@ -1460,7 +1468,7 @@ public:
          //fATX->Plot();
       }
 
-      *flags |= TAFlag_DISPLAY;
+      //*flags |= TAFlag_DISPLAY;
 #endif
 
       return flow;
@@ -1468,7 +1476,8 @@ public:
 
    void AnalyzeSpecialEvent(TARunInfo* runinfo, TMEvent* event)
    {
-      printf("FinalModule::AnalyzeSpecialEvent, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
+      if (fTrace)
+         printf("FinalModule::AnalyzeSpecialEvent, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
    }
 };
 
