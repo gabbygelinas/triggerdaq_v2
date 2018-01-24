@@ -657,9 +657,10 @@ void Alpha16Asm::CheckEvent(Alpha16Event* e)
    if ((int)e->udp.size() == fMap.fNumChan) {
       e->complete = true;
    }
-   
+
    if (fFirstUdpTs.size() < 1) {
-      fFirstUdpTs.reserve(ADC_MODULE_LAST+1);
+      for (int i=0; i<=ADC_MODULE_LAST; i++)
+         fFirstUdpTs.push_back(0);
       
       for (unsigned i=0; i<e->hits.size(); i++) {
          int adc_module = e->hits[i]->adc_module;
@@ -691,7 +692,6 @@ void Alpha16Asm::CheckEvent(Alpha16Event* e)
          ok |= (num_samples == fFirstNumSamples32);
       }
       
-      //uint32_t diff = event_ts-ts_adj;
       //printf("hits[%3d]: adc_module %2d, adc_chan %2d, udp_ts 0x%08x, first 0x%08x, adj 0x%08x, expected 0x%08x, diff %3d, ts_ok %d\n", i, adc_module, adc_chan, ts, fts[adc_module], ts_adj, event_ts, (int)diff, ts_ok);
       
       if (!ok) {
@@ -734,7 +734,7 @@ void Alpha16Asm::CheckEvent(Alpha16Event* e)
       ts_ok |= (ts_adj == event_ts+3);
       
       //uint32_t diff = event_ts-ts_adj;
-      //printf("hits[%3d]: adc_module %2d, adc_chan %2d, udp_ts 0x%08x, first 0x%08x, adj 0x%08x, expected 0x%08x, diff %3d, ts_ok %d\n", i, adc_module, adc_chan, ts, fts[adc_module], ts_adj, event_ts, (int)diff, ts_ok);
+      //printf("hits[%3d]: adc_module %2d, adc_chan %2d, udp_ts 0x%08x, first 0x%08x, adj 0x%08x, expected 0x%08x, diff %3d, ts_ok %d\n", i, adc_module, adc_chan, ts, fFirstUdpTs[adc_module], ts_adj, event_ts, (int)diff, ts_ok);
       
       if (!ts_ok) {
          e->error = true;
