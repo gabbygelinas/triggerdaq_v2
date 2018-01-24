@@ -69,11 +69,14 @@ public:
 
    std::vector<std::string> fFeamBanks;
    std::vector<std::string> fAdcMap;
+
+   bool fTrace = false;
    
    UnpackModule(TARunInfo* runinfo, UnpackFlags* flags)
       : TARunObject(runinfo)
    {
-      printf("UnpackModule::ctor!\n");
+      if (fTrace)
+         printf("UnpackModule::ctor!\n");
 
       fFlags   = flags;
       fCfm     = new Ncfm(getenv("AG_CFM"));
@@ -84,7 +87,8 @@ public:
 
    ~UnpackModule()
    {
-      printf("UnpackModule::dtor!\n");
+      if (fTrace)
+         printf("UnpackModule::dtor!\n");
       DELETE(fCfm);
       DELETE(fAdcAsm);
       DELETE(fFeamEvb);
@@ -107,9 +111,10 @@ public:
 
    void BeginRun(TARunInfo* runinfo)
    {
-      printf("UnpackRun::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
-      time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
-      printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
+      if (fTrace)
+         printf("UnpackModule::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
+      //time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
+      //printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
 
       bool have_trg = true;
@@ -156,16 +161,17 @@ public:
          fAgEvb->fSync.fModules[AGEVB_PWB_SLOT].fDead = true;
    }
 
-   void EndRun(TARunInfo* runinfo)
+   void PreEndRun(TARunInfo* runinfo, std::deque<TAFlowEvent*>* flow_queue)
    {
-      printf("UnpackRun::EndRun, run %d\n", runinfo->fRunNo);
+      if (fTrace)
+         printf("UnpackModule::PreEndRun, run %d\n", runinfo->fRunNo);
       //time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
       //printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
 
       int count_feam = 0;
 
       if (fFeamEvb) {
-         //printf("UnpackRun::EndRun: FeamEVB state:\n");
+         //printf("UnpackModule::PreEndRun: FeamEVB state:\n");
          //fFeamEvb->Print();
 
          while (1) {
@@ -199,18 +205,18 @@ public:
             DELETE(e);
          }
 
-         printf("UnpackRun::EndRun: FeamEVB final state:\n");
+         printf("UnpackModule::PreEndRun: FeamEVB final state:\n");
          fFeamEvb->Print();
       }
       
-      printf("UnpackRun::EndRun: Unpacked %d last FEAM events\n", count_feam);
+      printf("UnpackModule::PreEndRun: Unpacked %d last FEAM events\n", count_feam);
 
       // Handle leftover AgEVB events
 
       int count_agevent = 0;
 
       if (fAgEvb) {
-         printf("UnpackRun::EndRun: AgEVB state:\n");
+         printf("UnpackModule::PreEndRun: AgEVB state:\n");
          fAgEvb->Print();
          
          while (1) {
@@ -226,24 +232,32 @@ public:
             
             count_agevent += 1;
             
-            delete e;
+            flow_queue->push_back(new AgEventFlow(NULL, e));
          }
 
-         printf("UnpackRun::EndRun: AgEVB final state:\n");
+         printf("UnpackModule::PreEndRun: AgEVB final state:\n");
          fAgEvb->Print();
       }
       
-      printf("UnpackRun::EndRun: Unpacked %d last AgEvent events\n", count_agevent);
+      printf("UnpackModule::PreEndRun: Unpacked %d last AgEvent events\n", count_agevent);
+   }
+   
+   void EndRun(TARunInfo* runinfo)
+   {
+      if (fTrace)
+         printf("UnpackModule::EndRun, run %d\n", runinfo->fRunNo);
    }
    
    void PauseRun(TARunInfo* runinfo)
    {
-      printf("UnpackRun::PauseRun, run %d\n", runinfo->fRunNo);
+      if (fTrace)
+         printf("UnpackModule::PauseRun, run %d\n", runinfo->fRunNo);
    }
 
    void ResumeRun(TARunInfo* runinfo)
    {
-      printf("ResumeRun, run %d\n", runinfo->fRunNo);
+      if (fTrace)
+         printf("ResumeModule, run %d\n", runinfo->fRunNo);
    }
 
    TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
@@ -357,7 +371,8 @@ public:
 
    void AnalyzeSpecialEvent(TARunInfo* runinfo, TMEvent* event)
    {
-      printf("UnpackRun::AnalyzeSpecialEvent, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
+      if (fTrace)
+         printf("UnpackModule::AnalyzeSpecialEvent, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
    }
 };
 
