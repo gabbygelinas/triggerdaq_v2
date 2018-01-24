@@ -439,8 +439,8 @@ private:
    const padMap padMapper;
 public:
    FeamFlags* fFlags = NULL;
-   FILE *fin;
-   TCanvas* fC;
+   //FILE *fin = NULL;
+   //TCanvas* fC = NULL;
 
    TH1D* h_spike_diff = NULL;
    TH1D* h_spike_diff_max = NULL;
@@ -496,49 +496,29 @@ public:
    int fCountGoodFpn = 0;
    int fCountBadFpn = 0;
 
+   bool fTrace = false;
+
    FeamModule(TARunInfo* runinfo, FeamFlags* f)
       : TARunObject(runinfo)
    {
-      printf("FeamModule::ctor!\n");
+      if (fTrace)
+         printf("FeamModule::ctor!\n");
+
       fFlags = f;
 
       hbmean_all = NULL;
 
-      fC = NULL;
-      fin = NULL;
-
       if (!fFlags->fDoPads)
          return;
 
-      fC = new TCanvas();
-
-      fin = NULL;
-
-      if (0) {
-         //fin = fopen("/pool8tb/agdaq/pads/yair1485457343.txt", "r");
-         //fin = fopen("/pool8tb/agdaq/pads/yair1485479547.txt", "r");
-         //fin = fopen("/pool8tb/agdaq/pads/yair1485479547.txt", "r"); // 400 events
-         //fin = fopen("/home/agdaq/online/src/yair1485563694.txt", "r");
-         //fin = fopen("/home/agdaq/online/src/yair1485564028.txt", "r");
-         //fin = fopen("/home/agdaq/online/src/yair1485564199.txt", "r");
-         //fin = fopen("/pool8tb/agdaq/pads/tpc01.1485570050.txt", "r");
-         //fin = fopen("/pool8tb/agdaq/pads/tpc01.1485570419.txt", "r");
-         //fin = fopen("/pool8tb/agdaq/pads/yair1485564199.txt", "r"); // 84 events
-         //fin = fopen("/pool8tb/agdaq/pads/tpc01.1485571153.txt", "r"); // ??? events
-         //fin = fopen("/pool8tb/agdaq/pads/tpc02.1485571169.txt", "r"); // ??? events
-         //fin = fopen("/pool8tb/agdaq/pads/tpc01.1485577866.txt", "r"); // 2700 events
-         //fin = fopen("/pool8tb/agdaq/pads/tpc02.1485577870.txt", "r"); // 2700 events
-         //fin = fopen("/home/agdaq/online/src/tpc01.1485825981.txt", "r");
-         //fin = fopen("/home/agdaq/online/src/tpc01.1485987366.txt", "r"); // delay 450, pulse at bin 60
-         fin = fopen("/home/agdaq/online/src/tpc01.1485989371.txt", "r"); // delay 350, pulse at bin 160
-         assert(fin);
-      }
+      //fC = new TCanvas();
    }
 
    ~FeamModule()
    {
-      printf("FeamModule::dtor!\n");
-      DELETE(fC);
+      if (fTrace)
+         printf("FeamModule::dtor!\n");
+      //DELETE(fC);
       for (unsigned i=0; i<fHC.size(); i++) {
          DELETE(fHC[i]);
       }
@@ -546,9 +526,10 @@ public:
 
    void BeginRun(TARunInfo* runinfo)
    {
-      printf("BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
-      time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
-      printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
+      if (fTrace)
+         printf("BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
+      //time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
+      //printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
 
       if (!fFlags->fDoPads)
@@ -622,9 +603,10 @@ public:
 
    void EndRun(TARunInfo* runinfo)
    {
-      printf("FeamModule::EndRun, run %d\n", runinfo->fRunNo);
-      time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
-      printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
+      if (fTrace)
+         printf("FeamModule::EndRun, run %d\n", runinfo->fRunNo);
+      //time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
+      //printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
       for(auto *hc: fHC){
          if(hc){
             if(hc->nwf) hc->hwaveform_avg->Scale(1./double(hc->nwf));
@@ -637,12 +619,14 @@ public:
 
    void PauseRun(TARunInfo* runinfo)
    {
-      printf("PauseRun, run %d\n", runinfo->fRunNo);
+      if (fTrace)
+         printf("PauseRun, run %d\n", runinfo->fRunNo);
    }
 
    void ResumeRun(TARunInfo* runinfo)
    {
-      printf("ResumeRun, run %d\n", runinfo->fRunNo);
+      if (fTrace)
+         printf("ResumeRun, run %d\n", runinfo->fRunNo);
    }
 
    TAFlowEvent* AnalyzeFlowEvent(TARunInfo* runinfo, TAFlags* flags, TAFlowEvent* flow)
@@ -665,7 +649,7 @@ public:
          return flow;
       }
 
-      int force_plot = false;
+      //int force_plot = false;
 
 #if 0
       if (event->event_id != 1 && event->event_id != 2)
@@ -1606,6 +1590,7 @@ public:
 
       hnhitchan->Fill(nhitchan);
 
+#if 0
       bool do_plot = (runinfo->fRoot->fgApp != NULL);
 
       if (do_plot) {
@@ -1731,14 +1716,16 @@ public:
          //fATX->Plot();
       }
 
-      *flags |= TAFlag_DISPLAY;
+      //*flags |= TAFlag_DISPLAY;
+#endif
 
       return flow;
    }
 
    void AnalyzeSpecialEvent(TARunInfo* runinfo, TMEvent* event)
    {
-      printf("AnalyzeSpecialEvent, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
+      if (fTrace)
+         printf("AnalyzeSpecialEvent, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
    }
 };
 
