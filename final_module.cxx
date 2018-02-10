@@ -357,39 +357,23 @@ public:
          adc16_coinc_dff = (age->trig->udpData[6]>>8)&0xFFFF;
       }
 
-      if (age->a16 && age->feam) {
-         static bool first = true;
-         static double a16_time0 = 0;
-         static double feam_time0 = 0;
-         static uint32_t a16_ts0 = 0;
-         static uint32_t feam_ts0 = 0;
+      int trig_counter = -1;
+      int adc_counter = -1;
+      int pwb_counter = -1;
 
-         double a16_time  = age->a16->time;
-         double feam_time = age->feam->time;
-
-         uint32_t a16_ts  = 0;
-         uint32_t feam_ts = 0;
-
-         if (1)
-            a16_ts = age->a16->udp[0]->eventTimestamp;
-
-         if (age->feam->modules[0])
-            feam_ts = age->feam->modules[0]->ts_start;
-
-         if (first) {
-            first = false;
-            a16_time0 = a16_time;
-            feam_time0 = feam_time;
-            a16_ts0 = a16_ts;
-            feam_ts0 = feam_ts;
-         }
-
-         double atr = a16_time-a16_time0;
-         double ftr = feam_time-feam_time0;
-         double dtr = atr-ftr;
-
-         printf("Have AgEvent: %d %d, %f %f, diff %f\n", age->a16->counter, age->feam->counter, atr, ftr, dtr);
+      if (age->trig) {
+         trig_counter = age->trig->counter;
       }
+
+      if (age->a16) {
+         adc_counter = age->a16->counter;
+      }
+
+      if (age->feam) {
+         pwb_counter = age->feam->counter;
+      }
+
+      printf("Have AgEvent: %d %d %d\n", trig_counter, adc_counter, pwb_counter);
 
       if (adc16_coinc_dff) {
          //printf("adc16_coinc_dff: 0x%04x\n", adc16_coinc_dff);
