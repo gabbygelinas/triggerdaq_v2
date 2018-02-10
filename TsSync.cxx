@@ -231,7 +231,7 @@ void TsSync::CheckSync(unsigned ii, unsigned i)
 
 void TsSync::Check(unsigned inew)
 {
-   unsigned tot = 0;
+   int      tot = 0;
    unsigned min = 0;
    unsigned max = 0;
    
@@ -313,6 +313,8 @@ void TsSync::Check(unsigned inew)
       } else if (modules_with_data == 2 && no_sync == 1) {
          fSyncOk = true; // run 458
       } else if (min > fDeadMin && modules_with_data == 1) {
+         fSyncOk = true;
+      } else if (min > fDeadMin && modules_with_data == 2) {
          fSyncOk = true;
       }
    } else if (modules_with_data > 1 && no_sync <= 1) {

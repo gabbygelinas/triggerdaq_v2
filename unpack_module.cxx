@@ -150,8 +150,14 @@ public:
          //fFeamEvb->fSync.fTrace = true;
       }
 
-      fAgEvb = new AgEVB(62.5*1e6, 125.0*1e6, 125.0*1e6, 50.0*1e-6, 100, 90, true);
-      //fAgEvb->fSync.fTrace = true;
+      //int max_skew = 100;
+      int max_skew = 20;
+
+      //int dead_min = 90;
+      int dead_min = 10;
+
+      fAgEvb = new AgEVB(62.5*1e6, 125.0*1e6, 125.0*1e6, 50.0*1e-6, max_skew, dead_min, true);
+      fAgEvb->fSync.fTrace = true;
 
       if (!have_trg)
          fAgEvb->fSync.fModules[AGEVB_TRG_SLOT].fDead = true;
