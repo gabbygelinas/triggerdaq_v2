@@ -201,12 +201,14 @@ void AgEVB::AddAlpha16Event(Alpha16Event* e)
 {
    fCountA16++;
 
+#if 0
    if (fCountA16 > 1 && e->time <= fLastA16Time) {
       fCountRejectedA16++;
       printf("AgEVB::AddA16Event: Alpha16 event time did not increase: new time %f, last seen time %f\n", e->time, fLastA16Time);
       delete e;
       return;
    }
+#endif
 
    if (e->error)
       fCountErrorA16++;
@@ -270,7 +272,7 @@ void AgEVB::Print() const
    printf("  Buffered A16:  %d\n", (int)fBuf[0].size());
    printf("  Buffered FEAM: %d\n", (int)fBuf[1].size());
    printf("  Buffered output: %d\n", (int)fEvents.size());
-   printf("  Output %d events: %d complete, %d with errors, %d incomplete (%d no A16, %d no FEAM)\n", fCount, fCountComplete, fCountError, fCountIncomplete, fCountIncompleteA16, fCountIncompleteFeam);
+   printf("  Output %d events: %d complete, %d with errors, %d incomplete (%d no A16, %d no FEAM, %d no both)\n", fCount, fCountComplete, fCountError, fCountIncomplete, fCountIncompleteA16, fCountIncompleteFeam, fCountIncompleteBoth);
 }
 
 void AgEVB::UpdateCounters(const AgEvent* e)
@@ -285,12 +287,12 @@ void AgEVB::UpdateCounters(const AgEvent* e)
    } else {
       fCountIncomplete++;
 
-      if (!e->a16 && e->feam) {
+      if (e->trig && !e->a16 && e->feam) {
          fCountIncompleteA16++;
-      } else if (e->a16 && !e->feam) {
+      } else if (e->trig && e->a16 && !e->feam) {
          fCountIncompleteFeam++;
-      } else if (!e->a16 && !e->feam) {
-         assert(!"This cannot happen, both A16 and FEAM missing!");
+      } else if (e->trig && !e->a16 && !e->feam) {
+         fCountIncompleteBoth++;
       } else {
          assert(!"This cannot happen!");
       }
