@@ -118,8 +118,8 @@ class Alpha16Asm
    int      fTsEpoch = 0;
 
    std::vector<uint32_t> fFirstUdpTs;
-   int      fFirstNumSamples16 = 0;
-   int      fFirstNumSamples32 = 0;
+   unsigned fFirstNumSamples16 = 0;
+   unsigned fFirstNumSamples32 = 0;
 
  public: // internal functions
    void Init();

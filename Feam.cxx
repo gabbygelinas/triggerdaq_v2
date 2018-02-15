@@ -44,7 +44,7 @@ static uint32_t getUint32le(const void* ptr, int offset)
 }
 
 padMap::padMap(){
-   const int first = 0;  // change if index is numbered from 1
+   //const int first = 0;  // change if index is numbered from 1
    for(int i = 0; i < MAX_FEAM_READOUT; i++){
       if(i < 4) channel[i] = -99;
       else {
