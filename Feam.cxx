@@ -269,9 +269,10 @@ FeamAsm::~FeamAsm()
    fState = -1;
    fCnt = 0;
    fNextN = -1;
-   if (fCurrent)
+   if (fCurrent) {
       delete fCurrent;
-   fCurrent = NULL;
+      fCurrent = NULL;
+   }
    for (unsigned i=0; i<fBuffer.size(); i++) {
       if (fBuffer[i]) {
          delete fBuffer[i];
