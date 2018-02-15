@@ -224,6 +224,19 @@ Alpha16Event::Alpha16Event() // ctor
 
 Alpha16Event::~Alpha16Event() // dtor
 {
+   for (unsigned i=0; i<udp.size(); i++) {
+      if (udp[i]) {
+         delete udp[i];
+         udp[i] = NULL;
+      }
+   }
+
+   for (unsigned i=0; i<hits.size(); i++) {
+      if (hits[i]) {
+         delete hits[i];
+         hits[i] = NULL;
+      }
+   }
 }
 
 void Alpha16Event::Print(int level) const
