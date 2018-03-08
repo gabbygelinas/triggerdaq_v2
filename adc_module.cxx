@@ -728,9 +728,12 @@ public:
          if (runinfo->fRunNo < 1244) {
             ph_hit_thr_adc16 = 1200;
             ph_hit_thr_adc32 =  600;
-         } else {
+         } else if (runinfo->fRunNo < 1405) {
             ph_hit_thr_adc16 =  500;
             ph_hit_thr_adc32 =  500;
+         } else {
+            ph_hit_thr_adc16 =  1000;
+            ph_hit_thr_adc32 =  1000;
          }
 
          double ph_hit_thr = 0;
