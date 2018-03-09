@@ -235,10 +235,10 @@ public:
       h_pad_time = new TH1D("h_pad_time", "pad hit time; time, ns", 100, 0, MAX_TIME);
       h_pad_amp = new TH1D("h_pad_amp", "pad hit pulse height; adc counts", 100, 0, MAX_PAD_AMP);
       h_pad_amp_time = new TH2D("h_pad_amp_time", "pad p.h vs time; time, ns; adc counts", 50, 0, MAX_TIME, 50, 0, MAX_PAD_AMP);
-      int npads = MAX_FEAM*MAX_FEAM_PAD_COL*MAX_FEAM_PAD_ROWS;
+      //int npads = MAX_FEAM*MAX_FEAM_PAD_COL*MAX_FEAM_PAD_ROWS;
       //h_pad_pad_num_hits = new TH2D("h_pad_pad_num_hits", "pad number vs pad number; pad number, col*N+row; pad number, col*N+row", npads, -0.5, npads-0.5, npads, -0.5, npads-0.5);
-      h_pad_amp_pad = new TH2D("h_pad_amp_pad", "pad p.h vs pad number; pad number, col*N+row; adc counts", npads, -0.5, npads-0.5, 100, 0, MAX_PAD_AMP);
-      h_pad_time_pad = new TH2D("h_pad_time_pad", "pad time vs pad number; pad number, col*N+row; time, ns", npads, -0.5, npads-0.5, 100, 0, MAX_TIME);
+      //h_pad_amp_pad = new TH2D("h_pad_amp_pad", "pad p.h vs pad number; pad number, col*N+row; adc counts", npads, -0.5, npads-0.5, 100, 0, MAX_PAD_AMP);
+      //h_pad_time_pad = new TH2D("h_pad_time_pad", "pad time vs pad number; pad number, col*N+row; time, ns", npads, -0.5, npads-0.5, 100, 0, MAX_TIME);
 
       h_aw_pad_num_hits = new TH2D("h_aw_pad_num_hits", "number of aw vs pad hits; number if hits in aw; number of hits in pads", 50, 0, MAX_HITS, 50, 0, MAX_HITS);
       h_aw_pad_hits = new TH2D("h_aw_pad_hits", "hits in aw vs hits in pads; tpc wire; pad column", NUM_AW, -0.5, NUM_AW-0.5, NUM_PC, -0.5, NUM_PC);
@@ -510,8 +510,8 @@ public:
 
             int pos = eph->fPadHits[i].pos;
             int seqsca = eph->fPadHits[i].seqsca;
-            int xcol = (pos%8)*4 + col;
-            int seqpad = xcol*MAX_FEAM_PAD_ROWS + row;
+            //int xcol = (pos%8)*4 + col;
+            //int seqpad = xcol*MAX_FEAM_PAD_ROWS + row;
 
             double time = eph->fPadHits[i].time;
             double amp = eph->fPadHits[i].amp;
@@ -545,8 +545,8 @@ public:
             h_pad_time->Fill(time);
             h_pad_amp->Fill(amp);
             h_pad_amp_time->Fill(time, amp);
-            h_pad_amp_pad->Fill(seqpad, amp);
-            h_pad_time_pad->Fill(seqpad, time);
+            //h_pad_amp_pad->Fill(seqpad, amp);
+            //h_pad_time_pad->Fill(seqpad, time);
 
 #if 0
             for (unsigned ii=0; ii<eph->fPadHits.size(); ii++) {

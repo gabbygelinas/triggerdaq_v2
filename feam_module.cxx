@@ -44,8 +44,8 @@
 
 #define ADC_RANGE_RMS 50
 
-#define ADC_RMS_FPN_MIN 0
-#define ADC_RMS_FPN_MAX 3.25
+#define ADC_RMS_FPN_MIN 0.100
+#define ADC_RMS_FPN_MAX 6.000
 
 #define ADC_PULSER_TIME 450
 
@@ -487,7 +487,7 @@ public:
    TDirectory* hdir_summary;
    TDirectory* hdir_feam;
    TDirectory* hdir_pads;
-   FeamHistograms fHF[MAX_FEAM];
+   std::vector<FeamHistograms*> fHF;
    std::vector<ChanHistograms*> fHC;
 
    int fCountTestScaEvents = 0;
@@ -519,6 +519,9 @@ public:
       if (fTrace)
          printf("FeamModule::dtor!\n");
       //DELETE(fC);
+      for (unsigned i=0; i<fHF.size(); i++) {
+         DELETE(fHF[i]);
+      }
       for (unsigned i=0; i<fHC.size(); i++) {
          DELETE(fHC[i]);
       }
@@ -597,7 +600,9 @@ public:
       hdir_feam->cd();
 
       for (int i=0; i<nfeam; i++) {
-         fHF[i].CreateHistograms(i, nbins, fPulser);
+         FeamHistograms *fh = new FeamHistograms();
+         fh->CreateHistograms(i, nbins, fPulser);
+         fHF.push_back(fh);
       }
    }
 
@@ -926,11 +931,12 @@ public:
          if (!aaa)
             continue;
 
-         bool trace = false;
+         bool trace = true;
+         bool trace_shift = false;
 
          for (int isca=0; isca<aaa->nsca; isca++) {
 
-            int fpn_shift = 10;
+            int fpn_shift = 0;
 
             double rms_fpn1 = compute_rms(aaa->adc[isca][16], ibaseline_start, ibaseline_end);
             double rms_fpn2 = compute_rms(aaa->adc[isca][29], ibaseline_start, ibaseline_end);
@@ -943,13 +949,13 @@ public:
                 && fpn_rms_ok(67, rms_fpn4)) {
 
                if (trace) {
-                  printf("XXX good fpn pos %d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f\n", ifeam, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4);
+                  printf("XXX good fpn pos %2d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f\n", ifeam, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4);
                }
 
                fpn_shift = 0;
             } else {
                if (trace) {
-                  printf("XXX bad  fpn pos %d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f\n", ifeam, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4);
+                  printf("XXX bad  fpn pos %2d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f\n", ifeam, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4);
                }
 
                for (int i=0; i>-30; i--) {
@@ -963,7 +969,7 @@ public:
                   double rms_fpn3 = compute_rms(aaa->adc[isca][ifpn3], ibaseline_start, ibaseline_end);
                   double rms_fpn4 = compute_rms(aaa->adc[isca][ifpn4], ibaseline_start, ibaseline_end);
 
-                  if (trace) {
+                  if (trace_shift) {
                      printf("XXX shift %3d fpn pos %d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f, fpn chan %2d %2d %2d %2d", i, ifeam, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4, ifpn1, ifpn2, ifpn3, ifpn4);
                   }
 
@@ -971,22 +977,26 @@ public:
                       && fpn_rms_ok(ifpn2, rms_fpn2) 
                       && fpn_rms_ok(ifpn3, rms_fpn3) 
                       && fpn_rms_ok(ifpn4, rms_fpn4)) {
-                     if (trace) {
+                     if (trace_shift) {
                         printf(", fpn ok!!!!\n");
                      }
                      fpn_shift = i;
                      break;
                   } else {
-                     if (trace) {
+                     if (trace_shift) {
                         printf(", fpn bad\n");
                      }
                   }
                }
             }
+            
+            if (trace_shift) {
+               if (fpn_shift != 0) {
+                  printf("XXX pos %2d, sca %d, fpn_shift %d\n", ifeam, isca, fpn_shift);
+               }
+            }
 
-            //printf("XXX pos %2d, sca %d, fpn_shift %d\n", ifeam, isca, fpn_shift);
-
-            fHF[ifeam].h_fpn_shift[isca]->Fill(fpn_shift);
+            fHF[ifeam]->h_fpn_shift[isca]->Fill(fpn_shift);
 
             if (fpn_shift < 0) {
                int buf[MAX_FEAM_READOUT][MAX_FEAM_BINS];
@@ -1173,8 +1183,10 @@ public:
                      fHC.push_back(NULL);
                }
 
-               if (fHC[seqchan] == NULL)
+               if (fHC[seqchan] == NULL) {
                   fHC[seqchan] = new ChanHistograms(xname, xtitle, hdir_pads, nbins);
+                  printf("fHC[%d] is %p\n", seqchan, fHC[seqchan]);
+               }
 
                // check for spikes
 
@@ -1340,7 +1352,7 @@ public:
                   }
                }
 
-               fHF[ifeam].h_amp->Fill(wamp);
+               fHF[ifeam]->h_amp->Fill(wamp);
 
                //int wpos = find_pulse(aptr, nbins, bmean, -1.0, wamp/2.0);
                double wpos = find_pulse_time(aptr, nbins, bmean, -1.0, wamp/2.0);
@@ -1394,7 +1406,7 @@ public:
                   nhitchan++;
                   nhitchan_feam++;
 
-                  fHF[ifeam].h_nhitchan_seqsca->Fill(seqsca);
+                  fHF[ifeam]->h_nhitchan_seqsca->Fill(seqsca);
 
                   if (hit) {
                      AgPadHit h;
@@ -1491,16 +1503,16 @@ public:
                   h_adc_range_baseline->Fill(bmax-bmin);
                   h_adc_range_drift->Fill(dmax-dmin);
 
-                  fHF[ifeam].hbmean_prof->Fill(seqsca, bmean);
-                  fHF[ifeam].hbrms_prof->Fill(seqsca, brms);
-                  fHF[ifeam].hbrange_prof->Fill(seqsca, bmax-bmin);
+                  fHF[ifeam]->hbmean_prof->Fill(seqsca, bmean);
+                  fHF[ifeam]->hbrms_prof->Fill(seqsca, brms);
+                  fHF[ifeam]->hbrange_prof->Fill(seqsca, bmax-bmin);
 
                   if (scachan_is_pad) {
-                     fHF[ifeam].hbrms_pads->Fill(brms);
+                     fHF[ifeam]->hbrms_pads->Fill(brms);
                   }
 
                   if (scachan_is_fpn) {
-                     fHF[ifeam].hbrms_fpn->Fill(brms);
+                     fHF[ifeam]->hbrms_fpn->Fill(brms);
                   }
 
                   h2led2amp->Fill(wpos, wamp);
@@ -1527,7 +1539,7 @@ public:
                      hdrift_led_all->Fill(dpos);
                      hdrift_led2amp->Fill(dpos, damp);
                      if (seqpad >= 0) {
-                        fHF[ifeam].hnhits_pad_drift->Fill(seqpad);
+                        fHF[ifeam]->hnhits_pad_drift->Fill(seqpad);
                      }
                   }
                }
@@ -1539,39 +1551,39 @@ public:
 
                   if (fPulser) {
                      h_pulser_led_hit->Fill(wpos);
-                     fHF[ifeam].h_pulser_hit_amp_seqpad->Fill(-1, 0); // force plot to start from 0
-                     fHF[ifeam].h_pulser_hit_amp_seqpad->Fill(seqpad, wamp);
-                     fHF[ifeam].h_pulser_hit_time_seqpad->Fill(seqpad, wpos);
-                     fHF[ifeam].h_pulser_hit_time_seqsca->Fill(seqsca, wpos);
-                     fHF[ifeam].h_pulser_hit_amp->Fill(wamp);
-                     fHF[ifeam].h_pulser_hit_time->Fill(wpos);
-                     fHF[ifeam].h_pulser_hit_time_zoom->Fill(wpos);
+                     fHF[ifeam]->h_pulser_hit_amp_seqpad->Fill(-1, 0); // force plot to start from 0
+                     fHF[ifeam]->h_pulser_hit_amp_seqpad->Fill(seqpad, wamp);
+                     fHF[ifeam]->h_pulser_hit_time_seqpad->Fill(seqpad, wpos);
+                     fHF[ifeam]->h_pulser_hit_time_seqsca->Fill(seqsca, wpos);
+                     fHF[ifeam]->h_pulser_hit_amp->Fill(wamp);
+                     fHF[ifeam]->h_pulser_hit_time->Fill(wpos);
+                     fHF[ifeam]->h_pulser_hit_time_zoom->Fill(wpos);
                      if (seqsca == 4)
-                        fHF[ifeam].h_pulser_hit_time_seqsca4_zoom->Fill(wpos);
+                        fHF[ifeam]->h_pulser_hit_time_seqsca4_zoom->Fill(wpos);
                   }
 
-                  fHF[ifeam].h_nhits_seqsca->Fill(seqsca);
-                  fHF[ifeam].h_hit_time_seqsca->Fill(seqsca, wpos);
-                  fHF[ifeam].h_hit_amp_seqsca->Fill(seqsca, wamp);
-                  fHF[ifeam].h_hit_amp_seqpad->Fill(seqpad, wamp);
+                  fHF[ifeam]->h_nhits_seqsca->Fill(seqsca);
+                  fHF[ifeam]->h_hit_time_seqsca->Fill(seqsca, wpos);
+                  fHF[ifeam]->h_hit_amp_seqsca->Fill(seqsca, wamp);
+                  fHF[ifeam]->h_hit_amp_seqpad->Fill(seqpad, wamp);
 
                   if (wamp >= 10000 && wamp <= 40000) {
-                     fHF[ifeam].h_amp_seqsca->Fill(seqsca, wamp);
-                     fHF[ifeam].h_amp_seqpad->Fill(seqpad, wamp);
+                     fHF[ifeam]->h_amp_seqsca->Fill(seqsca, wamp);
+                     fHF[ifeam]->h_amp_seqpad->Fill(seqpad, wamp);
                   }
 
-                  h_amp_hit_col->Fill((ifeam*4 + col)%(MAX_FEAM_PAD_COL*MAX_FEAM), wamp);
+                  //h_amp_hit_col->Fill((ifeam*4 + col)%(MAX_FEAM_PAD_COL*MAX_FEAM), wamp);
 
                   if (seqpad >= 0) {
-                     fHF[ifeam].h_nhits_seqpad->Fill(seqpad);
+                     fHF[ifeam]->h_nhits_seqpad->Fill(seqpad);
                      if (!spike) {
-                        fHF[ifeam].hnhits_pad_nospike->Fill(seqpad);
+                        fHF[ifeam]->hnhits_pad_nospike->Fill(seqpad);
                      }
                   }
                }
 
                if (spike) {
-                  fHF[ifeam].h_spike_seqsca->Fill(seqsca);
+                  fHF[ifeam]->h_spike_seqsca->Fill(seqsca);
                }
             }
          }
@@ -1584,8 +1596,8 @@ public:
             printf("XXX bad fpn count %d\n", fCountBadFpn);
          }
 
-         fHF[ifeam].h_spike_seqsca->Fill(1); // event counter marker
-         fHF[ifeam].hnhitchan->Fill(nhitchan_feam);
+         fHF[ifeam]->h_spike_seqsca->Fill(1); // event counter marker
+         fHF[ifeam]->hnhitchan->Fill(nhitchan_feam);
       }
 
       hnhitchan->Fill(nhitchan);

@@ -135,7 +135,6 @@ class FeamAsm
    void FlushIncomplete();
 };
 
-#define MAX_FEAM           8 /* 64: 0..63 */
 #define MAX_FEAM_SCA       4 /* 0,1,2,3 is A,B,C,D */
 #define MAX_FEAM_READOUT  80 /* 1..79 */
 #define MAX_FEAM_BINS    511 /* SCA time bins     */
