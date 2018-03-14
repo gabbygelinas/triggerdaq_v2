@@ -56,9 +56,7 @@ class AgEVB
    int fCountComplete   = 0;
    int fCountError      = 0;
    int fCountIncomplete = 0;
-   int fCountIncompleteA16  = 0;
-   int fCountIncompleteFeam = 0;
-   int fCountIncompleteBoth = 0;
+   int fCountIncompleteBitmap[8];
    int fCountTrg = 0;
    int fCountA16 = 0;
    int fCountFeam = 0;

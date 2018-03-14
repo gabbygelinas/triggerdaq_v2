@@ -1185,7 +1185,6 @@ public:
 
                if (fHC[seqchan] == NULL) {
                   fHC[seqchan] = new ChanHistograms(xname, xtitle, hdir_pads, nbins);
-                  printf("fHC[%d] is %p\n", seqchan, fHC[seqchan]);
                }
 
                // check for spikes

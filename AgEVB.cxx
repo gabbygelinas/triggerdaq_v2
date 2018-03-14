@@ -26,6 +26,10 @@ AgEVB::AgEVB(double trig_ts_freq, double a16_ts_freq, double feam_ts_freq, doubl
    fLastFeamTime = 0;
    fMaxDt = 0;
    fMinDt = 0;
+
+   for (int i=0; i<8; i++) {
+      fCountIncompleteBitmap[i] = 0;
+   }
 }
 
 AgEVB::~AgEVB()
@@ -272,7 +276,16 @@ void AgEVB::Print() const
    printf("  Buffered A16:  %d\n", (int)fBuf[0].size());
    printf("  Buffered FEAM: %d\n", (int)fBuf[1].size());
    printf("  Buffered output: %d\n", (int)fEvents.size());
-   printf("  Output %d events: %d complete, %d with errors, %d incomplete (%d no A16, %d no FEAM, %d no both)\n", fCount, fCountComplete, fCountError, fCountIncomplete, fCountIncompleteA16, fCountIncompleteFeam, fCountIncompleteBoth);
+   printf("  Output %d events: %d complete, %d with errors, %d incomplete\n", fCount, fCountComplete, fCountError, fCountIncomplete);
+   if (fCountIncomplete) {
+      printf("  Incomplete: ");
+      for (int i=0; i<8; i++) {
+         if (fCountIncompleteBitmap[i]) {
+            printf(" bitmap %d: %d", i, fCountIncompleteBitmap[i]);
+         }
+      }
+      printf("\n");
+   }
 }
 
 void AgEVB::UpdateCounters(const AgEvent* e)
@@ -287,15 +300,21 @@ void AgEVB::UpdateCounters(const AgEvent* e)
    } else {
       fCountIncomplete++;
 
-      if (e->trig && !e->a16 && e->feam) {
-         fCountIncompleteA16++;
-      } else if (e->trig && e->a16 && !e->feam) {
-         fCountIncompleteFeam++;
-      } else if (e->trig && !e->a16 && !e->feam) {
-         fCountIncompleteBoth++;
-      } else {
-         assert(!"This cannot happen!");
-      }
+      int mask = 0;
+
+      if (!e->trig)
+         mask |= (1<<0);
+
+      if (!e->a16)
+         mask |= (1<<1);
+         
+      if (!e->feam)
+         mask |= (1<<2);
+
+      assert(mask >= 0);
+      assert(mask < 8);
+
+      fCountIncompleteBitmap[mask]++;
    }
 }
 
