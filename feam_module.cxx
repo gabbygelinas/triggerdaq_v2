@@ -687,7 +687,7 @@ public:
                   continue;
                }
                FeamModuleData* m = e->modules[i];
-               printf("position %2d, cnt %4d, ts_trig: 0x%08x %14.3f usec, ts_incr %14.3f usec\n", m->fPosition, m->cnt, m->ts_trig, m->fTime*1e6, m->fTimeIncr*1e6);
+               printf("pwb%2d, cnt %4d, ts_trig: 0x%08x %14.3f usec, ts_incr %14.3f usec\n", m->fModule, m->cnt, m->ts_trig, m->fTime*1e6, m->fTimeIncr*1e6);
             }
          }
 
@@ -1383,16 +1383,18 @@ public:
 
                hit = hit_time && hit_amp;
 
-               if (hit_amp) {
+               if (1 || hit_amp) {
 
                   FeamChannel* c = new FeamChannel;
-                  c->bank = e->modules[ifeam]->fBank;
-                  c->position = ifeam;
+                  //c->bank = e->modules[ifeam]->fBank;
+                  c->imodule    = e->modules[ifeam]->fModule;
+                  c->pwb_column = e->modules[ifeam]->fColumn;
+                  c->pwb_ring   = e->modules[ifeam]->fRing;
                   c->sca = isca;
                   c->sca_readout = ichan;
                   c->sca_chan = scachan;
-                  c->tpc_col = col;
-                  c->tpc_row = row;
+                  c->pad_col = col;
+                  c->pad_row = row;
                   c->first_bin = 0;
                   c->adc_samples.reserve(nbins);
                   for (int i=0; i<nbins; i++)

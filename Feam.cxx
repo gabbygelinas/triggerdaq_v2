@@ -172,7 +172,9 @@ void FeamModuleData::Finalize()
 
 void FeamModuleData::Print(int level) const
 {
-   printf("bank %s, module %2d, ", fBank.c_str(), fPosition);
+   printf("pos %2d, ", fPosition);
+   printf("pwb%02d, ", fModule);
+   printf("c%dr%d, ", fColumn, fRing);
    printf("fmt %d, ", fDataFormat);
    printf("cnt %6d, ts_start 0x%08x, ts_trig 0x%08x, ",
           cnt,
@@ -231,13 +233,15 @@ void FeamModuleData::AddData(const FeamPacket*p, const char* ptr, int size)
    fSize += size;
 }
 
-FeamModuleData::FeamModuleData(const FeamPacket* p, const char* bank, int position, int format)
+FeamModuleData::FeamModuleData(const FeamPacket* p, int position, int imodule, int icolumn, int iring, int format)
 {
    //printf("FeamModuleData: ctor! %d\n", x2count++);
    assert(p->n == 0);
 
-   fBank = bank;
    fPosition = position;
+   fModule = imodule;
+   fColumn = icolumn;
+   fRing = iring;
    fDataFormat = format;
 
    cnt = p->cnt;
@@ -291,23 +295,22 @@ void FeamAsm::Print() const
       if (fBuffer[i]->error)
          countError++;
    }
-   printf("pos %d, bank %s, state %d, cnt %d, nextn %d, ig %d, fi %d, do %d (sy %d, tr %d, sk %d, wcnt %d), cur %p, buf %d (com %d, err %d)", fPosition, fBank.c_str(), fState, fCnt, fNextN, fCountIgnoredBeforeFirst, fCountFirst, fCountDone, fCountLostSync, fCountTruncated, fCountSkip, fCountWrongCnt, fCurrent, (int)fBuffer.size(), countComplete, countError);
+   printf("pwb%02d, state %d, cnt %d, nextn %d, ig %d, fi %d, do %d (sy %d, tr %d, sk %d, wcnt %d), cur %p, buf %d (com %d, err %d)", fModule, fState, fCnt, fNextN, fCountIgnoredBeforeFirst, fCountFirst, fCountDone, fCountLostSync, fCountTruncated, fCountSkip, fCountWrongCnt, fCurrent, (int)fBuffer.size(), countComplete, countError);
 }
 
-void FeamAsm::StFirstPacket(const FeamPacket* p, const char* bank, int position, int format, const char* ptr, int size)
+void FeamAsm::StFirstPacket(const FeamPacket* p, int position, int imodule, int icolumn, int iring, int format, const char* ptr, int size)
 {
    fState = ST_DATA;
    fCnt = p->cnt;
    fNextN = 1;
    fCountFirst++;
 
-   fPosition = position;
    fDataFormat = format;
-   fBank = bank;
+   fModule = imodule;
 
    assert(fCurrent == NULL);
 
-   fCurrent = new FeamModuleData(p, bank, position, format);
+   fCurrent = new FeamModuleData(p, position, imodule, icolumn, iring, format);
    fCurrent->fPacket = new FeamPacket(*p); // copy constructor
 
    fCurrent->AddData(p, ptr, size);
@@ -341,7 +344,7 @@ void FeamAsm::FlushIncomplete()
    fCurrent = NULL;
 }
 
-void FeamAsm::AddPacket(const FeamPacket* p, const char* bank, int position, int format, const char* ptr, int size)
+void FeamAsm::AddPacket(const FeamPacket* p, int position, int imodule, int icolumn, int iring, int format, const char* ptr, int size)
 {
    bool trace = false;
    bool traceNormal = false;
@@ -354,11 +357,11 @@ void FeamAsm::AddPacket(const FeamPacket* p, const char* bank, int position, int
    case ST_INIT: { // initial state, before received first first packet
       if (p->n==0) { // first packet
          if (trace)
-            printf("ST_INIT: bank %s, packet cnt %d, n %d ---> first packet\n", bank, p->cnt, p->n);
-         StFirstPacket(p, bank, position, format, ptr, size);
+            printf("ST_INIT: pwb%02d, packet cnt %d, n %d ---> first packet\n", imodule, p->cnt, p->n);
+         StFirstPacket(p, position, imodule, icolumn, iring, format, ptr, size);
       } else {
          if (traceNormal)
-            printf("ST_INIT: bank %s, packet cnt %d, n %d\n", bank, p->cnt, p->n);
+            printf("ST_INIT: pwb%02d, packet cnt %d, n %d\n", imodule, p->cnt, p->n);
          fCountIgnoredBeforeFirst++;
       }
       break;
@@ -367,31 +370,31 @@ void FeamAsm::AddPacket(const FeamPacket* p, const char* bank, int position, int
       //printf("ST_FIRST: bank %s, packet cnt %d, n %d\n", bank, p->cnt, p->n);
       if (p->n == 0) { // unexpected first packet
          if (trace)
-            printf("ST_DATA: bank %s, packet cnt %d, n %d ---> unexpected first packet\n", bank, p->cnt, p->n);
+            printf("ST_DATA: pwb%02d, packet cnt %d, n %d ---> unexpected first packet\n", imodule, p->cnt, p->n);
          fCountTruncated++;
          FlushIncomplete();
-         StFirstPacket(p, bank, position, format, ptr, size);
+         StFirstPacket(p, position, imodule, icolumn, iring, format, ptr, size);
       } else if (p->cnt != fCnt) { // packet from wrong event
          if (trace)
-            printf("ST_DATA: bank %s, packet cnt %d, n %d ---> wrong cnt expected cnt %d\n", bank, p->cnt, p->n, fCnt);
+            printf("ST_DATA: pwb%02d, packet cnt %d, n %d ---> wrong cnt expected cnt %d\n", imodule, p->cnt, p->n, fCnt);
          fState = ST_WAIT;
          FlushIncomplete();
          fCountWrongCnt++;
       } else if (p->n != fNextN) { // out of sequence packet
          if (trace)
-            printf("ST_DATA: bank %s, packet cnt %d, n %d ---> out of sequence expected n %d\n", bank, p->cnt, p->n, fNextN);
+            printf("ST_DATA: pwb%02d, packet cnt %d, n %d ---> out of sequence expected n %d\n", imodule, p->cnt, p->n, fNextN);
          fState = ST_WAIT;
          FlushIncomplete();
          fCountLostSync++;
       } else if (p->n == 255) { // last packet
          if (trace)
-            printf("ST_DATA: bank %s, packet cnt %d, n %d ---> last packet\n", bank, p->cnt, p->n);
+            printf("ST_DATA: pwb%02d, packet cnt %d, n %d ---> last packet\n", imodule, p->cnt, p->n);
          AddData(p, ptr, size);
          fNextN++;
          StLastPacket();
       } else {
          if (traceNormal)
-            printf("ST_DATA: bank %s, packet cnt %d, n %d\n", bank, p->cnt, p->n);
+            printf("ST_DATA: pwb%02d, packet cnt %d, n %d\n", imodule, p->cnt, p->n);
          AddData(p, ptr, size);
          fNextN++;
       }
@@ -400,11 +403,11 @@ void FeamAsm::AddPacket(const FeamPacket* p, const char* bank, int position, int
    case ST_WAIT: { // skipping bad data
       if (p->n == 0) { // first packet
          if (trace)
-            printf("ST_WAIT: bank %s, packet cnt %d, n %d ---> first packet\n", bank, p->cnt, p->n);
-         StFirstPacket(p, bank, position, format, ptr, size);
+            printf("ST_WAIT: pwb%02d, packet cnt %d, n %d ---> first packet\n", imodule, p->cnt, p->n);
+         StFirstPacket(p, position, imodule, icolumn, iring, format, ptr, size);
       } else {
          if (traceNormal)
-            printf("ST_WAIT: bank %s, packet cnt %d, n %d\n", bank, p->cnt, p->n);
+            printf("ST_WAIT: pwb%02d, packet cnt %d, n %d\n", imodule, p->cnt, p->n);
          fCountSkip++;
       }
       break;
@@ -412,11 +415,11 @@ void FeamAsm::AddPacket(const FeamPacket* p, const char* bank, int position, int
    case ST_DONE: { // received last packet
       if (p->n == 0) { // first packet
          if (trace)
-            printf("ST_DONE: bank %s, packet cnt %d, n %d ---> first packet\n", bank, p->cnt, p->n);
-         StFirstPacket(p, bank, position, format, ptr, size);
+            printf("ST_DONE: pwb%02d, packet cnt %d, n %d ---> first packet\n", imodule, p->cnt, p->n);
+         StFirstPacket(p, position, imodule, icolumn, iring, format, ptr, size);
       } else {
          if (trace)
-            printf("ST_DONE: bank %s, packet cnt %d, n %d ---> lost first packet\n", bank, p->cnt, p->n);
+            printf("ST_DONE: pwb%02d, packet cnt %d, n %d ---> lost first packet\n", imodule, p->cnt, p->n);
          fState = ST_WAIT;
          fCountLostFirst++;
       }

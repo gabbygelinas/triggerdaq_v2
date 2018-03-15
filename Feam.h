@@ -62,8 +62,10 @@ public:
 class FeamModuleData
 {
 public:
-   std::string fBank; // MIDAS bank, FEAM serial number
-   int fPosition = 0; // geographical position 0..63
+   int fPosition = 0; // array index into the PWB event builder and event assembler
+   int fModule = 0;   // PWB serial number NN from pwbNN
+   int fColumn = 0;   // geographical position column 0..7 (as labeled on the detector)
+   int fRing   = 0;   // geographical position ring 0..7 (bottom to top)
    int fDataFormat = 0; // FEAM/PWB data format, FEAM rev0 is 1, PWB rev1 is 2
    FeamPacket* fPacket = NULL; // event counter, timestamps, etc
 
@@ -89,7 +91,7 @@ public:
    double   fTimeIncr = 0;
 
 public:
-   FeamModuleData(const FeamPacket* p, const char* bank, int position, int format);
+   FeamModuleData(const FeamPacket* p, int position, int imodule, int icolumn, int iring, int format);
    ~FeamModuleData(); // dtor
    void AddData(const FeamPacket*p, const char* ptr, int size);
    void Finalize();
@@ -105,8 +107,7 @@ class FeamAsm
    FeamModuleData* fCurrent = NULL;
 
  public: // context
-   std::string fBank;
-   int fPosition = 0;
+   int fModule = 0;
    int fDataFormat = 0;
 
  public: // output buffer
@@ -125,11 +126,11 @@ class FeamAsm
  public: // API
    ~FeamAsm();
    void Print() const;
-   void AddPacket(const FeamPacket* p, const char* bank, int position, int format, const char* ptr, int size);
+   void AddPacket(const FeamPacket* p, int position, int imodule, int icolumn, int iring, int format, const char* ptr, int size);
    void Finalize();
 
  public: // internal functions
-   void StFirstPacket(const FeamPacket* p, const char* bank, int position, int format, const char* ptr, int size);
+   void StFirstPacket(const FeamPacket* p, int position, int imodule, int icolumn, int iring, int format, const char* ptr, int size);
    void StLastPacket();
    void AddData(const FeamPacket* p, const char* ptr, int size);
    void FlushIncomplete();
@@ -165,14 +166,15 @@ struct FeamAdcData
 
 struct FeamChannel
 {
-   std::string bank;
-   int position; /* 0..63, ring*8+column, div8 is vertical position, mod8 is azimuthal position */
-   int sca; /* 0..3 */
+   int imodule;     /* pwb serial number NN from pwbNN, 0..80 or so */
+   int pwb_column;  /* pwb column position, 0..7 */
+   int pwb_ring;    /* pwb ring position, 0..7 */
+   int sca;         /* 0..3 */
    int sca_readout; /* 1..79, includes 72 pad channels, 3 reset channels and 4 FPN channels */
-   int sca_chan; /* 1..72 */
-   int tpc_col; /* 0..3 */
-   int tpc_row; /* 0..71 */
-   int first_bin; /* usually 0 */
+   int sca_chan;    /* 1..72 */
+   int pad_col;     /* local pad column position, 0..3 */
+   int pad_row;     /* local pad row position, 0..71 */
+   int first_bin;   /* usually 0 */
    std::vector<int> adc_samples;
 };
 

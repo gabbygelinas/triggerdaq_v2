@@ -132,12 +132,12 @@ public:
          if (!c)
             continue;
 
-         int ipos = c->position;
+         int ipwb = c->imodule;
          int isca = c->sca;
          int ichan = c->sca_readout;
          int scachan = c->sca_chan;
-         int col = c->tpc_col;
-         int row = c->tpc_row;
+         int col = c->pad_col;
+         int row = c->pad_row;
 
          //printf("hit %d: ipos %2d, isca %d, sca_readout %2d, sca_chan %2d, tpc col %2d, row %2d\n", ihit, ipos, isca, ichan, scachan, col, row);
 
@@ -156,14 +156,14 @@ public:
          char xtitle[256];
 
          if (scachan_is_pad) {
-            sprintf(xname, "pos%02d_%03d_sca%d_chan%02d_scachan%02d_col%02d_row%02d", ipos, seqsca, isca, ichan, scachan, col, row);
-            sprintf(xtitle, "FEAM pos %d, sca %d, readout chan %d, sca chan %d, col %d, row %d", ipos, isca, ichan, scachan, col, row);
+            sprintf(xname, "pwb%02d_%03d_sca%d_chan%02d_scachan%02d_col%02d_row%02d", ipwb, seqsca, isca, ichan, scachan, col, row);
+            sprintf(xtitle, "pwb%02d, sca %d, readout chan %d, sca chan %d, col %d, row %d", ipwb, isca, ichan, scachan, col, row);
          } else if (scachan_is_fpn) {
-            sprintf(xname, "pos%02d_%03d_sca%d_chan%02d_fpn%d", ipos, seqsca, isca, ichan, -scachan);
-            sprintf(xtitle, "FEAM pos %d, sca %d, readout chan %d, fpn %d", ipos, isca, ichan, -scachan);
+            sprintf(xname, "pwb%02d_%03d_sca%d_chan%02d_fpn%d", ipwb, seqsca, isca, ichan, -scachan);
+            sprintf(xtitle, "pwb%02d, sca %d, readout chan %d, fpn %d", ipwb, isca, ichan, -scachan);
          } else {
-            sprintf(xname, "pos%02d_%03d_sca%d_chan%02d", ipos, seqsca, isca, ichan);
-            sprintf(xtitle, "FEAM pos %d, sca %d, readout chan %d", ipos, isca, ichan);
+            sprintf(xname, "pwb%02d_%03d_sca%d_chan%02d", ipwb, seqsca, isca, ichan);
+            sprintf(xtitle, "pwb%02d, sca %d, readout chan %d", ipwb, isca, ichan);
          }
          
          if (fFlags->fExportWaveforms) {

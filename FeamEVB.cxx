@@ -123,6 +123,8 @@ void FeamEVB::CheckFeam(FeamEvent *e)
    
 void FeamEVB::AddFeam(int position, FeamModuleData *m)
 {
+   assert(position < fSync.fModules.size());
+
    m->fTime = fSync.fModules[position].GetTime(m->fTs, m->fTsEpoch);
 
    //printf("FeamEVB::AddFeam: module %d, ts 0x%08x, epoch %d, time %f\n", position, m->fTs, m->fTsEpoch, m->fTime);
@@ -205,9 +207,11 @@ void FeamEVB::Flush(int position)
    }
 }
 
-void FeamEVB::AddPacket(const char* bank, int position, int format, const FeamPacket* p, const char* ptr, int size)
+void FeamEVB::AddPacket(int position, int imodule, int icolumn, int iring, int format, const FeamPacket* p, const char* ptr, int size)
 {
-   fAsm[position]->AddPacket(p, bank, position, format, ptr, size);
+   assert(position < fAsm.size());
+
+   fAsm[position]->AddPacket(p, position, imodule, icolumn, iring, format, ptr, size);
 
    Flush(position);
 
@@ -234,7 +238,7 @@ void FeamEVB::Print() const
    
    printf("  Assembler: %d entries\n", (int)fAsm.size());
    for (unsigned i=0; i<fAsm.size(); i++) {
-      printf("    position %d: ", i);
+      printf("    position %2d: ", i);
       fAsm[i]->Print();
       printf("\n");
    }

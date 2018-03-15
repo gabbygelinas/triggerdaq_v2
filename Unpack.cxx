@@ -8,11 +8,23 @@
 
 #include "Unpack.h"
 
-static int bank_name_to_module(const char* s)
+static int adc_bank_name_to_module(const char* s)
 {
    if (s[0] == 'B' || s[0] == 'C') {
       int c1 = s[1]-'0';
       int c2 = s[2]-'0';
+      return c1*10 + c2;
+   } else {
+      fprintf(stderr, "Cannot extract module name from bank name [%s]\n", s);
+      abort();
+   }
+}
+
+static int pwb_bank_name_to_module(const char* s)
+{
+   if (s[0] == 'P' && (s[1] == 'A' || s[1] == 'B')) {
+      int c1 = s[2]-'0';
+      int c2 = s[3]-'0';
       return c1*10 + c2;
    } else {
       fprintf(stderr, "Cannot extract module name from bank name [%s]\n", s);
@@ -107,7 +119,7 @@ Alpha16Event* UnpackAlpha16Event(Alpha16Asm* adcasm, TMEvent* me)
          // obsolete bank "BBnn" from FEAM rev0 board
       } else if (b->name[0] == 'B' || b->name[0] == 'C') {
          // ALPHA16 bank from feevb
-         int module = bank_name_to_module(b->name.c_str());
+         int module = adc_bank_name_to_module(b->name.c_str());
 
          if (module < 1 || module > 20) {
             fprintf(stderr, "UnpackAlpha16Event: bank name [%s] has invalid module number %d\n", b->name.c_str(), module);
@@ -172,6 +184,13 @@ FeamEvent* UnpackFeamEventNoEvb(FeamEVB* evb, TMEvent* event, const std::vector<
    for (unsigned i=0; i<banks.size(); i++) {
       TMBank* b = event->FindBank(banks[i].c_str());
       if (b) {
+         int module = pwb_bank_name_to_module(b->name.c_str());
+
+         if (module < 0 || module > 80) {
+            fprintf(stderr, "UnpackFeamEventNoEvb: bank name [%s] has invalid module number %d\n", b->name.c_str(), module);
+            abort();
+         }
+
          data = event->GetBankData(b);
          if (data) {
             //printf("Have bank %s\n", banks[i]);
@@ -197,8 +216,11 @@ FeamEvent* UnpackFeamEventNoEvb(FeamEVB* evb, TMEvent* event, const std::vector<
                f = 1;
             else
                assert(!"invalid PWB bank name");
+
+            int column = (i/8);
+            int ring = (i%8);
             
-            evb->AddPacket(b->name.c_str(), i, f, p, data + p->off, p->buf_len);
+            evb->AddPacket(i, module, column, ring, f, p, data + p->off, p->buf_len);
          }
       }
    }
@@ -217,6 +239,13 @@ FeamEvent* UnpackFeamEvent(FeamEVB* evb, TMEvent* event, const std::vector<std::
       for (unsigned i=0; i<banks.size(); i++) {
          const TMBank* b = &event->banks[k];
          if (banks[i] == b->name) {
+            int module = pwb_bank_name_to_module(b->name.c_str());
+
+            if (module < 0 || module > 80) {
+               fprintf(stderr, "UnpackFeamEvent: bank name [%s] has invalid module number %d\n", b->name.c_str(), module);
+               abort();
+            }
+
             char *data = event->GetBankData(b);
             if (data) {
                //printf("Have bank %s\n", banks[i]);
@@ -242,8 +271,11 @@ FeamEvent* UnpackFeamEvent(FeamEVB* evb, TMEvent* event, const std::vector<std::
                   f = 1;
                else
                   assert(!"invalid PWB bank name");
-            
-               evb->AddPacket(b->name.c_str(), i, f, p, data + p->off, p->buf_len);
+
+               int column = (i/8);
+               int ring = (i%8);
+
+               evb->AddPacket(i, module, column, ring, f, p, data + p->off, p->buf_len);
             }
             break;
          }

@@ -196,7 +196,7 @@ public:
                   if (!e->modules[i])
                      break;
                   FeamModuleData* m = e->modules[i];
-                  printf("position %2d, cnt %4d, ts_trig: 0x%08x %14.3f usec, ts_incr %14.3f usec\n", m->fPosition, m->cnt, m->ts_trig, m->fTime*1e6, m->fTimeIncr*1e6);
+                  printf("pwb%02d, cnt %4d, ts_trig: 0x%08x %14.3f usec, ts_incr %14.3f usec\n", m->fModule, m->cnt, m->ts_trig, m->fTime*1e6, m->fTimeIncr*1e6);
                   //a->Print();
                   //printf("\n");
                }
@@ -339,7 +339,7 @@ public:
                   if (!e->modules[i])
                      break;
                   FeamModuleData* m = e->modules[i];
-                  printf("position %2d, cnt %4d, ts_trig: 0x%08x %14.3f usec, ts_incr %14.3f usec\n", m->fPosition, m->cnt, m->ts_trig, m->fTime*1e6, m->fTimeIncr*1e6);
+                  printf("pwb%02d, cnt %4d, ts_trig: 0x%08x %14.3f usec, ts_incr %14.3f usec\n", m->fModule, m->cnt, m->ts_trig, m->fTime*1e6, m->fTimeIncr*1e6);
                   //a->Print();
                   //printf("\n");
                }
