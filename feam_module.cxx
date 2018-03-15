@@ -454,18 +454,25 @@ public:
    //FILE *fin = NULL;
    //TCanvas* fC = NULL;
 
-   TH1D* h_spike_diff = NULL;
-   TH1D* h_spike_diff_max = NULL;
-   TH1D* h_spike_num = NULL;
+   TH1D* h_all_fpn_count = NULL;
+
+   TProfile* h_all_fpn_rms = NULL;
+   //TProfile* h_all_fpn_rms_bis = NULL;
+   TProfile* h_all_pad_baseline_mean = NULL;
+   TProfile* h_all_pad_baseline_rms = NULL;
+
+   //TH1D* h_spike_diff = NULL;
+   //TH1D* h_spike_diff_max = NULL;
+   //TH1D* h_spike_num = NULL;
 
    TH1D* hbmean_all;
    TH1D* hbrms_all;
    TH1D* hbrms_all_pads;
    TH1D* hbrms_all_fpn;
 
-   TH1D* h_adc_range_all = NULL;
-   TH1D* h_adc_range_baseline = NULL;
-   TH1D* h_adc_range_drift = NULL;
+   //TH1D* h_adc_range_all = NULL;
+   //TH1D* h_adc_range_baseline = NULL;
+   //TH1D* h_adc_range_drift = NULL;
 
    TH1D* hamp_pad;
    TH1D* hamp_pad_pedestal;
@@ -565,18 +572,30 @@ public:
 
       hdir_summary->cd();
 
-      h_spike_diff = new TH1D("spike_diff", "channel spike finder", 100, 0, 1000);
-      h_spike_diff_max = new TH1D("spike_diff_max", "channel spike finder, max", 100, 0, 1000);
-      h_spike_num = new TH1D("spike_num", "channel spike finder, num", 100, 0-0.5, 100-0.5);
+      int max_fpn = 8*8*MAX_FEAM_SCA*4;
+      int max_pad = 8*8*MAX_FEAM_SCA;
 
-      hbmean_all = new TH1D("hbaseline_mean", "baseline mean", 100, ADC_MIN, ADC_MAX);
-      hbrms_all  = new TH1D("hbaseline_rms",  "baseline rms",  100, 0, ADC_RANGE_RMS);
-      hbrms_all_pads  = new TH1D("hbaseline_rms_pads",  "baseline rms, tpc pad channels",  100, 0, ADC_RANGE_RMS);
-      hbrms_all_fpn   = new TH1D("hbaseline_rms_fpn",  "baseline rms, fpn channels",  100, 0, ADC_RANGE_RMS);
+      h_all_fpn_count = new TH1D("all_fpn_count", "count of all fpn channels; fpn+4*(sca+4*(ring+8*column)); event count", max_fpn, -0.5, max_fpn-0.5);
 
-      h_adc_range_all      = new TH1D("adc_range_all",      "waveform range (max-min)",  100, 0, ADC_RANGE_PED);
-      h_adc_range_baseline = new TH1D("adc_range_baseline", "waveform range (max-min), baseline region",  100, 0, ADC_RANGE_PED);
-      h_adc_range_drift    = new TH1D("adc_range_drift",    "waveform range (max-min), drift region",  100, 0, ADC_RANGE_PED);
+      h_all_fpn_rms  = new TProfile("all_fpn_rms", "rms of all fpn channels; fpn+4*(sca+4*(ring+8*column)); rms, adc counts", max_fpn, -0.5, max_fpn-0.5);
+
+      //h_all_fpn_rms_bis  = new TProfile("all_fpn_rms_bis", "rms of all fpn channels; sca+4*(ring+8*column)", max_pad, -0.5, max_pad-0.5);
+
+      h_all_pad_baseline_mean = new TProfile("all_pad_baseline_mean", "baseline mean of all pad channels; sca+4*(ring+8*column); mean, adc counts", max_pad, -0.5, max_pad-0.5);
+      h_all_pad_baseline_rms  = new TProfile("all_pad_baseline_rms", "baseline rms of all pad channels; sca+4*(ring+8*column); rms, adc counts", max_pad, -0.5, max_pad-0.5);
+
+      //h_spike_diff = new TH1D("spike_diff", "channel spike finder", 100, 0, 1000);
+      //h_spike_diff_max = new TH1D("spike_diff_max", "channel spike finder, max", 100, 0, 1000);
+      //h_spike_num = new TH1D("spike_num", "channel spike finder, num", 100, 0-0.5, 100-0.5);
+
+      hbmean_all = new TH1D("all_baseline_mean", "baseline mean of all channels; mean, adc counts", 100, ADC_MIN, ADC_MAX);
+      hbrms_all  = new TH1D("all_baseline_rms",  "baseline rms of all channels; rms, adc counts",  100, 0, ADC_RANGE_RMS);
+      hbrms_all_pads  = new TH1D("all_baseline_rms_pads",  "baseline rms of pad channels; rms, adc counts",  100, 0, ADC_RANGE_RMS);
+      hbrms_all_fpn   = new TH1D("all_baseline_rms_fpn",  "baseline rms of fpn channels; rms, adc counts",  100, 0, ADC_RANGE_RMS);
+
+      //h_adc_range_all      = new TH1D("adc_range_all",      "waveform range (max-min)",  100, 0, ADC_RANGE_PED);
+      //h_adc_range_baseline = new TH1D("adc_range_baseline", "waveform range (max-min), baseline region",  100, 0, ADC_RANGE_PED);
+      //h_adc_range_drift    = new TH1D("adc_range_drift",    "waveform range (max-min), drift region",  100, 0, ADC_RANGE_PED);
 
       hamp_pad         = new TH1D("hamp_pad",   "pad channels pulse height; adc counts", 100, 0, ADC_RANGE);
       hamp_pad_pedestal = new TH1D("hamp_pad_pedestal", "pad channels pulse height, zoom on pedestal area; adc counts", 100, 0, ADC_RANGE_PED);
@@ -696,9 +715,18 @@ public:
          bool trace = true;
          bool trace_shift = false;
 
-         FeamHistograms* hf = fHF[e->modules[ifeam]->fModule];
+         int imodule    = e->modules[ifeam]->fModule;
+         int pwb_column = e->modules[ifeam]->fColumn;
+         int pwb_ring   = e->modules[ifeam]->fRing;
+
+         int seqpwb = pwb_column*8 + pwb_ring;
+
+         FeamHistograms* hf = fHF[imodule];
 
          for (int isca=0; isca<aaa->nsca; isca++) {
+
+            int seqpwbsca = seqpwb*4 + isca;
+            int seqpwbscafpn = seqpwbsca*4;
 
             int fpn_shift = 0;
 
@@ -706,6 +734,21 @@ public:
             double rms_fpn2 = compute_rms(aaa->adc[isca][29], ibaseline_start, ibaseline_end);
             double rms_fpn3 = compute_rms(aaa->adc[isca][54], ibaseline_start, ibaseline_end);
             double rms_fpn4 = compute_rms(aaa->adc[isca][67], ibaseline_start, ibaseline_end);
+
+            h_all_fpn_count->Fill(seqpwbscafpn + 0, 1);
+            h_all_fpn_count->Fill(seqpwbscafpn + 1, 1);
+            h_all_fpn_count->Fill(seqpwbscafpn + 2, 1);
+            h_all_fpn_count->Fill(seqpwbscafpn + 3, 1);
+
+            h_all_fpn_rms->Fill(seqpwbscafpn + 0, rms_fpn1);
+            h_all_fpn_rms->Fill(seqpwbscafpn + 1, rms_fpn2);
+            h_all_fpn_rms->Fill(seqpwbscafpn + 2, rms_fpn3);
+            h_all_fpn_rms->Fill(seqpwbscafpn + 3, rms_fpn4);
+
+            //h_all_fpn_rms_bis->Fill(seqpwbsca, rms_fpn1);
+            //h_all_fpn_rms_bis->Fill(seqpwbsca, rms_fpn2);
+            //h_all_fpn_rms_bis->Fill(seqpwbsca, rms_fpn3);
+            //h_all_fpn_rms_bis->Fill(seqpwbsca, rms_fpn4);
 
             if (fpn_rms_ok(16, rms_fpn1)
                 && fpn_rms_ok(29, rms_fpn2) 
@@ -960,6 +1003,7 @@ public:
          bool fpn_is_ok = true;
 
          for (int isca=0; isca<aaa->nsca; isca++) {
+            int seqpwbsca = seqpwb*4+isca;
             for (int ichan=1; ichan<=aaa->nchan; ichan++) {
                const int* aptr = &aaa->adc[isca][ichan][0];
 
@@ -1115,10 +1159,10 @@ public:
                      spike_max = da;
                   if (da > 300)
                      spike_num++;
-                  h_spike_diff->Fill(da);
+                  //h_spike_diff->Fill(da);
                }
-               h_spike_diff_max->Fill(spike_max);
-               h_spike_num->Fill(spike_num);
+               //h_spike_diff_max->Fill(spike_max);
+               //h_spike_num->Fill(spike_num);
 
                if (spike_max > 500 && spike_num > 10) {
                   spike = true;
@@ -1243,6 +1287,11 @@ public:
                   }
                }
 #endif
+
+               if (scachan_is_pad) {
+                  h_all_pad_baseline_mean->Fill(seqpwbsca, bmean);
+                  h_all_pad_baseline_rms->Fill(seqpwbsca, brms);
+               }
 
                // find pulses
 
@@ -1408,9 +1457,9 @@ public:
                }
 
                if (scachan_is_pad || scachan_is_fpn) {
-                  h_adc_range_all->Fill(wmax-wmin);
-                  h_adc_range_baseline->Fill(bmax-bmin);
-                  h_adc_range_drift->Fill(dmax-dmin);
+                  //h_adc_range_all->Fill(wmax-wmin);
+                  //h_adc_range_baseline->Fill(bmax-bmin);
+                  //h_adc_range_drift->Fill(dmax-dmin);
 
                   hf->hbmean_prof->Fill(seqsca, bmean);
                   hf->hbrms_prof->Fill(seqsca, brms);
