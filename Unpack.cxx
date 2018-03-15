@@ -25,7 +25,9 @@ static int pwb_bank_name_to_module(const char* s)
    if (s[0] == 'P' && (s[1] == 'A' || s[1] == 'B')) {
       int c1 = s[2]-'0';
       int c2 = s[3]-'0';
-      return c1*10 + c2;
+      int imodule = c1*10 + c2;
+      //printf("bank [%s] module %d\n", s, imodule);
+      return imodule;
    } else {
       fprintf(stderr, "Cannot extract module name from bank name [%s]\n", s);
       abort();
