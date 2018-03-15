@@ -646,239 +646,10 @@ public:
          printf("ResumeRun, run %d\n", runinfo->fRunNo);
    }
 
-   TAFlowEvent* AnalyzeFlowEvent(TARunInfo* runinfo, TAFlags* flags, TAFlowEvent* flow)
+   // check for gibberish ADC data
+
+   bool TestBadSca(const FeamEvent* e)
    {
-      bool verbose = false;
-      
-      //printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
-
-      if (!fFlags->fDoPads)
-         return flow;
-
-      AgEventFlow *ef = flow->Find<AgEventFlow>();
-
-      if (!ef || !ef->fEvent)
-         return flow;
-
-      FeamEvent* e = ef->fEvent->feam;
-
-      if (!e) {
-         return flow;
-      }
-
-      //int force_plot = false;
-
-#if 0
-      if (event->event_id != 1 && event->event_id != 2)
-         return flow;
-#endif
-
-#if 0
-      int adc[80][5120];
-
-      const int xbins = 829;
-      const int xchan = 79;
-#endif
-
-      if (!e) {
-         return flow;
-      }
-
-      if (e) {
-         if (1) {
-            printf("Have FEAM event: ");
-            e->Print();
-            printf("\n");
-         }
-
-         if (0) {
-            for (unsigned i=0; i<e->modules.size(); i++) {
-               printf("FeamEvent slot %d: ", i);
-               if (!e->modules[i]) {
-                  printf("null\n");
-                  continue;
-               }
-               FeamModuleData* m = e->modules[i];
-               printf("pwb%2d, cnt %4d, ts_trig: 0x%08x %14.3f usec, ts_incr %14.3f usec\n", m->fModule, m->cnt, m->ts_trig, m->fTime*1e6, m->fTimeIncr*1e6);
-            }
-         }
-
-         if (e->error) {
-            //delete e;
-            return flow;
-         }
-
-         if (0) {
-            //delete e;
-            return flow;
-         }
-
-         if (0 && !e->complete) {
-            return flow;
-         }
-
-         //assert(a->next_n == 256);
-         //assert(a->fSize == 310688);
-
-         //MEMZERO(adc);
-
-
-         //for (int ibin = 511; ibin < xbins; ibin++) {
-         //   for (int ichan = 0; ichan < 76; ichan++) {
-         //      adc[ichan][ibin] = adc[ichan][ibin-511];
-         //   }
-         //}
-
-         //delete e;
-
-#if 0
-      } else if (event->event_id == 2) {
-
-         const char* banks[] = { "YP01", "YP02", NULL };
-         int itpc = -1;
-         unsigned short *samples = NULL;
-
-         for (int i=0; banks[i]; i++) {
-            TMBank* b = event->FindBank(banks[i]);
-            if (b) {
-               samples = (unsigned short*)event->GetBankData(b);
-               if (samples) {
-                  itpc = i;
-                  break;
-               }
-            }
-         }
-
-         printf("itpc %d, samples 0x%p\n", itpc, samples);
-
-         if (itpc < 0 || samples == NULL) {
-            return flow;
-         }
-
-#if 0
-         int count = 0;
-         for (int ibin=0; ibin<xbins; ibin++) {
-            for (int ichan=0; ichan<xchan; ichan++) {
-               adc[ichan][ibin] = samples[count];
-               count++;
-            }
-         }
-         printf("got %d samples\n", count);
-#endif
-
-      } else if (fin) {
-         // good stuff goes here
-
-         char buf[4*1024*1024];
-
-         char *s = fgets(buf, sizeof(buf), fin);
-         if (s == NULL) {
-            *flags |= TAFlag_QUIT;
-            return flow;
-         }
-         printf("read %d\n", (int)strlen(s));
-
-         int event_no = strtoul(s, &s, 0);
-         int t0 = strtoul(s, &s, 0);
-         int t1 = strtoul(s, &s, 0);
-         int t2 = strtoul(s, &s, 0);
-
-         printf("event %d, t %d %d %d\n", event_no, t0, t1, t2);
-
-#if 0
-         int count = 0;
-         for (int ibin=0; ibin<xbins; ibin++) {
-            for (int ichan=0; ichan<xchan; ichan++) {
-               count++;
-               adc[ichan][ibin] = strtoul(s, &s, 0);
-            }
-         }
-
-         printf("got %d samples\n", count);
-
-         for (int i=0; ; i++) {
-            if (!*s)
-               break;
-            int v = strtoul(s, &s, 0);
-            if (v == 0)
-               break;
-            count++;
-         }
-
-         printf("total %d samples before zeros\n", count);
-
-         for (int i=0; ; i++) {
-            if (s[0]==0)
-               break;
-            if (s[0]=='\n')
-               break;
-            if (s[0]=='\r')
-               break;
-            int v = strtoul(s, &s, 0);
-            if (v != 0)
-               break;
-            count++;
-            if (*s == '+')
-               s++;
-         }
-
-         printf("total %d samples with zeros\n", count);
-#endif
-
-         s[100] = 0;
-         printf("pads data: [%s]\n", s);
-
-         char buf1[1024];
-
-         char *s1 = fgets(buf1, sizeof(buf1), fin);
-         if (s1 == NULL) {
-            *flags |= TAFlag_QUIT;
-            return flow;
-         }
-         printf("read %d [%s]\n", (int)strlen(s1), s1);
-
-         //int event_no = strtoul(s, &s, 0);
-         //int t0 = strtoul(s, &s, 0);
-         //int t1 = strtoul(s, &s, 0);
-         //int t2 = strtoul(s, &s, 0);
-         //printf("event %d, t %d %d %d\n", event_no, t0, t1, t2);
-#endif
-      }
-      
-      //
-
-      bool doPrint = false;
-
-      // got all the data here
-
-      int nfeam = e->adcs.size();
-      int nchan_feam = 0;
-      int nbins = 0;
-
-      for (unsigned i=0; i<e->adcs.size(); i++) {
-         if (e->adcs[i]) {
-            nchan_feam = e->adcs[i]->nsca * e->adcs[i]->nchan;
-            nbins = e->adcs[i]->nbins;
-            break;
-         }
-      }
-
-      int nchan = nfeam * nchan_feam; // MAX_FEAM_SCA * ...;
-
-      if (nbins == 0 || nchan == 0)
-         return flow;
-
-      // create histograms
-
-      CreateHistograms(runinfo, nfeam, nchan_feam, nchan, nbins);
-
-      // create pad hits flow event
-
-      AgPadHitsFlow* hits = new AgPadHitsFlow(flow);
-      flow = hits;
-
-      // check for bad sca data
-
       bool bad_sca = false;
 
       fCountTestScaEvents++;
@@ -907,56 +678,15 @@ public:
          }
       }
 
-      if (bad_sca) {
-         fCountBadScaEvents++;
-         e->error = true;
-         return flow;
-      }
+      return bad_sca;
+   }
 
-      // loop over all waveforms
+   // check FPN channels and shifted channels
 
-      //int iplot = 0;
-      double zmax = 0;
-      bool first_zero_range = true;
-
+   void CheckAndShiftFpn(FeamEvent* e)
+   {
       int ibaseline_start = 10;
       int ibaseline_end = 100;
-
-      int iwire_start = 130;
-      int iwire_end = 160;
-
-      int idrift_start = iwire_end;
-      int idrift_cut = iwire_end;
-      int idrift_end = 410;
-
-      int ipulser_start = 400;
-      int ipulser_end   = 500;
-
-      double hit_amp_threshold = 100;
-
-      int nhitchan = 0;
-
-      // Create per PWB histograms
-
-      for (unsigned ifeam=0; ifeam<e->modules.size(); ifeam++) {
-         if (!e->modules[ifeam])
-            continue;
-
-         int imodule = e->modules[ifeam]->fModule;
-
-         while (imodule >= fHF.size()) {
-            fHF.push_back(NULL);
-         }
-
-         printf("imodule %d, size %d\n", imodule, fHF.size());
-
-         if (!fHF[imodule]) {
-            fHF[imodule] = new FeamHistograms();
-            fHF[imodule]->CreateHistograms(hdir_pwb, imodule, e->modules[ifeam]->fColumn, e->modules[ifeam]->fRing, nbins, fPulser);
-         }
-      }
-
-      // check FPN channels
 
       for (unsigned ifeam=0; ifeam<e->adcs.size(); ifeam++) {
          FeamAdcData* aaa = e->adcs[ifeam];
@@ -1075,13 +805,153 @@ public:
             }
          }
       }
+   }
+
+   // Create per PWB histograms
+
+   void CreatePwbHistograms(const FeamEvent* e, int nbins)
+   {
+      for (unsigned ifeam=0; ifeam<e->modules.size(); ifeam++) {
+         if (!e->modules[ifeam])
+            continue;
+
+         int imodule = e->modules[ifeam]->fModule;
+
+         while (imodule >= fHF.size()) {
+            fHF.push_back(NULL);
+         }
+
+         printf("imodule %d, size %d\n", imodule, fHF.size());
+
+         if (!fHF[imodule]) {
+            fHF[imodule] = new FeamHistograms();
+            fHF[imodule]->CreateHistograms(hdir_pwb, imodule, e->modules[ifeam]->fColumn, e->modules[ifeam]->fRing, nbins, fPulser);
+         }
+      }
+   }
+
+   TAFlowEvent* AnalyzeFlowEvent(TARunInfo* runinfo, TAFlags* flags, TAFlowEvent* flow)
+   {
+      bool verbose = false;
+      
+      //printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
+
+      if (!fFlags->fDoPads)
+         return flow;
+
+      AgEventFlow *ef = flow->Find<AgEventFlow>();
+
+      if (!ef || !ef->fEvent)
+         return flow;
+
+      FeamEvent* e = ef->fEvent->feam;
+
+      if (!e) {
+         return flow;
+      }
+
+      if (1) {
+         printf("Have FEAM event: ");
+         e->Print();
+         printf("\n");
+      }
+
+      if (0) {
+         for (unsigned i=0; i<e->modules.size(); i++) {
+            printf("FeamEvent slot %d: ", i);
+            if (!e->modules[i]) {
+               printf("null\n");
+               continue;
+            }
+            FeamModuleData* m = e->modules[i];
+            printf("pwb%2d, cnt %4d, ts_trig: 0x%08x %14.3f usec, ts_incr %14.3f usec\n", m->fModule, m->cnt, m->ts_trig, m->fTime*1e6, m->fTimeIncr*1e6);
+         }
+      }
+
+      if (e->error) {
+         //delete e;
+         return flow;
+      }
+      
+      //
+
+      bool doPrint = false;
+
+      // got all the data here
+
+      int nfeam = e->adcs.size();
+      int nchan_feam = 0;
+      int nbins = 0;
+
+      for (unsigned i=0; i<e->adcs.size(); i++) {
+         if (e->adcs[i]) {
+            nchan_feam = e->adcs[i]->nsca * e->adcs[i]->nchan;
+            nbins = e->adcs[i]->nbins;
+            break;
+         }
+      }
+
+      int nchan = nfeam * nchan_feam; // MAX_FEAM_SCA * ...;
+
+      if (nbins == 0 || nchan == 0)
+         return flow;
+
+      // create histograms
+
+      CreateHistograms(runinfo, nfeam, nchan_feam, nchan, nbins);
+
+      // create pad hits flow event
+
+      AgPadHitsFlow* hits = new AgPadHitsFlow(flow);
+      flow = hits;
+
+      // check for bad sca data
+
+      bool bad_sca = TestBadSca(e);
+
+      if (bad_sca) {
+         fCountBadScaEvents++;
+         e->error = true;
+         return flow;
+      }
+
+      // loop over all waveforms
+
+      //int iplot = 0;
+      double zmax = 0;
+      bool first_zero_range = true;
+
+      int ibaseline_start = 10;
+      int ibaseline_end = 100;
+
+      int iwire_start = 130;
+      int iwire_end = 160;
+
+      int idrift_start = iwire_end;
+      int idrift_cut = iwire_end;
+      int idrift_end = 410;
+
+      int ipulser_start = 400;
+      int ipulser_end   = 500;
+
+      double hit_amp_threshold = 100;
+
+      int nhitchan = 0;
+
+      CreatePwbHistograms(e, nbins);
+
+      CheckAndShiftFpn(e);
 
       for (unsigned ifeam=0; ifeam<e->adcs.size(); ifeam++) {
          FeamAdcData* aaa = e->adcs[ifeam];
          if (!aaa)
             continue;
 
-         int imodule = e->modules[ifeam]->fModule;
+         int imodule    = e->modules[ifeam]->fModule;
+         int pwb_column = e->modules[ifeam]->fColumn;
+         int pwb_ring   = e->modules[ifeam]->fRing;
+
+         int seqpwb = pwb_column*8 + pwb_ring;
 
          FeamHistograms* hf = fHF[imodule];
 
