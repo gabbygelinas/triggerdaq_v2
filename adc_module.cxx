@@ -23,7 +23,7 @@
 #define MAX_AW_BRMS 600
 #define MAX_AW_BRANGE 2000
 // zoom on the ADC pedestal
-#define MAX_AW_PED 2000
+#define MAX_AW_PED 3000
 
 static void compute_mean_rms(const int* aptr, int start, int end, double* xmean, double* xrms, double* xmin, double* xmax)
 {
@@ -731,9 +731,12 @@ public:
          } else if (runinfo->fRunNo < 1405) {
             ph_hit_thr_adc16 =  500;
             ph_hit_thr_adc32 =  500;
-         } else {
+         } else if (runinfo->fRunNo < 1450) {
             ph_hit_thr_adc16 =  1000;
             ph_hit_thr_adc32 =  1000;
+         } else if (runinfo->fRunNo < 9999) {
+            ph_hit_thr_adc16 =  2500;
+            ph_hit_thr_adc32 =  2500;
          }
 
          double ph_hit_thr = 0;
