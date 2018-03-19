@@ -712,7 +712,7 @@ public:
          if (!aaa)
             continue;
 
-         bool trace = true;
+         bool trace = false;
          bool trace_shift = false;
 
          int imodule    = e->modules[ifeam]->fModule;
@@ -863,8 +863,6 @@ public:
          while (imodule >= fHF.size()) {
             fHF.push_back(NULL);
          }
-
-         printf("imodule %d, size %d\n", imodule, fHF.size());
 
          if (!fHF[imodule]) {
             fHF[imodule] = new FeamHistograms();
@@ -1548,10 +1546,10 @@ public:
 
          if (fpn_is_ok) {
             fCountGoodFpn ++;
-            printf("XXX good fpn count %d\n", fCountGoodFpn);
+            //printf("XXX good fpn count %d\n", fCountGoodFpn);
          } else {
             fCountBadFpn ++;
-            printf("XXX bad fpn count %d\n", fCountBadFpn);
+            //printf("XXX bad fpn count %d\n", fCountBadFpn);
          }
 
          hf->h_spike_seqsca->Fill(1); // event counter marker
@@ -1559,135 +1557,6 @@ public:
       }
 
       hnhitchan->Fill(nhitchan);
-
-#if 0
-      bool do_plot = (runinfo->fRoot->fgApp != NULL);
-
-      if (do_plot) {
-         // plot waveforms
-
-         fC->Clear();
-         fC->Divide(2,3);
-
-         // if (1) {
-         //    fC->cd(1);
-         //    TH1D* hh = new TH1D("hh", "hh", nbins, 0, nbins);
-         //    for (int ibin=0; ibin<nbins; ibin++) {
-         //       hh->SetBinContent(ibin+1, e->adcs[0]->adc[0][0][ibin]);
-         //    }
-         //    hh->Draw();
-         // }
-
-         // if (1) {
-         //    fC->cd(2);
-         //    TH1D* hhh = new TH1D("hhh", "hhh", nbins, 0, nbins);
-         //    for (int ibin=0; ibin<nbins; ibin++) {
-         //       hhh->SetBinContent(ibin+1, e->adcs[0]->adc[0][0][ibin]);
-         //    }
-         //    hhh->SetMinimum(-33000);
-         //    hhh->SetMaximum(+33000);
-         //    hhh->Draw();
-         // }
-
-#if 0
-         if (1) {
-            fC->cd(3);
-            int nbins = ww[39]->nsamples;
-            TH1D* hhh = new TH1D("hhhh", "hhhh", nbins, 0, nbins);
-            for (int ibin=0; ibin<nbins; ibin++) {
-               hhh->SetBinContent(ibin+1, ww[39]->samples[ibin]);
-            }
-            hhh->SetMinimum(-9000);
-            hhh->SetMaximum(+9000);
-            hhh->Draw();
-         }
-
-         if (1) {
-            fC->cd(4);
-            int nbins = ww[iplot]->nsamples;
-            TH1D* hhh = new TH1D("hhhhh", "hhhhh", nbins, 0, nbins);
-            for (int ibin=0; ibin<nbins; ibin++) {
-               hhh->SetBinContent(ibin+1, ww[iplot]->samples[ibin]);
-            }
-            hhh->SetMinimum(-9000);
-            hhh->SetMaximum(+9000);
-            hhh->Draw();
-         }
-
-         if (1) {
-            fC->cd(5);
-            int nbins = ww[33]->nsamples;
-            TH1D* h33 = new TH1D("h33", "h33", nbins, 0, nbins);
-            for (int ibin=0; ibin<nbins; ibin++) {
-               h33->SetBinContent(ibin+1, ww[33]->samples[ibin]);
-            }
-            h33->SetMinimum(-9000);
-            h33->SetMaximum(+9000);
-            h33->Draw();
-         }
-
-         if (1) {
-            fC->cd(6);
-            int nbins = ww[34]->nsamples;
-            TH1D* h34 = new TH1D("h34", "h34", nbins, 0, nbins);
-            for (int ibin=0; ibin<nbins; ibin++) {
-               h34->SetBinContent(ibin+1, ww[34]->samples[ibin]);
-            }
-            h34->SetMinimum(-9000);
-            h34->SetMaximum(+9000);
-            h34->Draw();
-         }
-#endif
-
-         fC->Modified();
-         fC->Draw();
-         fC->Update();
-      }
-
-      if (fFlags->fPlotPad >= 0) {
-         if (!fFlags->fPlotPadCanvas)
-            fFlags->fPlotPadCanvas = new TCanvas("FEAM PAD", "FEAM PAD", 900, 650);
-
-         TCanvas*c = fFlags->fPlotPadCanvas;
-
-         c->cd();
-
-#if 0
-         int nbins = ww[fFlags->fPlotPad]->nsamples;
-         TH1D* h = new TH1D("h", "h", nbins, 0, nbins);
-         for (int ibin=0; ibin<nbins; ibin++) {
-            h->SetBinContent(ibin+1, ww[fFlags->fPlotPad]->samples[ibin]);
-         }
-
-         h->SetMinimum(-9000);
-         h->SetMaximum(+9000);
-         h->Draw();
-#endif
-
-         c->Modified();
-         c->Draw();
-         c->Update();
-      }
-
-      time_t now = time(NULL);
-
-      if (force_plot) {
-         static time_t plot_next = 0;
-         if (now > plot_next) {
-            //fATX->PlotA16Canvas();
-            plot_next = time(NULL) + 15;
-         }
-      }
-
-      static time_t t = 0;
-
-      if (now - t > 15) {
-         t = now;
-         //fATX->Plot();
-      }
-
-      //*flags |= TAFlag_DISPLAY;
-#endif
 
       return flow;
    }
