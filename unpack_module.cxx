@@ -273,6 +273,8 @@ public:
       if (event->event_id != 1)
          return flow;
 
+      bool short_tpc = (runinfo->fRunNo < 1450);
+
       if (0) {
          const time_t now = time(NULL);
          const time_t t = event->time_stamp;
@@ -323,7 +325,7 @@ public:
       }
 
       if (fFeamEvb) {
-         FeamEvent *e = UnpackFeamEvent(fFeamEvb, event, fFeamBanks);
+         FeamEvent *e = UnpackFeamEvent(fFeamEvb, event, fFeamBanks, short_tpc);
          while (1) {
             if (!e)
                break;

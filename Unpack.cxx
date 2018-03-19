@@ -174,7 +174,7 @@ Alpha16Event* UnpackAlpha16Event(Alpha16Asm* adcasm, TMEvent* me)
    return e;
 };
 
-FeamEvent* UnpackFeamEventNoEvb(FeamEVB* evb, TMEvent* event, const std::vector<std::string> &banks)
+FeamEvent* UnpackFeamEventNoEvb(FeamEVB* evb, TMEvent* event, const std::vector<std::string> &banks, bool short_tpc)
 {
    //printf("event id %d\n", event->event_id);
    
@@ -222,6 +222,11 @@ FeamEvent* UnpackFeamEventNoEvb(FeamEVB* evb, TMEvent* event, const std::vector<
             int column = (i/8);
             int ring = (i%8);
             
+            if (short_tpc) {
+               column = i;
+               ring = 0;
+            }
+            
             evb->AddPacket(i, module, column, ring, f, p, data + p->off, p->buf_len);
          }
       }
@@ -230,7 +235,7 @@ FeamEvent* UnpackFeamEventNoEvb(FeamEVB* evb, TMEvent* event, const std::vector<
    return evb->Get();
 }
 
-FeamEvent* UnpackFeamEvent(FeamEVB* evb, TMEvent* event, const std::vector<std::string> &banks)
+FeamEvent* UnpackFeamEvent(FeamEVB* evb, TMEvent* event, const std::vector<std::string> &banks, bool short_tpc)
 {
    //printf("event id %d\n", event->event_id);
    
@@ -276,6 +281,11 @@ FeamEvent* UnpackFeamEvent(FeamEVB* evb, TMEvent* event, const std::vector<std::
 
                int column = (i/8);
                int ring = (i%8);
+
+               if (short_tpc) {
+                  column = i;
+                  ring = 0;
+               }
 
                evb->AddPacket(i, module, column, ring, f, p, data + p->off, p->buf_len);
             }

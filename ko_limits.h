@@ -29,7 +29,7 @@
 #define NUM_PC (8*4)
 
 // number of TPC pad rows
-#define NUM_PR (18*4)
+#define NUM_PR (18*4*8)
 
 #endif
 /* emacs

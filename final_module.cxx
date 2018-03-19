@@ -502,42 +502,36 @@ public:
          h_pad_num_hits->Fill(eph->fPadHits.size());
 
          for (unsigned i=0; i<eph->fPadHits.size(); i++) {
-            int col = eph->fPadHits[i].col;
-            int row = eph->fPadHits[i].row;
-
-            if (col < 0 || row < 0)
-               continue;
-
-            int pos = eph->fPadHits[i].pos;
+            int ipwb = eph->fPadHits[i].imodule;
             int seqsca = eph->fPadHits[i].seqsca;
             //int xcol = (pos%8)*4 + col;
             //int seqpad = xcol*MAX_FEAM_PAD_ROWS + row;
 
-            double time = eph->fPadHits[i].time;
+            double time = eph->fPadHits[i].time_ns;
             double amp = eph->fPadHits[i].amp;
 
             //printf("pos %d, seqsca %d, time %f\n", pos, seqsca, time);
 
-            if (pos==0) {
+            if (ipwb==0) {
                if (seqsca == 4) pos00_seqsca04 = time;
                if (seqsca == 5) pos00_seqsca05 = time;
             }
 
-            if (pos==1) {
+            if (ipwb==1) {
                if (seqsca == 4) pos01_seqsca04 = time;
                if (seqsca == 5) pos01_seqsca05 = time;
                if (seqsca == 84) pos01_seqsca84 = time;
                if (seqsca == 164) pos01_seqsca164 = time;
             }
 
-            if (pos==2) {
+            if (ipwb==2) {
                if (seqsca == 4) pos02_seqsca04 = time;
                if (seqsca == 5) pos02_seqsca05 = time;
                if (seqsca == 84) pos02_seqsca84 = time;
                if (seqsca == 164) pos02_seqsca164 = time;
             }
 
-            if (pos==3) {
+            if (ipwb==3) {
                if (seqsca == 4) pos03_seqsca04 = time;
                if (seqsca == 5) pos03_seqsca05 = time;
             }
@@ -576,9 +570,9 @@ public:
 
          for (unsigned i=0; i<eph->fPadHits.size(); i++) {
             for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
-               int xcol = (eph->fPadHits[i].pos%8)*4 + eph->fPadHits[i].col;
-               h_aw_pad_hits->Fill(eawh->fAwHits[j].wire, xcol);
-               h_aw_pad_time->Fill(eawh->fAwHits[j].time, eph->fPadHits[i].time);
+               int col = eph->fPadHits[i].tpc_col;
+               h_aw_pad_hits->Fill(eawh->fAwHits[j].wire, col);
+               h_aw_pad_time->Fill(eawh->fAwHits[j].time, eph->fPadHits[i].time_ns);
 
                //if ((eawh->fAwHits[j].time > 200) && eph->fPadHits[i].time > 200) {
                //   h_aw_pad_time_drift->Fill(eph->fPadHits[i].time, eawh->fAwHits[j].time);
@@ -817,40 +811,29 @@ public:
 
                if (eph) {
                   for (unsigned i=0; i<eph->fPadHits.size(); i++) {
-                     double time = eph->fPadHits[i].time;
+                     int imodule = eph->fPadHits[i].imodule;
+                     double time = eph->fPadHits[i].time_ns;
                      double amp = eph->fPadHits[i].amp;
-                     int pos = eph->fPadHits[i].pos;
-                     int col = eph->fPadHits[i].col;
-                     int row = eph->fPadHits[i].row;
+                     int col = eph->fPadHits[i].tpc_col;
+                     int row = eph->fPadHits[i].tpc_row;
                      
-                     if (pos < 0)
-                        continue;
-                     if (col < 0)
-                        continue;
+                     printf("pad hit %d: pwb%02d, col %d, row %d, time %f, amp %f\n", i, imodule, col, row, time, amp);
                      
-                     int pos_ring = pos/8;
-                     int pos_col = pos%8;
-                     
-                     int pc = pos_col*4 + col;
-                     int pr = pos_ring*72+row;
-                     
-                     printf("pad hit %d: pos %d col %d pc %d, row %d, time %f, amp %f\n", i, pos, col, pc, row, time, amp);
-                     
-                     pad_col.push_back(pc);
-                     pad_row.push_back(pr);
+                     pad_col.push_back(col);
+                     pad_row.push_back(row);
                      pad_time.push_back(time);
                      pad_amp.push_back(amp);
                      
-                     assert(pc >= 0 && pc < NUM_PC);
+                     assert(col >= 0 && col < NUM_PC);
                      
-                     zpad_col[pc].push_back(pc);
-                     zpad_row[pc].push_back(pr);
-                     zpad_time[pc].push_back(time);
-                     zpad_amp[pc].push_back(amp);
+                     zpad_col[col].push_back(col);
+                     zpad_row[col].push_back(row);
+                     zpad_time[col].push_back(time);
+                     zpad_amp[col].push_back(amp);
                      
                      //double dist = -0.2;
                      
-                     double t = ((pc+0.5)/(1.0*NUM_PC))*(2.0*TMath::Pi());
+                     double t = ((col+0.5)/(1.0*NUM_PC))*(2.0*TMath::Pi());
                      //double r = rmax-dist*(rmax-rmin);
                      
                      //printf("hit %d, wire %d, tb %d, iwire %d, t %f (%f), r %f\n", j, eawh->fAwHits[j].wire, itb, iwire, t, t/TMath::Pi(), r);
@@ -866,7 +849,7 @@ public:
                      pads_eradius.push_back(0.05);
 
                      if (1) {
-                        double dist = (time - 2300.0)/4000.0;
+                        double dist = (time - 1000.0)/4000.0;
                         if (dist < 0)
                            dist = 0;
                         if (dist > 1)

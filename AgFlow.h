@@ -55,11 +55,11 @@ class AgAwHitsFlow: public TAFlowEvent
 
 struct AgPadHit
 {
-   int pos; // pad board position: ring*8+column, 0..63
+   int imodule; // pwbNN
    int seqsca; // sca*80+ri
-   int col;
-   int row;
-   double time; // hit time
+   int tpc_col; // pad column
+   int tpc_row; // pad row
+   double time_ns; // hit time in ns
    double amp;  // hit amplitude
 };
 

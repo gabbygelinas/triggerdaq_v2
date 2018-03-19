@@ -961,7 +961,6 @@ public:
       // loop over all waveforms
 
       //int iplot = 0;
-      double zmax = 0;
       bool first_zero_range = true;
 
       int ibaseline_start = 10;
@@ -1313,7 +1312,9 @@ public:
                //int wpos = find_pulse(aptr, nbins, bmean, -1.0, wamp/2.0);
                double wpos = find_pulse_time(aptr, nbins, bmean, -1.0, wamp/2.0);
 
-               double wpos_ns = wpos*16.0;
+               double wpos_offset_ns = 2350.0;
+
+               double wpos_ns = wpos*16.0 - wpos_offset_ns + 1000.0;
 
                double damp = bmean - dmin;
                int dpos = idrift_start + find_pulse(aptr+idrift_start, idrift_end-idrift_start, bmean, -1.0, damp/2.0);
@@ -1324,7 +1325,7 @@ public:
                bool hit_amp = false;
                bool hit = false;
 
-               if ((wpos > iwire_start) && (wpos < idrift_end)) {
+               if ((wpos_ns > 800.0) && (wpos_ns < 5600.0)) {
                   hit_time = true;
                }
 
@@ -1366,29 +1367,25 @@ public:
 
                   hf->h_nhitchan_seqsca->Fill(seqsca);
 
-                  if (hit) {
+                  if (hit && col >= 0 && row >= 0) {
+                     assert(col >= 0 && col < MAX_FEAM_PAD_COL);
+                     assert(row >= 0 && row < MAX_FEAM_PAD_ROWS);
+
                      AgPadHit h;
-                     h.pos = ifeam;
+                     h.imodule = imodule;
                      h.seqsca = seqsca;
-                     h.col = col;
-                     h.row = row;
-                     h.time = wpos_ns;
+                     h.tpc_col = c->pwb_column * MAX_FEAM_PAD_COL + col;
+                     h.tpc_row = c->pwb_ring * MAX_FEAM_PAD_ROWS + row;
+                     h.time_ns = wpos_ns;
                      h.amp  = wamp;
                      hits->fPadHits.push_back(h);
+
+                     printf("hit: pwb%02d, c%dr%d, seqsca %3d, tpc col %2d, row %3d, time %4.0f, amp %4.0f\n", imodule, c->pwb_column, c->pwb_ring, seqsca, h.tpc_col, h.tpc_row, wpos_ns, wamp);
                   }
                }
 
                if (doPrint) {
                   printf("chan %3d: baseline %8.1f, rms %8.1f, min %8.1f, max %8.1f, amp %8.1f, wpos %5.1f, hit %d\n", ichan, bmean, brms, wmin, wmax, wamp, wpos, hit);
-               }
-
-               if (1 || (wpos > 0 && wpos < 4000 && wamp > 1000)) {
-                  if (wamp > zmax) {
-                     if (doPrint)
-                        printf("plot this one.\n");
-                     //iplot = ichan;
-                     zmax = wamp;
-                  }
                }
 
                // save first waveform
