@@ -678,6 +678,8 @@ public:
          if (!aaa)
             continue;
 
+         int imodule    = e->modules[ifeam]->fModule;
+
          for (int isca=0; isca<aaa->nsca; isca++) {
             int first_chan = 4;
             int v = aaa->adc[isca][first_chan][0];
@@ -685,7 +687,7 @@ public:
             bool bad = (v == 0x7FFC);
 
             if (bad) {
-               printf("Error: FEAM pos %02d sca %d has gibberish data: ", ifeam, isca);
+               printf("Error: pwb%02d sca %d has gibberish data: ", imodule, isca);
                e->Print();
                printf("\n");
             }
@@ -756,13 +758,13 @@ public:
                 && fpn_rms_ok(67, rms_fpn4)) {
 
                if (trace) {
-                  printf("XXX good fpn pos %2d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f\n", ifeam, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4);
+                  printf("XXX good fpn pwb%02d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f\n", imodule, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4);
                }
 
                fpn_shift = 0;
             } else {
                if (trace) {
-                  printf("XXX bad  fpn pos %2d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f\n", ifeam, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4);
+                  printf("XXX bad  fpn pwb%02d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f\n", imodule, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4);
                }
 
                for (int i=0; i>-30; i--) {
@@ -777,7 +779,7 @@ public:
                   double rms_fpn4 = compute_rms(aaa->adc[isca][ifpn4], ibaseline_start, ibaseline_end);
 
                   if (trace_shift) {
-                     printf("XXX shift %3d fpn pos %d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f, fpn chan %2d %2d %2d %2d", i, ifeam, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4, ifpn1, ifpn2, ifpn3, ifpn4);
+                     printf("XXX shift %3d fpn pwb%02d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f, fpn chan %2d %2d %2d %2d", i, imodule, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4, ifpn1, ifpn2, ifpn3, ifpn4);
                   }
 
                   if (fpn_rms_ok(ifpn1, rms_fpn1)
@@ -799,7 +801,7 @@ public:
             
             if (trace_shift) {
                if (fpn_shift != 0) {
-                  printf("XXX pos %2d, sca %d, fpn_shift %d\n", ifeam, isca, fpn_shift);
+                  printf("XXX pwb%02d, sca %d, fpn_shift %d\n", imodule, isca, fpn_shift);
                }
             }
 
@@ -837,11 +839,11 @@ public:
                       && fpn_rms_ok(67, rms_fpn4)) {
                      
                      if (trace) {
-                        printf("XXX good fpn pos %d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f, fpn_shift: %3d\n", ifeam, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4, fpn_shift);
+                        printf("XXX good fpn pwb%02d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f, fpn_shift: %3d\n", imodule, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4, fpn_shift);
                      }
                   } else {
                      if (trace) {
-                        printf("XXX bad  fpn pos %d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f, fpn_shift: %3d\n", ifeam, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4, fpn_shift);
+                        printf("XXX bad  fpn pwb%02d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f, fpn_shift: %3d\n", imodule, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4, fpn_shift);
                      }
                   }
                }
@@ -1170,7 +1172,7 @@ public:
                   spike = true;
                   if (fHC[seqchan]->SaveBad(nbins, aptr)) {
                      if (verbose)
-                        printf("BBB feam pos %d, seqsca %d, spike %f %d\n", ifeam, seqsca, spike_max, spike_num);
+                        printf("BBB pwb%02d, seqsca %d, spike %f %d\n", imodule, seqsca, spike_max, spike_num);
 
                      for (int i=1; i<nbins-1; i++) {
                         double a0 = aptr[i-1];
@@ -1254,7 +1256,7 @@ public:
                if (scachan_is_fpn) {
                   if (brms > ADC_RMS_FPN_MIN && brms < ADC_RMS_FPN_MAX) {
                   } else {
-                     printf("XXX bad fpn, feam %d, sca %d, readout %d, scachan %d, col %d, row %d, bmin %f, bmax %f, in hex 0x%04x, brms %f\n", ifeam, isca, ichan, scachan, col, row, bmin, bmax, (uint16_t)bmin, brms);
+                     printf("XXX bad fpn, pwb%02d, sca %d, readout %d, scachan %d, col %d, row %d, bmin %f, bmax %f, in hex 0x%04x, brms %f\n", imodule, isca, ichan, scachan, col, row, bmin, bmax, (uint16_t)bmin, brms);
                      fpn_is_ok = false;
                   }
                }
@@ -1263,7 +1265,7 @@ public:
 
 #if 0
                if (scachan_is_fpn) {
-                  printf("XXX fpn, feam %d, sca %d, readout %d, scachan %d, col %d, row %d, bmin %f, bmax %f, in hex 0x%04x, brms %f\n", ifeam, isca, ichan, scachan, col, row, bmin, bmax, (uint16_t)bmin, brms);
+                  printf("XXX fpn, pwb%02d, sca %d, readout %d, scachan %d, col %d, row %d, bmin %f, bmax %f, in hex 0x%04x, brms %f\n", imodule, isca, ichan, scachan, col, row, bmin, bmax, (uint16_t)bmin, brms);
                }
 #endif
 
@@ -1272,7 +1274,7 @@ public:
                   if (bmax-bmin == 0) {
                      if (first_zero_range) {
                         first_zero_range = false;
-                        printf("XXX zero baseline range, feam %d, sca %d, readout %d, scachan %d, col %d, row %d, bmin %f, bmax %f, in hex 0x%04x\n", ifeam, isca, ichan, scachan, col, row, bmin, bmax, (uint16_t)bmin);
+                        printf("XXX zero baseline range, pwb%02d, sca %d, readout %d, scachan %d, col %d, row %d, bmin %f, bmax %f, in hex 0x%04x\n", imodule, isca, ichan, scachan, col, row, bmin, bmax, (uint16_t)bmin);
                      }
 #if 0
                      //FeamAdcData* aaa = e->adcs[ifeam];
