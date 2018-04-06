@@ -305,6 +305,45 @@ public:
          }
       }
 
+      if (1) {
+         TMBank* pwb_bank = event->FindBank("PB05");
+
+         if (pwb_bank) {
+            printf("HERE!\n");
+            const char* p8 = event->GetBankData(pwb_bank);
+            const uint32_t *p32 = (const uint32_t*)p8;
+            unsigned nprint = pwb_bank->data_size/4;
+            nprint=10;
+            for (unsigned i=0; i<nprint; i++) {
+               printf("PB05[%d]: 0x%08x (%d)\n", i, p32[i], p32[i]);
+               //e->udpData.push_back(p32[i]);
+            }
+
+            uint32_t MYSTERY     = p32[0];
+            uint32_t PKT_SEQ     = p32[1];
+            uint32_t CHANNEL_SEQ = (p32[2] >>  0) & 0xFFFF;
+            uint32_t CHANNEL_ID  = (p32[2] >> 16) & 0xFF;
+            uint32_t FLAGS       = (p32[2] >> 24) & 0xFF;
+            uint32_t CHUNK_ID    = (p32[3] >>  0) & 0xFFFF;
+            uint32_t CHUNK_LEN   = (p32[3] >> 16) & 0xFFFF;
+            uint32_t HEADER_CRC  = p32[4];
+            uint32_t end_of_payload = 5*4 + CHUNK_LEN;
+            uint32_t payload_crc = p32[end_of_payload/4];
+            printf("M 0x%08x, PKT_SEQ 0x%08x, CHAN SEQ 0x%04x, ID 0x%02x, FLAGS 0x%02x, CHUNK ID 0x%04x, LEN 0x%04x, CRC 0x%08x, bank bytes %d, end of payload %d, CRC 0x%08x\n",
+                   MYSTERY,
+                   PKT_SEQ,
+                   CHANNEL_SEQ,
+                   CHANNEL_ID,
+                   FLAGS,
+                   CHUNK_ID,
+                   CHUNK_LEN,
+                   HEADER_CRC,
+                   pwb_bank->data_size,
+                   end_of_payload,
+                   payload_crc);
+         }
+      }
+
       if (fAdcAsm) {
          Alpha16Event* e = UnpackAlpha16Event(fAdcAsm, event);
 
