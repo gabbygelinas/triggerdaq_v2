@@ -309,14 +309,17 @@ public:
          TMBank* pwb_bank = event->FindBank("PB05");
 
          if (pwb_bank) {
-            printf("HERE!\n");
             const char* p8 = event->GetBankData(pwb_bank);
             const uint32_t *p32 = (const uint32_t*)p8;
-            unsigned nprint = pwb_bank->data_size/4;
-            nprint=10;
-            for (unsigned i=0; i<nprint; i++) {
-               printf("PB05[%d]: 0x%08x (%d)\n", i, p32[i], p32[i]);
-               //e->udpData.push_back(p32[i]);
+            const int n32 = pwb_bank->data_size/4;
+
+            if (0) {
+               unsigned nprint = pwb_bank->data_size/4;
+               nprint=10;
+               for (unsigned i=0; i<nprint; i++) {
+                  printf("PB05[%d]: 0x%08x (%d)\n", i, p32[i], p32[i]);
+                  //e->udpData.push_back(p32[i]);
+               }
             }
 
             uint32_t MYSTERY     = p32[0];
@@ -341,6 +344,77 @@ public:
                    pwb_bank->data_size,
                    end_of_payload,
                    payload_crc);
+
+            if (CHUNK_ID == 0) {
+               for (unsigned i=5; i<20; i++) {
+                  printf("PB05[%d]: 0x%08x (%d)\n", i, p32[i], p32[i]);
+                  //e->udpData.push_back(p32[i]);
+               }
+
+               int FormatRevision  = (p32[5]>> 0) & 0xFF;
+               int ScaId           = (p32[5]>> 8) & 0xFF;
+               int CompressionType = (p32[5]>>16) & 0xFF;
+               int TriggerSource   = (p32[5]>>24) & 0xFF;
+
+               uint32_t HardwareId1 = p32[6];
+
+               uint32_t HardwareId2 = (p32[7]>> 0) & 0xFFFF;
+               int TriggerDelay     = (p32[7]>>16) & 0xFFFF;
+
+               // NB timestamp clock is 125 MHz
+
+               uint32_t TriggerTimestamp1 = p32[8];
+
+               uint32_t TriggerTimestamp2 = (p32[9]>> 0) & 0xFFFF;
+               uint32_t Reserved1         = (p32[9]>>16) & 0xFFFF;
+
+               int ScaLastCell = (p32[10]>> 0) & 0xFFFF;
+               int ScaSamples  = (p32[10]>>16) & 0xFFFF;
+
+               uint32_t ScaChannelsSent1 = p32[11];
+               uint32_t ScaChannelsSent2 = p32[12];
+
+               uint32_t ScaChannelsSent3 = (p32[13]>> 0) & 0xFF;
+               uint32_t ScaChannelsThreshold1 = (p32[13]>> 8) & 0xFFFFFF;
+
+               uint32_t ScaChannelsThreshold2 = p32[14];
+
+               uint32_t ScaChannelsThreshold3 = p32[15] & 0xFFFF;
+               uint32_t Reserved2             = (p32[15]>>16) & 0xFFFF;
+
+               printf("H F 0x%02x, Sca 0x%02x, C 0x%02x, T 0x%02x, H 0x%08x, 0x%04x, Delay 0x%04x, TS 0x%08x, 0x%04x, R1 0x%04x, SCA LastCell 0x%04x, Samples 0x%04x, Sent 0x%08x 0x%08x 0x%08x, Thr 0x%08x 0x%08x 0x%08x, R2 0x%04x\n",
+                      FormatRevision,
+                      ScaId,
+                      CompressionType,
+                      TriggerSource,
+                      HardwareId1, HardwareId2,
+                      TriggerDelay,
+                      TriggerTimestamp1, TriggerTimestamp2,
+                      Reserved1,
+                      ScaLastCell,
+                      ScaSamples,
+                      ScaChannelsSent1,
+                      ScaChannelsSent2,
+                      ScaChannelsSent3,
+                      ScaChannelsThreshold1,
+                      ScaChannelsThreshold2,
+                      ScaChannelsThreshold3,
+                      Reserved2);
+
+               int ptr32 = 16;
+
+               while (ptr32 < n32) {
+                  int channel = p32[ptr32] & 0xFFFF;
+                  int samples = (p32[ptr32]>>16) & 0xFFFF;
+                  int nw = samples/2;
+                  if (samples&1)
+                     nw+=1;
+                  printf("S ptr %d, channel %d, samples %d, nw %d\n", ptr32, channel, samples, nw);
+                  ptr32 += 1+nw;
+                  if (nw <= 0)
+                     break;
+               }
+            }
          }
       }
 
