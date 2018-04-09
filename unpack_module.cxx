@@ -50,6 +50,10 @@ static std::vector<std::string> split(const std::string& s, char seperator)
 }
 #endif
 
+#include "PwbAsm.h"
+
+PwbAsm* gPwbAsm = NULL;
+
 class UnpackFlags
 {
 public:
@@ -322,6 +326,12 @@ public:
                }
             }
 
+            if (!gPwbAsm)
+               gPwbAsm = new PwbAsm();
+
+            gPwbAsm->AddPacket(5, event->GetBankData(pwb_bank), pwb_bank->data_size);
+
+#if 0
             uint32_t MYSTERY     = p32[0];
             uint32_t PKT_SEQ     = p32[1];
             uint32_t CHANNEL_SEQ = (p32[2] >>  0) & 0xFFFF;
@@ -346,9 +356,11 @@ public:
                    payload_crc);
 
             if (CHUNK_ID == 0) {
-               for (unsigned i=5; i<20; i++) {
-                  printf("PB05[%d]: 0x%08x (%d)\n", i, p32[i], p32[i]);
-                  //e->udpData.push_back(p32[i]);
+               if (0) {
+                  for (unsigned i=5; i<20; i++) {
+                     printf("PB05[%d]: 0x%08x (%d)\n", i, p32[i], p32[i]);
+                     //e->udpData.push_back(p32[i]);
+                  }
                }
 
                int FormatRevision  = (p32[5]>> 0) & 0xFF;
@@ -401,6 +413,12 @@ public:
                       ScaChannelsThreshold3,
                       Reserved2);
 
+               printf("S Sca 0x%02x, TS 0x%08x, 0x%04x, SCA LastCell 0x%04x, Samples 0x%04x\n",
+                      ScaId,
+                      TriggerTimestamp1, TriggerTimestamp2,
+                      ScaLastCell,
+                      ScaSamples);
+
                int ptr32 = 16;
 
                while (ptr32 < n32) {
@@ -409,12 +427,13 @@ public:
                   int nw = samples/2;
                   if (samples&1)
                      nw+=1;
-                  printf("S ptr %d, channel %d, samples %d, nw %d\n", ptr32, channel, samples, nw);
+                  printf("C ptr %d, channel %d, samples %d, nw %d\n", ptr32, channel, samples, nw);
                   ptr32 += 1+nw;
                   if (nw <= 0)
                      break;
                }
             }
+#endif
          }
       }
 
