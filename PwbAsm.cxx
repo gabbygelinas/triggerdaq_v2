@@ -592,11 +592,46 @@ void PwbChannelAsm::Reset()
    fSaveSamples = 0;
    fSaveNw = 0;
    fSavePos = 0;
+   if (fCurrent) {
+      delete fCurrent;
+      fCurrent = NULL;
+   }
+   for (unsigned i=0; i<fOutput.size(); i++) {
+      if (fOutput[i]) {
+         delete fOutput[i];
+         fOutput[i] = NULL;
+      }
+   }
 }
 
 void PwbChannelAsm::AddSamples(int channel, const uint16_t* samples, int count)
 {
-   printf("pwb module %d, sca %d, channel %d, add %d samples\n", fModule, fSca, channel, count);
+   int ri = channel + 1;
+
+   printf("pwb module %d, sca %d, channel %d, ri %d, add %d samples\n", fModule, fSca, channel, ri, count);
+
+   if (fCurrent) {
+      if (ri != fCurrent->sca_readout) {
+         fOutput.push_back(fCurrent);
+         fCurrent = NULL;
+      }
+   }
+   
+   if (!fCurrent) {
+      fCurrent = new FeamChannel;
+      fCurrent->imodule = fModule;
+      fCurrent->pwb_column = 0; // filled later
+      fCurrent->pwb_ring = 0; // filled later
+      fCurrent->sca = fSca;
+      fCurrent->sca_readout = ri;
+      fCurrent->sca_chan = 0; // filled later
+      fCurrent->pad_col = 0;
+      fCurrent->pad_row = 0;
+      fCurrent->first_bin = 0;
+   }
+
+   for (int i=0; i<count; i++)
+      fCurrent->adc_samples.push_back(samples[i]);
 }
 
 void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e)
@@ -708,6 +743,22 @@ void PwbChannelAsm::EndData()
    fSaveSamples = 0;
    fSaveNw = 0;
    fSavePos = 0;
+
+   if (fCurrent) {
+      fOutput.push_back(fCurrent);
+      fCurrent = NULL;
+   }
+
+   PrintFeamChannels(fOutput);
+}
+
+void PwbChannelAsm::BuildEvent(FeamEvent* e)
+{
+   for (unsigned i=0; i<fOutput.size(); i++) {
+      e->hits.push_back(fOutput[i]);
+      fOutput[i] = NULL;
+   }
+   fOutput.clear();
 }
 
 void PwbChannelAsm::AddPacket(PwbUdpPacket* udp, const char* ptr, int size)
@@ -736,6 +787,15 @@ void PwbChannelAsm::AddPacket(PwbUdpPacket* udp, const char* ptr, int size)
    } else {
       printf("PwbChannelAsm::AddPacket(): invalid state %d\n", fState);
    }
+}
+
+bool PwbChannelAsm::CheckComplete() const
+{
+   if (fState == PWB_CA_ST_INIT)
+      return true;
+   if (fState == PWB_CA_ST_LAST)
+      return true;
+   return false;
 }
 
 PwbModuleAsm::PwbModuleAsm(int module)
@@ -786,6 +846,26 @@ void PwbModuleAsm::AddPacket(const char* ptr, int size)
    delete udp;
 }
 
+bool PwbModuleAsm::CheckComplete() const
+{
+   for (unsigned i=0; i<fChannels.size(); i++) {
+      if (fChannels[i]) {
+         if (!fChannels[i]->CheckComplete())
+            return false;
+      }
+   }
+   return true;
+}
+
+void PwbModuleAsm::BuildEvent(FeamEvent* e)
+{
+   for (unsigned i=0; i<fChannels.size(); i++) {
+      if (fChannels[i]) {
+         fChannels[i]->BuildEvent(e);
+      }
+   }
+}
+
 PwbAsm::PwbAsm() // ctor
 {
    // empty
@@ -801,6 +881,17 @@ PwbAsm::~PwbAsm() // dtor
    }
 }
 
+void PwbAsm::Reset()
+{
+   fCounter = 0;
+   fLastTime = 0;
+   for (unsigned i=0; i<fModules.size(); i++) {
+      if (fModules[i]) {
+         fModules[i]->Reset();
+      }
+   }
+}
+
 void PwbAsm::AddPacket(int module, const char* ptr, int size)
 {
    while (module >= fModules.size()) {
@@ -812,6 +903,34 @@ void PwbAsm::AddPacket(int module, const char* ptr, int size)
    }
 
    fModules[module]->AddPacket(ptr, size);
+}
+
+bool PwbAsm::CheckComplete() const
+{
+   for (unsigned i=0; i<fModules.size(); i++) {
+      if (fModules[i]) {
+         if (!fModules[i]->CheckComplete())
+            return false;
+      }
+   }
+   return true;
+}
+
+void PwbAsm::BuildEvent(FeamEvent* e)
+{
+   e->complete = true;
+   e->error = false;
+   e->counter = fCounter++;
+   e->time = e->counter;
+   e->timeIncr = e->time - fLastTime;
+
+   fLastTime = e->time;
+
+   for (unsigned i=0; i<fModules.size(); i++) {
+      if (fModules[i]) {
+         fModules[i]->BuildEvent(e);
+      }
+   }
 }
 
 /* emacs

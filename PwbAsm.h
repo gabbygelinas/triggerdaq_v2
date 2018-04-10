@@ -9,6 +9,8 @@
 #include <stdint.h> // uint32_t & co
 #include <vector>
 
+#include "Feam.h"
+
 struct PwbUdpPacket
 {
 public:
@@ -81,6 +83,12 @@ public:
    int fSaveNw;
    int fSavePos;
 
+public: // channel currently filled
+   FeamChannel* fCurrent = NULL;
+
+public: // output
+   std::vector<FeamChannel*> fOutput;
+
 public:
    PwbChannelAsm(int module, int sca);
    
@@ -94,6 +102,10 @@ public:
    void CopyData(const uint16_t* s, const uint16_t* e);
 
    void AddSamples(int channel, const uint16_t* samples, int count);
+
+   bool CheckComplete() const;
+
+   void BuildEvent(FeamEvent* e);
 };
 
 class PwbModuleAsm
@@ -109,6 +121,8 @@ public:
    PwbModuleAsm(int module);
    void Reset();
    void AddPacket(const char* ptr, int size);
+   bool CheckComplete() const;
+   void BuildEvent(FeamEvent* e);
 };
 
 class PwbAsm
@@ -116,12 +130,19 @@ class PwbAsm
 public:
    std::vector<PwbModuleAsm*> fModules;
 
+public: // state
+   int fCounter = 0;
+   double fLastTime = 0;
+
 public:
    PwbAsm();
    ~PwbAsm();
 
 public:
+   void Reset();
    void AddPacket(int module, const char* ptr, int size);
+   bool CheckComplete() const;
+   void BuildEvent(FeamEvent* e);
 };
 
 #endif

@@ -494,6 +494,28 @@ void FeamEvent::Print(int level) const
    }
 }
 
+void PrintFeamChannels(const std::vector<FeamChannel*>& v)
+{
+   printf("FeamChannels: count %d\n", (int)v.size());
+   printf("### MM C R S RI CH C RR BIN ADC\n");
+   for (unsigned i=0; i<v.size(); i++) {
+      if (v[i]) {
+         printf("%3d %2d %d %d %d %2d %2d %d %2d %3d %3d\n",
+                i,
+                v[i]->imodule,
+                v[i]->pwb_column,
+                v[i]->pwb_ring,
+                v[i]->sca,
+                v[i]->sca_readout,
+                v[i]->sca_chan,
+                v[i]->pad_col,
+                v[i]->pad_row,
+                v[i]->first_bin,
+                (int)v[i]->adc_samples.size());
+      }
+   }
+}
+
 void Unpack(FeamAdcData* a, FeamModuleData* m)
 {
    int f = m->fDataFormat;

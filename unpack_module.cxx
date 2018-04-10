@@ -331,6 +331,24 @@ public:
 
             gPwbAsm->AddPacket(5, event->GetBankData(pwb_bank), pwb_bank->data_size);
 
+            if (gPwbAsm->CheckComplete()) {
+               printf("PwbAsm ---> complete !!!\n");
+               FeamEvent* e = new FeamEvent();
+               gPwbAsm->BuildEvent(e);
+               e->Print();
+               PrintFeamChannels(e->hits);
+
+               if (fAgEvb) {
+                  fAgEvb->AddFeamEvent(e);
+                  e = NULL;
+               }
+
+               if (e) {
+                  delete e;
+                  e = NULL;
+               }
+            }
+
 #if 0
             uint32_t MYSTERY     = p32[0];
             uint32_t PKT_SEQ     = p32[1];

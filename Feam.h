@@ -195,6 +195,8 @@ struct FeamEvent
    void Print(int level=0) const;
 };
 
+void PrintFeamChannels(const std::vector<FeamChannel*>& v);
+
 extern void Unpack(FeamAdcData* a, FeamModuleData* m);
 extern std::pair<int,int> getPad(short fAFTER, int index);
 
