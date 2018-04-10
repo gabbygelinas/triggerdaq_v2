@@ -661,9 +661,11 @@ void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e)
       p += 2;
       r = e-p;
       int h = nw;
+      int s = samples;
       bool truncated = false;
       if (nw > r) {
          h = r;
+         s = r;
          printf("split data nw %d, with %d here, %d to follow\n", nw, h, nw-h);
          fSaveChannel = channel;
          fSaveSamples = samples;
@@ -671,7 +673,7 @@ void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e)
          fSavePos = h;
          truncated = true;
       }
-      AddSamples(channel, p, h);
+      AddSamples(channel, p, s);
       p += h;
       if (truncated) {
          assert(p == e);
@@ -700,16 +702,18 @@ void PwbChannelAsm::AddData(const char* ptr, int size, int start_of_data, int en
       int r = (e-p);
       
       int h = fSaveNw - fSavePos;
+      int s = fSaveSamples - fSavePos;
       bool truncated = false;
       
       if (h > r) {
          h = r;
+         s = r;
          truncated = true;
       }
       
       printf("AddData: save channel %d, samples %d, nw %d, pos %d, remaining %d, have %d, truncated %d\n", fSaveChannel, fSaveSamples, fSaveNw, fSavePos, r, h, truncated);
       
-      AddSamples(fSaveChannel, p, h);
+      AddSamples(fSaveChannel, p, s);
       
       if (!truncated) {
          fSaveChannel = 0;
