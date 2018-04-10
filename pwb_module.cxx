@@ -1193,14 +1193,6 @@ public:
                   first_zero_range = false;
                   printf("XXX zero baseline range, pwb%02d, sca %d, readout %d, scachan %d, col %d, row %d, bmin %f, bmax %f, in hex 0x%04x\n", imodule, isca, ichan, scachan, col, row, bmin, bmax, (uint16_t)bmin);
                }
-#if 0
-               //FeamAdcData* aaa = e->adcs[ifeam];
-               e->Print();
-               printf("\n");
-               e->modules[ifeam]->Print(1);
-               printf("\n");
-               abort();
-#endif
             }
          }
 #endif
