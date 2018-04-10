@@ -133,6 +133,8 @@ public:
             continue;
 
          int ipwb = c->imodule;
+         int pwb_column = c->pwb_column;
+         int pwb_ring = c->pwb_ring;
          int isca = c->sca;
          int ichan = c->sca_readout;
          int scachan = c->sca_chan;
@@ -141,7 +143,7 @@ public:
 
          //printf("hit %d: ipos %2d, isca %d, sca_readout %2d, sca_chan %2d, tpc col %2d, row %2d\n", ihit, ipos, isca, ichan, scachan, col, row);
 
-         //int first_bin = c->first_bin;
+         int first_bin = c->first_bin;
          unsigned nbins = c->adc_samples.size();
 
          assert(isca >= 0 && isca < 4);
@@ -152,40 +154,55 @@ public:
          bool scachan_is_pad = (scachan > 0);
          bool scachan_is_fpn = (scachan >= -4) && (scachan <= -1);
 
+         char xdir[256];
+         char xhdr[256];
          char xname[256];
          char xtitle[256];
 
+         sprintf(xdir, "pwb%02d_c%dr%d", ipwb, pwb_column, pwb_ring);
+         sprintf(xhdr, "pwb %02d, col %d, ring %d", ipwb, pwb_column, pwb_ring);
+         
          if (scachan_is_pad) {
-            sprintf(xname, "pwb%02d_%03d_sca%d_chan%02d_scachan%02d_col%02d_row%02d", ipwb, seqsca, isca, ichan, scachan, col, row);
-            sprintf(xtitle, "pwb%02d, sca %d, readout chan %d, sca chan %d, col %d, row %d", ipwb, isca, ichan, scachan, col, row);
+            sprintf(xname, "%s_%03d_sca%d_ri%02d_scachan%02d_col%02d_row%02d", xdir, seqsca, isca, ichan, scachan, col, row);
+            sprintf(xtitle, "%s, sca %d, readout index %d, sca chan %d, col %d, row %d", xhdr, isca, ichan, scachan, col, row);
          } else if (scachan_is_fpn) {
-            sprintf(xname, "pwb%02d_%03d_sca%d_chan%02d_fpn%d", ipwb, seqsca, isca, ichan, -scachan);
-            sprintf(xtitle, "pwb%02d, sca %d, readout chan %d, fpn %d", ipwb, isca, ichan, -scachan);
+            sprintf(xname, "%s_%03d_sca%d_ri%02d_fpn%d", xdir, seqsca, isca, ichan, -scachan);
+            sprintf(xtitle, "%s, sca %d, readout index %d, fpn %d", xhdr, isca, ichan, -scachan);
          } else {
-            sprintf(xname, "pwb%02d_%03d_sca%d_chan%02d", ipwb, seqsca, isca, ichan);
-            sprintf(xtitle, "pwb%02d, sca %d, readout chan %d", ipwb, isca, ichan);
+            sprintf(xname, "%s_%03d_sca%d_ri%02d", xdir, seqsca, isca, ichan);
+            sprintf(xtitle, "%s, sca %d, readout index %d", xhdr, isca, ichan);
          }
          
          if (fFlags->fExportWaveforms) {
             TDirectory* dir = runinfo->fRoot->fgDir;
-            const char* dirname = "XPad waveforms";
+            dir->cd();
+
+            const char* xdir1 = "pwb_waveforms";
             
-            if (!dir->cd(dirname)) {
-               TDirectory* awdir = dir->mkdir(dirname);
-               awdir->cd();
+            std::string dirname = "";
+            dirname += xdir1;
+            dirname += "/";
+            dirname += xdir;
+
+            if (!dir->cd(dirname.c_str())) {
+               dir = dir->mkdir(xdir1);
+               dir->cd();
+               dir = dir->mkdir(xdir);
+               dir->cd();
             }
             
             dir = dir->CurrentDirectory();
             
-            std::string wname = std::string(xname) + "_waveform";
+            std::string wname = std::string(xname) + "_wf";
             std::string wtitle = std::string(xtitle) + " current waveform";
             
             TH1D* hwf = (TH1D*)dir->FindObject(wname.c_str());
             if (!hwf) {
+               //printf("%s: ", wname.c_str()); dir->pwd();
                hwf = new TH1D(wname.c_str(), wtitle.c_str(), nbins, 0, nbins);
             }
             
-            for (unsigned i=0; i<nbins; i++) {
+            for (unsigned i=first_bin; i<nbins; i++) {
                hwf->SetBinContent(i+1, c->adc_samples[i]);
             }
          }
