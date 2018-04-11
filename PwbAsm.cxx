@@ -446,6 +446,7 @@ PwbUdpPacket::PwbUdpPacket(const char* ptr, int size) // ctor
 
    if (n32 < 6) {
       fError = true;
+      printf("PwbUdpPacket: Error: invalid value of n32: %d\n", n32);
       return;
    }
 
@@ -463,12 +464,13 @@ PwbUdpPacket::PwbUdpPacket(const char* ptr, int size) // ctor
    end_of_payload = start_of_payload + CHUNK_LEN;
 
    if (HEADER_CRC != ~crc) {
-      printf("Error: header CRC mismatch: HEADER_CRC 0x%08x, computed 0x%08x\n", HEADER_CRC, ~crc);
+      printf("PwbUdpPacket: Error: header CRC mismatch: HEADER_CRC 0x%08x, computed 0x%08x\n", HEADER_CRC, ~crc);
       fError = true;
       return;
    }
 
    if (end_of_payload + 4 > fPacketSize) {
+      printf("PwbUdpPacket: Error: invalid byte counter, end_of_payload %d, packet size %d\n", end_of_payload, fPacketSize);
       fError = true;
       return;
    }
@@ -478,7 +480,7 @@ PwbUdpPacket::PwbUdpPacket(const char* ptr, int size) // ctor
    uint32_t payload_crc_ours = crc32c(0, ptr+start_of_payload, CHUNK_LEN);
 
    if (payload_crc != ~payload_crc_ours) {
-      printf("Error: payload CRC mismatch: CRC 0x%08x, computed 0x%08x\n", payload_crc, ~payload_crc_ours);
+      printf("PwbUdpPacket: Error: payload CRC mismatch: CRC 0x%08x, computed 0x%08x\n", payload_crc, ~payload_crc_ours);
       fError = true;
       return;
    }
@@ -486,10 +488,10 @@ PwbUdpPacket::PwbUdpPacket(const char* ptr, int size) // ctor
 
 void PwbUdpPacket::Print() const
 {
-   printf("PwbUdpPacket: M 0x%08x, PKT_SEQ 0x%08x, CHAN SEQ 0x%04x, ID 0x%02x, FLAGS 0x%02x, CHUNK ID 0x%04x, LEN 0x%04x, CRC 0x%08x, bank bytes %d, end of payload %d, CRC 0x%08x\n",
+   printf("PwbUdpPacket: M 0x%08x, PKT_SEQ 0x%08x, CHAN SEQ 0x%02x, ID 0x%02x, FLAGS 0x%02x, CHUNK ID 0x%04x, LEN 0x%04x, CRC 0x%08x, bank bytes %d, end of payload %d, CRC 0x%08x\n",
           MYSTERY,
           PKT_SEQ,
-          CHANNEL_SEQ,
+          ((int)CHANNEL_SEQ)&0xFFFF,
           CHANNEL_ID,
           FLAGS,
           CHUNK_ID,
@@ -608,7 +610,9 @@ void PwbChannelAsm::AddSamples(int channel, const uint16_t* samples, int count)
 {
    int ri = channel + 1;
 
-   printf("pwb module %d, sca %d, channel %d, ri %d, add %d samples\n", fModule, fSca, channel, ri, count);
+   if (fTrace) {
+      printf("pwb module %d, sca %d, channel %d, ri %d, add %d samples\n", fModule, fSca, channel, ri, count);
+   }
 
    if (fCurrent) {
       if (ri != fCurrent->sca_readout) {
@@ -641,23 +645,35 @@ void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e)
    while (1) {
       int r = e-p;
       if (r < 2) {
-         printf("need to en-buffer header!\n");
+         printf("PwbChannelAsm::CopyData: Error: need to en-buffer a partial header, r: %d!\n", r);
          break;
       }
       if (p[0] == 0xCCCC && p[1] == 0xCCCC) {
-         printf("CopyData: unexpected 0xCCCC words, r %d!\n", r);
+         printf("PwbChannelAsm::CopyData: Error: unexpected 0xCCCC words, r %d!\n", r);
          break;
       }
       int channel = p[0];
       int samples = p[1];
+
+      if (channel < 0 || channel > 80) {
+         printf("PwbChannelAsm::CopyData: Error: invalid channel %d\n", channel);
+      }
+
+      if (samples != 511) {
+         printf("PwbChannelAsm::CopyData: Error: invalid samples %d\n", samples);
+      }
+
+
       int nw = samples;
       if (samples&1)
          nw+=1;
       if (nw <= 0) {
-         printf("invalid word counter!\n");
+         printf("PwbChannelAsm::CopyData: Error: invalid word counter nw: %d\n", nw);
          break;
       }
-      printf("adc samples ptr %d, end %d, r %d, channel %d, samples %d, nw %d\n", (int)(p-s), (int)(e-s), r, channel, samples, nw);
+      if (fTrace) {
+         printf("adc samples ptr %d, end %d, r %d, channel %d, samples %d, nw %d\n", (int)(p-s), (int)(e-s), r, channel, samples, nw);
+      }
       p += 2;
       r = e-p;
       int h = nw;
@@ -666,7 +682,9 @@ void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e)
       if (nw > r) {
          h = r;
          s = r;
-         printf("split data nw %d, with %d here, %d to follow\n", nw, h, nw-h);
+         if (fTrace) {
+            printf("split data nw %d, with %d here, %d to follow\n", nw, h, nw-h);
+         }
          fSaveChannel = channel;
          fSaveSamples = samples;
          fSaveNw = nw;
@@ -710,8 +728,10 @@ void PwbChannelAsm::AddData(const char* ptr, int size, int start_of_data, int en
          s = r;
          truncated = true;
       }
-      
-      printf("AddData: save channel %d, samples %d, nw %d, pos %d, remaining %d, have %d, truncated %d\n", fSaveChannel, fSaveSamples, fSaveNw, fSavePos, r, h, truncated);
+
+      if (fTrace) {
+         printf("AddData: save channel %d, samples %d, nw %d, pos %d, remaining %d, have %d, truncated %d\n", fSaveChannel, fSaveSamples, fSaveNw, fSavePos, r, h, truncated);
+      }
       
       AddSamples(fSaveChannel, p, s);
       
@@ -730,7 +750,7 @@ void PwbChannelAsm::AddData(const char* ptr, int size, int start_of_data, int en
    } else if (p == e) {
       // good, no more data in this packet
    } else {
-      printf("AddData: error!\n");
+      printf("PwbChannelAsm::AddData: Error!\n");
       assert(!"this cannot happen");
    }
 }
@@ -738,9 +758,11 @@ void PwbChannelAsm::AddData(const char* ptr, int size, int start_of_data, int en
 void PwbChannelAsm::EndData()
 {
    if (fSaveNw > 0) {
-      printf("EndData: missing some data at the end\n");
+      printf("PwbChannelAsm::EndData: Error: missing some data at the end\n");
    } else {
-      printf("EndData: ok!\n");
+      if (fTrace) {
+         printf("PwbChannelAsm::EndData: ok!\n");
+      }
    }
 
    fSaveChannel = 0;
@@ -753,14 +775,23 @@ void PwbChannelAsm::EndData()
       fCurrent = NULL;
    }
 
-   PrintFeamChannels(fOutput);
+   if (fTrace) {
+      PrintFeamChannels(fOutput);
+   }
 }
 
 void PwbChannelAsm::BuildEvent(FeamEvent* e)
 {
    for (unsigned i=0; i<fOutput.size(); i++) {
-      e->hits.push_back(fOutput[i]);
-      fOutput[i] = NULL;
+      if (fOutput[i]) {
+         // FIXME: bad data from PWB!!!
+         if (fOutput[i]->sca_readout > 80) {
+            printf("PwbChannelAsm::BuildEvent: Error: skipping invalid channel, sca_readout: %d\n", fOutput[i]->sca_readout);
+            continue;
+         }
+         e->hits.push_back(fOutput[i]);
+         fOutput[i] = NULL;
+      }
    }
    fOutput.clear();
 }
@@ -769,8 +800,8 @@ void PwbChannelAsm::AddPacket(PwbUdpPacket* udp, const char* ptr, int size)
 {
    if (fLast_CHANNEL_SEQ == 0) {
       fLast_CHANNEL_SEQ = udp->CHANNEL_SEQ;
-   } else if (udp->CHANNEL_SEQ != fLast_CHANNEL_SEQ + 1) {
-      printf("PwbChannelAsm::AddPacket(): misordered or lost UDP packet: CHANNEL_SEQ jump 0x%08x to 0x%08x\n", fLast_CHANNEL_SEQ, udp->CHANNEL_SEQ);
+   } else if (udp->CHANNEL_SEQ != ((fLast_CHANNEL_SEQ + 1)&0xFFFF)) {
+      printf("PwbChannelAsm::AddPacket: Error: misordered or lost UDP packet: CHANNEL_SEQ jump 0x%04x to 0x%04x\n", fLast_CHANNEL_SEQ, udp->CHANNEL_SEQ);
       fLast_CHANNEL_SEQ = udp->CHANNEL_SEQ;
    } else {
       fLast_CHANNEL_SEQ++;
@@ -778,7 +809,9 @@ void PwbChannelAsm::AddPacket(PwbUdpPacket* udp, const char* ptr, int size)
 
    if (fState == PWB_CA_ST_INIT || fState == PWB_CA_ST_LAST) {
       PwbEventHeader* eh = new PwbEventHeader(ptr, size);
-      eh->Print();
+      if (fTrace) {
+         eh->Print();
+      }
       delete eh;
       fState = PWB_CA_ST_DATA;
       BeginData(ptr, size, eh->start_of_data, udp->end_of_payload);
@@ -789,7 +822,7 @@ void PwbChannelAsm::AddPacket(PwbUdpPacket* udp, const char* ptr, int size)
          EndData();
       }
    } else {
-      printf("PwbChannelAsm::AddPacket(): invalid state %d\n", fState);
+      printf("PwbChannelAsm::AddPacket: Error: invalid state %d\n", fState);
    }
 }
 
@@ -820,12 +853,15 @@ void PwbModuleAsm::Reset()
 void PwbModuleAsm::AddPacket(const char* ptr, int size)
 {
    PwbUdpPacket* udp = new PwbUdpPacket(ptr, size);
-   udp->Print();
+
+   if (fTrace) {
+      udp->Print();
+   }
 
    if (fLast_PKT_SEQ == 0) {
       fLast_PKT_SEQ = udp->PKT_SEQ;
    } else if (udp->PKT_SEQ != fLast_PKT_SEQ + 1) {
-      printf("PwbModuleAsm::AddPacket(): misordered or lost UDP packet: PKT_SEQ jump 0x%08x to 0x%08x\n", fLast_PKT_SEQ, udp->PKT_SEQ);
+      printf("PwbModuleAsm::AddPacket: Error: misordered or lost UDP packet: PKT_SEQ jump 0x%08x to 0x%08x\n", fLast_PKT_SEQ, udp->PKT_SEQ);
       fLast_PKT_SEQ = udp->PKT_SEQ;
    } else {
       fLast_PKT_SEQ++;
@@ -834,7 +870,7 @@ void PwbModuleAsm::AddPacket(const char* ptr, int size)
    int s = udp->CHANNEL_ID;
 
    if (s < 0 || s > 4) {
-      printf("PwbModuleAsm::AddPacket(): invalid CHANNEL_ID 0x%08x\n", udp->CHANNEL_ID);
+      printf("PwbModuleAsm::AddPacket: Error: invalid CHANNEL_ID 0x%08x\n", udp->CHANNEL_ID);
    } else {
       while (s >= fChannels.size()) {
          fChannels.push_back(NULL);

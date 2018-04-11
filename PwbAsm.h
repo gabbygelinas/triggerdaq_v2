@@ -20,7 +20,7 @@ public:
 public: // packet data
    uint32_t MYSTERY;
    uint32_t PKT_SEQ;
-   uint32_t CHANNEL_SEQ;
+   uint16_t CHANNEL_SEQ;
    uint32_t CHANNEL_ID;
    uint32_t FLAGS;
    uint32_t CHUNK_ID;
@@ -74,8 +74,11 @@ public:
    int fSca = 0;
    
 public: // state
-   uint32_t fLast_CHANNEL_SEQ = 0;
+   uint16_t fLast_CHANNEL_SEQ = 0;
    int fState = 0;
+
+public: // configuration
+   bool fTrace = false;
 
 public:
    int fSaveChannel;
@@ -116,6 +119,9 @@ public:
 
 public: // state
    uint32_t fLast_PKT_SEQ = 0;
+
+public: // configuration
+   bool fTrace = false;
 
 public:
    PwbModuleAsm(int module);

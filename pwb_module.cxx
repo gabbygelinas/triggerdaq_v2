@@ -924,8 +924,8 @@ public:
 
       CheckAndShiftFpn(e);
 
-      for (unsigned i=0; i<e->hits.size(); i++) {
-         FeamChannel* c = e->hits[i];
+      for (unsigned ii=0; ii<e->hits.size(); ii++) {
+         FeamChannel* c = e->hits[ii];
          if (!c)
             continue;
 
@@ -942,11 +942,18 @@ public:
          bool fpn_is_ok = true;
 
          int isca = c->sca;
+
+         assert(isca >= 0);
+         assert(isca < 4);
+
          int seqpwbsca = seqpwb*4+isca;
          int ichan = c->sca_readout;
 
+         assert(ichan > 0);
+         assert(ichan < 80);
+
          //unsigned seqchan = ifeam*(aaa->nsca*aaa->nchan) + isca*aaa->nchan + ichan;
-         unsigned seqchan = 0;
+         //unsigned seqchan = 0;
          int seqsca = isca*80 + ichan;
 
          int nbins = c->adc_samples.size();
@@ -1047,14 +1054,14 @@ public:
          
          // create per-channel data
          
-         if (seqchan >= fHC.size()) {
-            for (unsigned i=fHC.size(); i<=seqchan; i++)
-               fHC.push_back(NULL);
-         }
+         //if (seqchan >= fHC.size()) {
+         //   for (unsigned i=fHC.size(); i<=seqchan; i++)
+         //      fHC.push_back(NULL);
+         //}
          
-         if (fHC[seqchan] == NULL) {
-            fHC[seqchan] = new ChanHistograms(xname, xtitle, hdir_pads, nbins);
-         }
+         //if (fHC[seqchan] == NULL) {
+         //   fHC[seqchan] = new ChanHistograms(xname, xtitle, hdir_pads, nbins);
+         //}
          
          // check for spikes
          
@@ -1084,7 +1091,8 @@ public:
          if (spike_max > 500 && spike_num > 10) {
             spike = true;
          }
-         
+
+#if 0         
          if (spike) {
             spike = true;
             if (fHC[seqchan]->SaveBad(nbins, c->adc_samples)) {
@@ -1110,6 +1118,7 @@ public:
                }
             }
          }
+#endif
 
          // compute baseline
          
@@ -1281,31 +1290,32 @@ public:
          
          // save first waveform
          
-         if (fHC[seqchan]->hwaveform_first->GetEntries() == 0) {
-            if (doPrint)
-               printf("saving first waveform %d\n", seqchan);
-            for (int i=0; i<nbins; i++)
-               fHC[seqchan]->hwaveform_first->SetBinContent(i+1, c->adc_samples[i]);
-         }
+         //if (fHC[seqchan]->hwaveform_first->GetEntries() == 0) {
+         //   if (doPrint)
+         //      printf("saving first waveform %d\n", seqchan);
+         //   for (int i=0; i<nbins; i++)
+         //      fHC[seqchan]->hwaveform_first->SetBinContent(i+1, c->adc_samples[i]);
+         //}
          
          // save biggest waveform
          
-         if (wamp > fHC[seqchan]->fMaxWamp) {
-            fHC[seqchan]->fMaxWamp = wamp;
-            if (doPrint)
-               printf("saving biggest waveform %d\n", seqchan);
-            for (int i=0; i<nbins; i++)
-               fHC[seqchan]->hwaveform_max->SetBinContent(i+1, c->adc_samples[i]);
-         }
+         //if (wamp > fHC[seqchan]->fMaxWamp) {
+         //   fHC[seqchan]->fMaxWamp = wamp;
+         //   if (doPrint)
+         //      printf("saving biggest waveform %d\n", seqchan);
+         //   for (int i=0; i<nbins; i++)
+         //      fHC[seqchan]->hwaveform_max->SetBinContent(i+1, c->adc_samples[i]);
+         //}
          
          // add to average waveform
          
-         for (int j=0; j< nbins; j++)
-            fHC[seqchan]->hwaveform_avg->AddBinContent(j+1, c->adc_samples[j]);
-         fHC[seqchan]->nwf++;
+         //for (int j=0; j< nbins; j++)
+         //   fHC[seqchan]->hwaveform_avg->AddBinContent(j+1, c->adc_samples[j]);
+         //fHC[seqchan]->nwf++;
          
          // save biggest drift region waveform
-         
+
+#if 0         
          if (dpos > idrift_cut){
             if(damp > fHC[seqchan]->fMaxWampDrift) {
                fHC[seqchan]->fMaxWampDrift = damp;
@@ -1322,6 +1332,7 @@ public:
             fHC[seqchan]->nwf_drift++;
             
          }
+#endif
 
          if (scachan_is_pad || scachan_is_fpn) {
             hbmean_all->Fill(bmean);
