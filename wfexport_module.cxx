@@ -151,8 +151,9 @@ public:
 
          int seqsca = isca*80 + ichan;
 
-         bool scachan_is_pad = (scachan > 0);
-         bool scachan_is_fpn = (scachan >= -4) && (scachan <= -1);
+         bool scachan_is_pad = PwbPadMap::chan_is_pad(scachan);
+         bool scachan_is_fpn = PwbPadMap::chan_is_fpn(scachan);
+         bool scachan_is_reset = PwbPadMap::chan_is_reset(scachan);
 
          char xdir[256];
          char xhdr[256];
@@ -168,6 +169,9 @@ public:
          } else if (scachan_is_fpn) {
             sprintf(xname, "%s_%03d_sca%d_ri%02d_fpn%d", xdir, seqsca, isca, ichan, -scachan);
             sprintf(xtitle, "%s, sca %d, readout index %d, fpn %d", xhdr, isca, ichan, -scachan);
+         } else if (scachan_is_reset) {
+            sprintf(xname, "%s_%03d_sca%d_ri%02d_reset%d", xdir, seqsca, isca, ichan, -scachan-4);
+            sprintf(xtitle, "%s, sca %d, readout index %d, reset %d", xhdr, isca, ichan, -scachan-4);
          } else {
             sprintf(xname, "%s_%03d_sca%d_ri%02d", xdir, seqsca, isca, ichan);
             sprintf(xtitle, "%s, sca %d, readout index %d", xhdr, isca, ichan);

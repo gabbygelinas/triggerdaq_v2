@@ -442,8 +442,6 @@ static int fpn_wrap(int ifpn)
 
 class PwbModule: public TARunObject
 {
-private:
-   const padMap padMapper;
 public:
    PwbFlags* fFlags = NULL;
 
@@ -494,7 +492,7 @@ public:
 
    TH1D* hnhitchan = NULL;
 
-   TH2D* hpadmap;
+   //TH2D* hpadmap;
 
    TDirectory* hdir_summary = NULL;
    TDirectory* hdir_pwb  = NULL;
@@ -608,7 +606,7 @@ public:
          h_pulser_led_hit = new TH1D("pulser_led_hit", "pulser time, adc bins", 30, 180-0.5, 210-0.5);
       }
 
-      hpadmap = new TH2D("hpadmap", "map from TPC pad number (col*4*18+row) to SCA readout channel (sca*80+chan)", 4*4*18, -0.5, 4*4*18-0.5, NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
+      //hpadmap = new TH2D("hpadmap", "map from TPC pad number (col*4*18+row) to SCA readout channel (sca*80+chan)", 4*4*18, -0.5, 4*4*18-0.5, NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
    }
 
    void EndRun(TARunInfo* runinfo)
@@ -958,79 +956,16 @@ public:
 
          int nbins = c->adc_samples.size();
 
-         // consult the pad map
-
-         static bool once = true;
-         if (once) {
-            once = false;
-            printf("Pad map:\n");
-            printf("  sca chan: ");
-            for (int i=0; i<=79; i++)
-               printf("%d ", padMapper.channel[i]);
-            printf("\n");
-            for (int sca=0; sca<4; sca++) {
-               printf("sca %d:\n", sca);
-               printf("  tpc col: ");
-               for (int i=0; i<=72; i++)
-                  printf("%d ", padMapper.padcol[sca][i]);
-               printf("\n");
-               printf("  tpc row: ");
-               for (int i=0; i<=72; i++)
-                  printf("%d ", padMapper.padrow[sca][i]);
-               printf("\n");
-            }
-            
-            int test[4*4*18];
-            for (int i=0; i<4*4*18; i++)
-               test[i] = 0;
-            
-            bool map_ok = true;
-            
-            for (int sca=0; sca<4; sca++) {
-               for (int i=0; i<=79; i++) {
-                  int seqsca = sca*80+i;
-                  int chan = padMapper.channel[i];
-                  if (chan > 0) {
-                     int col = padMapper.padcol[sca][chan];
-                     int row = padMapper.padrow[sca][chan];
-                     int seqpad = col*4*18+row;
-                     hpadmap->Fill(seqpad, seqsca);
-                     if (test[seqpad] != 0) {
-                        printf("pad map error: col %d, row %d, seqpad %d: duplicate mapping seqsca %d and %d\n", col, row, seqpad, seqsca, test[seqpad]);
-                        map_ok = false;
-                     } else {
-                        test[seqpad] = seqsca;
-                     }
-                  }
-               }
-            }
-
-            for (int i=0; i<4*4*18; i++) {
-               if (test[i] == 0) {
-                  printf("pad map error: seqpad %d is not mapped to sca channel!\n", i);
-                  map_ok = false;
-               }
-            }
-            
-            if (map_ok) {
-               printf("pad map is ok.\n");
-            } else {
-               printf("pad map has errors!\n");
-            }
-         }
-
-         int scachan = padMapper.channel[ichan];
-         int col = -1; // TPC pad column
-         int row = -1; // TPC pad row
+         int scachan = c->sca_chan;
+         int col = c->pad_col; // TPC pad column
+         int row = c->pad_row; // TPC pad row
          int seqpad = -1; // TPC sequential pad number col*4*72+row
 
-         bool scachan_is_pad = (scachan > 0);
-         bool scachan_is_fpn = (scachan >= -4) && (scachan <= -1);
+         bool scachan_is_pad = PwbPadMap::chan_is_pad(scachan);
+         bool scachan_is_fpn = PwbPadMap::chan_is_fpn(scachan);
+         bool scachan_is_reset = PwbPadMap::chan_is_reset(scachan);
 
          if (scachan_is_pad) {
-            col = padMapper.padcol[isca][scachan];
-            row = padMapper.padrow[isca][scachan];
-            //printf("isca %d, ichan %d, scachan %d, col %d, row %d\n", isca, ichan, scachan, col, row);
             assert(col>=0 && col<4);
             assert(row>=0 && row<4*72);
             seqpad = col*MAX_FEAM_PAD_ROWS + row;
@@ -1047,6 +982,9 @@ public:
          } else if (scachan_is_fpn) {
             sprintf(xname, "pwb%02d_%03d_sca%d_chan%02d_fpn%d", imodule, seqsca, isca, ichan, -scachan);
             sprintf(xtitle, "pwb%02d, sca %d, readout chan %d, fpn %d", imodule, isca, ichan, -scachan);
+         } else if (scachan_is_reset) {
+            sprintf(xname, "pwb%02d_%03d_sca%d_chan%02d_reset%d", imodule, seqsca, isca, ichan, -scachan-4);
+            sprintf(xtitle, "pwb%02d, sca %d, readout chan %d, reset %d", imodule, isca, ichan, -scachan-4);
          } else {
             sprintf(xname, "pwb%02d_%03d_sca%d_chan%02d", imodule, seqsca, isca, ichan);
             sprintf(xtitle, "pwb%02d, sca %d, readout chan %d", imodule, isca, ichan);

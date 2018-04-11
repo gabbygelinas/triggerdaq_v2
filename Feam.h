@@ -144,15 +144,37 @@ class FeamAsm
 #define MAX_FEAM_PAD_COL   4 /* 4 TPC pad columns */
 #define MAX_FEAM_PAD_ROWS (4*18) /* 4*18 TPC pad rows across 2 ASICs on one wing */
 
-class padMap{
+#define PWB_CHAN_INVALID (0) // invalid data from the device
+#define PWB_CHAN_FPN1 (-1)   // SCA FPN channel
+#define PWB_CHAN_FPN2 (-2)   // SCA FPN channel
+#define PWB_CHAN_FPN3 (-3)   // SCA FPN channel
+#define PWB_CHAN_FPN4 (-4)   // SCA FPN channel
+#define PWB_CHAN_RESET1 (-5) // SCA Reset channel
+#define PWB_CHAN_RESET2 (-6) // SCA Reset channel
+#define PWB_CHAN_RESET3 (-7) // SCA Reset channel
+
+class PwbPadMap
+{
  public:
-   padMap();
+   PwbPadMap();
+   bool CheckMap() const;
+
+ public: // get the map singleton
+   static const PwbPadMap* Map();
+   static bool chan_is_pad(int chan);
+   static bool chan_is_fpn(int chan);
+   static bool chan_is_reset(int chan);
+
+ public:
    int channel[MAX_FEAM_READOUT];
    int readout[MAX_FEAM_CHAN+1];
    int padcol[MAX_FEAM_SCA][MAX_FEAM_CHAN+1];
    int padrow[MAX_FEAM_SCA][MAX_FEAM_CHAN+1];
    int sca[MAX_FEAM_PAD_COL][MAX_FEAM_PAD_ROWS];
    int sca_chan[MAX_FEAM_PAD_COL][MAX_FEAM_PAD_ROWS];
+
+ public:
+   //std::pair<int,int> getPad(short sca, int readout_index) const;
 };
 
 struct FeamAdcData
@@ -198,7 +220,6 @@ struct FeamEvent
 void PrintFeamChannels(const std::vector<FeamChannel*>& v);
 
 extern void Unpack(FeamAdcData* a, FeamModuleData* m);
-extern std::pair<int,int> getPad(short fAFTER, int index);
 
 #endif
 

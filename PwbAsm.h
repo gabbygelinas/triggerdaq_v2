@@ -71,6 +71,8 @@ class PwbChannelAsm
 {
 public:
    int fModule = 0;
+   int fColumn = 0;
+   int fRing = 0;
    int fSca = 0;
    
 public: // state
@@ -93,7 +95,7 @@ public: // output
    std::vector<FeamChannel*> fOutput;
 
 public:
-   PwbChannelAsm(int module, int sca);
+   PwbChannelAsm(int module, int column, int ring, int sca);
    
    void Reset();
    void AddPacket(PwbUdpPacket* udp, const char* ptr, int size);
@@ -115,6 +117,8 @@ class PwbModuleAsm
 {
 public:
    int fModule = 0;
+   int fColumn = 0;
+   int fRing = 0;
    std::vector<PwbChannelAsm*> fChannels;
 
 public: // state
@@ -124,7 +128,7 @@ public: // configuration
    bool fTrace = false;
 
 public:
-   PwbModuleAsm(int module);
+   PwbModuleAsm(int module, int column, int ring);
    void Reset();
    void AddPacket(const char* ptr, int size);
    bool CheckComplete() const;
@@ -146,7 +150,7 @@ public:
 
 public:
    void Reset();
-   void AddPacket(int module, const char* ptr, int size);
+   void AddPacket(int module, int column, int ring, const char* ptr, int size);
    bool CheckComplete() const;
    void BuildEvent(FeamEvent* e);
 };

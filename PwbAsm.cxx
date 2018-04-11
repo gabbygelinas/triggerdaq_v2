@@ -579,9 +579,11 @@ void PwbEventHeader::Print() const
 #define PWB_CA_ST_DATA 1
 #define PWB_CA_ST_LAST 2
 
-PwbChannelAsm::PwbChannelAsm(int module, int sca)
+PwbChannelAsm::PwbChannelAsm(int module, int column, int ring, int sca)
 {
    fModule = module;
+   fColumn = column;
+   fRing = ring;
    fSca = sca;
    Reset();
 }
@@ -625,13 +627,13 @@ void PwbChannelAsm::AddSamples(int channel, const uint16_t* samples, int count)
    if (!fCurrent) {
       fCurrent = new FeamChannel;
       fCurrent->imodule = fModule;
-      fCurrent->pwb_column = 0; // filled later
-      fCurrent->pwb_ring = 0; // filled later
+      fCurrent->pwb_column = fColumn;
+      fCurrent->pwb_ring = fRing;
       fCurrent->sca = fSca;
       fCurrent->sca_readout = ri;
-      fCurrent->sca_chan = 0; // filled later
-      fCurrent->pad_col = 0;
-      fCurrent->pad_row = 0;
+      fCurrent->sca_chan = 0; // filled by Build()
+      fCurrent->pad_col = 0; // filled by Build()
+      fCurrent->pad_row = 0; // filled by Build()
       fCurrent->first_bin = 0;
    }
 
@@ -796,13 +798,24 @@ void PwbChannelAsm::BuildEvent(FeamEvent* e)
 {
    for (unsigned i=0; i<fOutput.size(); i++) {
       if (fOutput[i]) {
-         // FIXME: bad data from PWB!!!
-         if (fOutput[i]->sca_readout > 80) {
-            printf("PwbChannelAsm::BuildEvent: Error: skipping invalid channel, sca_readout: %d\n", fOutput[i]->sca_readout);
-            continue;
-         }
-         e->hits.push_back(fOutput[i]);
+         FeamChannel* c = fOutput[i];
          fOutput[i] = NULL;
+         
+         // FIXME: bad data from PWB!!!
+         if (c->sca_readout < MAX_FEAM_READOUT) {
+            c->sca_chan = PwbPadMap::Map()->channel[c->sca_readout];
+            bool scachan_is_pad = (c->sca_chan > 0);
+            //bool scachan_is_fpn = (c->sca_chan >= -4) && (c->sca_chan <= -1);
+
+            if (scachan_is_pad) {
+               c->pad_col = PwbPadMap::Map()->padcol[c->sca][c->sca_chan];
+               c->pad_row = PwbPadMap::Map()->padrow[c->sca][c->sca_chan];
+            }
+         } else {
+            printf("PwbChannelAsm::BuildEvent: Error: skipping invalid channel, sca_readout: %d\n", fOutput[i]->sca_readout);
+         }
+
+         e->hits.push_back(c);
       }
    }
    fOutput.clear();
@@ -847,9 +860,11 @@ bool PwbChannelAsm::CheckComplete() const
    return false;
 }
 
-PwbModuleAsm::PwbModuleAsm(int module)
+PwbModuleAsm::PwbModuleAsm(int module, int column, int ring)
 {
    fModule = module;
+   fColumn = column;
+   fRing = ring;
    Reset();
 }
 
@@ -889,7 +904,7 @@ void PwbModuleAsm::AddPacket(const char* ptr, int size)
       }
 
       if (!fChannels[s]) {
-         fChannels[s] = new PwbChannelAsm(fModule, s);
+         fChannels[s] = new PwbChannelAsm(fModule, fColumn, fRing, s);
       }
 
       fChannels[s]->AddPacket(udp, ptr, size);
@@ -944,14 +959,14 @@ void PwbAsm::Reset()
    }
 }
 
-void PwbAsm::AddPacket(int module, const char* ptr, int size)
+void PwbAsm::AddPacket(int module, int column, int ring, const char* ptr, int size)
 {
    while (module >= fModules.size()) {
       fModules.push_back(NULL);
    }
 
    if (!fModules[module]) {
-      fModules[module] = new PwbModuleAsm(module);
+      fModules[module] = new PwbModuleAsm(module, column, ring);
    }
 
    fModules[module]->AddPacket(ptr, size);

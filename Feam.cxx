@@ -43,20 +43,21 @@ static uint32_t getUint32le(const void* ptr, int offset)
    return (ptr8[3]<<24) | (ptr8[2]<<16) | (ptr8[1]<<8) | ptr8[0];
 }
 
-padMap::padMap(){
+PwbPadMap::PwbPadMap()
+{
    //const int first = 0;  // change if index is numbered from 1
    for(int i = 0; i < MAX_FEAM_READOUT; i++){
-      if(i < 4) channel[i] = -99;
+      if(i == 1) channel[i] = PWB_CHAN_RESET1;
+      else if(i == 2) channel[i] = PWB_CHAN_RESET2;
+      else if(i == 3) channel[i] = PWB_CHAN_RESET3;
+      else if(i == 16) channel[i] = PWB_CHAN_FPN1;
+      else if(i == 29) channel[i] = PWB_CHAN_FPN2;
+      else if(i == 54) channel[i] = PWB_CHAN_FPN3;
+      else if(i == 67) channel[i] = PWB_CHAN_FPN4;
       else {
-         if(i == 16) channel[i] = -1;
-         else if(i == 29) channel[i] = -2;
-         else if(i == 54) channel[i] = -3;
-         else if(i == 67) channel[i] = -4;
-         else {
-            int ch = i - int(i > 16) - int(i > 29) - int(i > 54) - int(i > 67) - 3;
-            channel[i] = ch;
-            readout[ch] = i;
-         }
+         int ch = i - int(i > 16) - int(i > 29) - int(i > 54) - int(i > 67) - 3;
+         channel[i] = ch;
+         readout[ch] = i;
       }
    }
    for(int isca = 0; isca < MAX_FEAM_SCA; isca++){
@@ -95,6 +96,96 @@ padMap::padMap(){
       }
    }
 };
+
+bool PwbPadMap::CheckMap() const
+{
+   // check pad map for consistency
+   
+   printf("Pad map:\n");
+   printf("  sca chan: ");
+   for (int i=0; i<=79; i++)
+      printf("%d ", channel[i]);
+   printf("\n");
+   for (int sca=0; sca<4; sca++) {
+      printf("sca %d:\n", sca);
+      printf("  tpc col: ");
+      for (int i=0; i<=72; i++)
+         printf("%d ", padcol[sca][i]);
+      printf("\n");
+      printf("  tpc row: ");
+      for (int i=0; i<=72; i++)
+         printf("%d ", padrow[sca][i]);
+      printf("\n");
+   }
+   
+   int test[4*4*18];
+   for (int i=0; i<4*4*18; i++)
+      test[i] = 0;
+   
+   bool map_ok = true;
+   
+   for (int sca=0; sca<4; sca++) {
+      for (int i=0; i<=79; i++) {
+         int seqsca = sca*80+i;
+         int chan = channel[i];
+         if (chan > 0) {
+            int col = padcol[sca][chan];
+            int row = padrow[sca][chan];
+            int seqpad = col*4*18+row;
+            //hpadmap->Fill(seqpad, seqsca);
+            if (test[seqpad] != 0) {
+               printf("pad map error: col %d, row %d, seqpad %d: duplicate mapping seqsca %d and %d\n", col, row, seqpad, seqsca, test[seqpad]);
+               map_ok = false;
+            } else {
+               test[seqpad] = seqsca;
+            }
+         }
+      }
+   }
+   
+   for (int i=0; i<4*4*18; i++) {
+      if (test[i] == 0) {
+         printf("pad map error: seqpad %d is not mapped to sca channel!\n", i);
+         map_ok = false;
+      }
+   }
+   
+   if (map_ok) {
+      printf("pad map is ok.\n");
+   } else {
+      printf("pad map has errors!\n");
+   }
+
+   return map_ok;
+}
+
+static PwbPadMap* gMap = NULL;
+
+const PwbPadMap* PwbPadMap::Map()
+{
+   if (!gMap) {
+      gMap = new PwbPadMap();
+      bool pwb_map_is_ok = gMap->CheckMap();
+      assert(pwb_map_is_ok);
+   }
+
+   return gMap;
+}
+
+bool PwbPadMap::chan_is_pad(int chan)
+{
+   return (chan > 0);
+}
+
+bool PwbPadMap::chan_is_fpn(int chan)
+{
+   return (chan >= -4) && (chan <= -1);
+}
+
+bool PwbPadMap::chan_is_reset(int chan)
+{
+   return (chan >= -7) && (chan <= -5);
+}
 
 //static int x1count = 0;
 

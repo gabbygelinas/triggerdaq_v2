@@ -329,14 +329,14 @@ public:
             if (!gPwbAsm)
                gPwbAsm = new PwbAsm();
 
-            gPwbAsm->AddPacket(5, event->GetBankData(pwb_bank), pwb_bank->data_size);
+            gPwbAsm->AddPacket(5, 1, 2, event->GetBankData(pwb_bank), pwb_bank->data_size);
 
             if (gPwbAsm->CheckComplete()) {
                //printf("PwbAsm ---> complete !!!\n");
                FeamEvent* e = new FeamEvent();
                gPwbAsm->BuildEvent(e);
-               //e->Print();
-               //PrintFeamChannels(e->hits);
+               e->Print();
+               PrintFeamChannels(e->hits);
 
                if (fAgEvb) {
                   fAgEvb->AddFeamEvent(e);
