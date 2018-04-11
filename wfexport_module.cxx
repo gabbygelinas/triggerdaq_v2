@@ -202,9 +202,12 @@ public:
                hwf = new TH1D(wname.c_str(), wtitle.c_str(), nbins, 0, nbins);
             }
             
+            //printf("%s: first bin %d: ", wname.c_str(), first_bin);
             for (unsigned i=first_bin; i<nbins; i++) {
+               //printf(" %4d", c->adc_samples[i]);
                hwf->SetBinContent(i+1, c->adc_samples[i]);
             }
+            //printf("\n");
          }
       }
    }

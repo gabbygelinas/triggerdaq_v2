@@ -608,6 +608,7 @@ void PwbChannelAsm::Reset()
 
 void PwbChannelAsm::AddSamples(int channel, const uint16_t* samples, int count)
 {
+   const int16_t* signed_samples = (const int16_t*)samples;
    int ri = channel + 1;
 
    if (fTrace) {
@@ -634,8 +635,19 @@ void PwbChannelAsm::AddSamples(int channel, const uint16_t* samples, int count)
       fCurrent->first_bin = 0;
    }
 
-   for (int i=0; i<count; i++)
-      fCurrent->adc_samples.push_back(samples[i]);
+   for (int i=0; i<count; i++) {
+      fCurrent->adc_samples.push_back(signed_samples[i]);
+   }
+
+   if (0) {
+      if (fSca == 0 && ri==1) {
+         printf("pwb module %d, sca %d, channel %d, ri %d, add %d samples: \n", fModule, fSca, channel, ri, count);
+         for (int i=0; i<count; i++) {
+            printf(" %4d", signed_samples[i]);
+         }
+         printf("\n");
+      }
+   }
 }
 
 void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e)
