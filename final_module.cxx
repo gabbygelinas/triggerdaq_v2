@@ -693,12 +693,18 @@ public:
 
       if (do_plot) {
          if (fC) {
+            TVirtualPad* save_gpad = gPad;
+
+            
             fC->Clear();
             fC->Divide(2,2);
 
             TVirtualPad *p = fC->cd(1);
 
             p->Divide(1, 2);
+
+            TDirectory* dir = runinfo->fRoot->fgDir;
+            dir->cd();
 
             p->cd(1);
             TH1D* hh = new TH1D("hh_aw_wire_time", "AW wire hit drift time; TPC wire number; drift time, ns", NUM_AW, -0.5, NUM_AW-0.5);
@@ -1304,6 +1310,8 @@ public:
             fC->Modified();
             fC->Draw();
             fC->Update();
+            
+            save_gpad->cd();
          }
 
          if (age->trig && age->trig->udpData.size() > 0) {
