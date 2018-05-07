@@ -639,6 +639,7 @@ public:
 
    // check for gibberish ADC data
 
+#if 0
    bool TestBadSca(const FeamEvent* e)
    {
       bool bad_sca = false;
@@ -673,9 +674,11 @@ public:
 
       return bad_sca;
    }
+#endif
 
    // check FPN channels and shifted channels
 
+#if 0
    void CheckAndShiftFpn(FeamEvent* e)
    {
       int ibaseline_start = 10;
@@ -823,6 +826,7 @@ public:
          }
       }
    }
+#endif
 
    // Create per PWB histograms
 
@@ -888,6 +892,7 @@ public:
 
       // check for bad sca data
 
+#if 0
       bool bad_sca = TestBadSca(e);
 
       if (bad_sca) {
@@ -895,6 +900,7 @@ public:
          e->error = true;
          return flow;
       }
+#endif
 
       // loop over all waveforms
 
@@ -920,7 +926,7 @@ public:
 
       CreatePwbHistograms(e);
 
-      CheckAndShiftFpn(e);
+      //CheckAndShiftFpn(e);
 
       for (unsigned ii=0; ii<e->hits.size(); ii++) {
          FeamChannel* c = e->hits[ii];
