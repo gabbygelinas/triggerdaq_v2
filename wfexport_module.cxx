@@ -180,29 +180,33 @@ public:
          if (fFlags->fExportWaveforms) {
             TDirectory* dir = runinfo->fRoot->fgDir;
             dir->cd();
+            //dir->pwd();
 
             const char* xdir1 = "pwb_waveforms";
-            
-            std::string dirname = "";
-            dirname += xdir1;
-            dirname += "/";
-            dirname += xdir;
 
-            if (!dir->cd(dirname.c_str())) {
-               dir = dir->mkdir(xdir1);
-               dir->cd();
-               dir = dir->mkdir(xdir);
-               dir->cd();
+            if (!dir->FindObject(xdir1)) {
+               //printf("creating [%s]\n", xdir1);
+               dir->mkdir(xdir1);
             }
-            
-            dir = dir->CurrentDirectory();
+
+            dir->cd(xdir1);
+            //gDirectory->pwd();
+
+            if (!gDirectory->FindObject(xdir)) {
+               //printf("creating [%s]\n", xdir);
+               gDirectory->mkdir(xdir);
+            }
+
+            gDirectory->cd(xdir);
+            //gDirectory->pwd();
+            //printf("Here!\n");
             
             std::string wname = std::string(xname) + "_wf";
             std::string wtitle = std::string(xtitle) + " current waveform";
             
-            TH1D* hwf = (TH1D*)dir->FindObject(wname.c_str());
+            TH1D* hwf = (TH1D*)gDirectory->FindObject(wname.c_str());
             if (!hwf) {
-               //printf("%s: ", wname.c_str()); dir->pwd();
+               //printf("%s: ", wname.c_str()); gDirectory->pwd();
                hwf = new TH1D(wname.c_str(), wtitle.c_str(), nbins, 0, nbins);
             }
             
