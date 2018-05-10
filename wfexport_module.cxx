@@ -118,7 +118,7 @@ public:
 
    void ExportPads(TARunInfo* runinfo, const FeamEvent* pads)
    {
-      if (1) {
+      if (0) {
          printf("ExportPads: ");
          pads->Print();
          printf("\n");
@@ -177,52 +177,133 @@ public:
             sprintf(xtitle, "%s, sca %d, readout index %d", xhdr, isca, ichan);
          }
          
-         if (fFlags->fExportWaveforms) {
-            TDirectory* dir = runinfo->fRoot->fgDir;
-            dir->cd();
-            //dir->pwd();
-
-            const char* xdir1 = "pwb_waveforms";
-
-            if (!dir->FindObject(xdir1)) {
-               //printf("creating [%s]\n", xdir1);
-               dir->mkdir(xdir1);
-            }
-
-            dir->cd(xdir1);
-            //gDirectory->pwd();
-
-            if (!gDirectory->FindObject(xdir)) {
-               //printf("creating [%s]\n", xdir);
-               gDirectory->mkdir(xdir);
-            }
-
-            gDirectory->cd(xdir);
-            //gDirectory->pwd();
-            //printf("Here!\n");
-            
-            std::string wname = std::string(xname) + "_wf";
-            std::string wtitle = std::string(xtitle) + " current waveform";
-            
-            TH1D* hwf = (TH1D*)gDirectory->FindObject(wname.c_str());
-            if (!hwf) {
-               //printf("%s: ", wname.c_str()); gDirectory->pwd();
-               hwf = new TH1D(wname.c_str(), wtitle.c_str(), nbins, 0, nbins);
-            }
-            
-            //printf("%s: first bin %d: ", wname.c_str(), first_bin);
-            for (unsigned i=first_bin; i<nbins; i++) {
-               //printf(" %4d", c->adc_samples[i]);
-               hwf->SetBinContent(i+1, c->adc_samples[i]);
-            }
-            //printf("\n");
+         TDirectory* dir = runinfo->fRoot->fgDir;
+         dir->cd();
+         //dir->pwd();
+         
+         const char* xdir1 = "pwb_waveforms";
+         
+         if (!dir->FindObject(xdir1)) {
+            //printf("creating [%s]\n", xdir1);
+            dir->mkdir(xdir1);
          }
+         
+         dir->cd(xdir1);
+         //gDirectory->pwd();
+         
+         if (!gDirectory->FindObject(xdir)) {
+            //printf("creating [%s]\n", xdir);
+            gDirectory->mkdir(xdir);
+         }
+         
+         gDirectory->cd(xdir);
+         //gDirectory->pwd();
+         //printf("Here!\n");
+         
+         std::string wname = std::string(xname) + "_wf";
+         std::string wtitle = std::string(xtitle) + " current waveform";
+         
+         TH1D* hwf = (TH1D*)gDirectory->FindObject(wname.c_str());
+         if (!hwf) {
+            //printf("%s: ", wname.c_str()); gDirectory->pwd();
+            hwf = new TH1D(wname.c_str(), wtitle.c_str(), nbins, 0, nbins);
+         }
+         
+         //printf("%s: first bin %d: ", wname.c_str(), first_bin);
+         for (unsigned i=first_bin; i<nbins; i++) {
+            //printf(" %4d", c->adc_samples[i]);
+            hwf->SetBinContent(i+1, c->adc_samples[i]);
+         }
+         //printf("\n");
+      }
+   }
+
+   void ExportAdcs(TARunInfo* runinfo, const Alpha16Event* adcs)
+   {
+      if (0) {
+         printf("ExportAdcs: ");
+         adcs->Print();
+         printf("\n");
+      }
+
+      if (adcs->error)
+         return;
+
+      for (unsigned ihit=0; ihit < adcs->hits.size(); ihit++) {
+         const Alpha16Channel* c = adcs->hits[ihit];
+         if (!c)
+            continue;
+
+         int adc_module = c->adc_module;
+         int adc_chan = c->adc_chan;
+         int preamp_pos = c->preamp_pos;
+         int preamp_wire = c->preamp_wire;
+         int tpc_wire = c->tpc_wire;
+
+         //printf("hit %d: adc%02d, chan %2d, preamp %2d+%d, tpc wire %3d\n", ihit, adc_module, adc_chan, preamp_pos, preamp_wire, tpc_wire);
+
+         int first_bin = c->first_bin;
+         unsigned nbins = c->adc_samples.size();
+
+         char xdir[256];
+         char xhdr[256];
+         char xname[256];
+         char xtitle[256];
+
+         sprintf(xdir, "adc%02d", adc_module);
+         sprintf(xhdr, "adc %02d", adc_module);
+         
+         sprintf(xname, "%s_chan%02d_p%02d_c%02d_w%03d", xdir, adc_chan, preamp_pos, preamp_wire, tpc_wire);
+         sprintf(xtitle, "%s, chan %2d, preamp %2d, chan %d, tpc wire %3d", xhdr, adc_chan, preamp_pos, preamp_wire, tpc_wire);
+
+         TDirectory* dir = runinfo->fRoot->fgDir;
+         dir->cd();
+         //dir->pwd();
+         
+         const char* xdir1 = "adc_waveforms";
+         
+         if (!dir->FindObject(xdir1)) {
+            //printf("creating [%s]\n", xdir1);
+            dir->mkdir(xdir1);
+         }
+         
+         dir->cd(xdir1);
+         //gDirectory->pwd();
+         
+         if (!gDirectory->FindObject(xdir)) {
+            //printf("creating [%s]\n", xdir);
+            gDirectory->mkdir(xdir);
+         }
+         
+         gDirectory->cd(xdir);
+         //gDirectory->pwd();
+         //printf("Here!\n");
+         
+         std::string wname = std::string(xname) + "_wf";
+         std::string wtitle = std::string(xtitle) + " current waveform";
+         
+         TH1D* hwf = (TH1D*)gDirectory->FindObject(wname.c_str());
+         if (!hwf) {
+            //printf("%s: ", wname.c_str()); gDirectory->pwd();
+            hwf = new TH1D(wname.c_str(), wtitle.c_str(), nbins, 0, nbins);
+         }
+         
+         //printf("%s: first bin %d: ", wname.c_str(), first_bin);
+         for (unsigned i=first_bin; i<nbins; i++) {
+            //printf(" %4d", c->adc_samples[i]);
+            hwf->SetBinContent(i+1, c->adc_samples[i]);
+         }
+         //printf("\n");
       }
    }
 
    TAFlowEvent* AnalyzeFlowEvent(TARunInfo* runinfo, TAFlags* flags, TAFlowEvent* flow)
    {
       //printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
+
+      if (!fFlags->fExportWaveforms) {
+         return flow;
+      }
 
       const AgEventFlow* ef = flow->Find<AgEventFlow>();
       //AgPadHitsFlow* padhitsf = flow->Find<AgPadHitsFlow>();
@@ -232,9 +313,14 @@ public:
 
       const AgEvent* e = ef->fEvent;
       const FeamEvent* pads = e->feam;
+      const Alpha16Event* adcs = e->a16;
 
       if (pads) {
          ExportPads(runinfo, pads);
+      }
+
+      if (adcs) {
+         ExportAdcs(runinfo, adcs);
       }
 
       return flow;
