@@ -1223,8 +1223,10 @@ public:
                h.time_ns = wpos_ns;
                h.amp  = wamp;
                hits->fPadHits.push_back(h);
-               
-               printf("hit: pwb%02d, c%dr%d, seqsca %3d, tpc col %2d, row %3d, time %4.0f, amp %4.0f\n", imodule, c->pwb_column, c->pwb_ring, seqsca, h.tpc_col, h.tpc_row, wpos_ns, wamp);
+
+               if (0) {
+                  printf("hit: pwb%02d, c%dr%d, seqsca %3d, tpc col %2d, row %3d, time %4.0f, amp %4.0f\n", imodule, c->pwb_column, c->pwb_ring, seqsca, h.tpc_col, h.tpc_row, wpos_ns, wamp);
+               }
             }
          }
          
@@ -1424,8 +1426,6 @@ public:
       for (unsigned i=0; i<args.size(); i++) {
          if (args[i] == "--plot1")
             fFlags.fPlotPad = atoi(args[i+1].c_str());
-         //if (args[i] == "--wfexport")
-         //fFlags.fExportWaveforms = true;
       }
    }
 
