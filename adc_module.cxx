@@ -258,7 +258,7 @@ public:
 public:
    A16ChanHistograms(const char* xname, const char* xtitle, int nbins) // ctor
    {
-      printf("Create name [%s] title [%s] with %d bins\n", xname, xtitle, nbins);
+      //printf("Create name [%s] title [%s] with %d bins\n", xname, xtitle, nbins);
 
       fNameBase = xname;
       fTitleBase = xtitle;
@@ -433,7 +433,7 @@ public:
    AnalyzeNoise* fAN16 = NULL;
    PlotNoise* fPN32 = NULL;
    AnalyzeNoise* fAN32 = NULL;
-   std::vector<A16ChanHistograms*> fHC;
+   //std::vector<A16ChanHistograms*> fHC;
    std::vector<PlotA16*> fPlotA16;
 
 public:
@@ -522,10 +522,10 @@ public:
 
    void AnalyzeHit(const TARunInfo* runinfo, const Alpha16Channel* hit, std::vector<AgAwHit>* flow_hits)
    {
-      char xname[256];
-      char xtitle[256];
-      sprintf(xname, "m%02d_c%02d_w%03d", hit->adc_module, hit->adc_chan, hit->tpc_wire);
-      sprintf(xtitle, "AW Waveform ADC module %d, channel %d, tpc wire %d", hit->adc_module, hit->adc_chan, hit->tpc_wire);
+      //char xname[256];
+      //char xtitle[256];
+      //sprintf(xname, "m%02d_c%02d_w%03d", hit->adc_module, hit->adc_chan, hit->tpc_wire);
+      //sprintf(xtitle, "AW Waveform ADC module %d, channel %d, tpc wire %d", hit->adc_module, hit->adc_chan, hit->tpc_wire);
 
       int i = hit->tpc_wire;
       int r = 1;
@@ -563,13 +563,13 @@ public:
 
       ////// Plot waveforms
       
-      while ((int)fHC.size() <= i) {
-         fHC.push_back(NULL);
-      }
+      //while ((int)fHC.size() <= i) {
+      //   fHC.push_back(NULL);
+      //}
 
-      if (fHC[i] == NULL){
-         fHC[i] = new A16ChanHistograms(xname, xtitle, hit->adc_samples.size());
-      }
+      //if (fHC[i] == NULL){
+      //   fHC[i] = new A16ChanHistograms(xname, xtitle, hit->adc_samples.size());
+      //}
 
       int max_fft_count = 30; // FFT is slow, limit number of events analyzed
 
