@@ -400,7 +400,6 @@ class A16Flags
 public:
    bool fPrint = false;
    bool fFft = false;
-   bool fExportWaveforms = false;
    std::vector<int> fPlotAdc16;
    std::vector<int> fPlotAdc32;
 };
@@ -527,30 +526,6 @@ public:
       char xtitle[256];
       sprintf(xname, "m%02d_c%02d_w%03d", hit->adc_module, hit->adc_chan, hit->tpc_wire);
       sprintf(xtitle, "AW Waveform ADC module %d, channel %d, tpc wire %d", hit->adc_module, hit->adc_chan, hit->tpc_wire);
-
-      if (fFlags->fExportWaveforms) {
-         TDirectory* dir = runinfo->fRoot->fgDir;
-         const char* dirname = "AW waveforms";
-
-         if (!dir->cd(dirname)) {
-            TDirectory* awdir = dir->mkdir(dirname);
-            awdir->cd();
-         }
-
-         dir = dir->CurrentDirectory();
-
-         std::string wname = std::string(xname) + "_waveform";
-         std::string wtitle = std::string(xtitle) + " current waveform";
-
-         TH1D* hwf = (TH1D*)dir->FindObject(wname.c_str());
-         if (!hwf) {
-            hwf = new TH1D(wname.c_str(), wtitle.c_str(), hit->adc_samples.size(), 0, hit->adc_samples.size());
-         }
-         
-         for (unsigned i=0; i< hit->adc_samples.size(); i++) {
-            hwf->SetBinContent(i+1, hit->adc_samples[i]);
-         }
-      }
 
       int i = hit->tpc_wire;
       int r = 1;
@@ -930,9 +905,6 @@ public:
             int imodule = atoi(args[i+1].c_str());
             i++;
             fFlags.fPlotAdc32.push_back(imodule);
-         }
-         if (args[i] == "--wfexport") {
-            fFlags.fExportWaveforms = true;
          }
       }
       
