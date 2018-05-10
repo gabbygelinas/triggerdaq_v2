@@ -97,6 +97,7 @@ public:
       DELETE(fAdcAsm);
       DELETE(fFeamEvb);
       DELETE(fAgEvb);
+      DELETE(gPwbAsm);
    }
 
    bool LoadFeamBanks(int runno)
