@@ -802,17 +802,19 @@ void PwbChannelAsm::BuildEvent(FeamEvent* e)
          fOutput[i] = NULL;
          
          // FIXME: bad data from PWB!!!
-         if (c->sca_readout < MAX_FEAM_READOUT) {
-            c->sca_chan = PwbPadMap::Map()->channel[c->sca_readout];
-            bool scachan_is_pad = (c->sca_chan > 0);
-            //bool scachan_is_fpn = (c->sca_chan >= -4) && (c->sca_chan <= -1);
+         if (c->sca_readout >= MAX_FEAM_READOUT) {
+            printf("PwbChannelAsm::BuildEvent: Error: skipping invalid channel, sca_readout: %d\n", c->sca_readout);
+            delete c;
+            continue;
+         }
 
-            if (scachan_is_pad) {
-               c->pad_col = PwbPadMap::Map()->padcol[c->sca][c->sca_chan];
-               c->pad_row = PwbPadMap::Map()->padrow[c->sca][c->sca_chan];
-            }
-         } else {
-            printf("PwbChannelAsm::BuildEvent: Error: skipping invalid channel, sca_readout: %d\n", fOutput[i]->sca_readout);
+         c->sca_chan = PwbPadMap::Map()->channel[c->sca_readout];
+         bool scachan_is_pad = (c->sca_chan > 0);
+         //bool scachan_is_fpn = (c->sca_chan >= -4) && (c->sca_chan <= -1);
+         
+         if (scachan_is_pad) {
+            c->pad_col = PwbPadMap::Map()->padcol[c->sca][c->sca_chan];
+            c->pad_row = PwbPadMap::Map()->padrow[c->sca][c->sca_chan];
          }
 
          e->hits.push_back(c);
