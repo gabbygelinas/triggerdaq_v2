@@ -78,6 +78,7 @@ public:
 public: // state
    uint16_t fLast_CHANNEL_SEQ = 0;
    int fState = 0;
+   int fCountErrors = 0;
 
 public: // configuration
    bool fTrace = false;
@@ -95,7 +96,8 @@ public: // output
    std::vector<FeamChannel*> fOutput;
 
 public:
-   PwbChannelAsm(int module, int column, int ring, int sca);
+   PwbChannelAsm(int module, int column, int ring, int sca); // ctor
+   ~PwbChannelAsm(); // dtor
    
    void Reset();
    void AddPacket(PwbUdpPacket* udp, const char* ptr, int size);
@@ -128,7 +130,8 @@ public: // configuration
    bool fTrace = false;
 
 public:
-   PwbModuleAsm(int module, int column, int ring);
+   PwbModuleAsm(int module, int column, int ring); // ctor
+   ~PwbModuleAsm(); // dtor
    void Reset();
    void AddPacket(const char* ptr, int size);
    bool CheckComplete() const;

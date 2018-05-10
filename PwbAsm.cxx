@@ -588,6 +588,13 @@ PwbChannelAsm::PwbChannelAsm(int module, int column, int ring, int sca)
    Reset();
 }
 
+PwbChannelAsm::~PwbChannelAsm()
+{
+   if (fCountErrors) {
+      printf("PwbChannelAsm: %d errors unpacking data from pwb module %d, sca %d\n", fCountErrors, fModule, fSca);
+   }
+}
+
 void PwbChannelAsm::Reset()
 {
    fLast_CHANNEL_SEQ = 0;
@@ -660,10 +667,17 @@ void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e)
       int r = e-p;
       if (r < 2) {
          printf("PwbChannelAsm::CopyData: Error: need to en-buffer a partial header, r: %d!\n", r);
+         fCountErrors++;
+         break;
+      }
+      if (p[0] == 0xCCCC && p[1] == 0xCCCC && r == 2) {
+         printf("PwbChannelAsm::CopyData: Ignoring unexpected 0xCCCC words at the end of a packet\n");
+         //fCountErrors++;
          break;
       }
       if (p[0] == 0xCCCC && p[1] == 0xCCCC) {
          printf("PwbChannelAsm::CopyData: Error: unexpected 0xCCCC words, r %d!\n", r);
+         fCountErrors++;
          break;
       }
       int channel = p[0];
@@ -671,18 +685,20 @@ void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e)
 
       if (channel < 0 || channel > 80) {
          printf("PwbChannelAsm::CopyData: Error: invalid channel %d\n", channel);
+         fCountErrors++;
       }
 
       if (samples != 511) {
          printf("PwbChannelAsm::CopyData: Error: invalid samples %d\n", samples);
+         fCountErrors++;
       }
-
 
       int nw = samples;
       if (samples&1)
          nw+=1;
       if (nw <= 0) {
          printf("PwbChannelAsm::CopyData: Error: invalid word counter nw: %d\n", nw);
+         fCountErrors++;
          break;
       }
       if (fTrace) {
@@ -830,18 +846,23 @@ void PwbChannelAsm::AddPacket(PwbUdpPacket* udp, const char* ptr, int size)
    } else if (udp->CHANNEL_SEQ != ((fLast_CHANNEL_SEQ + 1)&0xFFFF)) {
       printf("PwbChannelAsm::AddPacket: Error: misordered or lost UDP packet: CHANNEL_SEQ jump 0x%04x to 0x%04x\n", fLast_CHANNEL_SEQ, udp->CHANNEL_SEQ);
       fLast_CHANNEL_SEQ = udp->CHANNEL_SEQ;
+      fCountErrors++;
    } else {
       fLast_CHANNEL_SEQ++;
    }
 
    if (fState == PWB_CA_ST_INIT || fState == PWB_CA_ST_LAST) {
-      PwbEventHeader* eh = new PwbEventHeader(ptr, size);
-      if (fTrace) {
-         eh->Print();
+      if (udp->CHUNK_ID == 0) {
+         PwbEventHeader* eh = new PwbEventHeader(ptr, size);
+         if (fTrace) {
+            eh->Print();
+         }
+         delete eh;
+         fState = PWB_CA_ST_DATA;
+         BeginData(ptr, size, eh->start_of_data, udp->end_of_payload);
+      } else {
+         printf("PwbChannelAsm::AddPacket: Ignoring UDP packet with CHUNK_ID 0x%02x while waiting for an event header\n", udp->CHUNK_ID);
       }
-      delete eh;
-      fState = PWB_CA_ST_DATA;
-      BeginData(ptr, size, eh->start_of_data, udp->end_of_payload);
    } else if (fState == PWB_CA_ST_DATA) {
       AddData(ptr, size, udp->start_of_payload, udp->end_of_payload);
       if (udp->FLAGS & 1) {
@@ -850,6 +871,7 @@ void PwbChannelAsm::AddPacket(PwbUdpPacket* udp, const char* ptr, int size)
       }
    } else {
       printf("PwbChannelAsm::AddPacket: Error: invalid state %d\n", fState);
+      fCountErrors++;
    }
 }
 
@@ -868,6 +890,16 @@ PwbModuleAsm::PwbModuleAsm(int module, int column, int ring)
    fColumn = column;
    fRing = ring;
    Reset();
+}
+
+PwbModuleAsm::~PwbModuleAsm()
+{
+   for (unsigned i=0; i<fChannels.size(); i++) {
+      if (fChannels[i]) {
+         delete fChannels[i];
+         fChannels[i] = NULL;
+      }
+   }
 }
 
 void PwbModuleAsm::Reset()
@@ -891,6 +923,7 @@ void PwbModuleAsm::AddPacket(const char* ptr, int size)
       fLast_PKT_SEQ = udp->PKT_SEQ;
    } else if (udp->PKT_SEQ != fLast_PKT_SEQ + 1) {
       printf("PwbModuleAsm::AddPacket: Error: misordered or lost UDP packet: PKT_SEQ jump 0x%08x to 0x%08x\n", fLast_PKT_SEQ, udp->PKT_SEQ);
+      //fCountErrors++;
       fLast_PKT_SEQ = udp->PKT_SEQ;
    } else {
       fLast_PKT_SEQ++;
@@ -900,6 +933,7 @@ void PwbModuleAsm::AddPacket(const char* ptr, int size)
 
    if (s < 0 || s > 4) {
       printf("PwbModuleAsm::AddPacket: Error: invalid CHANNEL_ID 0x%08x\n", udp->CHANNEL_ID);
+      //fCountErrors++;
    } else {
       while (s >= fChannels.size()) {
          fChannels.push_back(NULL);
