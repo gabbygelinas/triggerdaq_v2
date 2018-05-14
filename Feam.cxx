@@ -359,7 +359,7 @@ FeamModuleData::~FeamModuleData() // dtor
 #define ST_WAIT  2
 #define ST_DONE  3
 
-FeamAsm::~FeamAsm()
+FeamModuleAsm::~FeamModuleAsm()
 {
    fState = -1;
    fCnt = 0;
@@ -376,7 +376,7 @@ FeamAsm::~FeamAsm()
    }
 }
 
-void FeamAsm::Print() const
+void FeamModuleAsm::Print() const
 {
    int countComplete = 0;
    int countError = 0;
@@ -389,7 +389,7 @@ void FeamAsm::Print() const
    printf("pwb%02d, state %d, cnt %d, nextn %d, ig %d, fi %d, do %d (sy %d, tr %d, sk %d, wcnt %d), cur %p, buf %d (com %d, err %d)", fModule, fState, fCnt, fNextN, fCountIgnoredBeforeFirst, fCountFirst, fCountDone, fCountLostSync, fCountTruncated, fCountSkip, fCountWrongCnt, fCurrent, (int)fBuffer.size(), countComplete, countError);
 }
 
-void FeamAsm::StFirstPacket(const FeamPacket* p, int position, int imodule, int icolumn, int iring, int format, const char* ptr, int size)
+void FeamModuleAsm::StFirstPacket(const FeamPacket* p, int position, int imodule, int icolumn, int iring, int format, const char* ptr, int size)
 {
    fState = ST_DATA;
    fCnt = p->cnt;
@@ -407,7 +407,7 @@ void FeamAsm::StFirstPacket(const FeamPacket* p, int position, int imodule, int 
    fCurrent->AddData(p, ptr, size);
 }
 
-void FeamAsm::StLastPacket()
+void FeamModuleAsm::StLastPacket()
 {
    fState = ST_DONE;
    fCountDone++;
@@ -419,13 +419,13 @@ void FeamAsm::StLastPacket()
    fCurrent = NULL;
 }
 
-void FeamAsm::AddData(const FeamPacket* p, const char* ptr, int size)
+void FeamModuleAsm::AddData(const FeamPacket* p, const char* ptr, int size)
 {
    assert(fCurrent != NULL);
    fCurrent->AddData(p, ptr, size);
 }
 
-void FeamAsm::FlushIncomplete()
+void FeamModuleAsm::FlushIncomplete()
 {
    assert(fCurrent != NULL);
 
@@ -435,7 +435,7 @@ void FeamAsm::FlushIncomplete()
    fCurrent = NULL;
 }
 
-void FeamAsm::AddPacket(const FeamPacket* p, int position, int imodule, int icolumn, int iring, int format, const char* ptr, int size)
+void FeamModuleAsm::AddPacket(const FeamPacket* p, int position, int imodule, int icolumn, int iring, int format, const char* ptr, int size)
 {
    bool trace = false;
    bool traceNormal = false;
@@ -519,7 +519,7 @@ void FeamAsm::AddPacket(const FeamPacket* p, int position, int imodule, int icol
    } // switch (fState)
 }
 
-void FeamAsm::Finalize()
+void FeamModuleAsm::Finalize()
 {
    switch (fState) {
    default: {
@@ -653,6 +653,24 @@ void Unpack(FeamAdcData* a, FeamModuleData* m)
 
    //printf("count %d\n", count);
 }
+
+const PwbModuleMapEntry* PwbModuleMap::FindPwb(int imodule)
+{
+   assert(imodule >= 0);
+   if (imodule >= fMap.size()) {
+      static PwbModuleMapEntry* unmapped_pwb = NULL;
+      if (!unmapped_pwb) {
+         unmapped_pwb = new PwbModuleMapEntry();
+         unmapped_pwb->fModule = -1;
+         unmapped_pwb->fColumn = -1;
+         unmapped_pwb->fRing = -1;
+      }
+      return unmapped_pwb;
+   }
+
+   return &fMap[imodule];
+}
+
 
 /* emacs
  * Local Variables:
