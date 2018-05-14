@@ -648,7 +648,38 @@ Alpha16Event* Alpha16Asm::NewEvent()
    return e;
 }
 
-//const double TSCLK = 0.1; // GHz
+void Alpha16Asm::AddBank(Alpha16Event* e, int imodule, const char* bkname, const char* bkptr, int bklen)
+{
+   int packetType = Alpha16Packet::PacketType(bkptr, bklen);
+   int packetVersion = Alpha16Packet::PacketVersion(bkptr, bklen);
+   
+   if (0) {
+      printf("ALPHA16 bname %s, len %d\n", bkname, bklen);
+      printf("Header:\n");
+      printf("  packet type:    0x%02x (%d)\n", packetType, packetType);
+      printf("  packet version: 0x%02x (%d)\n", packetVersion, packetVersion);
+      
+      Alpha16Packet *p = Alpha16Packet::Unpack(bkptr, bklen);
+      p->Print();
+      delete p;
+   }
+   
+   if (packetType == 1 && packetVersion == 1) {
+      Alpha16Packet* p = Alpha16Packet::Unpack(bkptr, bklen);
+      Alpha16Channel* c = Unpack(bkname, imodule, p, bkptr, bklen);
+      
+      //p->Print();
+      //printf("\n");
+      
+      //c->Print();
+      //printf("\n");
+      
+      AddChannel(e, p, c);
+   } else {
+      fprintf(stderr, "Alpha16Asm::AddBank:: unknown packet type %d, version %d\n", packetType, packetVersion);
+      e->error = true;
+   }
+}
 
 void Alpha16Asm::CheckEvent(Alpha16Event* e)
 {
