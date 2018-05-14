@@ -21,7 +21,7 @@ class FeamEVB
  public: // state
    TsSync fSync;
    int fCounter = 0;
-   std::vector<FeamAsm*> fAsm;
+   std::vector<FeamModuleAsm*> fAsm;
    std::deque<FeamModuleData*> fBuf;
    std::deque<FeamEvent*> fEvents;
 

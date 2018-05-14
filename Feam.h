@@ -98,7 +98,7 @@ public:
    void Print(int level=0) const;
 };
 
-class FeamAsm
+class FeamModuleAsm
 {
  public: // state
    int fState = 0;
@@ -124,7 +124,7 @@ class FeamAsm
    int fCountWrongCnt = 0;
 
  public: // API
-   ~FeamAsm();
+   ~FeamModuleAsm();
    void Print() const;
    void AddPacket(const FeamPacket* p, int position, int imodule, int icolumn, int iring, int format, const char* ptr, int size);
    void Finalize();
