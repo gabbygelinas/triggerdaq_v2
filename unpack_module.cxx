@@ -12,6 +12,7 @@
 #include "Unpack.h"
 #include "FeamEVB.h"
 #include "AgEVB.h"
+#include "AgAsm.h"
 #include "AgFlow.h"
 
 #include "ncfm.h"
@@ -70,6 +71,7 @@ public:
    Alpha16Asm* fAdcAsm = NULL;
    FeamEVB*    fFeamEvb = NULL;
    AgEVB*      fAgEvb = NULL;
+   AgAsm*      fAgAsm = NULL;
 
    std::vector<std::string> fFeamBanks;
    std::vector<std::string> fAdcMap;
@@ -84,9 +86,6 @@ public:
 
       fFlags   = flags;
       fCfm     = new Ncfm(getenv("AG_CFM"));
-      fAdcAsm  = NULL;
-      fFeamEvb = NULL;
-      fAgEvb   = NULL;
    }
 
    ~UnpackModule()
@@ -98,6 +97,7 @@ public:
       DELETE(fFeamEvb);
       DELETE(fAgEvb);
       DELETE(gPwbAsm);
+      DELETE(fAgAsm);
    }
 
    bool LoadFeamBanks(int runno)
@@ -170,6 +170,11 @@ public:
          fAgEvb->fSync.fModules[AGEVB_ADC_SLOT].fDead = true;
       if (!have_pwb)
          fAgEvb->fSync.fModules[AGEVB_PWB_SLOT].fDead = true;
+
+      if (runinfo->fRunNo > 1111) {
+         assert(!fAgAsm);
+         fAgAsm = new AgAsm();
+      }
    }
 
    void PreEndRun(TARunInfo* runinfo, std::deque<TAFlowEvent*>* flow_queue)
@@ -285,6 +290,18 @@ public:
          const time_t t = event->time_stamp;
          int dt = now - t;
          printf("UnpackModule: serial %d, time %d, age %d, date %s\n", event->serial_number, event->time_stamp, dt, ctime(&t));
+      }
+
+      if (fAgAsm) {
+         AgEvent* e = fAgAsm->UnpackEvent(event);
+
+         if (1) {
+            printf("Unpacked AgEvent:   ");
+            e->Print();
+            printf("\n");
+         }
+
+         return new AgEventFlow(flow, e);
       }
 
       if (1) {

@@ -55,7 +55,7 @@ void TrigEvent::Print(int level) const
    }
 }
 
-TrigEvent* UnpackTrigEvent(TMEvent* event, TMBank* atat_bank)
+TrigEvent* UnpackTrigEvent(TMEvent* event, const TMBank* atat_bank)
 {
    TrigEvent* e = new TrigEvent;
    
@@ -128,9 +128,16 @@ Alpha16Event* UnpackAlpha16Event(Alpha16Asm* adcasm, TMEvent* me)
             abort();
          }
 
-         const void* bkptr = me->GetBankData(b);
+         const char* bkptr = me->GetBankData(b);
          int bklen = b->data_size;
 
+         if (!e) {
+            e = adcasm->NewEvent();
+         }
+
+         adcasm->AddBank(e, module, b->name.c_str(), bkptr, bklen);
+
+#if 0
          int packetType = Alpha16Packet::PacketType(bkptr, bklen);
          int packetVersion = Alpha16Packet::PacketVersion(bkptr, bklen);
 
@@ -162,6 +169,7 @@ Alpha16Event* UnpackAlpha16Event(Alpha16Asm* adcasm, TMEvent* me)
          } else {
             printf("unknown packet type %d, version %d\n", packetType, packetVersion);
          }
+#endif
       }
    }
 

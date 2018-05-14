@@ -15,7 +15,7 @@
 #include "FeamEVB.h"
 #include "midasio.h"
 
-TrigEvent* UnpackTrigEvent(TMEvent* event, TMBank* atat_bank);
+TrigEvent* UnpackTrigEvent(TMEvent* event, const TMBank* atat_bank);
 Alpha16Event* UnpackAlpha16Event(Alpha16Asm* adcasm, TMEvent* me);
 FeamEvent* UnpackFeamEvent(FeamEVB* evb, TMEvent* me, const std::vector<std::string>& banks, bool short_tpc);
 
