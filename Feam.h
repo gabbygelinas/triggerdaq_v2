@@ -153,6 +153,8 @@ class FeamAsm
 #define PWB_CHAN_RESET2 (-6) // SCA Reset channel
 #define PWB_CHAN_RESET3 (-7) // SCA Reset channel
 
+#define PWB_MODULE_LAST 79 // serial number of last PWB module (last used pwbNN name)
+
 class PwbPadMap
 {
  public:
@@ -175,6 +177,22 @@ class PwbPadMap
 
  public:
    //std::pair<int,int> getPad(short sca, int readout_index) const;
+};
+
+class PwbModuleMapEntry
+{
+ public:
+   int fModule; // PWB module pwbNN
+   int fColumn; // TPC column, 0..7
+   int fRing;   // TPC ring, 0..7
+};
+
+class PwbModuleMap
+{
+ public:
+   std::vector<PwbModuleMapEntry> fMap;
+ public:
+   const PwbModuleMapEntry* FindPwb(int module);
 };
 
 struct FeamAdcData
