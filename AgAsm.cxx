@@ -207,6 +207,11 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          e->feam = new FeamEvent();
       }
       fFeamAsm->BuildEvent(e->feam);
+
+      if (e->feam->modules.size() != fPwbModuleMap->fNumModules) {
+         e->feam->complete = false;
+      }
+      
       printf("FeamAsm built an event:\n");
       e->feam->Print();
       printf("\n");

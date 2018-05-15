@@ -671,7 +671,7 @@ PwbModuleMap::~PwbModuleMap() // ctor
 
 void PwbModuleMap::Print() const
 {
-   printf("PwbModuleMap: size %d\n", (int)fMap.size());
+   printf("PwbModuleMap: %d modules, %d map entries:\n", fNumModules, (int)fMap.size());
    for (unsigned i=0; i<fMap.size(); i++) {
       if (fMap[i]) {
          printf("map[%2d] - pwb%02d, column %2d, row %2d\n", i, fMap[i]->fModule, fMap[i]->fColumn, fMap[i]->fRing);
@@ -700,6 +700,7 @@ void PwbModuleMap::LoadFeamBanks(const std::vector<std::string> banks)
             fMap.push_back(NULL);
          }
          fMap[imodule] = e;
+         fNumModules++;
       }
    } else { // long TPC
       for (unsigned i = 0; i < banks.size(); i++) {
@@ -721,6 +722,7 @@ void PwbModuleMap::LoadFeamBanks(const std::vector<std::string> banks)
             fMap.push_back(NULL);
          }
          fMap[imodule] = e;
+         fNumModules++;
       }
    }
 }

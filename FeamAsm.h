@@ -13,6 +13,7 @@
 class FeamAsm
 {
  public: // config
+   double fConfMaxDt = 0.000000100; // 100 ns
 
  public: // state
    int fCounter = 0;
@@ -22,6 +23,7 @@ class FeamAsm
    int fCountComplete = 0;
    int fCountIncomplete = 0;
    int fCountError = 0;
+   double fMaxDt = 0;
 
  public:
    FeamAsm(); // ctor

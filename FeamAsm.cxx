@@ -16,6 +16,10 @@ FeamAsm::FeamAsm()
 
 FeamAsm::~FeamAsm()
 {
+   printf("FeamAsm::~FeamAsm: Total events: %d, complete: %d, incomplete: %d, with errors: %d, max timestamp difference: %.0f ns\n", fCounter, fCountComplete, fCountIncomplete, fCountError, fMaxDt*1e9);
+
+   //Print();
+
    for (unsigned i=0; i<fAsm.size(); i++) {
       if (fAsm[i]) {
          delete fAsm[i];
@@ -40,7 +44,10 @@ void FeamAsm::AddPacket(int imodule, int icolumn, int iring, int format, const F
 void FeamAsm::BuildEvent(FeamEvent* e)
 {
    double ts_freq = 125.0e6; // 125MHz timestamp clock
-   
+
+   e->error = false;
+   e->complete = true;
+
    bool first_ts = true;
    for (unsigned i=0; i<fAsm.size(); i++) {
       if (fAsm[i]) {
@@ -60,7 +67,7 @@ void FeamAsm::BuildEvent(FeamEvent* e)
 
             m->fTs = m->ts_trig;
 
-            if (first_ts && fCounter == 0) {
+            if (fCounter == 0) {
                fAsm[i]->fTsFirstEvent = m->fTs;
                fAsm[i]->fTsLastEvent = 0;
                fAsm[i]->fTsEpoch = 0;
@@ -83,15 +90,35 @@ void FeamAsm::BuildEvent(FeamEvent* e)
                e->time = m->fTime;
                e->timeIncr = m->fTimeIncr;
             }
+
+            if (m->error)
+               e->error = true;
+
+            if (!m->complete)
+               e->complete = false;
          }
       }
    }
 
+   e->counter = ++fCounter;
+
+   // check for consistency
+
    assert(e->modules.size() == e->adcs.size());
 
-   e->counter = ++fCounter;
-   e->error = false;
-   e->complete = true;
+   for (unsigned i=0; i<e->modules.size(); i++) {
+      double dt = e->modules[i]->fTime - e->time;
+      double absdt = fabs(dt);
+      //printf("YYY event time %f: module %d time %f diff %f\n", e->time, i, e->modules[i]->fTime, dt);
+      if (absdt > fMaxDt)
+         fMaxDt = absdt;
+      if (absdt > fConfMaxDt) {
+         printf("FeamAsm::BuildEvent: event %d timestamp mismatch module %d time %f diff %f should be %f\n", e->counter, i, e->modules[i]->fTime, dt, e->time);
+         e->error = true;
+      }
+   }
+
+   // increment counters
 
    if (e->error)
       fCountError++;
@@ -111,6 +138,8 @@ void FeamAsm::Print() const
    printf("  incomplete events: %d\n", fCountIncomplete);
    printf("  events with error: %d\n", fCountError);
    
+   printf("  timestamp check: max difference: %.0f ns, max permitted: %.0f ns\n", fMaxDt*1e9, fConfMaxDt*1e9);
+
    printf("  Assembler: %d entries\n", (int)fAsm.size());
    for (unsigned i=0; i<fAsm.size(); i++) {
       printf("    position %2d: ", i);
