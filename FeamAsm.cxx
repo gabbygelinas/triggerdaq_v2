@@ -72,6 +72,7 @@ void FeamAsm::BuildEvent(FeamEvent* e)
                fAsm[i]->fTsLastEvent = 0;
                fAsm[i]->fTsEpoch = 0;
                fAsm[i]->fTimeFirstEvent = m->fTs/ts_freq;
+               fAsm[i]->fCntFirstEvent = m->cnt;
             }
 
             if (m->fTs < fAsm[i]->fTsLastEvent)
@@ -80,6 +81,8 @@ void FeamAsm::BuildEvent(FeamEvent* e)
             m->fTsEpoch = fAsm[i]->fTsEpoch;
             m->fTime = m->fTs/ts_freq - fAsm[i]->fTimeFirstEvent + fAsm[i]->fTsEpoch*2.0*0x80000000/ts_freq;
             m->fTimeIncr = m->fTime - fAsm[i]->fTimeLastEvent;
+
+            m->fCntSeq = m->cnt - fAsm[i]->fCntFirstEvent;
 
             fAsm[i]->fTsLastEvent = m->fTs;
             fAsm[i]->fTimeLastEvent = m->fTime;
@@ -113,7 +116,16 @@ void FeamAsm::BuildEvent(FeamEvent* e)
       if (absdt > fMaxDt)
          fMaxDt = absdt;
       if (absdt > fConfMaxDt) {
-         printf("FeamAsm::BuildEvent: event %d timestamp mismatch module %d time %f diff %f should be %f\n", e->counter, i, e->modules[i]->fTime, dt, e->time);
+         printf("FeamAsm::BuildEvent: event %d timestamp mismatch module %d: time %f diff %f should be %f\n", e->counter, i, e->modules[i]->fTime, dt, e->time);
+         e->error = true;
+      }
+
+      uint32_t cnt = e->modules[i]->cnt;
+      int cntseq = e->modules[i]->fCntSeq;
+      //printf("YYY event %d module %d cnt %d, seq %d\n", e->counter, i, cnt, cntseq);
+
+      if (cntseq+1 != e->counter) {
+         printf("FeamAsm::BuildEvent: event %d event counter mismatch module %d: cnt 0x%08x, seqcnt %d should be %d\n", e->counter, i, cnt, cntseq, e->counter);
          e->error = true;
       }
    }

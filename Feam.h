@@ -83,12 +83,14 @@ public:
    int fSize = 0;
    char* fPtr = NULL;
 
- public: // FeamEVB data
+ public: // FeamEVB and FeamAsm data
 
    uint32_t fTs = 0;
    int      fTsEpoch = 0;
    double   fTime = 0;
    double   fTimeIncr = 0;
+
+   uint32_t fCntSeq = 0; // cnt - cnt_of_first_event
 
 public:
    FeamModuleData(const FeamPacket* p, int position, int imodule, int icolumn, int iring, int format);
@@ -112,6 +114,8 @@ class FeamModuleAsm
    int      fTsEpoch = 0;
    double   fTimeFirstEvent = 0;
    double   fTimeLastEvent = 0;
+
+   uint32_t fCntFirstEvent = 0;
 
  public: // context
    int fModule = 0;
