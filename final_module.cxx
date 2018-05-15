@@ -824,6 +824,10 @@ public:
                      int row = eph->fPadHits[i].tpc_row;
                      
                      printf("pad hit %d: pwb%02d, col %d, row %d, time %f, amp %f\n", i, imodule, col, row, time, amp);
+
+                     if (col < 0 || row < 0) {
+                        continue;
+                     }
                      
                      pad_col.push_back(col);
                      pad_row.push_back(row);

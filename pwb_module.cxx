@@ -937,7 +937,11 @@ public:
          int pwb_column = c->pwb_column;
          int pwb_ring   = c->pwb_ring;
 
-         int seqpwb = pwb_column*8 + pwb_ring;
+         int seqpwb = 0;
+
+         if (pwb_column >= 0) {
+            seqpwb = pwb_column*8 + pwb_ring;
+         }
 
          PwbHistograms* hf = fHF[imodule];
 
@@ -1218,8 +1222,13 @@ public:
                AgPadHit h;
                h.imodule = imodule;
                h.seqsca = seqsca;
-               h.tpc_col = c->pwb_column * MAX_FEAM_PAD_COL + col;
-               h.tpc_row = c->pwb_ring * MAX_FEAM_PAD_ROWS + row;
+               if (c->pwb_column >= 0) {
+                  h.tpc_col = c->pwb_column * MAX_FEAM_PAD_COL + col;
+                  h.tpc_row = c->pwb_ring * MAX_FEAM_PAD_ROWS + row;
+               } else {
+                  h.tpc_col = -1;
+                  h.tpc_row = -1;
+               }
                h.time_ns = wpos_ns;
                h.amp  = wamp;
                hits->fPadHits.push_back(h);
