@@ -106,6 +106,13 @@ class FeamModuleAsm
    int fNextN = 0;
    FeamModuleData* fCurrent = NULL;
 
+ public: // timestamps
+   uint32_t fTsFirstEvent = 0;
+   uint32_t fTsLastEvent = 0;
+   int      fTsEpoch = 0;
+   double   fTimeFirstEvent = 0;
+   double   fTimeLastEvent = 0;
+
  public: // context
    int fModule = 0;
    int fDataFormat = 0;
