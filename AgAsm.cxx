@@ -23,9 +23,9 @@ AgAsm::~AgAsm()
       fAdcAsm = NULL;
    }
 
-   if (fPwbMap) {
-      delete fPwbMap;
-      fPwbMap = NULL;
+   if (fPwbModuleMap) {
+      delete fPwbModuleMap;
+      fPwbModuleMap = NULL;
    }
 
    if (fPwbAsm) {
@@ -105,7 +105,13 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
             continue;
          }
 
-         const PwbModuleMapEntry* map = fPwbMap->FindPwb(imodule);
+         if (!fPwbModuleMap) {
+            fPwbModuleMap = new PwbModuleMap();
+            fPwbModuleMap->LoadFeamBanks(fFeamBanks);
+            fPwbModuleMap->Print();
+         }
+
+         const PwbModuleMapEntry* map = fPwbModuleMap->FindPwb(imodule);
          
          //int ii = 0; // FIXME
          //

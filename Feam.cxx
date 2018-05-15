@@ -654,10 +654,81 @@ void Unpack(FeamAdcData* a, FeamModuleData* m)
    //printf("count %d\n", count);
 }
 
+PwbModuleMap::PwbModuleMap() // ctor
+{
+   // empty
+}
+
+PwbModuleMap::~PwbModuleMap() // ctor
+{
+   for (unsigned i=0; i<fMap.size(); i++) {
+      if (fMap[i]) {
+         delete fMap[i];
+         fMap[i] = NULL;
+      }
+   }
+}
+
+void PwbModuleMap::Print() const
+{
+   printf("PwbModuleMap: size %d\n", (int)fMap.size());
+   for (unsigned i=0; i<fMap.size(); i++) {
+      if (fMap[i]) {
+         printf("map[%2d] - pwb%02d, column %2d, row %2d\n", i, fMap[i]->fModule, fMap[i]->fColumn, fMap[i]->fRing);
+      }
+   }
+}
+
+void PwbModuleMap::LoadFeamBanks(const std::vector<std::string> banks)
+{
+   if (banks.size() <= 8) { // short TPC
+      int iring = 0;
+      for (unsigned icolumn = 0; icolumn < banks.size(); icolumn++) {
+         int c2 = banks[icolumn][2] - '0';
+         int c3 = banks[icolumn][3] - '0';
+         int imodule = c2*10 + c3;
+         if (imodule > PWB_MODULE_LAST) {
+            fprintf(stderr, "PwbModuleMap::LoadFeamBanks: Invalid module number %d in bank name [%s]\n", imodule, banks[icolumn].c_str());
+            continue;
+         }
+         PwbModuleMapEntry *e = new PwbModuleMapEntry;
+         e->fModule = imodule;
+         e->fColumn = icolumn;
+         e->fRing   = iring;
+
+         while (imodule >= fMap.size()) {
+            fMap.push_back(NULL);
+         }
+         fMap[imodule] = e;
+      }
+   } else { // long TPC
+      for (unsigned i = 0; i < banks.size(); i++) {
+         int c2 = banks[i][2] - '0';
+         int c3 = banks[i][3] - '0';
+         int imodule = c2*10 + c3;
+         if (imodule > PWB_MODULE_LAST) {
+            fprintf(stderr, "PwbModuleMap::LoadFeamBanks: Invalid module number %d in bank name [%s]\n", imodule, banks[i].c_str());
+            continue;
+         }
+         int icolumn = i/8;
+         int iring = i%8;
+         PwbModuleMapEntry *e = new PwbModuleMapEntry;
+         e->fModule = imodule;
+         e->fColumn = icolumn;
+         e->fRing   = iring;
+
+         while (imodule >= fMap.size()) {
+            fMap.push_back(NULL);
+         }
+         fMap[imodule] = e;
+      }
+   }
+}
+
 const PwbModuleMapEntry* PwbModuleMap::FindPwb(int imodule)
 {
    assert(imodule >= 0);
-   if (imodule >= fMap.size()) {
+   if (imodule >= fMap.size() || !fMap[imodule]) {
       static PwbModuleMapEntry* unmapped_pwb = NULL;
       if (!unmapped_pwb) {
          unmapped_pwb = new PwbModuleMapEntry();
@@ -668,7 +739,8 @@ const PwbModuleMapEntry* PwbModuleMap::FindPwb(int imodule)
       return unmapped_pwb;
    }
 
-   return &fMap[imodule];
+   assert(fMap[imodule]->fModule == imodule);
+   return fMap[imodule];
 }
 
 

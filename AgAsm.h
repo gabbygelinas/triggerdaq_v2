@@ -38,8 +38,9 @@ class AgAsm
  public: // internal data
    TrgAsm* fTrgAsm = NULL;
    std::vector<std::string> fAdcMap;
+   std::vector<std::string> fFeamBanks;
    Alpha16Asm* fAdcAsm = NULL;
-   PwbModuleMap* fPwbMap = NULL;
+   PwbModuleMap* fPwbModuleMap = NULL;
    PwbAsm* fPwbAsm = NULL;
    FeamAsm* fFeamAsm = NULL;
 };

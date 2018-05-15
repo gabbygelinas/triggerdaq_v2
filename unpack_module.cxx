@@ -130,7 +130,8 @@ public:
          fAgAsm->fAdcMap = fCfm->ReadFile("adc", "map", runinfo->fRunNo);
          printf("Loaded adc map: %s\n", join(", ", fAgAsm->fAdcMap).c_str());
 
-         fAgAsm->fPwbMap = new PwbModuleMap();
+         fAgAsm->fFeamBanks = fCfm->ReadFile("feam", "banks", runinfo->fRunNo);
+         printf("Loaded feam banks: %s\n", join(", ", fAgAsm->fFeamBanks).c_str());
 
       } else {
          bool have_trg = true;

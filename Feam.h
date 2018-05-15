@@ -190,9 +190,13 @@ class PwbModuleMapEntry
 class PwbModuleMap
 {
  public:
-   std::vector<PwbModuleMapEntry> fMap;
+   std::vector<PwbModuleMapEntry*> fMap;
  public:
+   PwbModuleMap(); // ctor
+   ~PwbModuleMap(); // dtor
+   void LoadFeamBanks(const std::vector<std::string> banks);
    const PwbModuleMapEntry* FindPwb(int module);
+   void Print() const;
 };
 
 struct FeamAdcData
