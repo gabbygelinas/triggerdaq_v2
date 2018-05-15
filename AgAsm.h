@@ -10,6 +10,7 @@
 
 #include "midasio.h" // TMEvent
 #include "AgEvent.h"
+#include "TrgAsm.h"
 #include "PwbAsm.h"
 #include "FeamAsm.h"
 
@@ -35,6 +36,8 @@ class AgAsm
    AgEvent* UnpackEvent(TMEvent* me);
 
  public: // internal data
+   TrgAsm* fTrgAsm = NULL;
+   std::vector<std::string> fAdcMap;
    Alpha16Asm* fAdcAsm = NULL;
    PwbModuleMap* fPwbMap = NULL;
    PwbAsm* fPwbAsm = NULL;

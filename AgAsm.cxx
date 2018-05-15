@@ -7,15 +7,13 @@
 
 #include "AgAsm.h"
 
-//#include <stdio.h> // NULL, printf()
+#include <stdio.h> // NULL, printf()
 //#include <math.h> // fabs()
 //#include <assert.h> // assert()
-#include "Unpack.h"
 
 AgAsm::AgAsm()
 {
-   fAdcAsm = new Alpha16Asm();
-   // fPwbMap = new PwbMap();
+   // empty
 }
 
 AgAsm::~AgAsm()
@@ -44,10 +42,29 @@ AgAsm::~AgAsm()
 AgEvent* AgAsm::UnpackEvent(TMEvent* me)
 {
    AgEvent* e = new AgEvent();
-   
+
+   me->FindAllBanks();
+
    for (unsigned i=0; i<me->banks.size(); i++) {
       const TMBank* b = &me->banks[i];
-      if (b->name[0] == 'A') {
+      //printf("bank %s\n", b->name.c_str());
+      if (0) {
+      } else if (b->name == "ATAT") {
+         if (!fTrgAsm) {
+            fTrgAsm = new TrgAsm();
+         }
+         
+         const char* bkptr = me->GetBankData(b);
+         int bklen = b->data_size;
+
+         e->trig = fTrgAsm->UnpackBank(bkptr, bklen);
+
+         if (1) {
+            printf("Unpacked TRG event: ");
+            e->trig->Print();
+            printf("\n");
+         }
+      } else if (b->name[0] == 'A') {
          // ADC UDP packet bank from feudp
       } else if (b->name[0] == 'B' && b->name[1] == 'B') {
          // obsolete bank "BBnn" from FEAM rev0 board
@@ -65,22 +82,18 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          const char* bkptr = me->GetBankData(b);
          int bklen = b->data_size;
 
+         if (!fAdcAsm) {
+            fAdcAsm = new Alpha16Asm();
+            fAdcAsm->fMap.Init(fAdcMap);
+            fAdcAsm->fMap.Print();
+         }
+
          if (!e->a16) {
             e->a16 = fAdcAsm->NewEvent();
          }
 
          fAdcAsm->AddBank(e->a16, module, b->name.c_str(), bkptr, bklen);
-      } else if (b->name == "ATAT") {
-         e->trig = UnpackTrigEvent(me, b);
-
-         if (e->trig) {
-            if (1) {
-               printf("Unpacked TRG event: ");
-               e->trig->Print();
-               printf("\n");
-            }
-         }
-      } else if (b->name[0] == 'P' && b->name[1] == 'B') {
+      } else if (b->name[0] == 'P' && ((b->name[1] == 'A') || (b->name[1] == 'B'))) {
          // PWB bank
          int c1 = b->name[2]-'0';
          int c2 = b->name[3]-'0';
@@ -175,7 +188,9 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          e->feam = new FeamEvent();
       }
       fPwbAsm->BuildEvent(e->feam);
+      printf("PwbAsm built an event:\n");
       e->feam->Print();
+      printf("\n");
       //PrintFeamChannels(e->feam->hits);
    }
 
@@ -184,11 +199,17 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          e->feam = new FeamEvent();
       }
       fFeamAsm->BuildEvent(e->feam);
+      printf("FeamAsm built an event:\n");
       e->feam->Print();
+      printf("\n");
       //PrintFeamChannels(e->feam->hits);
    }
 
-   e->Print();
+   if (1) {
+      printf("AgAsm::UnpackEvent: returning event: ");
+      e->Print();
+      printf("\n");
+   }
   
    return e;
 }
