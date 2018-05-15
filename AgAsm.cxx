@@ -8,7 +8,7 @@
 #include "AgAsm.h"
 
 #include <stdio.h> // NULL, printf()
-//#include <math.h> // fabs()
+#include <math.h> // fabs()
 //#include <assert.h> // assert()
 
 AgAsm::AgAsm()
@@ -18,6 +18,10 @@ AgAsm::AgAsm()
 
 AgAsm::~AgAsm()
 {
+   printf("AgAsm::~AgAsm: Total events: %d, complete: %d, incomplete: %d, with errors: %d, max timestamp difference trg/adc/pwb: %.0f/%.0f/%.0f ns\n", fCounter, fCountComplete, fCountIncomplete, fCountError, fTrgMaxDt*1e9, fAdcMaxDt*1e9, fPwbMaxDt*1e9);
+
+   //Print();
+
    if (fAdcAsm) {
       delete fAdcAsm;
       fAdcAsm = NULL;
@@ -39,9 +43,30 @@ AgAsm::~AgAsm()
    }
 }
 
+void AgAsm::Print() const
+{
+   printf("AgAsm::Print:\n");
+   if (fTrgAsm) {
+      //fTrgAsm->Print();
+   }
+   if (fAdcAsm) {
+      //fAdcAsm->Print();
+   }
+   if (fFeamAsm) {
+      fFeamAsm->Print();
+   }
+   if (fPwbAsm) {
+      //fPwbAsm->Print();
+   }
+}
+
 AgEvent* AgAsm::UnpackEvent(TMEvent* me)
 {
    AgEvent* e = new AgEvent();
+
+   e->counter = ++fCounter;
+   e->error = false;
+   e->complete = true;
 
    me->FindAllBanks();
 
@@ -212,14 +237,129 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          e->feam->complete = false;
       }
       
-      printf("FeamAsm built an event:\n");
-      e->feam->Print();
-      printf("\n");
+      //printf("FeamAsm built an event:\n");
+      //e->feam->Print();
+      //printf("\n");
       //PrintFeamChannels(e->feam->hits);
    }
 
+   double time = 0;
+
+   // extract timestamps and event counters
+   
+   double trg_time = 0;
+   double adc_time = 0;
+   double pwb_time = 0;
+
+   int trg_counter = 0;
+   int adc_counter = 0;
+   int pwb_counter = 0;
+
+   if (fTrgAsm) {
+      if (e->trig) {
+         trg_time = e->trig->time;
+         trg_counter = e->trig->counter;
+         time = trg_time;
+      } else {
+         e->complete = false;
+      }
+   }
+
+   if (fAdcAsm) {
+      if (e->a16) {
+         adc_time = e->a16->time;
+         adc_counter = e->a16->counter;
+         time = adc_time;
+      } else {
+         e->complete = false;
+      }
+   }
+
+   if (fFeamAsm || fPwbAsm) {
+      if (e->feam) {
+         pwb_time = e->feam->time;
+         pwb_counter = e->feam->counter;
+         time = pwb_time;
+      } else {
+         e->complete = false;
+      }
+   }
+
+   // assign event time
+
+   e->time = time;
+   e->timeIncr = e->time - fLastEventTime;
+   fLastEventTime = e->time;
+
+   // check timestamps and event counters
+
+   if (fTrgAsm) {
+      if (e->trig) {
+         double dt = trg_time - e->time;
+         double absdt = fabs(dt);
+         if (absdt > fTrgMaxDt)
+            fTrgMaxDt = absdt;
+         //printf("TRG check: ec %d %d, time %f %f sec, dt %.0f ns\n", e->counter, trg_counter, e->time, trg_time, dt*1e9);
+         if (absdt > fConfMaxDt) {
+            printf("AgAsm::UnpackEvent: event %d trg timestamp mismatch: time %f should be %f, dt %.0f ns\n", e->counter, trg_time, e->time, dt*1e9);
+            e->error = true;
+         }
+         if (trg_counter != e->counter) {
+            printf("AgAsm::UnpackEvent: event %d trg event counter mismatch: %d should be %d\n", e->counter, trg_counter, e->counter);
+            e->error = true;
+         }
+      }
+   }
+
+   if (fAdcAsm) {
+      if (e->a16) {
+         double dt = adc_time - e->time;
+         double absdt = fabs(dt);
+         if (absdt > fAdcMaxDt)
+            fAdcMaxDt = absdt;
+         //printf("ADC check: ec %d %d, time %f %f sec, dt %.0f ns\n", e->counter, adc_counter, e->time, adc_time, dt*1e9);
+         if (absdt > fConfMaxDt) {
+            printf("AgAsm::UnpackEvent: event %d adc timestamp mismatch: time %f should be %f, dt %.0f ns\n", e->counter, adc_time, e->time, dt*1e9);
+            e->error = true;
+         }
+         if (adc_counter != e->counter) {
+            printf("AgAsm::UnpackEvent: event %d adc event counter mismatch: %d should be %d\n", e->counter, adc_counter, e->counter);
+            e->error = true;
+         }
+      }
+   }
+
+   if (fFeamAsm || fPwbAsm) {
+      if (e->feam) {
+         double dt = pwb_time - e->time;
+         double absdt = fabs(dt);
+         if (absdt > fPwbMaxDt)
+            fPwbMaxDt = absdt;
+         //printf("PWB check: ec %d %d, time %f %f sec, dt %.0f ns\n", e->counter, pwb_counter, e->time, pwb_time, dt*1e9);
+         if (absdt > fConfMaxDt) {
+            printf("AgAsm::UnpackEvent: event %d pwb timestamp mismatch: time %f should be %f, dt %.0f ns\n", e->counter, pwb_time, e->time, dt*1e9);
+            e->error = true;
+         }
+         if (pwb_counter != e->counter) {
+            printf("AgAsm::UnpackEvent: event %d pwb event counter mismatch: %d should be %d\n", e->counter, pwb_counter, e->counter);
+            e->error = true;
+         }
+      }
+   }
+
+   // increment counters
+
+   if (e->error)
+      fCountError++;
+   if (e->complete)
+      fCountComplete++;
+   else
+      fCountIncomplete++;
+
+   // print final result
+   
    if (1) {
-      printf("AgAsm::UnpackEvent: returning event: ");
+      printf("AgAsm::UnpackEvent: returning event:\n");
       e->Print();
       printf("\n");
    }

@@ -17,15 +17,18 @@
 class AgAsm
 {
  public: // settings
+   double fConfMaxDt = 0.000000100; // max timestamp deviation in sec
 
  public: // event builder state
    int    fCounter;
    double fLastEventTime = 0;
 
  public: // diagnostics
+   double fTrgMaxDt = 0;
+   double fAdcMaxDt = 0;
+   double fPwbMaxDt = 0;
 
  public: // counters
-   int fCount = 0;
    int fCountComplete   = 0;
    int fCountError      = 0;
    int fCountIncomplete = 0;
@@ -34,6 +37,7 @@ class AgAsm
    AgAsm(); // ctor
    ~AgAsm(); // dtor
    AgEvent* UnpackEvent(TMEvent* me);
+   void Print() const;
 
  public: // internal data
    TrgAsm* fTrgAsm = NULL;
