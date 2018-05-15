@@ -11,11 +11,11 @@
 
 struct TrigEvent
 {
-   bool   complete; // event is complete
-   bool   error;    // event has an error
-   int    counter;  // event sequential counter
-   double time;     // event time, sec
-   double timeIncr; // time from previous event, sec
+   bool   complete = false; // event is complete
+   bool   error    = false; // event has an error
+   int    counter  = 0;     // event sequential counter
+   double time     = 0;     // event time, sec
+   double timeIncr = 0;     // time from previous event, sec
 
    std::vector<uint32_t> udpData;
 
