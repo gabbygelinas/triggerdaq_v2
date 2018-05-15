@@ -47,21 +47,21 @@ void AgEvent::Print() const
    if (trig) {
       trig->Print();
    } else {
-      printf("TrgEvent:  NULL");
+      printf("TrgEvent NULL");
    }
    printf("\n");
    printf("  ");
    if (a16) {
       a16->Print();
    } else {
-      printf("A16Event:  NULL");
+      printf("AdcEvent NULL");
    }
    printf("\n");
    printf("  ");
    if (feam) {
       feam->Print();
    } else {
-      printf("FeamEvent: NULL");
+      printf("PwbEvent NULL");
    }
 }
 
