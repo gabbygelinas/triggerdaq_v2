@@ -195,6 +195,8 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
    }
 
    if (fFeamAsm) {
+      //printf("at end: FeamAsm status:\n");
+      //fFeamAsm->Print();
       if (!e->feam) {
          e->feam = new FeamEvent();
       }
