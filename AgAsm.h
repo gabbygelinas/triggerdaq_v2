@@ -20,7 +20,7 @@ class AgAsm
    double fConfMaxDt = 0.000000100; // max timestamp deviation in sec
 
  public: // event builder state
-   int    fCounter;
+   int    fCounter = 0;
    double fLastEventTime = 0;
 
  public: // diagnostics
