@@ -402,6 +402,7 @@ public:
    bool fFft = false;
    std::vector<int> fPlotAdc16;
    std::vector<int> fPlotAdc32;
+   int fAdcPlotScaledown = 1;
 };
 
 static double find_pulse_time(const int* adc, int nbins, double baseline, double gain, double threshold)
@@ -853,8 +854,10 @@ public:
          printf("\n");
       }
 
-      for (unsigned i=0; i<fPlotA16.size(); i++) {
-         fPlotA16[i]->Draw(e);
+      if ((fFlags->fAdcPlotScaledown == 1) || ((ef->fEvent->counter % fFlags->fAdcPlotScaledown) == 0)) {
+         for (unsigned i=0; i<fPlotA16.size(); i++) {
+            fPlotA16[i]->Draw(e);
+         }
       }
 
       AgAwHitsFlow* flow_hits = new AgAwHitsFlow(flow);
@@ -905,6 +908,10 @@ public:
             int imodule = atoi(args[i+1].c_str());
             i++;
             fFlags.fPlotAdc32.push_back(imodule);
+         }
+         if (args[i] == "--adcsd") {
+            fFlags.fAdcPlotScaledown = atoi(args[i+1].c_str());
+            i++;
          }
       }
       
