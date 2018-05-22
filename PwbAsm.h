@@ -18,7 +18,7 @@ public:
    int fPacketSize = 0;
 
 public: // packet data
-   uint32_t MYSTERY;
+   uint32_t DEVICE_ID;
    uint32_t PKT_SEQ;
    uint16_t CHANNEL_SEQ;
    uint32_t CHANNEL_ID;
@@ -79,6 +79,7 @@ public: // state
    uint16_t fLast_CHANNEL_SEQ = 0;
    int fState = 0;
    int fCountErrors = 0;
+   uint32_t fTs = 0;
 
 public: // configuration
    bool fTrace = false;
@@ -102,7 +103,7 @@ public:
    void Reset();
    void AddPacket(PwbUdpPacket* udp, const char* ptr, int size);
 
-   void BeginData(const char* ptr, int size, int start_of_data, int end_of_data);
+   void BeginData(const char* ptr, int size, int start_of_data, int end_of_data, uint32_t ts);
    void AddData(const char* ptr, int size, int start_of_data, int end_of_data);
    void EndData();
 
@@ -124,7 +125,18 @@ public:
    std::vector<PwbChannelAsm*> fChannels;
 
 public: // state
+   int fCountErrors = 0;
    uint32_t fLast_PKT_SEQ = 0;
+   uint32_t fTs = 0;
+   double   fTime = 0;
+   double   fTimeIncr = 0;
+
+public: // timestamps
+   uint32_t fTsFirstEvent = 0;
+   uint32_t fTsLastEvent = 0;
+   int      fTsEpoch = 0;
+   double   fTimeFirstEvent = 0;
+   double   fTimeLastEvent = 0;
 
 public: // configuration
    bool fTrace = false;

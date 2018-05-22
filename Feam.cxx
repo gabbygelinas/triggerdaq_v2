@@ -575,12 +575,16 @@ FeamEvent::~FeamEvent() // dtor
 
 void FeamEvent::Print(int level) const
 {
-   printf("PwbEvent %d, time %f, incr %f, complete %d, error %d, modules: ", counter, time, timeIncr, complete, error);
-   for (unsigned i=0; i<modules.size(); i++) {
-      if (modules[i] == NULL) {
+   printf("PwbEvent %d, time %f, incr %f, complete %d, error %d", counter, time, timeIncr, complete, error);
+   printf(", hits: %d", (int)hits.size());
+   if (modules.size() > 0) {
+      printf(", modules: ");
+      for (unsigned i=0; i<modules.size(); i++) {
+         if (modules[i] == NULL) {
             printf(" null");
-      } else {
-         printf(" %d", modules[i]->cnt);
+         } else {
+            printf(" %d", modules[i]->cnt);
+         }
       }
    }
 }

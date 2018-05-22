@@ -125,7 +125,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          int imodule = c1*10 + c2;
 
          if (imodule < 0 || imodule > PWB_MODULE_LAST) {
-            fprintf(stderr, "UnpackAlpha16Event: bank name [%s] has invalid module number %d\n", b->name.c_str(), imodule);
+            fprintf(stderr, "AgAsm::UnpackEvent: bank name [%s] has invalid module number %d\n", b->name.c_str(), imodule);
             e->error = true;
             continue;
          }
@@ -172,37 +172,60 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
             e->error = true;
             continue;
          }
-         
-         if (f == 1 || f == 2) { // old UDP data format
-            if (!fFeamAsm) {
-               fFeamAsm = new FeamAsm();
-            }
 
-            if (b->data_size < 26) {
-               fprintf(stderr, "AgAsm::UnpackEvent: bank name [%s] has invalid FEAM packet length %d\n", b->name.c_str(), b->data_size);
-               e->error = true;
-               continue;
-            }
-            
-            FeamPacket* p = new FeamPacket();
-            
-            p->Unpack(p8, b->data_size);
-            
-            if (p->error) {
-               fprintf(stderr, "AgAsm::UnpackEvent: cannot unpack FeamPacket from bank [%s]\n", b->name.c_str());
-               delete p;
-               p = NULL;
-               e->error = true;
-               continue;
-            }
-            
-            fFeamAsm->AddPacket(imodule, map->fColumn, map->fRing, f, p, p8 + p->off, p->buf_len);
-         } else { // new UDP data format
-            if (!fPwbAsm) {
-               fPwbAsm = new PwbAsm();
-            }
-            fPwbAsm->AddPacket(imodule, map->fColumn, map->fRing, p8, b->data_size);
+         if (!fFeamAsm) {
+            fFeamAsm = new FeamAsm();
          }
+         
+         if (b->data_size < 26) {
+            fprintf(stderr, "AgAsm::UnpackEvent: bank name [%s] has invalid FEAM packet length %d\n", b->name.c_str(), b->data_size);
+            e->error = true;
+            continue;
+         }
+         
+         FeamPacket* p = new FeamPacket();
+         
+         p->Unpack(p8, b->data_size);
+         
+         if (p->error) {
+            fprintf(stderr, "AgAsm::UnpackEvent: cannot unpack FeamPacket from bank [%s]\n", b->name.c_str());
+            delete p;
+            p = NULL;
+            e->error = true;
+            continue;
+         }
+         
+         fFeamAsm->AddPacket(imodule, map->fColumn, map->fRing, f, p, p8 + p->off, p->buf_len);
+      } else if (b->name[0] == 'P' && (b->name[1] == 'C')) {
+         // PWB bank
+         int c1 = b->name[2]-'0';
+         int c2 = b->name[3]-'0';
+         int imodule = c1*10 + c2;
+
+         if (imodule < 0 || imodule > PWB_MODULE_LAST) {
+            fprintf(stderr, "AgAsm::UnpackEvent: bank name [%s] has invalid module number %d\n", b->name.c_str(), imodule);
+            e->error = true;
+            continue;
+         }
+
+         if (!fPwbModuleMap) {
+            fPwbModuleMap = new PwbModuleMap();
+            fPwbModuleMap->LoadFeamBanks(fFeamBanks);
+            fPwbModuleMap->Print();
+         }
+
+         const PwbModuleMapEntry* map = fPwbModuleMap->FindPwb(imodule);
+         
+         const char* p8 = me->GetBankData(b);
+         const uint32_t *p32 = (const uint32_t*)p8;
+         const int n32 = b->data_size/4;
+         
+         if (!fPwbAsm) {
+            fPwbAsm = new PwbAsm();
+         }
+
+         fPwbAsm->AddPacket(imodule, map->fColumn, map->fRing, p8, b->data_size);
+
       } else {
          fprintf(stderr, "AgAsm::UnpackEvent: unknown bank [%s]\n", b->name.c_str());
       }

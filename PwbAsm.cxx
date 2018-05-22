@@ -452,7 +452,7 @@ PwbUdpPacket::PwbUdpPacket(const char* ptr, int size) // ctor
 
    uint32_t crc = crc32c(0, ptr+0, 4*4);
 
-   MYSTERY     = p32[0];
+   DEVICE_ID   = p32[0];
    PKT_SEQ     = p32[1];
    CHANNEL_SEQ = (p32[2] >>  0) & 0xFFFF;
    CHANNEL_ID  = (p32[2] >> 16) & 0xFF;
@@ -488,8 +488,8 @@ PwbUdpPacket::PwbUdpPacket(const char* ptr, int size) // ctor
 
 void PwbUdpPacket::Print() const
 {
-   printf("PwbUdpPacket: M 0x%08x, PKT_SEQ 0x%08x, CHAN SEQ 0x%02x, ID 0x%02x, FLAGS 0x%02x, CHUNK ID 0x%04x, LEN 0x%04x, CRC 0x%08x, bank bytes %d, end of payload %d, CRC 0x%08x\n",
-          MYSTERY,
+   printf("PwbUdpPacket: DEVICE_ID 0x%08x, PKT_SEQ 0x%08x, CHAN SEQ 0x%02x, ID 0x%02x, FLAGS 0x%02x, CHUNK ID 0x%04x, LEN 0x%04x, CRC 0x%08x, bank bytes %d, end of payload %d, CRC 0x%08x\n",
+          DEVICE_ID,
           PKT_SEQ,
           ((int)CHANNEL_SEQ)&0xFFFF,
           CHANNEL_ID,
@@ -733,8 +733,9 @@ void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e)
    }
 }
 
-void PwbChannelAsm::BeginData(const char* ptr, int size, int start_of_data, int end_of_data)
+void PwbChannelAsm::BeginData(const char* ptr, int size, int start_of_data, int end_of_data, uint32_t ts)
 {
+   fTs = ts;
    const uint16_t* s = (const uint16_t*)(ptr+start_of_data);
    const uint16_t* e = (const uint16_t*)(ptr+end_of_data);
    CopyData(s, e);
@@ -854,12 +855,13 @@ void PwbChannelAsm::AddPacket(PwbUdpPacket* udp, const char* ptr, int size)
    if (fState == PWB_CA_ST_INIT || fState == PWB_CA_ST_LAST) {
       if (udp->CHUNK_ID == 0) {
          PwbEventHeader* eh = new PwbEventHeader(ptr, size);
+         uint32_t ts = eh->TriggerTimestamp1;
          if (fTrace) {
             eh->Print();
          }
          delete eh;
          fState = PWB_CA_ST_DATA;
-         BeginData(ptr, size, eh->start_of_data, udp->end_of_payload);
+         BeginData(ptr, size, eh->start_of_data, udp->end_of_payload, ts);
       } else {
          printf("PwbChannelAsm::AddPacket: Ignoring UDP packet with CHUNK_ID 0x%02x while waiting for an event header\n", udp->CHUNK_ID);
       }
@@ -894,6 +896,10 @@ PwbModuleAsm::PwbModuleAsm(int module, int column, int ring)
 
 PwbModuleAsm::~PwbModuleAsm()
 {
+   if (fCountErrors) {
+      printf("PwbModuleAsm: %d errors unpacking data from pwb module %d\n", fCountErrors, fModule);
+   }
+
    for (unsigned i=0; i<fChannels.size(); i++) {
       if (fChannels[i]) {
          delete fChannels[i];
@@ -923,7 +929,7 @@ void PwbModuleAsm::AddPacket(const char* ptr, int size)
       fLast_PKT_SEQ = udp->PKT_SEQ;
    } else if (udp->PKT_SEQ != fLast_PKT_SEQ + 1) {
       printf("PwbModuleAsm::AddPacket: Error: misordered or lost UDP packet: PKT_SEQ jump 0x%08x to 0x%08x\n", fLast_PKT_SEQ, udp->PKT_SEQ);
-      //fCountErrors++;
+      fCountErrors++;
       fLast_PKT_SEQ = udp->PKT_SEQ;
    } else {
       fLast_PKT_SEQ++;
@@ -933,7 +939,7 @@ void PwbModuleAsm::AddPacket(const char* ptr, int size)
 
    if (s < 0 || s > 4) {
       printf("PwbModuleAsm::AddPacket: Error: invalid CHANNEL_ID 0x%08x\n", udp->CHANNEL_ID);
-      //fCountErrors++;
+      fCountErrors++;
    } else {
       while (s >= fChannels.size()) {
          fChannels.push_back(NULL);
@@ -962,11 +968,39 @@ bool PwbModuleAsm::CheckComplete() const
 
 void PwbModuleAsm::BuildEvent(FeamEvent* e)
 {
+   fTs = 0;
    for (unsigned i=0; i<fChannels.size(); i++) {
       if (fChannels[i]) {
          fChannels[i]->BuildEvent(e);
+         if (fTs == 0) {
+            fTs = fChannels[i]->fTs;
+         } else {
+            if (fChannels[i]->fTs != fTs) {
+               printf("PwbModuleAsm::BuildEvent: Error: channel %d timestamp mismatch 0x%08x should be 0x%08x\n", i, fChannels[i]->fTs, fTs);
+               fCountErrors++;
+               e->error = true;
+            }
+         }
       }
    }
+
+   double ts_freq = 125000000.0; // 125 MHz
+
+   if (e->counter == 1) {
+      fTsFirstEvent = fTs;
+      fTsLastEvent = 0;
+      fTsEpoch = 0;
+      fTimeFirstEvent = fTs/ts_freq;
+   }
+   
+   if (fTs < fTsLastEvent)
+      fTsEpoch++;
+   
+   fTime = fTs/ts_freq - fTimeFirstEvent + fTsEpoch*2.0*0x80000000/ts_freq;
+   fTimeIncr = fTime - fTimeLastEvent;
+   
+   fTsLastEvent = fTs;
+   fTimeLastEvent = fTime;
 }
 
 PwbAsm::PwbAsm() // ctor
@@ -1023,17 +1057,27 @@ void PwbAsm::BuildEvent(FeamEvent* e)
 {
    e->complete = true;
    e->error = false;
-   e->counter = fCounter++;
-   e->time = e->counter;
-   e->timeIncr = e->time - fLastTime;
+   e->counter = ++fCounter;
+   e->time = 0;
+   e->timeIncr = 0;
 
-   fLastTime = e->time;
+   bool first_ts = true;
 
    for (unsigned i=0; i<fModules.size(); i++) {
       if (fModules[i]) {
          fModules[i]->BuildEvent(e);
+         if (first_ts) {
+            first_ts = false;
+            e->time = fModules[i]->fTime;
+         } else {
+            printf("PwbModuleAsm::BuildEvent: Error: module %d event time mismatch %f should be %f\n", i, fModules[i]->fTime, e->time);
+            e->error = true;
+         }
       }
    }
+
+   e->timeIncr = e->time - fLastTime;
+   fLastTime = e->time;
 }
 
 /* emacs
