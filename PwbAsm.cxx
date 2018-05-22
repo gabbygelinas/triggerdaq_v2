@@ -6,7 +6,7 @@
 #include "PwbAsm.h"
 
 #include <stdio.h> // NULL, printf()
-//#include <math.h> // fabs()
+#include <math.h> // fabs()
 #include <assert.h> // assert()
 
 /* crc32c.c -- compute CRC-32C using the Intel crc32 instruction
@@ -1070,8 +1070,10 @@ void PwbAsm::BuildEvent(FeamEvent* e)
             first_ts = false;
             e->time = fModules[i]->fTime;
          } else {
-            printf("PwbModuleAsm::BuildEvent: Error: module %d event time mismatch %f should be %f\n", i, fModules[i]->fTime, e->time);
-            e->error = true;
+            if (fabs(e->time - fModules[i]->fTime) > 1e9) {
+               printf("PwbModuleAsm::BuildEvent: Error: module %d event time mismatch %f should be %f sec, diff %f ns\n", i, fModules[i]->fTime, e->time, (fModules[i]->fTime - e->time)*1e9);
+               e->error = true;
+            }
          }
       }
    }
