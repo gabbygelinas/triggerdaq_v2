@@ -18,7 +18,7 @@ AgAsm::AgAsm()
 
 AgAsm::~AgAsm()
 {
-   printf("AgAsm::~AgAsm: Total events: %d, complete: %d, incomplete: %d, with errors: %d, max timestamp difference trg/adc/pwb: %.0f/%.0f/%.0f ns\n", fCounter, fCountComplete, fCountIncomplete, fCountError, fTrgMaxDt*1e9, fAdcMaxDt*1e9, fPwbMaxDt*1e9);
+   printf("AgAsm::~AgAsm: Total events: %d, complete: %d, with error: %d, incomplete: %d, with error: %d, max timestamp difference trg/adc/pwb: %.0f/%.0f/%.0f ns\n", fCounter, fCountComplete, fCountCompleteWithError, fCountIncomplete, fCountIncompleteWithError, fTrgMaxDt*1e9, fAdcMaxDt*1e9, fPwbMaxDt*1e9);
 
    //Print();
 
@@ -372,12 +372,19 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
 
    // increment counters
 
-   if (e->error)
-      fCountError++;
-   if (e->complete)
-      fCountComplete++;
-   else
-      fCountIncomplete++;
+   if (e->complete) {
+      if (e->error) {
+         fCountCompleteWithError++;
+      } else {
+         fCountComplete++;
+      }
+   } else {
+      if (e->error) {
+         fCountIncompleteWithError++;
+      } else {
+         fCountIncomplete++;
+      }
+   }
 
    // print final result
    

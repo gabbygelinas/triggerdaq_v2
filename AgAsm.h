@@ -30,8 +30,9 @@ class AgAsm
 
  public: // counters
    int fCountComplete   = 0;
-   int fCountError      = 0;
+   int fCountCompleteWithError = 0;
    int fCountIncomplete = 0;
+   int fCountIncompleteWithError = 0;
 
  public: // member functions
    AgAsm(); // ctor
