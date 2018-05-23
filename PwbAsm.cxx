@@ -575,6 +575,7 @@ void PwbEventHeader::Print() const
    }
 }
 
+#define PWB_CA_ST_ERROR -1
 #define PWB_CA_ST_INIT 0
 #define PWB_CA_ST_DATA 1
 #define PWB_CA_ST_LAST 2
@@ -591,7 +592,7 @@ PwbChannelAsm::PwbChannelAsm(int module, int column, int ring, int sca)
 PwbChannelAsm::~PwbChannelAsm()
 {
    if (fCountErrors) {
-      printf("PwbChannelAsm: %d errors unpacking data from pwb module %d, sca %d\n", fCountErrors, fModule, fSca);
+      printf("PwbChannelAsm: module %d sca %d: %d errors\n", fModule, fSca, fCountErrors);
    }
 }
 
@@ -671,12 +672,12 @@ void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e)
          break;
       }
       if (p[0] == 0xCCCC && p[1] == 0xCCCC && r == 2) {
-         printf("PwbChannelAsm::CopyData: Ignoring unexpected 0xCCCC words at the end of a packet\n");
+         printf("PwbChannelAsm::CopyData: module %d sca %d: ignoring unexpected 0xCCCC words at the end of a packet\n", fModule, fSca);
          //fCountErrors++;
          break;
       }
       if (p[0] == 0xCCCC && p[1] == 0xCCCC) {
-         printf("PwbChannelAsm::CopyData: Error: unexpected 0xCCCC words, r %d!\n", r);
+         printf("PwbChannelAsm::CopyData: Error: module %d, unexpected 0xCCCC words, r %d!\n", fModule, r);
          fCountErrors++;
          break;
       }
@@ -684,7 +685,7 @@ void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e)
       int samples = p[1];
 
       if (channel < 0 || channel > 80) {
-         printf("PwbChannelAsm::CopyData: Error: invalid channel %d\n", channel);
+         printf("PwbChannelAsm::CopyData: Error: module %d, invalid channel %d\n", fModule, channel);
          fCountErrors++;
       }
 
@@ -813,6 +814,10 @@ void PwbChannelAsm::EndData()
 
 void PwbChannelAsm::BuildEvent(FeamEvent* e)
 {
+   if (fError) {
+      e->error = true;
+   }
+
    for (unsigned i=0; i<fOutput.size(); i++) {
       if (fOutput[i]) {
          FeamChannel* c = fOutput[i];
@@ -845,14 +850,21 @@ void PwbChannelAsm::AddPacket(PwbUdpPacket* udp, const char* ptr, int size)
    if (fLast_CHANNEL_SEQ == 0) {
       fLast_CHANNEL_SEQ = udp->CHANNEL_SEQ;
    } else if (udp->CHANNEL_SEQ != ((fLast_CHANNEL_SEQ + 1)&0xFFFF)) {
-      printf("PwbChannelAsm::AddPacket: Error: misordered or lost UDP packet: CHANNEL_SEQ jump 0x%04x to 0x%04x\n", fLast_CHANNEL_SEQ, udp->CHANNEL_SEQ);
-      fLast_CHANNEL_SEQ = udp->CHANNEL_SEQ;
-      fCountErrors++;
+      if (fState == PWB_CA_ST_ERROR) {
+         printf("PwbChannelAsm::AddPacket: module %d sca %d state %d: misordered or lost UDP packet: CHANNEL_SEQ jump 0x%04x to 0x%04x\n", fModule, fSca, fState, fLast_CHANNEL_SEQ, udp->CHANNEL_SEQ);
+         fError = true;
+      } else {
+         printf("PwbChannelAsm::AddPacket: Error: module %d sca %d state %d: misordered or lost UDP packet: CHANNEL_SEQ jump 0x%04x to 0x%04x\n", fModule, fSca, fState, fLast_CHANNEL_SEQ, udp->CHANNEL_SEQ);
+         fLast_CHANNEL_SEQ = udp->CHANNEL_SEQ;
+         fCountErrors++;
+         fState = PWB_CA_ST_ERROR;
+         fError = true;
+      }
    } else {
       fLast_CHANNEL_SEQ++;
    }
 
-   if (fState == PWB_CA_ST_INIT || fState == PWB_CA_ST_LAST) {
+   if (fState == PWB_CA_ST_INIT || fState == PWB_CA_ST_LAST || fState == PWB_CA_ST_ERROR) {
       if (udp->CHUNK_ID == 0) {
          PwbEventHeader* eh = new PwbEventHeader(ptr, size);
          uint32_t ts = eh->TriggerTimestamp1;
@@ -861,9 +873,10 @@ void PwbChannelAsm::AddPacket(PwbUdpPacket* udp, const char* ptr, int size)
          }
          delete eh;
          fState = PWB_CA_ST_DATA;
+         fError = false;
          BeginData(ptr, size, eh->start_of_data, udp->end_of_payload, ts);
       } else {
-         printf("PwbChannelAsm::AddPacket: Ignoring UDP packet with CHUNK_ID 0x%02x while waiting for an event header\n", udp->CHUNK_ID);
+         printf("PwbChannelAsm::AddPacket: module %d sca %d state %d: Ignoring UDP packet with CHUNK_ID 0x%02x while waiting for an event header\n", fModule, fSca, fState, udp->CHUNK_ID);
       }
    } else if (fState == PWB_CA_ST_DATA) {
       AddData(ptr, size, udp->start_of_payload, udp->end_of_payload);
@@ -872,7 +885,7 @@ void PwbChannelAsm::AddPacket(PwbUdpPacket* udp, const char* ptr, int size)
          EndData();
       }
    } else {
-      printf("PwbChannelAsm::AddPacket: Error: invalid state %d\n", fState);
+      printf("PwbChannelAsm::AddPacket: Error: module %d sca %d state %d: invalid state\n", fModule, fSca, fState);
       fCountErrors++;
    }
 }
@@ -896,15 +909,15 @@ PwbModuleAsm::PwbModuleAsm(int module, int column, int ring)
 
 PwbModuleAsm::~PwbModuleAsm()
 {
-   if (fCountErrors) {
-      printf("PwbModuleAsm: %d errors unpacking data from pwb module %d\n", fCountErrors, fModule);
-   }
-
    for (unsigned i=0; i<fChannels.size(); i++) {
       if (fChannels[i]) {
          delete fChannels[i];
          fChannels[i] = NULL;
       }
+   }
+
+   if (fCountErrors) {
+      printf("PwbModuleAsm: module %d: %d errors, lost %d/%d/%d/%d\n", fModule, fCountErrors, fCountLost1, fCountLost2, fCountLost3, fCountLostN);
    }
 }
 
@@ -927,12 +940,29 @@ void PwbModuleAsm::AddPacket(const char* ptr, int size)
 
    if (fLast_PKT_SEQ == 0) {
       fLast_PKT_SEQ = udp->PKT_SEQ;
-   } else if (udp->PKT_SEQ != fLast_PKT_SEQ + 1) {
-      printf("PwbModuleAsm::AddPacket: Error: misordered or lost UDP packet: PKT_SEQ jump 0x%08x to 0x%08x\n", fLast_PKT_SEQ, udp->PKT_SEQ);
+   } else if (udp->PKT_SEQ == fLast_PKT_SEQ + 1) {
+      fLast_PKT_SEQ++;
+   } else if (udp->PKT_SEQ == fLast_PKT_SEQ + 2) {
+      printf("PwbModuleAsm::AddPacket: Error: module %d lost one UDP packet: PKT_SEQ jump 0x%08x to 0x%08x\n", fModule, fLast_PKT_SEQ, udp->PKT_SEQ);
       fCountErrors++;
+      fCountLost1++;
+      fLast_PKT_SEQ = udp->PKT_SEQ;
+   } else if (udp->PKT_SEQ == fLast_PKT_SEQ + 3) {
+      printf("PwbModuleAsm::AddPacket: Error: module %d lost two UDP packets: PKT_SEQ jump 0x%08x to 0x%08x\n", fModule, fLast_PKT_SEQ, udp->PKT_SEQ);
+      fCountErrors++;
+      fCountLost2++;
+      fLast_PKT_SEQ = udp->PKT_SEQ;
+   } else if (udp->PKT_SEQ == fLast_PKT_SEQ + 4) {
+      printf("PwbModuleAsm::AddPacket: Error: module %d lost three UDP packets: PKT_SEQ jump 0x%08x to 0x%08x\n", fModule, fLast_PKT_SEQ, udp->PKT_SEQ);
+      fCountErrors++;
+      fCountLost3++;
       fLast_PKT_SEQ = udp->PKT_SEQ;
    } else {
-      fLast_PKT_SEQ++;
+      int skip = udp->PKT_SEQ - fLast_PKT_SEQ - 1;
+      printf("PwbModuleAsm::AddPacket: Error: module %d misordered or lost UDP packets: PKT_SEQ jump 0x%08x to 0x%08x, skipped %d\n", fModule, fLast_PKT_SEQ, udp->PKT_SEQ, skip);
+      fCountErrors++;
+      fCountLostN++;
+      fLast_PKT_SEQ = udp->PKT_SEQ;
    }
 
    int s = udp->CHANNEL_ID;
@@ -1010,11 +1040,26 @@ PwbAsm::PwbAsm() // ctor
 
 PwbAsm::~PwbAsm() // dtor
 {
+   int errors = 0;
+   int lost1 = 0;
+   int lost2 = 0;
+   int lost3 = 0;
+   int lostN = 0;
+
    for (unsigned i=0; i<fModules.size(); i++) {
       if (fModules[i]) {
+         errors += fModules[i]->fCountErrors;
+         lost1  += fModules[i]->fCountLost1;
+         lost2  += fModules[i]->fCountLost2;
+         lost3  += fModules[i]->fCountLost3;
+         lostN  += fModules[i]->fCountLostN;
          delete fModules[i];
          fModules[i] = NULL;
       }
+   }
+
+   if (errors > 0) {
+      printf("PwbAsm: %d errors, lost %d/%d/%d/%d\n", errors, lost1, lost2, lost3, lostN);
    }
 }
 

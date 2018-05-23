@@ -78,6 +78,7 @@ public:
 public: // state
    uint16_t fLast_CHANNEL_SEQ = 0;
    int fState = 0;
+   bool fError = false;
    int fCountErrors = 0;
    uint32_t fTs = 0;
 
@@ -126,6 +127,11 @@ public:
 
 public: // state
    int fCountErrors = 0;
+   int fCountLost1 = 0;
+   int fCountLost2 = 0;
+   int fCountLost3 = 0;
+   int fCountLostN = 0;
+
    uint32_t fLast_PKT_SEQ = 0;
    uint32_t fTs = 0;
    double   fTime = 0;
