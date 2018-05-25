@@ -18,8 +18,6 @@ AgAsm::AgAsm()
 
 AgAsm::~AgAsm()
 {
-   printf("AgAsm::~AgAsm: Total events: %d, complete: %d, with error: %d, incomplete: %d, with error: %d, max timestamp difference trg/adc/pwb: %.0f/%.0f/%.0f ns\n", fCounter, fCountComplete, fCountCompleteWithError, fCountIncomplete, fCountIncompleteWithError, fTrgMaxDt*1e9, fAdcMaxDt*1e9, fPwbMaxDt*1e9);
-
    //Print();
 
    if (fAdcAsm) {
@@ -41,6 +39,8 @@ AgAsm::~AgAsm()
       delete fFeamAsm;
       fFeamAsm = NULL;
    }
+
+   printf("AgAsm: Total events: %d, complete: %d, with error: %d, incomplete: %d, with error: %d, max timestamp difference trg/adc/pwb: %.0f/%.0f/%.0f ns\n", fCounter, fCountComplete, fCountCompleteWithError, fCountIncomplete, fCountIncompleteWithError, fTrgMaxDt*1e9, fAdcMaxDt*1e9, fPwbMaxDt*1e9);
 }
 
 void AgAsm::Print() const
