@@ -103,6 +103,7 @@ class Alpha16Asm
 
  public:
    Alpha16Asm(); // ctor
+   ~Alpha16Asm(); // dtor
 
  public: // member functions
    Alpha16Event* NewEvent();
@@ -122,6 +123,12 @@ class Alpha16Asm
    std::vector<uint32_t> fFirstUdpTs32;
    unsigned fFirstNumSamples16 = 0;
    unsigned fFirstNumSamples32 = 0;
+
+ public: // counters
+   int fCountGood = 0;
+   int fCountIncomplete = 0;
+   int fCountError = 0;
+   int fCountIncompleteWithError = 0;
 
  public: // internal functions
    void Init();

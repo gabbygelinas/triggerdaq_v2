@@ -371,6 +371,16 @@ Alpha16Asm::Alpha16Asm() // ctor
    Init();
 }
 
+Alpha16Asm::~Alpha16Asm() // dtor
+{
+   printf("Alpha16Asm: %d events, %d complete, %d with error, %d incomplete, %d with error\n",
+          fEventCount,
+          fCountGood,
+          fCountError,
+          fCountIncomplete,
+          fCountIncompleteWithError);
+}
+
 // wire number -> adc16 channel
 //static const int chanmap_top[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
 static const int chanmap_top[] = { 7, 15, 6, 14, 5, 13, 4, 12, 3, 11, 2, 10, 1, 9, 0, 8 };
@@ -854,6 +864,18 @@ void Alpha16Asm::CheckEvent(Alpha16Event* e)
    
    fLastEventTs = event_ts;
    fLastEventTime = eventTime;
+
+   if (e->complete) {
+      if (e->error)
+         fCountError++;
+      else
+         fCountGood++;
+   } else {
+      if (e->error)
+         fCountIncompleteWithError++;
+      else
+         fCountIncomplete++;
+   }
 }
 
 /* emacs
