@@ -30,5 +30,9 @@ adc17 0 A-BOT-10 B10
 adc15 0 A-BOT-12 B12
 adc16 0 A-BOT-13 B13
 adc18 0 A-BOT-14 B14
+adc18 1 X X
+adc18 2 X X
 adc19 0 A-BOT-15 B15
+adc19 1 X X
+adc19 2 X X
 #end

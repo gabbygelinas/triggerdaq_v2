@@ -118,7 +118,8 @@ class Alpha16Asm
    double   fLastEventTime = 0;
    int      fTsEpoch = 0;
 
-   std::vector<uint32_t> fFirstUdpTs;
+   std::vector<uint32_t> fFirstUdpTs16;
+   std::vector<uint32_t> fFirstUdpTs32;
    unsigned fFirstNumSamples16 = 0;
    unsigned fFirstNumSamples32 = 0;
 
