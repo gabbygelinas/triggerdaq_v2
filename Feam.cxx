@@ -688,13 +688,23 @@ void PwbModuleMap::LoadFeamBanks(const std::vector<std::string> banks)
    if (banks.size() <= 8) { // short TPC
       int iring = 0;
       for (unsigned icolumn = 0; icolumn < banks.size(); icolumn++) {
-         int c2 = banks[icolumn][2] - '0';
-         int c3 = banks[icolumn][3] - '0';
-         int imodule = c2*10 + c3;
+         unsigned imodule = 0;
+
+         if (banks[icolumn][0] == 'p' && banks[icolumn][1] == 'w' && banks[icolumn][2] == 'b') {
+            int c2 = banks[icolumn][3] - '0';
+            int c3 = banks[icolumn][4] - '0';
+            imodule = c2*10 + c3;
+         } else {
+            int c2 = banks[icolumn][2] - '0';
+            int c3 = banks[icolumn][3] - '0';
+            imodule = c2*10 + c3;
+         }
+
          if (imodule > PWB_MODULE_LAST) {
             fprintf(stderr, "PwbModuleMap::LoadFeamBanks: Invalid module number %d in bank name [%s]\n", imodule, banks[icolumn].c_str());
             continue;
          }
+ 
          PwbModuleMapEntry *e = new PwbModuleMapEntry;
          e->fModule = imodule;
          e->fColumn = icolumn;
@@ -703,20 +713,32 @@ void PwbModuleMap::LoadFeamBanks(const std::vector<std::string> banks)
          while (imodule >= fMap.size()) {
             fMap.push_back(NULL);
          }
+
          fMap[imodule] = e;
          fNumModules++;
       }
    } else { // long TPC
       for (unsigned i = 0; i < banks.size(); i++) {
-         int c2 = banks[i][2] - '0';
-         int c3 = banks[i][3] - '0';
-         int imodule = c2*10 + c3;
+         unsigned imodule = 0;
+
+         if (banks[i][0] == 'p' && banks[i][1] == 'w' && banks[i][2] == 'b') {
+            int c2 = banks[i][3] - '0';
+            int c3 = banks[i][4] - '0';
+            imodule = c2*10 + c3;
+         } else {
+            int c2 = banks[i][2] - '0';
+            int c3 = banks[i][3] - '0';
+            imodule = c2*10 + c3;
+         }
+
          if (imodule > PWB_MODULE_LAST) {
             fprintf(stderr, "PwbModuleMap::LoadFeamBanks: Invalid module number %d in bank name [%s]\n", imodule, banks[i].c_str());
             continue;
          }
+
          int icolumn = i/8;
          int iring = i%8;
+
          PwbModuleMapEntry *e = new PwbModuleMapEntry;
          e->fModule = imodule;
          e->fColumn = icolumn;
@@ -725,6 +747,7 @@ void PwbModuleMap::LoadFeamBanks(const std::vector<std::string> banks)
          while (imodule >= fMap.size()) {
             fMap.push_back(NULL);
          }
+
          fMap[imodule] = e;
          fNumModules++;
       }
