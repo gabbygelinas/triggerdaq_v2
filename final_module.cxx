@@ -775,26 +775,30 @@ public:
                
                if (eawh) {
                   for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
-                     hh->SetBinContent(1+eawh->fAwHits[j].wire, eawh->fAwHits[j].time);
-                     ha->SetBinContent(1+eawh->fAwHits[j].wire, eawh->fAwHits[j].amp);
+                     int iwire = eawh->fAwHits[j].wire;
+                     double time = eawh->fAwHits[j].time;
+                     double amp = eawh->fAwHits[j].amp;
+
+                     hh->SetBinContent(1+iwire, time);
+                     ha->SetBinContent(1+iwire, amp);
                      
                      int num_wires = 256;
                      
-                     int iwire = eawh->fAwHits[j].wire%num_wires;
-                     int itb = eawh->fAwHits[j].wire/num_wires;
+                     int itbwire = iwire%num_wires;
+                     int itb = iwire/num_wires;
                      
-                     int ipreamp = iwire/16;
+                     int ipreamp = itbwire/16;
                      
-                     double dist = (eawh->fAwHits[j].time - 1000.0)/4000.0;
+                     double dist = (time - 1000.0)/4000.0;
                      if (dist < 0)
                         dist = 0;
                      if (dist > 1)
                         dist = 1;
                      
-                     double t = ((iwire-8.0)/(1.0*num_wires))*(2.0*TMath::Pi());
+                     double t = (itbwire-8.0)/(1.0*num_wires)*(2.0*TMath::Pi());
                      double r = rmax-dist*(rmax-rmin);
                      
-                     printf("aw hit %3d, wire %3d, tb %d, preamp %2d, iwire %3d, t %f (%f), r %f\n", j, eawh->fAwHits[j].wire, itb, ipreamp, iwire, t, t/TMath::Pi(), r);
+                     printf("aw hit %3d, wire %3d, tb %d, preamp %2d, iwire %3d, time %f, amp %f, theta %f (%f), radius %f\n", j, iwire, itb, ipreamp, itbwire, time, amp, t, t/TMath::Pi(), r);
 
                      preamp_hits[ipreamp] = true;
                      
