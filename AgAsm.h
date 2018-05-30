@@ -18,6 +18,7 @@ class AgAsm
 {
  public: // settings
    double fConfMaxDt = 0.000000100; // max timestamp deviation in sec
+   int fConfAdc32Rev = -1; // fmc-adc32 board revision number
 
  public: // event builder state
    int    fCounter = 0;

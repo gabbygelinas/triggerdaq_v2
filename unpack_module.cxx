@@ -122,10 +122,17 @@ public:
       //printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
 
+      int adc32_rev = 0;
+      if (runinfo->fRunNo >= 1694) {
+         adc32_rev = 1;
+      }
+
       if (runinfo->fRunNo >= 1244) {
          assert(!fAgAsm);
 
          fAgAsm = new AgAsm();
+
+         fAgAsm->fConfAdc32Rev = adc32_rev;
          
          fAgAsm->fAdcMap = fCfm->ReadFile("adc", "map", runinfo->fRunNo);
          printf("Loaded adc map: %s\n", join(", ", fAgAsm->fAdcMap).c_str());
@@ -155,6 +162,7 @@ public:
          
          if (have_adc) {
             fAdcAsm  = new Alpha16Asm();
+            fAdcAsm->Init(adc32_rev);
             fAdcAsm->fMap.Init(fAdcMap);
             fAdcAsm->fMap.Print();
             if (runinfo->fRunNo < 808) {

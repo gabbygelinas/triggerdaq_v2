@@ -131,7 +131,7 @@ class Alpha16Asm
    int fCountIncompleteWithError = 0;
 
  public: // internal functions
-   void Init();
+   void Init(int adc32_rev);
 };
 
 #endif

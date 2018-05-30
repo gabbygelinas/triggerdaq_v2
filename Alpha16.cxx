@@ -368,7 +368,6 @@ void Alpha16Map::Print() const
 
 Alpha16Asm::Alpha16Asm() // ctor
 {
-   Init();
 }
 
 Alpha16Asm::~Alpha16Asm() // dtor
@@ -390,47 +389,9 @@ static const int chanmap_bot[] = { 8, 0, 9, 1, 10, 2, 11, 3, 12, 4, 13, 5, 14, 6
 static const int inv_chanmap_top[] = { 14, 12, 10, 8, 6, 4, 2, 0, 15, 13, 11, 9, 7, 5, 3, 1 };
 static const int inv_chanmap_bot[] = { 1, 3, 5, 7, 9, 11, 13, 15, 0, 2, 4, 6, 8, 10, 12, 14 };
 
-#if 0
-// wire number -> adc32 channel, map by K.O.
-static const int adc32_chanmap_ko[32] = {
-   0,
-   10,//1
-   6,//2,
-   8,//3,
-   5,//9,//4,//5,//4,
-   9,//1,//4,//9,//4,//5,
-   2,//1,//9,//5,//4,//1,//2,//6,
-   1,//2,//14,//7,
-   14,//2,//3,//8,
-   3,//4,//5,//4,//9,
-   13,//4,//3,//2,//1,//10,
-   15,//11,
-   11,//20,//11,//15,//12,
-   12,//4,//13,
-   20,//18,//20,//24,//18,//25,//28,//25,//20,//7,//14,
-   28,//20,//28,//16,//24,//20,//11,//20,//4,//25,//28,//18,//4,//12,//15,
-   4,//28,//4,//28,//24,//16,//25,//18,//4,//20,//16,
-   18,//4,//7,//4,//24,//28,//25,//7,//24,//17,
-   7,//18,//7,//24,//4,//7,//25,//4,//18,
-   25,//18,//24,//7,//4,//16,//20,//25,//19,
-   16,//25,//18,//24,//7,//20,
-   24,//25,//16,//4,//18,//28,//21,
-   17,//30,//22,
-   30,//17,//23,
-   23,//7,//24,
-   19,//25,
-   21,//28, //26,
-   26,//29,//22,//30, //27,
-   27,//29,//26, //28,
-   29,//27, //30, //29,
-   22,//29, //30,
-   31
-};
-#endif
-
-// adc32 channel -> wire number, map from Keith Ong
+// adc32 rev0 channel -> wire number, map from Keith Ong
 // verified to be correct by K.O. by pulsing preamp inputs, one at a time
-static const int inv_adc32_chanmap_top[32] = {
+static const int inv_adc32_rev0_chanmap_top[32] = {
    1, 6, 3, 8,
    16+1, 5, 2, 16+2,
    4, 10, 0, 12,
@@ -441,11 +402,25 @@ static const int inv_adc32_chanmap_top[32] = {
    16+0, 16+13, 16+7, 16+15
 };
 
-#if 0
-static int inv_adc32_chanmap_ko[32];
-#endif
+// adc32 rev1 channel -> 16 channels of J1 preamp, followed by 16 channels of J2 preamp
+// map built by K.O. by pulsing J1 and J2 preamps one input at a time
+// from the attenuated field wire pulser.
+static const int adc32_rev1_chanmap[32] = {
+   18, 24, 17, 16,
+   25, 26, 19, 27,
+   20, 28, 21, 29,
+   22, 30, 23, 31,
+   32, 40, 33, 34,
+   41, 42, 35, 43,
+   36, 44, 37, 45,
+   38, 46, 39, 47
+};
 
-void Alpha16Asm::Init()
+static int inv_adc32_rev1_chanmap[48];
+
+static int inv_adc32_chanmap[48];
+
+void Alpha16Asm::Init(int adc32_rev)
 {
    // construct or check the inverted adc16 map
    
@@ -506,6 +481,34 @@ void Alpha16Asm::Init()
    printf("\n");
 #endif
 
+   // construct the inverted adc32_rev1 map
+
+   for (int xchan=0; xchan<48; xchan++) {
+      inv_adc32_rev1_chanmap[xchan] = -1;
+   }
+
+   for (int xchan=0; xchan<48; xchan++) {
+      int ychan = -1;
+      for (int i=0; i<32; i++)
+         if (adc32_rev1_chanmap[i] == xchan) {
+            ychan = i;
+            break;
+         }
+      assert(inv_adc32_rev1_chanmap[xchan] == -1);
+      inv_adc32_rev1_chanmap[xchan] = ychan;
+   }
+
+#if 0
+   printf("inv_adc32_rev1_chanmap:\n");
+   for (int xchan=0; xchan<48; xchan++) {
+      int xx = inv_adc32_rev1_chanmap[xchan];
+      int conn = xx/16;
+      int wire16 = xx%16;
+      printf(" adc %d -> chan %d, connector %d, wire %d\n", xchan, xx, conn, wire16);
+   }
+   printf("\n");
+#endif
+
 #if 0
    printf("inv_chanmap_bot: ");
    for (int xchan=0; xchan<16; xchan++) {
@@ -519,6 +522,34 @@ void Alpha16Asm::Init()
    }
    printf("\n");
 #endif
+
+   if (adc32_rev == 0) {
+      for (int xchan=0; xchan<16; xchan++) {
+         inv_adc32_chanmap[xchan] = -1;
+      }
+      for (int xchan=16; xchan<48; xchan++) {
+         inv_adc32_chanmap[xchan] = inv_adc32_rev0_chanmap_top[xchan-16];
+      }
+   } else if (adc32_rev == 1) {
+      for (int xchan=0; xchan<48; xchan++) {
+         inv_adc32_chanmap[xchan] = inv_adc32_rev1_chanmap[xchan];
+      }
+   } else {
+      printf("Alpha16Asm::Init: Error: invalid valud of adc32_rev %d, cannot continue!\n", adc32_rev);
+      abort();
+   }
+
+#if 1
+   printf("inv_adc32_chanmap:\n");
+   for (int xchan=0; xchan<48; xchan++) {
+      int xx = inv_adc32_chanmap[xchan];
+      int conn = xx/16;
+      int wire16 = xx%16;
+      printf(" adc %d -> chan %d, connector %d, wire %d\n", xchan, xx, conn, wire16);
+   }
+   printf("\n");
+#endif
+
 }
 
 void Alpha16Asm::AddChannel(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c)
@@ -533,32 +564,28 @@ void Alpha16Asm::AddChannel(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c
          c->preamp_pos = pos0;
          xchan = c->adc_chan;
       } else if (c->adc_chan < 48) {
-         int ichan = c->adc_chan-16; // 32ch ADC channel number
-         //int zchan = inv_adc32_chanmap[ichan];
-         //int zchan = ichan;
-         int zchan = inv_adc32_chanmap_top[ichan];
-         if (zchan < 16) {
+         int mchan = inv_adc32_chanmap[c->adc_chan];
+         if (mchan < 16) {
             c->preamp_pos = pos1;
-            xchan = zchan;
-         } else if (zchan < 32) {
+            c->preamp_wire = mchan;
+         } else if (mchan < 32) {
             c->preamp_pos = pos2;
-            xchan = zchan-16;
+            c->preamp_wire = mchan - 16;
          } else {
             abort(); // cannot happen
          }
-         c->preamp_wire = xchan;
-         if (c->preamp_pos >= 0) {
+         if (c->preamp_pos >= 16) { // top
             c->tpc_wire = c->preamp_pos*16 + c->preamp_wire;
+         } else if (c->preamp_pos >= 0) { // bot
+            c->tpc_wire = c->preamp_pos*16 + (15-c->preamp_wire);
          } else {
             c->tpc_wire = -1;
          }
          if (0 && c->tpc_wire == 288) {
-            printf("remap: module %d, adc_chan %d, ichan %d, zchan %d, xchan %d, preamp pos %d, wire %d, tpc_wire %d\n",
+            printf("remap: module %d, adc_chan %d, mapped %d, preamp pos %d, wire %d, tpc_wire %d\n",
                    imodule,
                    c->adc_chan,
-                   ichan,
-                   zchan,
-                   xchan,
+                   mchan,
                    c->preamp_pos,
                    c->preamp_wire,
                    c->tpc_wire

@@ -109,6 +109,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
 
          if (!fAdcAsm) {
             fAdcAsm = new Alpha16Asm();
+            fAdcAsm->Init(fConfAdc32Rev);
             fAdcAsm->fMap.Init(fAdcMap);
             fAdcAsm->fMap.Print();
          }
