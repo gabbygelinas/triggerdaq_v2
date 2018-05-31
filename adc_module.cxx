@@ -531,12 +531,16 @@ public:
       int i = hit->tpc_wire;
       int r = 1;
 
-      if (hit->adc_module == 5 && hit->adc_chan >= 16) {
-         r = 2;
-      }
-
-      if (hit->adc_module == 6 && hit->adc_chan >= 16) {
-         r = 3;
+      if (runinfo->fRunNo < 1694) {
+         if (hit->adc_module == 5 && hit->adc_chan >= 16) {
+            r = 2; // fmc-adc32-rev0 gain 1
+         }
+         
+         if (hit->adc_module == 6 && hit->adc_chan >= 16) {
+            r = 3; // fmc-adc32-rev0 gain 2
+         }
+      } else {
+         r = 4; // fmc-adc32-rev1 gain 3
       }
 
 #if 0      
@@ -672,7 +676,7 @@ public:
       
          ph = bmean - wmin;
 
-         double cfd_thr = ph/2.0;
+         double cfd_thr = 0.5*ph;
 
          if (wmin == -32768.0) {
             ph = MAX_AW_AMP-1;
@@ -715,7 +719,7 @@ public:
             ph_hit_thr_adc32 =  2500;
          } else if (runinfo->fRunNo < 9999) {
             ph_hit_thr_adc16 =  1000;
-            ph_hit_thr_adc32 =  1000;
+            ph_hit_thr_adc32 =   800;
          }
 
          double ph_hit_thr = 0;
@@ -763,6 +767,8 @@ public:
             adc_gain = 4.0;
          else if (r == 3)
             adc_gain = 2.0;
+         else if (r == 4)
+            adc_gain = 4.0/3.0; // fmc-adc32-rev1 with gain 3
 
          if (ph > ph_hit_thr) {
             have_pulse = true;
