@@ -40,7 +40,8 @@ public:
    TCanvas* fC = NULL;
 
    TH1D* h_time_between_events = NULL;
-   TH1D* h_time_between_events_zoom = NULL;
+   TH1D* h_time_between_events_zoom_1sec = NULL;
+   TH1D* h_time_between_events_zoom_01sec = NULL;
 
    TH1D* h_aw_num_hits;
 
@@ -196,7 +197,8 @@ public:
       dir->mkdir("summary")->cd();
 
       h_time_between_events = new TH1D("h_time_between_events", "time between events; time, sec", 100, 0, 3.0);
-      h_time_between_events_zoom = new TH1D("h_time_between_events_zoom", "time between events, early part; time, sec", 100, 0, 1.0);
+      h_time_between_events_zoom_1sec = new TH1D("h_time_between_events_zoom_1sec", "time between events, zoom 1 sec; time, sec", 100, 0, 1.0);
+      h_time_between_events_zoom_01sec = new TH1D("h_time_between_events_zoom_01sec", "time between events, zoom 0.1 sec; time, sec", 100, 0, 0.1);
 
       h_aw_num_hits = new TH1D("h_aw_num_hits", "number of anode wire hits", 100, 0, MAX_HITS);
       h_aw_time = new TH1D("h_aw_time", "aw hit time; time, ns", 100, 0, MAX_TIME);
@@ -349,7 +351,8 @@ public:
       AgEvent* age = ef->fEvent;
 
       h_time_between_events->Fill(age->timeIncr);
-      h_time_between_events_zoom->Fill(age->timeIncr);
+      h_time_between_events_zoom_1sec->Fill(age->timeIncr);
+      h_time_between_events_zoom_01sec->Fill(age->timeIncr);
 
       uint32_t adc16_coinc_dff = 0;
 
