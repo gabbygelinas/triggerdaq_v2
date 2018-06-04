@@ -505,7 +505,13 @@ void PwbUdpPacket::Print() const
 PwbEventHeader::PwbEventHeader(const char* ptr, int size)
 {
    const uint32_t* p32 = (const uint32_t*)ptr;
-   int nw = size/4;
+   int nw32 = size/4;
+   
+   if (nw32 < 16) {
+      printf("PwbEventHeader::ctor: Error: event header size %d words is too small\n", nw32);
+      fError = true;
+      return;
+   }
 
    fError = false;
    
@@ -513,34 +519,67 @@ PwbEventHeader::PwbEventHeader(const char* ptr, int size)
    ScaId           = (p32[5]>> 8) & 0xFF;
    CompressionType = (p32[5]>>16) & 0xFF;
    TriggerSource   = (p32[5]>>24) & 0xFF;
-   
-   HardwareId1 = p32[6];
-   
-   HardwareId2 = (p32[7]>> 0) & 0xFFFF;
-   TriggerDelay     = (p32[7]>>16) & 0xFFFF;
-   
-   // NB timestamp clock is 125 MHz
-   
-   TriggerTimestamp1 = p32[8];
-   
-   TriggerTimestamp2 = (p32[9]>> 0) & 0xFFFF;
-   Reserved1         = (p32[9]>>16) & 0xFFFF;
-   
-   ScaLastCell = (p32[10]>> 0) & 0xFFFF;
-   ScaSamples  = (p32[10]>>16) & 0xFFFF;
-   
-   ScaChannelsSent1 = p32[11];
-   ScaChannelsSent2 = p32[12];
-   
-   ScaChannelsSent3 = (p32[13]>> 0) & 0xFF;
-   ScaChannelsThreshold1 = (p32[13]>> 8) & 0xFFFFFF;
-   
-   ScaChannelsThreshold2 = p32[14];
-   
-   ScaChannelsThreshold3 = p32[15] & 0xFFFF;
-   Reserved2             = (p32[15]>>16) & 0xFFFF;
 
-   start_of_data = 16*4;
+   if (FormatRevision == 0) {
+      HardwareId1 = p32[6];
+      
+      HardwareId2 = (p32[7]>> 0) & 0xFFFF;
+      TriggerDelay     = (p32[7]>>16) & 0xFFFF;
+      
+      // NB timestamp clock is 125 MHz
+      
+      TriggerTimestamp1 = p32[8];
+      
+      TriggerTimestamp2 = (p32[9]>> 0) & 0xFFFF;
+      Reserved1         = (p32[9]>>16) & 0xFFFF;
+      
+      ScaLastCell = (p32[10]>> 0) & 0xFFFF;
+      ScaSamples  = (p32[10]>>16) & 0xFFFF;
+      
+      ScaChannelsSent1 = p32[11];
+      ScaChannelsSent2 = p32[12];
+      
+      ScaChannelsSent3 = (p32[13]>> 0) & 0xFF;
+      ScaChannelsThreshold1 = (p32[13]>> 8) & 0xFFFFFF;
+      
+      ScaChannelsThreshold2 = p32[14];
+      
+      ScaChannelsThreshold3 = p32[15] & 0xFFFF;
+      Reserved2             = (p32[15]>>16) & 0xFFFF;
+      
+      start_of_data = 16*4;
+   } else if (FormatRevision == 1) {
+      HardwareId1 = p32[6];
+      
+      HardwareId2 = (p32[7]>> 0) & 0xFFFF;
+      TriggerDelay     = (p32[7]>>16) & 0xFFFF;
+      
+      // NB timestamp clock is 125 MHz
+      
+      TriggerTimestamp1 = p32[8];
+      
+      TriggerTimestamp2 = (p32[9]>> 0) & 0xFFFF;
+      Reserved1         = (p32[9]>>16) & 0xFFFF;
+      
+      ScaLastCell = (p32[10]>> 0) & 0xFFFF;
+      ScaSamples  = (p32[10]>>16) & 0xFFFF;
+      
+      ScaChannelsSent1 = p32[11];
+      ScaChannelsSent2 = p32[12];
+      
+      ScaChannelsSent3 = (p32[13]>> 0) & 0xFFFF;
+      ScaChannelsThreshold1 = (p32[13]>>16) & 0xFFFF;
+      
+      ScaChannelsThreshold2 = p32[14];
+      
+      ScaChannelsThreshold3 = p32[15];
+      Reserved2             = 0;
+      
+      start_of_data = 16*4;
+   } else {
+      printf("PwbEventHeader::ctor: Error: invalid FormatRevision %d, expected 0 or 1\n", FormatRevision);
+      fError = true;
+   }
 }
 
 void PwbEventHeader::Print() const
@@ -619,7 +658,18 @@ void PwbChannelAsm::Reset()
 void PwbChannelAsm::AddSamples(int channel, const uint16_t* samples, int count)
 {
    const int16_t* signed_samples = (const int16_t*)samples;
-   int ri = channel + 1;
+   int ri = -1;
+   if (fFormatRevision == 0) {
+      ri = channel + 1;
+   } else if (fFormatRevision == 1) {
+      ri = channel;
+   } else {
+      printf("PwbChannelAsm::AddSamples: Error: module %d sca %d state %d: invalid FormatRevision %d\n", fModule, fSca, fState, fFormatRevision);
+      fCountErrors++;
+      fState = PWB_CA_ST_ERROR;
+      fError = true;
+      return;
+   }
 
    if (fTrace) {
       printf("pwb module %d, sca %d, channel %d, ri %d, add %d samples\n", fModule, fSca, channel, ri, count);
@@ -684,7 +734,7 @@ void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e)
       int channel = p[0];
       int samples = p[1];
 
-      if (channel < 0 || channel > 80) {
+      if (channel < 0 || channel >= 80) {
          printf("PwbChannelAsm::CopyData: Error: module %d, invalid channel %d\n", fModule, channel);
          fCountErrors++;
       }
@@ -868,13 +918,21 @@ void PwbChannelAsm::AddPacket(PwbUdpPacket* udp, const char* ptr, int size)
       if (udp->CHUNK_ID == 0) {
          PwbEventHeader* eh = new PwbEventHeader(ptr, size);
          uint32_t ts = eh->TriggerTimestamp1;
+         fFormatRevision = eh->FormatRevision;
          if (fTrace) {
             eh->Print();
          }
+         if (eh->fError) {
+            printf("PwbChannelAsm::AddPacket: Error: module %d sca %d state %d: error in event header\n", fModule, fSca, fState);
+            fCountErrors++;
+            fState = PWB_CA_ST_ERROR;
+            fError = true;
+         } else {
+            fState = PWB_CA_ST_DATA;
+            fError = false;
+            BeginData(ptr, size, eh->start_of_data, udp->end_of_payload, ts);
+         }
          delete eh;
-         fState = PWB_CA_ST_DATA;
-         fError = false;
-         BeginData(ptr, size, eh->start_of_data, udp->end_of_payload, ts);
       } else {
          printf("PwbChannelAsm::AddPacket: module %d sca %d state %d: Ignoring UDP packet with CHUNK_ID 0x%02x while waiting for an event header\n", fModule, fSca, fState, udp->CHUNK_ID);
       }

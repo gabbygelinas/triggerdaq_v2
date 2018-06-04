@@ -81,6 +81,7 @@ public: // state
    bool fError = false;
    int fCountErrors = 0;
    uint32_t fTs = 0;
+   int fFormatRevision = 0;
 
 public: // configuration
    bool fTrace = false;
