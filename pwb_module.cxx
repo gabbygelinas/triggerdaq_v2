@@ -45,6 +45,8 @@
 #define ADC_RMS_FPN_MIN 0.100
 #define ADC_RMS_FPN_MAX 4.000
 
+#define ADC_RMS_PAD_MIN 2.500
+
 #define ADC_PULSER_TIME 450
 
 #define NUM_SEQSCA (3*80+79)
@@ -510,6 +512,8 @@ public:
    int fCountGoodFpn = 0;
    int fCountBadFpn = 0;
 
+   int fCountBadPad = 0;
+
    bool fTrace = false;
 
    PwbModule(TARunInfo* runinfo, PwbFlags* f)
@@ -650,7 +654,7 @@ public:
          }
       }
 
-      printf("PwbModule::EndRun: test for bad SCA: total events %d, bad events %d, bad sca %d, bad fpn %d, good fpn %d\n", fCountTestScaEvents, fCountBadScaEvents, fCountBadSca, fCountBadFpn, fCountGoodFpn);
+      printf("PwbModule::EndRun: test for bad SCA: total events %d, bad events %d, bad sca %d, bad fpn %d, good fpn %d, bad pad %d\n", fCountTestScaEvents, fCountBadScaEvents, fCountBadSca, fCountBadFpn, fCountGoodFpn, fCountBadPad);
    }
 
    void PauseRun(TARunInfo* runinfo)
@@ -1063,6 +1067,7 @@ public:
          int nhitchan_feam = 0;
 
          bool fpn_is_ok = true;
+         bool pad_is_ok = true;
 
          int isca = c->sca;
 
@@ -1266,6 +1271,14 @@ public:
             } else {
                printf("XXX bad fpn, pwb%02d, sca %d, readout %d, scachan %d, col %d, row %d, bmin %f, bmax %f, in hex 0x%04x, brms %f\n", imodule, isca, ichan, scachan, col, row, bmin, bmax, (uint16_t)bmin, brms);
                fpn_is_ok = false;
+            }
+         }
+
+         if (scachan_is_pad) {
+            if (brms > ADC_RMS_PAD_MIN) {
+            } else {
+               printf("XXX bad pad, pwb%02d, sca %d, readout %d, scachan %d, col %d, row %d, bmin %f, bmax %f, in hex 0x%04x, brms %f\n", imodule, isca, ichan, scachan, col, row, bmin, bmax, (uint16_t)bmin, brms);
+               pad_is_ok = false;
             }
          }
          
@@ -1538,6 +1551,14 @@ public:
          } else {
             fCountBadFpn ++;
             //printf("XXX bad fpn count %d\n", fCountBadFpn);
+         }
+         
+         if (pad_is_ok) {
+            //fCountGoodPad ++;
+            //printf("XXX good pad count %d\n", fCountGoodPad);
+         } else {
+            fCountBadPad ++;
+            //printf("XXX bad pad count %d\n", fCountBadPad);
          }
          
          hf->h_spike_seqsca->Fill(1); // event counter marker
