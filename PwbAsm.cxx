@@ -868,6 +868,11 @@ void PwbChannelAsm::BuildEvent(FeamEvent* e)
       e->error = true;
    }
 
+   bool dupe[MAX_FEAM_READOUT];
+   for (int i=0; i<MAX_FEAM_READOUT; i++) {
+      dupe[i] = false;
+   }
+
    for (unsigned i=0; i<fOutput.size(); i++) {
       if (fOutput[i]) {
          FeamChannel* c = fOutput[i];
@@ -877,8 +882,20 @@ void PwbChannelAsm::BuildEvent(FeamEvent* e)
          if (c->sca_readout >= MAX_FEAM_READOUT) {
             printf("PwbChannelAsm::BuildEvent: Error: skipping invalid channel, sca_readout: %d\n", c->sca_readout);
             delete c;
+            e->error = true;
+            fCountErrors++;
             continue;
          }
+
+         if (dupe[c->sca_readout]) {
+            printf("PwbChannelAsm::BuildEvent: Error: skipping duplicate channel, sca_readout: %d\n", c->sca_readout);
+            delete c;
+            e->error = true;
+            fCountErrors++;
+            continue;
+         }
+
+         dupe[c->sca_readout] = true;
 
          c->sca_chan = PwbPadMap::Map()->channel[c->sca_readout];
          bool scachan_is_pad = (c->sca_chan > 0);
