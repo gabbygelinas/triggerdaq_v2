@@ -717,7 +717,7 @@ void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e)
    while (1) {
       int r = e-p;
       if (r < 2) {
-         printf("PwbChannelAsm::CopyData: Error: need to en-buffer a partial header, r: %d!\n", r);
+         printf("PwbChannelAsm::CopyData: module %d sca %d state %d: Error: need to en-buffer a partial header, r: %d!\n", fModule, fSca, fState, r);
          fCountErrors++;
          break;
       }
@@ -727,7 +727,7 @@ void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e)
          break;
       }
       if (p[0] == 0xCCCC && p[1] == 0xCCCC) {
-         printf("PwbChannelAsm::CopyData: Error: module %d, unexpected 0xCCCC words, r %d!\n", fModule, r);
+         printf("PwbChannelAsm::CopyData: module %d sca %d state %d: Error: unexpected 0xCCCC words, r %d!\n", fModule, fSca, fState, r);
          fCountErrors++;
          break;
       }
@@ -735,12 +735,12 @@ void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e)
       int samples = p[1];
 
       if (channel < 0 || channel >= 80) {
-         printf("PwbChannelAsm::CopyData: Error: module %d, invalid channel %d\n", fModule, channel);
+         printf("PwbChannelAsm::CopyData: module %d sca %d state %d: Error: invalid channel %d\n", fModule, fSca, fState, channel);
          fCountErrors++;
       }
 
       if (samples != 511) {
-         printf("PwbChannelAsm::CopyData: Error: invalid samples %d\n", samples);
+         printf("PwbChannelAsm::CopyData: module %d sca %d state %d: Error: invalid number of samples %d\n", fModule, fSca, fState, samples);
          fCountErrors++;
       }
 
@@ -748,7 +748,7 @@ void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e)
       if (samples&1)
          nw+=1;
       if (nw <= 0) {
-         printf("PwbChannelAsm::CopyData: Error: invalid word counter nw: %d\n", nw);
+         printf("PwbChannelAsm::CopyData: module %d sca %d state %d: Error: invalid word counter nw: %d\n", fModule, fSca, fState, nw);
          fCountErrors++;
          break;
       }
@@ -832,7 +832,7 @@ void PwbChannelAsm::AddData(const char* ptr, int size, int start_of_data, int en
    } else if (p == e) {
       // good, no more data in this packet
    } else {
-      printf("PwbChannelAsm::AddData: Error!\n");
+      printf("PwbChannelAsm::AddData: module %d sca %d state %d: Error!\n", fModule, fSca, fState);
       assert(!"this cannot happen");
    }
 }
@@ -840,7 +840,7 @@ void PwbChannelAsm::AddData(const char* ptr, int size, int start_of_data, int en
 void PwbChannelAsm::EndData()
 {
    if (fSaveNw > 0) {
-      printf("PwbChannelAsm::EndData: Error: missing some data at the end\n");
+      printf("PwbChannelAsm::EndData: module %d sca %d state %d: Error: missing some data at the end\n", fModule, fSca, fState);
    } else {
       if (fTrace) {
          printf("PwbChannelAsm::EndData: ok!\n");
@@ -864,6 +864,10 @@ void PwbChannelAsm::EndData()
 
 void PwbChannelAsm::BuildEvent(FeamEvent* e)
 {
+   if (!CheckComplete()) {
+      EndData();
+   }
+
    if (fError) {
       e->error = true;
    }
@@ -880,7 +884,7 @@ void PwbChannelAsm::BuildEvent(FeamEvent* e)
          
          // FIXME: bad data from PWB!!!
          if (c->sca_readout >= MAX_FEAM_READOUT) {
-            printf("PwbChannelAsm::BuildEvent: Error: skipping invalid channel, sca_readout: %d\n", c->sca_readout);
+            printf("PwbChannelAsm::BuildEvent: module %d sca %d state %d: Error: skipping invalid channel, sca_readout: %d\n", fModule, fSca, fState, c->sca_readout);
             delete c;
             e->error = true;
             fCountErrors++;
@@ -888,7 +892,7 @@ void PwbChannelAsm::BuildEvent(FeamEvent* e)
          }
 
          if (dupe[c->sca_readout]) {
-            printf("PwbChannelAsm::BuildEvent: Error: skipping duplicate channel, sca_readout: %d\n", c->sca_readout);
+            printf("PwbChannelAsm::BuildEvent: module %d sca %d state %d: Error: skipping duplicate channel, sca_readout: %d\n", fModule, fSca, fState, c->sca_readout);
             delete c;
             e->error = true;
             fCountErrors++;
@@ -910,6 +914,10 @@ void PwbChannelAsm::BuildEvent(FeamEvent* e)
       }
    }
    fOutput.clear();
+
+   // make sure no stale data if left behind after this event
+   assert(fCurrent == NULL);
+   assert(fOutput.size() == 0);
 }
 
 void PwbChannelAsm::AddPacket(PwbUdpPacket* udp, const char* ptr, int size)
@@ -1133,9 +1141,7 @@ PwbAsm::~PwbAsm() // dtor
       }
    }
 
-   if (errors > 0) {
-      printf("PwbAsm: %d errors, lost %d/%d/%d/%d\n", errors, lost1, lost2, lost3, lostN);
-   }
+   printf("PwbAsm: %d events, %d errors, lost %d/%d/%d/%d\n", fCounter, errors, lost1, lost2, lost3, lostN);
 }
 
 void PwbAsm::Reset()
