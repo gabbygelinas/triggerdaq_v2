@@ -43,7 +43,7 @@
 #define ADC_RANGE_RMS 50
 
 #define ADC_RMS_FPN_MIN 0.100
-#define ADC_RMS_FPN_MAX 6.000
+#define ADC_RMS_FPN_MAX 4.000
 
 #define ADC_PULSER_TIME 450
 
@@ -448,9 +448,13 @@ public:
    TH1D* h_all_fpn_count = NULL;
 
    TProfile* h_all_fpn_rms = NULL;
-   //TProfile* h_all_fpn_rms_bis = NULL;
+   TProfile* h_all_fpn_mean_bis = NULL;
+   TProfile* h_all_fpn_rms_bis = NULL;
    TProfile* h_all_pad_baseline_mean = NULL;
    TProfile* h_all_pad_baseline_rms = NULL;
+
+   std::vector<TProfile*> h_all_fpn_mean_per_col;
+   std::vector<TProfile*> h_all_fpn_rms_per_col;
 
    //TH1D* h_spike_diff = NULL;
    //TH1D* h_spike_diff_max = NULL;
@@ -527,6 +531,14 @@ public:
       for (unsigned i=0; i<fHC.size(); i++) {
          DELETE(fHC[i]);
       }
+
+      //for (unsigned i=0; i<h_all_fpn_mean_per_col.size(); i++) {
+      //   DELETE(h_all_fpn_mean_per_col[i]);
+      //}
+
+      //for (unsigned i=0; i<h_all_fpn_rms_per_col.size(); i++) {
+      //   DELETE(h_all_fpn_rms_per_col[i]);
+      //}
    }
 
    void BeginRun(TARunInfo* runinfo)
@@ -559,7 +571,23 @@ public:
 
       h_all_fpn_rms  = new TProfile("all_fpn_rms", "rms of all fpn channels; fpn+4*(sca+4*(ring+8*column)); rms, adc counts", max_fpn, -0.5, max_fpn-0.5);
 
-      //h_all_fpn_rms_bis  = new TProfile("all_fpn_rms_bis", "rms of all fpn channels; sca+4*(ring+8*column)", max_pad, -0.5, max_pad-0.5);
+      h_all_fpn_mean_bis  = new TProfile("all_fpn_mean_bis", "mean of all fpn channels; sca+4*(ring+8*column)", max_pad, -0.5, max_pad-0.5);
+      h_all_fpn_rms_bis  = new TProfile("all_fpn_rms_bis", "rms of all fpn channels; sca+4*(ring+8*column)", max_pad, -0.5, max_pad-0.5);
+
+      for (unsigned i=0; i<8; i++) {
+         char name[256];
+         char title[256];
+
+         int num = 8*MAX_FEAM_SCA;
+
+         sprintf(name, "all_fpn_mean_col%d", i);
+         sprintf(title, "mean of fpn channels column %d; 4*ring+sca", i);
+         h_all_fpn_mean_per_col.push_back(new TProfile(name, title, num, -0.5, num-0.5));
+
+         sprintf(name, "all_fpn_rms_col%d", i);
+         sprintf(title, "rms of fpn channels column %d; 4*ring+sca", i);
+         h_all_fpn_rms_per_col.push_back(new TProfile(name, title, num, -0.5, num-0.5));
+      }
 
       h_all_pad_baseline_mean = new TProfile("all_pad_baseline_mean", "baseline mean of all pad channels; sca+4*(ring+8*column); mean, adc counts", max_pad, -0.5, max_pad-0.5);
       h_all_pad_baseline_rms  = new TProfile("all_pad_baseline_rms", "baseline rms of all pad channels; sca+4*(ring+8*column); rms, adc counts", max_pad, -0.5, max_pad-0.5);
@@ -676,56 +704,114 @@ public:
    }
 #endif
 
+#if 0
+   const FeamChannel* FindChannel(const FeamEvent* e, int ipwb, int isca, int iri)
+   {
+      for (unsigned ii=0; ii<e->hits.size(); ii++) {
+         FeamChannel* c = e->hits[ii];
+         if (!c)
+            continue;
+
+         if (c->imodule == ipwb && c->sca == isca && c->sca_readout == iri) {
+            return c;
+         }
+      }
+
+      return NULL;
+   }
+#endif
+
    // check FPN channels and shifted channels
 
-#if 0
    void CheckAndShiftFpn(FeamEvent* e)
    {
       int ibaseline_start = 10;
       int ibaseline_end = 100;
 
-      for (unsigned ifeam=0; ifeam<e->adcs.size(); ifeam++) {
-         FeamAdcData* aaa = e->adcs[ifeam];
-         if (!aaa)
+      struct PwbPtr {
+         int counter = 0;
+         FeamChannel* ptr[4][80];
+         PwbPtr() { for (int i=0; i<80; i++) { ptr[0][i]=NULL;ptr[1][i]=NULL;ptr[2][i]=NULL;ptr[3][i]=NULL; } };
+      };
+
+      std::vector<PwbPtr> pwb_ptr;
+
+      for (unsigned ii=0; ii<e->hits.size(); ii++) {
+         FeamChannel* c = e->hits[ii];
+         if (!c)
             continue;
 
-         bool trace = false;
-         bool trace_shift = false;
+         unsigned imodule    = c->imodule;
+         unsigned isca       = c->sca;
+         unsigned iri        = c->sca_readout;
 
-         int imodule    = e->modules[ifeam]->fModule;
-         int pwb_column = e->modules[ifeam]->fColumn;
-         int pwb_ring   = e->modules[ifeam]->fRing;
+         assert(isca>=0 && isca<4);
+         assert(iri>=0 && iri<80);
 
-         int seqpwb = pwb_column*8 + pwb_ring;
+         while (imodule >= pwb_ptr.size()) {
+            pwb_ptr.push_back(PwbPtr());
+         }
+
+         //printf("module %d sca %d ri %d, counter %d\n", imodule, isca, iri, pwb_ptr[imodule].counter);
+         pwb_ptr[imodule].counter++;
+         pwb_ptr[imodule].ptr[isca][iri] = c;
+      }
+
+      for (unsigned imodule = 0; imodule < pwb_ptr.size(); imodule++) {
+         //printf("module %d, counter %d\n", imodule, pwb_ptr[imodule].counter);
+         if (pwb_ptr[imodule].counter < 1) {
+            continue;
+         }
 
          PwbHistograms* hf = fHF[imodule];
 
-         for (int isca=0; isca<aaa->nsca; isca++) {
-
-            int seqpwbsca = seqpwb*4 + isca;
-            int seqpwbscafpn = seqpwbsca*4;
+         for (int isca = 0; isca < 4; isca++) {
+            bool trace = true;
+            bool trace_shift = true;
 
             int fpn_shift = 0;
 
-            double rms_fpn1 = compute_rms(aaa->adc[isca][16], ibaseline_start, ibaseline_end);
-            double rms_fpn2 = compute_rms(aaa->adc[isca][29], ibaseline_start, ibaseline_end);
-            double rms_fpn3 = compute_rms(aaa->adc[isca][54], ibaseline_start, ibaseline_end);
-            double rms_fpn4 = compute_rms(aaa->adc[isca][67], ibaseline_start, ibaseline_end);
+            const FeamChannel *c16 = pwb_ptr[imodule].ptr[isca][16];
+            const FeamChannel *c29 = pwb_ptr[imodule].ptr[isca][29];
+            const FeamChannel *c54 = pwb_ptr[imodule].ptr[isca][54];
+            const FeamChannel *c67 = pwb_ptr[imodule].ptr[isca][67];
+
+            //printf("module %d sca %d, ptr %p %p %p %p\n", imodule, isca, c16, c29, c54, c67);
+
+            if (!c16)
+               continue;
+            if (!c29)
+               continue;
+            if (!c54)
+               continue;
+            if (!c67)
+               continue;
+
+            int pwb_column = c16->pwb_column;
+            int pwb_ring   = c16->pwb_ring;
+            int seqpwb = 0;
+            if (pwb_column >= 0) {
+               seqpwb = pwb_column*8 + pwb_ring;
+            }
+            int seqpwbsca = seqpwb*4 + isca;
+            int seqpwbscafpn = seqpwbsca*4;
+
+            double rms_fpn1 = compute_rms(c16->adc_samples.data(), ibaseline_start, ibaseline_end);
+            double rms_fpn2 = compute_rms(c29->adc_samples.data(), ibaseline_start, ibaseline_end);
+            double rms_fpn3 = compute_rms(c54->adc_samples.data(), ibaseline_start, ibaseline_end);
+            double rms_fpn4 = compute_rms(c67->adc_samples.data(), ibaseline_start, ibaseline_end);
 
             h_all_fpn_count->Fill(seqpwbscafpn + 0, 1);
             h_all_fpn_count->Fill(seqpwbscafpn + 1, 1);
             h_all_fpn_count->Fill(seqpwbscafpn + 2, 1);
             h_all_fpn_count->Fill(seqpwbscafpn + 3, 1);
 
+            // FIXME: fill these histograms after shifting the channels!
+
             h_all_fpn_rms->Fill(seqpwbscafpn + 0, rms_fpn1);
             h_all_fpn_rms->Fill(seqpwbscafpn + 1, rms_fpn2);
             h_all_fpn_rms->Fill(seqpwbscafpn + 2, rms_fpn3);
             h_all_fpn_rms->Fill(seqpwbscafpn + 3, rms_fpn4);
-
-            //h_all_fpn_rms_bis->Fill(seqpwbsca, rms_fpn1);
-            //h_all_fpn_rms_bis->Fill(seqpwbsca, rms_fpn2);
-            //h_all_fpn_rms_bis->Fill(seqpwbsca, rms_fpn3);
-            //h_all_fpn_rms_bis->Fill(seqpwbsca, rms_fpn4);
 
             if (fpn_rms_ok(16, rms_fpn1)
                 && fpn_rms_ok(29, rms_fpn2) 
@@ -733,13 +819,13 @@ public:
                 && fpn_rms_ok(67, rms_fpn4)) {
 
                if (trace) {
-                  printf("XXX good fpn pwb%02d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f\n", imodule, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4);
+                  printf("CheckAndShiftFpn: good fpn pwb%02d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f\n", imodule, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4);
                }
 
                fpn_shift = 0;
             } else {
                if (trace) {
-                  printf("XXX bad  fpn pwb%02d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f\n", imodule, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4);
+                  printf("CheckAndShiftFpn: bad  fpn pwb%02d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f\n", imodule, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4);
                }
 
                for (int i=0; i>-30; i--) {
@@ -748,13 +834,27 @@ public:
                   int ifpn3 = fpn_wrap(i+54);
                   int ifpn4 = fpn_wrap(i+67);
 
-                  double rms_fpn1 = compute_rms(aaa->adc[isca][ifpn1], ibaseline_start, ibaseline_end);
-                  double rms_fpn2 = compute_rms(aaa->adc[isca][ifpn2], ibaseline_start, ibaseline_end);
-                  double rms_fpn3 = compute_rms(aaa->adc[isca][ifpn3], ibaseline_start, ibaseline_end);
-                  double rms_fpn4 = compute_rms(aaa->adc[isca][ifpn4], ibaseline_start, ibaseline_end);
+                  const FeamChannel *c16 = pwb_ptr[imodule].ptr[isca][ifpn1];
+                  const FeamChannel *c29 = pwb_ptr[imodule].ptr[isca][ifpn2];
+                  const FeamChannel *c54 = pwb_ptr[imodule].ptr[isca][ifpn3];
+                  const FeamChannel *c67 = pwb_ptr[imodule].ptr[isca][ifpn4];
+                  
+                  if (!c16)
+                     continue;
+                  if (!c29)
+                     continue;
+                  if (!c54)
+                     continue;
+                  if (!c67)
+                     continue;
+
+                  double rms_fpn1 = compute_rms(c16->adc_samples.data(), ibaseline_start, ibaseline_end);
+                  double rms_fpn2 = compute_rms(c29->adc_samples.data(), ibaseline_start, ibaseline_end);
+                  double rms_fpn3 = compute_rms(c54->adc_samples.data(), ibaseline_start, ibaseline_end);
+                  double rms_fpn4 = compute_rms(c67->adc_samples.data(), ibaseline_start, ibaseline_end);
 
                   if (trace_shift) {
-                     printf("XXX shift %3d fpn pwb%02d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f, fpn chan %2d %2d %2d %2d", i, imodule, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4, ifpn1, ifpn2, ifpn3, ifpn4);
+                     printf("CheckAndShiftFpn: shift %3d fpn pwb%02d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f, fpn chan %2d %2d %2d %2d", i, imodule, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4, ifpn1, ifpn2, ifpn3, ifpn4);
                   }
 
                   if (fpn_rms_ok(ifpn1, rms_fpn1)
@@ -774,51 +874,60 @@ public:
                }
             }
             
-            if (trace_shift) {
+            if (1||trace_shift) {
                if (fpn_shift != 0) {
-                  printf("XXX pwb%02d, sca %d, fpn_shift %d\n", imodule, isca, fpn_shift);
+                  printf("CheckAndShiftFpn: pwb%02d, sca %d, fpn_shift %d\n", imodule, isca, fpn_shift);
                }
             }
 
             hf->h_fpn_shift[isca]->Fill(fpn_shift);
 
             if (fpn_shift < 0) {
-               int buf[MAX_FEAM_READOUT][MAX_FEAM_BINS];
+               int sca_readout[80];
+               int sca_chan[80];
+               int pad_col[80];
+               int pad_row[80];
 
-               char* asrc = (char*)&aaa->adc[isca][0];
-               char* adst = (char*)&buf[0][0];
-
-               const int s = sizeof(int)*MAX_FEAM_BINS;
-
-               for (int i=0; i<MAX_FEAM_READOUT; i++) {
-                  int j = (i+fpn_shift+MAX_FEAM_READOUT)%MAX_FEAM_READOUT;
-
-                  //printf("fpn_shift %d, copy %d from %d, size %d, ptr %p from %p\n", fpn_shift, i, j, s, adst+i*s, asrc+j*s);
-                  
-                  memcpy(adst+i*s, asrc+j*s, s);
+               for (int i=0; i<80; i++) {
+                  sca_readout[i] = -1;
+                  sca_chan[i] = -1;
+                  pad_col[i] = -1;
+                  pad_row[i] = -1;
                }
 
-               memcpy(asrc, adst, sizeof(buf));
+               for (int rr=0; rr<80; rr++) {
+                  FeamChannel*c = pwb_ptr[imodule].ptr[isca][rr];
+                  if (c) {
+                     int ri = c->sca_readout;
+                     assert(ri>=0 && ri<80);
+                     sca_readout[ri] = c->sca_readout;
+                     sca_chan[ri] = c->sca_chan;
+                     pad_col[ri] = c->pad_col;
+                     pad_row[ri] = c->pad_row;
+                  }
+               }
 
-               if (1) {
-                  bool trace = true;
-
-                  double rms_fpn1 = compute_rms(aaa->adc[isca][16], ibaseline_start, ibaseline_end);
-                  double rms_fpn2 = compute_rms(aaa->adc[isca][29], ibaseline_start, ibaseline_end);
-                  double rms_fpn3 = compute_rms(aaa->adc[isca][54], ibaseline_start, ibaseline_end);
-                  double rms_fpn4 = compute_rms(aaa->adc[isca][67], ibaseline_start, ibaseline_end);
-                  
-                  if (fpn_rms_ok(16, rms_fpn1)
-                      && fpn_rms_ok(29, rms_fpn2) 
-                      && fpn_rms_ok(54, rms_fpn3) 
-                      && fpn_rms_ok(67, rms_fpn4)) {
-                     
-                     if (trace) {
-                        printf("XXX good fpn pwb%02d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f, fpn_shift: %3d\n", imodule, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4, fpn_shift);
-                     }
-                  } else {
-                     if (trace) {
-                        printf("XXX bad  fpn pwb%02d, sca %d, fpn rms: %5.1f %5.1f %5.1f %5.1f, fpn_shift: %3d\n", imodule, isca, rms_fpn1, rms_fpn2, rms_fpn3, rms_fpn4, fpn_shift);
+               for (int rr=0; rr<80; rr++) {
+                  FeamChannel*c = pwb_ptr[imodule].ptr[isca][rr];
+                  if (c) {
+                     int ri = c->sca_readout - fpn_shift;
+                     if (ri < 1)
+                        ri += 79;
+                     if (ri > 79)
+                        ri -= 79;
+                     c->sca_readout = ri;
+                     if (sca_readout[ri] == -1) {
+                        c->sca_chan = -1;
+                        c->pad_col = -1;
+                        c->pad_row = -1;
+                     } else {
+                        //if (ri != sca_readout[ri]) {
+                        //printf("ri %d, %d\n", ri, sca_readout[ri]);
+                        //}
+                        assert(ri == sca_readout[ri]);
+                        c->sca_chan = sca_chan[ri];
+                        c->pad_col = pad_col[ri];
+                        c->pad_row = pad_row[ri];
                      }
                   }
                }
@@ -826,7 +935,6 @@ public:
          }
       }
    }
-#endif
 
    // Create per PWB histograms
 
@@ -836,7 +944,7 @@ public:
          if (!e->hits[i])
             continue;
 
-         int imodule = e->hits[i]->imodule;
+         unsigned imodule = e->hits[i]->imodule;
 
          while (imodule >= fHF.size()) {
             fHF.push_back(NULL);
@@ -926,7 +1034,14 @@ public:
 
       CreatePwbHistograms(e);
 
-      //CheckAndShiftFpn(e);
+      //PrintFeamChannels(e->hits);
+
+      bool need_shift = false;
+      need_shift |= (runinfo->fRunNo >= 1865 && runinfo->fRunNo <= 9999);
+
+      if (need_shift) {
+         CheckAndShiftFpn(e);
+      }
 
       for (unsigned ii=0; ii<e->hits.size(); ii++) {
          FeamChannel* c = e->hits[ii];
@@ -1098,6 +1213,12 @@ public:
             if (bvar>0)
                brms = sqrt(bvar);
          }
+
+         if (bmean > 6000) {
+            printf("bmean %f\n", bmean);
+            printf("chan %3d: baseline %8.1f, rms %8.1f, min %8.1f, max %8.1f, sum0/1/2 %f/%f/%f\n", ichan, bmean, brms, bmin, bmax, sum0, sum1, sum2);
+            abort();
+         }
          
          // scan the whole waveform
          
@@ -1128,6 +1249,19 @@ public:
          // diagnostics
          
          if (scachan_is_fpn) {
+            h_all_fpn_mean_bis->Fill(seqpwbsca, bmean);
+            h_all_fpn_rms_bis->Fill(seqpwbsca, brms);
+
+            if (pwb_column < h_all_fpn_mean_per_col.size()) {
+               h_all_fpn_mean_per_col[pwb_column]->Fill(pwb_ring*4+isca, bmean);
+            }
+
+            if (pwb_column < h_all_fpn_rms_per_col.size()) {
+               h_all_fpn_rms_per_col[pwb_column]->Fill(pwb_ring*4+isca, brms);
+            }
+
+            //h_all_fpn_rms_bis->Fill(seqpwbsca, brms);
+
             if (brms > ADC_RMS_FPN_MIN && brms < ADC_RMS_FPN_MAX) {
             } else {
                printf("XXX bad fpn, pwb%02d, sca %d, readout %d, scachan %d, col %d, row %d, bmin %f, bmax %f, in hex 0x%04x, brms %f\n", imodule, isca, ichan, scachan, col, row, bmin, bmax, (uint16_t)bmin, brms);
