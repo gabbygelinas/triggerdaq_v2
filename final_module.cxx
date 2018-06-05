@@ -829,8 +829,10 @@ public:
                      double amp = eph->fPadHits[i].amp;
                      int col = eph->fPadHits[i].tpc_col;
                      int row = eph->fPadHits[i].tpc_row;
-                     
-                     printf("pad hit %d: pwb%02d, col %d, row %d, time %f, amp %f\n", i, imodule, col, row, time, amp);
+
+                     if (eph->fPadHits.size() < 5000) {
+                        printf("pad hit %d: pwb%02d, col %d, row %d, time %f, amp %f\n", i, imodule, col, row, time, amp);
+                     }
 
                      if (col < 0 || row < 0) {
                         continue;
