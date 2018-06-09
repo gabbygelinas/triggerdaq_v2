@@ -1240,11 +1240,13 @@ public:
                brms = sqrt(bvar);
          }
 
+#if 0
          if (bmean > 6000) {
             printf("bmean %f\n", bmean);
             printf("chan %3d: baseline %8.1f, rms %8.1f, min %8.1f, max %8.1f, sum0/1/2 %f/%f/%f\n", ichan, bmean, brms, bmin, bmax, sum0, sum1, sum2);
             abort();
          }
+#endif
          
          // scan the whole waveform
          
