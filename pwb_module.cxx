@@ -1058,7 +1058,8 @@ public:
       int nhitchan = 0;
 
       CreatePwbHistograms(e);
-
+      
+      //printf("PrintFeamChannels!\n");
       //PrintFeamChannels(e->hits);
 
       bool need_shift = false;

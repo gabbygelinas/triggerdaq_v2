@@ -1296,6 +1296,7 @@ public:
                   c->sca = isca;
                   c->sca_readout = ichan;
                   c->sca_chan = scachan;
+                  c->threshold_bit = 0;
                   c->pad_col = col;
                   c->pad_row = row;
                   c->first_bin = 0;
