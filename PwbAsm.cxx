@@ -1021,6 +1021,10 @@ void PwbChannelAsm::AddPacket(PwbUdpPacket* udp, const char* ptr, int size)
             fState = PWB_CA_ST_DATA;
             fError = false;
             BeginData(ptr, size, eh->start_of_data, udp->end_of_payload, ts);
+            if (udp->FLAGS & 1) {
+               fState = PWB_CA_ST_LAST;
+               EndData();
+            }
          }
          delete eh;
       } else {
