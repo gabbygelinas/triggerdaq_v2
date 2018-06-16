@@ -26,8 +26,10 @@
 
 #define MEMZERO(p) memset((p), 0, sizeof(p))
 
-#define ADC_MIN -33000
-#define ADC_MAX  33000
+#define ADC_MIN -2100
+#define ADC_MAX  2100
+
+#define NUM_PWB (8*8)
 
 // adjusted for 12-bit range 0xFFF = 4095
 #define ADC_BINS 410
@@ -486,6 +488,8 @@ public:
    TH1D* hbrms_all_pads = NULL;
    TH1D* hbrms_all_fpn = NULL;
 
+   TProfile* hbmean_pwb_prof = NULL;
+
    //TH1D* h_adc_range_all = NULL;
    //TH1D* h_adc_range_baseline = NULL;
    //TH1D* h_adc_range_drift = NULL;
@@ -587,8 +591,8 @@ public:
 
       hdir_summary->cd();
 
-      //int max_fpn = 8*8*MAX_FEAM_SCA*4;
-      int max_pad = 8*8*MAX_FEAM_SCA;
+      //int max_fpn = NUM_PWB*MAX_FEAM_SCA*4;
+      int max_pad = NUM_PWB*MAX_FEAM_SCA;
 
       h_all_fpn_count = new TH1D("all_fpn_count", "count of all fpn channels; sca+4*(ring+8*column); fpn count", max_pad, -0.5, max_pad-0.5);
 
@@ -627,6 +631,8 @@ public:
       hbrms_all  = new TH1D("all_baseline_rms",  "baseline rms of all channels; rms, adc counts",  100, 0, ADC_RANGE_RMS);
       hbrms_all_pads  = new TH1D("all_baseline_rms_pads",  "baseline rms of pad channels; rms, adc counts",  100, 0, ADC_RANGE_RMS);
       hbrms_all_fpn   = new TH1D("all_baseline_rms_fpn",  "baseline rms of fpn channels; rms, adc counts",  100, 0, ADC_RANGE_RMS);
+
+      hbmean_pwb_prof = new TProfile("baseline_mean_pwb_prof", "baseline mean of all PWBs; seqpwb (column*8+ring); mean, adc counts", NUM_PWB, -0.5, NUM_PWB-0.5, ADC_MIN, ADC_MAX);
 
       //h_adc_range_all      = new TH1D("adc_range_all",      "waveform range (max-min)",  100, 0, ADC_RANGE_PED);
       //h_adc_range_baseline = new TH1D("adc_range_baseline", "waveform range (max-min), baseline region",  100, 0, ADC_RANGE_PED);
@@ -1353,7 +1359,9 @@ public:
             }
          }
          
-         hf->h_amp->Fill(wamp);
+         if (scachan_is_pad) {
+            hf->h_amp->Fill(wamp);
+         }
          
          //int wpos = find_pulse(c->adc_samples, nbins, bmean, -1.0, wamp/2.0);
          double wpos = find_pulse_time(c->adc_samples, nbins, bmean, -1.0, wamp/2.0);
@@ -1371,7 +1379,7 @@ public:
          bool hit_amp = false;
          bool hit = false;
          
-         if ((wpos_ns > 800.0) && (wpos_ns < 5600.0)) {
+         if (scachan_is_pad && (wpos_ns > 800.0) && (wpos_ns < 5600.0)) {
             hit_time = true;
          }
          
@@ -1380,8 +1388,8 @@ public:
                hit_time = true;
             }
          }
-         
-         if (wamp > hit_amp_threshold) {
+
+         if (scachan_is_pad && (wamp > hit_amp_threshold)) {
             hit_amp = true;
          }
          
@@ -1471,6 +1479,7 @@ public:
          if (scachan_is_pad || scachan_is_fpn) {
             hbmean_all->Fill(bmean);
             hbrms_all->Fill(brms);
+            hbmean_pwb_prof->Fill(seqpwb, bmean);
          }
          
          if (scachan_is_pad) {
