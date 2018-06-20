@@ -552,7 +552,8 @@ public:
                FeamEvent* e = new FeamEvent();
                gPwbAsm->BuildEvent(e);
                e->Print();
-               //PrintFeamChannels(e->hits);
+               printf("Printing all FEAM channels:\n");
+               PrintFeamChannels(e->hits);
 
                if (fAgEvb) {
                   fAgEvb->AddFeamEvent(e);

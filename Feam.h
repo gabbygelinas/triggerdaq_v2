@@ -228,6 +228,7 @@ struct FeamChannel
    int sca;         /* 0..3 */
    int sca_readout; /* 1..79, includes 72 pad channels, 3 reset channels and 4 FPN channels */
    int sca_chan;    /* 1..72 */
+   int threshold_bit; /* pwb firmware ScaChannelsThreshold bit */
    int pad_col;     /* local pad column position, 0..3 */
    int pad_row;     /* local pad row position, 0..71 */
    int first_bin;   /* usually 0 */

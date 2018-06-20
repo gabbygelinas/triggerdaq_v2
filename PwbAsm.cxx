@@ -570,9 +570,12 @@ PwbEventHeader::PwbEventHeader(const char* ptr, int size)
       ScaChannelsSent3 = (p32[13]>> 0) & 0xFFFF;
       ScaChannelsThreshold1 = (p32[13]>>16) & 0xFFFF;
       
-      ScaChannelsThreshold2 = p32[14];
+      ScaChannelsThreshold1 |= ((p32[14] & 0xFFFF) << 16) & 0xFFFF0000;
+      ScaChannelsThreshold2 = (p32[14]>>16) & 0xFFFF;
       
-      ScaChannelsThreshold3 = p32[15];
+      ScaChannelsThreshold2 |= ((p32[15] & 0xFFFF) << 16) & 0xFFFF0000;
+      ScaChannelsThreshold3 = (p32[15]>>16) & 0xFFFF;
+
       Reserved2             = 0;
       
       start_of_data = 16*4;
@@ -690,6 +693,7 @@ void PwbChannelAsm::AddSamples(int channel, const uint16_t* samples, int count)
       fCurrent->sca = fSca;
       fCurrent->sca_readout = ri;
       fCurrent->sca_chan = 0; // filled by Build()
+      fCurrent->threshold_bit = 0; // filled by Build()
       fCurrent->pad_col = 0; // filled by Build()
       fCurrent->pad_row = 0; // filled by Build()
       fCurrent->first_bin = 0;
@@ -872,9 +876,9 @@ void PwbChannelAsm::BuildEvent(FeamEvent* e)
       e->error = true;
    }
 
-   bool dupe[MAX_FEAM_READOUT];
+   bool present[MAX_FEAM_READOUT];
    for (int i=0; i<MAX_FEAM_READOUT; i++) {
-      dupe[i] = false;
+      present[i] = false;
    }
 
    for (unsigned i=0; i<fOutput.size(); i++) {
@@ -891,7 +895,7 @@ void PwbChannelAsm::BuildEvent(FeamEvent* e)
             continue;
          }
 
-         if (dupe[c->sca_readout]) {
+         if (present[c->sca_readout]) {
             printf("PwbChannelAsm::BuildEvent: module %d sca %d state %d: Error: skipping duplicate channel, sca_readout: %d\n", fModule, fSca, fState, c->sca_readout);
             delete c;
             e->error = true;
@@ -899,7 +903,26 @@ void PwbChannelAsm::BuildEvent(FeamEvent* e)
             continue;
          }
 
-         dupe[c->sca_readout] = true;
+         present[c->sca_readout] = true;
+
+         if (fFormatRevision == 1) {
+            unsigned i = c->sca_readout-1;
+            unsigned iword = i/32;
+            unsigned ibit = i%32;
+            
+            bool tbit = false;
+            if (iword==0)
+               tbit = fScaChannelsThreshold1 & (1<<ibit);
+            else if (iword==1)
+               tbit = fScaChannelsThreshold2 & (1<<ibit);
+            else
+               tbit = fScaChannelsThreshold3 & (1<<ibit);
+
+            if (tbit)
+               c->threshold_bit = 1;
+            else
+               c->threshold_bit = 0;
+         }
 
          c->sca_chan = PwbPadMap::Map()->channel[c->sca_readout];
          bool scachan_is_pad = (c->sca_chan > 0);
@@ -914,6 +937,30 @@ void PwbChannelAsm::BuildEvent(FeamEvent* e)
       }
    }
    fOutput.clear();
+
+   // verify against the ScaChannelsSent bitmap
+   if (fFormatRevision == 1) {
+      for (unsigned i=0; i<79; i++) {
+         int ri = i+1;
+         assert(ri < MAX_FEAM_READOUT);
+         unsigned iword = i/32;
+         unsigned ibit = i%32;
+
+         bool rbit = false;
+         if (iword==0)
+            rbit = fScaChannelsSent1 & (1<<ibit);
+         else if (iword==1)
+            rbit = fScaChannelsSent2 & (1<<ibit);
+         else
+            rbit = fScaChannelsSent3 & (1<<ibit);
+
+         if (present[ri] != rbit) {
+            printf("PwbChannelAsm::BuildEvent: module %d sca %d state %d: Error: ScaChannelsSent bitmap mismatch: channel %d present %d vs %d in bitmap: 0x%08x 0x%08x 0x%08x, word %d, bit %d\n", fModule, fSca, fState, ri, present[ri], rbit, fScaChannelsSent1, fScaChannelsSent2, fScaChannelsSent3, iword, ibit);
+            e->error = true;
+            fCountErrors++;
+         }
+      }
+   }
 
    // make sure no stale data if left behind after this event
    assert(fCurrent == NULL);
@@ -944,8 +991,26 @@ void PwbChannelAsm::AddPacket(PwbUdpPacket* udp, const char* ptr, int size)
          PwbEventHeader* eh = new PwbEventHeader(ptr, size);
          uint32_t ts = eh->TriggerTimestamp1;
          fFormatRevision = eh->FormatRevision;
+         fScaChannelsSent1 = eh->ScaChannelsSent1;
+         fScaChannelsSent2 = eh->ScaChannelsSent2;
+         fScaChannelsSent3 = eh->ScaChannelsSent3;
+         fScaChannelsThreshold1 = eh->ScaChannelsThreshold1;
+         fScaChannelsThreshold2 = eh->ScaChannelsThreshold2;
+         fScaChannelsThreshold3 = eh->ScaChannelsThreshold3;
          if (fTrace) {
             eh->Print();
+         }
+         if (0) {
+            printf("module %d sca %d bitmaps 0x%08x 0x%08x 0x%08x - 0x%08x 0x%08x 0x%08x\n",
+                   fModule,
+                   fSca,
+                   fScaChannelsSent1,
+                   fScaChannelsSent2,
+                   fScaChannelsSent3,
+                   fScaChannelsThreshold1,
+                   fScaChannelsThreshold2,
+                   fScaChannelsThreshold3
+                   );
          }
          if (eh->fError) {
             printf("PwbChannelAsm::AddPacket: Error: module %d sca %d state %d: error in event header\n", fModule, fSca, fState);
@@ -956,6 +1021,10 @@ void PwbChannelAsm::AddPacket(PwbUdpPacket* udp, const char* ptr, int size)
             fState = PWB_CA_ST_DATA;
             fError = false;
             BeginData(ptr, size, eh->start_of_data, udp->end_of_payload, ts);
+            if (udp->FLAGS & 1) {
+               fState = PWB_CA_ST_LAST;
+               EndData();
+            }
          }
          delete eh;
       } else {
@@ -1054,7 +1123,7 @@ void PwbModuleAsm::AddPacket(const char* ptr, int size)
       printf("PwbModuleAsm::AddPacket: Error: invalid CHANNEL_ID 0x%08x\n", udp->CHANNEL_ID);
       fCountErrors++;
    } else {
-      while (s >= fChannels.size()) {
+      while (s >= (int)fChannels.size()) {
          fChannels.push_back(NULL);
       }
 
@@ -1157,7 +1226,7 @@ void PwbAsm::Reset()
 
 void PwbAsm::AddPacket(int module, int column, int ring, const char* ptr, int size)
 {
-   while (module >= fModules.size()) {
+   while (module >= (int)fModules.size()) {
       fModules.push_back(NULL);
    }
 

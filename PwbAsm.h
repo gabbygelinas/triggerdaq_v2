@@ -15,7 +15,7 @@ struct PwbUdpPacket
 {
 public:
    bool fError = false;
-   int fPacketSize = 0;
+   uint32_t fPacketSize = 0;
 
 public: // packet data
    uint32_t DEVICE_ID;
@@ -82,6 +82,12 @@ public: // state
    int fCountErrors = 0;
    uint32_t fTs = 0;
    int fFormatRevision = 0;
+   uint32_t fScaChannelsSent1 = 0;
+   uint32_t fScaChannelsSent2 = 0;
+   uint32_t fScaChannelsSent3 = 0;
+   uint32_t fScaChannelsThreshold1 = 0;
+   uint32_t fScaChannelsThreshold2 = 0;
+   uint32_t fScaChannelsThreshold3 = 0;
 
 public: // configuration
    bool fTrace = false;
