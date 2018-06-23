@@ -702,7 +702,7 @@ void PwbModuleMap::LoadFeamBanks(const std::vector<std::string> banks)
          }
 
          if (imodule > PWB_MODULE_LAST) {
-            fprintf(stderr, "PwbModuleMap::LoadFeamBanks: Invalid module number %d in bank name [%s]\n", imodule, banks[icolumn].c_str());
+            printf("PwbModuleMap::LoadFeamBanks: Invalid module number %d in bank name [%s]\n", imodule, banks[icolumn].c_str());
             continue;
          }
  
@@ -733,7 +733,7 @@ void PwbModuleMap::LoadFeamBanks(const std::vector<std::string> banks)
          }
 
          if (imodule > PWB_MODULE_LAST) {
-            fprintf(stderr, "PwbModuleMap::LoadFeamBanks: Invalid module number %d in bank name [%s]\n", imodule, banks[i].c_str());
+            printf("PwbModuleMap::LoadFeamBanks: Invalid module number %d in bank name [%s]\n", imodule, banks[i].c_str());
             continue;
          }
 
