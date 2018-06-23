@@ -724,7 +724,7 @@ void Alpha16Asm::AddBank(Alpha16Event* e, int imodule, const char* bkname, const
       
       AddChannel(e, p, c);
    } else {
-      fprintf(stderr, "Alpha16Asm::AddBank:: unknown packet type %d, version %d\n", packetType, packetVersion);
+      printf("Alpha16Asm::AddBank:: unknown packet type %d, version %d\n", packetType, packetVersion);
       e->error = true;
    }
 }

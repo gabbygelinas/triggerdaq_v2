@@ -62,6 +62,11 @@ void AgAsm::Print() const
 
 AgEvent* AgAsm::UnpackEvent(TMEvent* me)
 {
+   bool have_trg  = false;
+   bool have_adc  = false;
+   bool have_feam = false;
+   bool have_pwb  = false;
+
    AgEvent* e = new AgEvent();
 
    e->counter = ++fCounter;
@@ -89,6 +94,8 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
             e->trig->Print();
             printf("\n");
          }
+
+         have_trg = true;
       } else if (b->name[0] == 'A') {
          // ADC UDP packet bank from feudp
       } else if (b->name[0] == 'B' && b->name[1] == 'B') {
@@ -99,7 +106,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          int c2 = b->name[2]-'0';
          int module = c1*10 + c2;
          if (module < 1 || module > ADC_MODULE_LAST) {
-            fprintf(stderr, "AgAsm::UnpackEvent: bank name [%s] has invalid module number %d\n", b->name.c_str(), module);
+            printf("AgAsm::UnpackEvent: bank name [%s] has invalid module number %d\n", b->name.c_str(), module);
             e->error = true;
             continue;
          }
@@ -119,6 +126,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          }
 
          fAdcAsm->AddBank(e->a16, module, b->name.c_str(), bkptr, bklen);
+         have_adc = true;
       } else if (b->name[0] == 'P' && ((b->name[1] == 'A') || (b->name[1] == 'B'))) {
          // PWB bank
          int c1 = b->name[2]-'0';
@@ -126,7 +134,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          int imodule = c1*10 + c2;
 
          if (imodule < 0 || imodule > PWB_MODULE_LAST) {
-            fprintf(stderr, "AgAsm::UnpackEvent: bank name [%s] has invalid module number %d\n", b->name.c_str(), imodule);
+            printf("AgAsm::UnpackEvent: bank name [%s] has invalid module number %d\n", b->name.c_str(), imodule);
             e->error = true;
             continue;
          }
@@ -169,7 +177,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          else if (b->name[0] == 'P' && b->name[1] == 'B')
             f = 2;
          else {
-            fprintf(stderr, "AgAsm::UnpackEvent: invalid PWB bank name [%s]\n", b->name.c_str());
+            printf("AgAsm::UnpackEvent: invalid PWB bank name [%s]\n", b->name.c_str());
             e->error = true;
             continue;
          }
@@ -179,7 +187,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          }
          
          if (b->data_size < 26) {
-            fprintf(stderr, "AgAsm::UnpackEvent: bank name [%s] has invalid FEAM packet length %d\n", b->name.c_str(), b->data_size);
+            printf("AgAsm::UnpackEvent: bank name [%s] has invalid FEAM packet length %d\n", b->name.c_str(), b->data_size);
             e->error = true;
             continue;
          }
@@ -189,7 +197,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          p->Unpack(p8, b->data_size);
          
          if (p->error) {
-            fprintf(stderr, "AgAsm::UnpackEvent: cannot unpack FeamPacket from bank [%s]\n", b->name.c_str());
+            printf("AgAsm::UnpackEvent: cannot unpack FeamPacket from bank [%s]\n", b->name.c_str());
             delete p;
             p = NULL;
             e->error = true;
@@ -197,6 +205,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          }
          
          fFeamAsm->AddPacket(imodule, map->fColumn, map->fRing, f, p, p8 + p->off, p->buf_len);
+         have_feam = true;
       } else if (b->name[0] == 'P' && (b->name[1] == 'C')) {
          // PWB bank
          int c1 = b->name[2]-'0';
@@ -204,7 +213,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          int imodule = c1*10 + c2;
 
          if (imodule < 0 || imodule > PWB_MODULE_LAST) {
-            fprintf(stderr, "AgAsm::UnpackEvent: bank name [%s] has invalid module number %d\n", b->name.c_str(), imodule);
+            printf("AgAsm::UnpackEvent: bank name [%s] has invalid module number %d\n", b->name.c_str(), imodule);
             e->error = true;
             continue;
          }
@@ -226,17 +235,17 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          }
 
          fPwbAsm->AddPacket(imodule, map->fColumn, map->fRing, p8, b->data_size);
-
+         have_pwb = true;
       } else {
-         fprintf(stderr, "AgAsm::UnpackEvent: unknown bank [%s]\n", b->name.c_str());
+         printf("AgAsm::UnpackEvent: unknown bank [%s]\n", b->name.c_str());
       }
    }
 
-   if (e->a16) {
+   if (e->a16 && have_adc) {
       fAdcAsm->CheckEvent(e->a16);
    }
 
-   if (fPwbAsm) {
+   if (fPwbAsm && have_pwb) {
       //if (fPwbAsm->CheckComplete()) {
       //printf("PwbAsm ---> complete !!!\n");
       if (!e->feam) {
@@ -249,7 +258,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
       //PrintFeamChannels(e->feam->hits);
    }
 
-   if (fFeamAsm) {
+   if (fFeamAsm && have_feam) {
       //printf("at end: FeamAsm status:\n");
       //fFeamAsm->Print();
       if (!e->feam) {

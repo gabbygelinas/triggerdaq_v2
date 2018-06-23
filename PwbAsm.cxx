@@ -622,8 +622,11 @@ void PwbEventHeader::Print() const
 #define PWB_CA_ST_DATA 1
 #define PWB_CA_ST_LAST 2
 
-PwbChannelAsm::PwbChannelAsm(int module, int column, int ring, int sca)
+static bool gTrace = false;
+
+PwbChannelAsm::PwbChannelAsm(int module, int column, int ring, int sca) // ctor
 {
+   fTrace = gTrace;
    fModule = module;
    fColumn = column;
    fRing = ring;
@@ -631,7 +634,7 @@ PwbChannelAsm::PwbChannelAsm(int module, int column, int ring, int sca)
    Reset();
 }
 
-PwbChannelAsm::~PwbChannelAsm()
+PwbChannelAsm::~PwbChannelAsm() // dtor
 {
    if (fCountErrors) {
       printf("PwbChannelAsm: module %d sca %d: %d errors\n", fModule, fSca, fCountErrors);
@@ -1051,15 +1054,16 @@ bool PwbChannelAsm::CheckComplete() const
    return false;
 }
 
-PwbModuleAsm::PwbModuleAsm(int module, int column, int ring)
+PwbModuleAsm::PwbModuleAsm(int module, int column, int ring) // ctor
 {
+   fTrace = gTrace;
    fModule = module;
    fColumn = column;
    fRing = ring;
    Reset();
 }
 
-PwbModuleAsm::~PwbModuleAsm()
+PwbModuleAsm::~PwbModuleAsm() // dtor
 {
    for (unsigned i=0; i<fChannels.size(); i++) {
       if (fChannels[i]) {
@@ -1187,7 +1191,7 @@ void PwbModuleAsm::BuildEvent(FeamEvent* e)
 
 PwbAsm::PwbAsm() // ctor
 {
-   // empty
+   //fTrace = gTrace;
 }
 
 PwbAsm::~PwbAsm() // dtor
