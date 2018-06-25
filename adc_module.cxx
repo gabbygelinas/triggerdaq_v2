@@ -75,6 +75,7 @@ struct PlotHistograms
    TProfile* fHbaselineRmsAwMap;
 
    TH1D* fHrange;
+   TProfile* fHrangeAwMap;
 
    TH1D* fHph;
    TH1D* fHph_adc16;
@@ -119,6 +120,7 @@ struct PlotHistograms
       fHbaselineRmsAwMap->SetMinimum(0);
 
       fHrange = new TH1D("adc_range", "waveform range, max-min; ADC counts", 100, 0, MAX_AW_AMP);
+      fHrangeAwMap = new TProfile("adc_range_vs_aw", "waveform range, max-min vs wire number; TPC wire number; ADC counts", NUM_AW, -0.5, NUM_AW-0.5);
 
       fHph = new TH1D("adc_pulse_height", "waveform pulse height; ADC counts", 100, 0, MAX_AW_AMP);
 
@@ -668,15 +670,22 @@ public:
                fH->fHbaselineRmsAwMap->Fill(iwire, brms);
             }
 
-            if (wrange < MAX_AW_AMP)
+            if (wrange < MAX_AW_AMP) {
                fH->fHrange->Fill(wrange);
-            else
+               if (is_aw) {
+                  fH->fHrangeAwMap->Fill(iwire, wrange);
+               }
+            } else {
                fH->fHrange->Fill(MAX_AW_AMP-1);
+               if (is_aw) {
+                  fH->fHrangeAwMap->Fill(iwire, MAX_AW_AMP-1);
+               }
+            }
          }
       
          ph = bmean - wmin;
 
-         double cfd_thr = 0.5*ph;
+         double cfd_thr = 0.75*ph;
 
          if (wmin == -32768.0) {
             ph = MAX_AW_AMP-1;
@@ -717,9 +726,12 @@ public:
          } else if (runinfo->fRunNo < 1694) {
             ph_hit_thr_adc16 =  2500;
             ph_hit_thr_adc32 =  2500;
-         } else if (runinfo->fRunNo < 9999) {
+         } else if (runinfo->fRunNo < 2028) {
             ph_hit_thr_adc16 =  1000;
             ph_hit_thr_adc32 =   800;
+         } else if (runinfo->fRunNo < 9999) {
+            ph_hit_thr_adc16 =  2000;
+            ph_hit_thr_adc32 =  1500;
          }
 
          double ph_hit_thr = 0;
@@ -817,7 +829,7 @@ public:
 
             fH->fHawHitTime0->Fill(hit_time);
             
-            if (hit_time > 700 && hit_time < 6000) {
+            if (1 || (hit_time > 700 && hit_time < 6000)) {
                have_hit = true;
 
                fH->fHawHitTime->Fill(hit_time);
