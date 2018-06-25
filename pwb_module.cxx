@@ -1369,6 +1369,10 @@ public:
          double wpos_offset_ns = 2350.0;
          
          double wpos_ns = wpos*16.0 - wpos_offset_ns + 1000.0;
+
+         if (runinfo->fRunNo >= 2028) {
+            wpos_ns += 200.0;
+         }
          
          //double damp = bmean - dmin;
          //int dpos = find_pulse(c->adc_samples, idrift_start, idrift_end, bmean, -1.0, damp/2.0);
