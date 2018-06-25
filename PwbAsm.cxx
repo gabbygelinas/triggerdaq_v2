@@ -1094,6 +1094,7 @@ void PwbModuleAsm::AddPacket(const char* ptr, int size)
       udp->Print();
    }
 
+#if 0
    if (fLast_PKT_SEQ == 0) {
       fLast_PKT_SEQ = udp->PKT_SEQ;
    } else if (udp->PKT_SEQ == fLast_PKT_SEQ + 1) {
@@ -1120,6 +1121,7 @@ void PwbModuleAsm::AddPacket(const char* ptr, int size)
       fCountLostN++;
       fLast_PKT_SEQ = udp->PKT_SEQ;
    }
+#endif
 
    int s = udp->CHANNEL_ID;
 
