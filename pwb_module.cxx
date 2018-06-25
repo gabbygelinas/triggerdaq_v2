@@ -1125,7 +1125,7 @@ public:
 
          if (scachan_is_pad) {
             assert(col>=0 && col<4);
-            assert(row>=0 && row<4*72);
+            assert(row>=0 && row<MAX_FEAM_PAD_ROWS);
             seqpad = col*MAX_FEAM_PAD_ROWS + row;
          } else {
             row = scachan; // special channel
