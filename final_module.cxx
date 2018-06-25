@@ -30,6 +30,9 @@
 // histogram limit for number of hits in aw and pads
 #define MAX_HITS 250
 
+#define PLOT_MIN_TIME (900.0)
+#define PLOT_MAX_TIME (5100.0)
+
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
 
 #define MEMZERO(p) memset((p), 0, sizeof(p))
@@ -53,10 +56,16 @@ public:
    TH2D* h_aw_map_time;
    TH2D* h_aw_map_amp;
 
+   TH1D* h_aw_map_early;
+   TH1D* h_aw_map_pc;
+   TH1D* h_aw_map_dc;
+   TH1D* h_aw_map_late;
+
    TH2D* h_aw_aw_hits;
    TH2D* h_aw_aw_time;
    TH2D* h_aw_aw_amp;
 
+#if 0
    TH1D* h_aw_286;
    TH1D* h_aw_287;
    TH1D* h_aw_288;
@@ -73,6 +82,7 @@ public:
    TH1D* h_aw_340;
 
    TH1D* h_aw_352;
+#endif
 
    TH1D* h_adc16_bits;
    TH2D* h_adc16_bits_vs_aw;
@@ -87,6 +97,10 @@ public:
    TH2D *h_pad_time_pad;
 
    //TH2D* h_pad_pad_num_hits;
+
+   TH1D* h_pad_hits_per_column = NULL;
+   TH1D* h_pad_hits_per_row = NULL;
+   TH2D* h_pad_hits_per_row_column = NULL;
 
    TH2D* h_aw_pad_num_hits;
    TH2D* h_aw_pad_hits;
@@ -206,6 +220,11 @@ public:
       h_aw_amp_time = new TH2D("h_aw_amp_time", "aw p.h. vs time", 100, 0, MAX_TIME, 50, 0, MAX_AW_AMP);
 
       h_aw_map = new TH1D("h_aw_map", "aw hit occupancy", NUM_AW, -0.5, NUM_AW-0.5);
+      h_aw_map_early = new TH1D("h_aw_map_early", "aw hit occupancy, early hits", NUM_AW, -0.5, NUM_AW-0.5);
+      h_aw_map_pc = new TH1D("h_aw_map_pc", "aw hit occupancy, PC hits", NUM_AW, -0.5, NUM_AW-0.5);
+      h_aw_map_dc = new TH1D("h_aw_map_dc", "aw hit occupancy, DC hits", NUM_AW, -0.5, NUM_AW-0.5);
+      h_aw_map_late = new TH1D("h_aw_map_late", "aw hit occupancy, late hits", NUM_AW, -0.5, NUM_AW-0.5);
+
       h_aw_map_time = new TH2D("h_aw_map_time", "aw hit time vs wire", NUM_AW, -0.5, NUM_AW-0.5, 50, 0, MAX_TIME);
       h_aw_map_amp  = new TH2D("h_aw_map_amp", "aw hit p.h. vs wire", NUM_AW, -0.5, NUM_AW-0.5, 50, 0, MAX_AW_AMP);
 
@@ -213,6 +232,7 @@ public:
       h_aw_aw_time = new TH2D("h_aw_aw_time", "time in aw vs aw", 50, 0, MAX_TIME, 50, 0, MAX_TIME);
       h_aw_aw_amp  = new TH2D("h_aw_aw_amp",  "p.h. in aw vs aw", 50, 0, MAX_AW_AMP, 50, 0, MAX_AW_AMP);
 
+#if 0
       h_aw_286 = new TH1D("h_aw_286", "h_aw_286", NUM_AW, -0.5, NUM_AW-0.5);
       h_aw_287 = new TH1D("h_aw_287", "h_aw_287", NUM_AW, -0.5, NUM_AW-0.5);
       h_aw_288 = new TH1D("h_aw_288", "h_aw_288", NUM_AW, -0.5, NUM_AW-0.5);
@@ -229,6 +249,7 @@ public:
       h_aw_340 = new TH1D("h_aw_340", "h_aw_340", NUM_AW, -0.5, NUM_AW-0.5);
 
       h_aw_352 = new TH1D("h_aw_352", "h_aw_352", NUM_AW, -0.5, NUM_AW-0.5);
+#endif
 
       h_adc16_bits = new TH1D("h_adc16_bits", "FPGA adc16_coinc_dff bits; link bit 0..15", 16, -0.5, 16-0.5);
       h_adc16_bits_vs_aw = new TH2D("h_adc16_bits_vs_aw", "FPGA adc16_coinc_dff bits vs AW tpc wire number; tpc wire number; link bit 0..15", NUM_AW, -0.5, NUM_AW-0.5, 16, -0.5, 16-0.5);
@@ -237,6 +258,12 @@ public:
       h_pad_time = new TH1D("h_pad_time", "pad hit time; time, ns", 100, 0, MAX_TIME);
       h_pad_amp = new TH1D("h_pad_amp", "pad hit pulse height; adc counts", 100, 0, MAX_PAD_AMP);
       h_pad_amp_time = new TH2D("h_pad_amp_time", "pad p.h vs time; time, ns; adc counts", 50, 0, MAX_TIME, 50, 0, MAX_PAD_AMP);
+
+      h_pad_hits_per_column = new TH1D("h_pad_hits_per_column", "pad hits per TPC column; tpc column", 32, -0.5, 32-0.5);
+      h_pad_hits_per_row = new TH1D("h_pad_hits_per_row", "pad hits per TPC row; tpc row", 8*4*18, -0.5, 8*4*18-0.5);
+
+      h_pad_hits_per_row_column = new TH2D("h_pad_hits_per_row_column", "pad hits per TPC row and column; tpc row; tpc column", 8*4*18, -0.5, 8*4*18-0.5, 32, -0.5, 32-0.5);
+
       //int npads = MAX_FEAM*MAX_FEAM_PAD_COL*MAX_FEAM_PAD_ROWS;
       //h_pad_pad_num_hits = new TH2D("h_pad_pad_num_hits", "pad number vs pad number; pad number, col*N+row; pad number, col*N+row", npads, -0.5, npads-0.5, npads, -0.5, npads-0.5);
       //h_pad_amp_pad = new TH2D("h_pad_amp_pad", "pad p.h vs pad number; pad number, col*N+row; adc counts", npads, -0.5, npads-0.5, 100, 0, MAX_PAD_AMP);
@@ -423,6 +450,15 @@ public:
             h_aw_map_time->Fill(wire, time);
             h_aw_map_amp->Fill(wire, amp);
 
+            if (time < 800)
+               h_aw_map_early->Fill(wire);
+            else if (time < 1200)
+               h_aw_map_pc->Fill(wire);
+            else if (time < 5000)
+               h_aw_map_dc->Fill(wire);
+            else
+               h_aw_map_late->Fill(wire);
+
             if (adc16_coinc_dff) {
                //printf("adc16_coinc_dff: 0x%04x: ", adc16_coinc_dff);
                for (int i=0; i<16; i++) {
@@ -460,7 +496,8 @@ public:
                h_aw_aw_hits->Fill(eawh->fAwHits[j].wire, eawh->fAwHits[k].wire);
                h_aw_aw_time->Fill(eawh->fAwHits[j].time, eawh->fAwHits[k].time);
                h_aw_aw_amp->Fill(eawh->fAwHits[j].amp, eawh->fAwHits[k].amp);
-               
+
+#if 0               
                if (eawh->fAwHits[j].wire == 286) h_aw_286->Fill(eawh->fAwHits[k].wire);
                if (eawh->fAwHits[j].wire == 287) h_aw_287->Fill(eawh->fAwHits[k].wire);
                if (eawh->fAwHits[j].wire == 288) h_aw_288->Fill(eawh->fAwHits[k].wire);
@@ -477,6 +514,7 @@ public:
                if (eawh->fAwHits[j].wire == 340) h_aw_340->Fill(eawh->fAwHits[k].wire);
 
                if (eawh->fAwHits[j].wire == 352) h_aw_352->Fill(eawh->fAwHits[k].wire);
+#endif
             }
          }
       }
@@ -509,6 +547,8 @@ public:
             int seqsca = eph->fPadHits[i].seqsca;
             //int xcol = (pos%8)*4 + col;
             //int seqpad = xcol*MAX_FEAM_PAD_ROWS + row;
+            int col = eph->fPadHits[i].tpc_col;
+            int row = eph->fPadHits[i].tpc_row;
 
             double time = eph->fPadHits[i].time_ns;
             double amp = eph->fPadHits[i].amp;
@@ -544,6 +584,11 @@ public:
             h_pad_amp_time->Fill(time, amp);
             //h_pad_amp_pad->Fill(seqpad, amp);
             //h_pad_time_pad->Fill(seqpad, time);
+
+            h_pad_hits_per_column->Fill(col);
+            h_pad_hits_per_row->Fill(row);
+
+            h_pad_hits_per_row_column->Fill(row, col);
 
 #if 0
             for (unsigned ii=0; ii<eph->fPadHits.size(); ii++) {
@@ -1229,8 +1274,8 @@ public:
                   g->SetMarkerSize(0.75);
                   g->SetMarkerColor(zpad_colour[i]);
                   g->GetXaxis()->SetLimits(-0.5, NUM_PR-0.5);
-                  g->SetMinimum(-MAX_TIME);
-                  g->SetMaximum(0);
+                  g->SetMinimum(-PLOT_MAX_TIME);
+                  g->SetMaximum(-PLOT_MIN_TIME);
 
                   if (first) {
                      g->Draw("A*");
@@ -1270,8 +1315,8 @@ public:
                   g->SetMarkerSize(0.75);
                   g->SetMarkerColor(zpad_colour[i]);
                   g->GetXaxis()->SetLimits(-0.5, NUM_PR-0.5);
-                  g->SetMinimum(0);
-                  g->SetMaximum(MAX_TIME);
+                  g->SetMinimum(PLOT_MIN_TIME);
+                  g->SetMaximum(PLOT_MAX_TIME);
                   if (first) {
                      g->Draw("A*");
                      first = false;
