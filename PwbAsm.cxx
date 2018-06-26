@@ -847,7 +847,16 @@ void PwbChannelAsm::AddData(const char* ptr, int size, int start_of_data, int en
 void PwbChannelAsm::EndData()
 {
    if (fSaveNw > 0) {
-      printf("PwbChannelAsm::EndData: module %d sca %d state %d: Error: missing some data at the end\n", fModule, fSca, fState);
+      if (fState != PWB_CA_ST_ERROR) {
+         printf("PwbChannelAsm::EndData: module %d sca %d state %d: Error: missing some data at the end\n", fModule, fSca, fState);
+         fCountErrors++;
+         fState = PWB_CA_ST_ERROR;
+         fError = true;
+      } else {
+         if (fTrace) {
+            printf("PwbChannelAsm::EndData: module %d sca %d state %d: Error: missing some data at the end\n", fModule, fSca, fState);
+         }
+      }
    } else {
       if (fTrace) {
          printf("PwbChannelAsm::EndData: ok!\n");
@@ -942,7 +951,7 @@ void PwbChannelAsm::BuildEvent(FeamEvent* e)
    fOutput.clear();
 
    // verify against the ScaChannelsSent bitmap
-   if (fFormatRevision == 1) {
+   if (fFormatRevision == 1 && fState != PWB_CA_ST_ERROR) {
       for (unsigned i=0; i<79; i++) {
          int ri = i+1;
          assert(ri < MAX_FEAM_READOUT);
@@ -968,6 +977,12 @@ void PwbChannelAsm::BuildEvent(FeamEvent* e)
    // make sure no stale data if left behind after this event
    assert(fCurrent == NULL);
    assert(fOutput.size() == 0);
+   fScaChannelsSent1 = 0;
+   fScaChannelsSent2 = 0;
+   fScaChannelsSent3 = 0;
+   fScaChannelsThreshold1 = 0;
+   fScaChannelsThreshold2 = 0;
+   fScaChannelsThreshold3 = 0;
 }
 
 void PwbChannelAsm::AddPacket(PwbUdpPacket* udp, const char* ptr, int size)
@@ -1160,6 +1175,10 @@ void PwbModuleAsm::BuildEvent(FeamEvent* e)
    for (unsigned i=0; i<fChannels.size(); i++) {
       if (fChannels[i]) {
          fChannels[i]->BuildEvent(e);
+         if (fChannels[i]->fError) {
+            fCountErrors++;
+            e->error = true;
+         }
          if (fTs == 0) {
             fTs = fChannels[i]->fTs;
          } else {
