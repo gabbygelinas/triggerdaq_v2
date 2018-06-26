@@ -84,6 +84,8 @@ struct PlotHistograms
    TH1D* fHped;
    TH1D* fHped_adc16;
    TH1D* fHped_adc32;
+   TH1D* fHped_adc32_p0;
+   TH1D* fHped_adc32_pN;
 
    TH1D* fHphHit;
    TH1D* fHphHit_adc16;
@@ -131,6 +133,8 @@ struct PlotHistograms
 
       fHped_adc16 = new TH1D("adc16_pedestal_pulse_height", "adc16 pulse height (100MHz), zoom on the pedestal; ADC counts", 100, 0, MAX_AW_PED);
       fHped_adc32 = new TH1D("adc32_pedestal_pulse_height", "adc32 pulse height (62.5MHz), zoom on the pedestal; ADC counts", 100, 0, MAX_AW_PED);
+      fHped_adc32_p0 = new TH1D("adc32_pedestal_pulse_height_preamp0", "adc32 pulse height (62.5MHz) in preamp 0, zoom on the pedestal; ADC counts", 100, 0, MAX_AW_PED);
+      fHped_adc32_pN = new TH1D("adc32_pedestal_pulse_height_preampN", "adc32 pulse height (62.5MHz) in preamp 1..15, zoom on the pedestal; ADC counts", 100, 0, MAX_AW_PED);
       
       fHphHit = new TH1D("adc_pulse_height_hit", "pulse height, after ADC cut; ADC counts", 100, 0, MAX_AW_AMP);
       
@@ -402,6 +406,7 @@ class A16Flags
 public:
    bool fPrint = false;
    bool fFft = false;
+   bool fFilterWaveform = false;
    std::vector<int> fPlotAdc16;
    std::vector<int> fPlotAdc32;
    int fAdcPlotScaledown = 1;
@@ -518,6 +523,24 @@ public:
    {
       if (fTrace)
          printf("AdcModule::ResumeRun, run %d\n", runinfo->fRunNo);
+   }
+
+   void FilterWaveform(Alpha16Channel* hit)
+   {
+      std::vector<int> v = hit->adc_samples;
+      int n=v.size();
+      int k=20;
+      for (int i=0; i<n; i++) {
+         double sum0 = 0;
+         double sum1 = 0;
+         for (int j=i-k; j<i+k; j++) {
+            if (j>=0 && j<n) {
+               sum0 += 1;
+               sum1 += v[j];
+            }
+         }
+         hit->adc_samples[i] = sum1/sum0;
+      }
    }
 
    bool fft_first_adc16 = true;
@@ -707,8 +730,13 @@ public:
 
             if (is_adc16)
                fH->fHped_adc16->Fill(ph);
-            else if (is_adc32)
+            else if (is_adc32) {
                fH->fHped_adc32->Fill(ph);
+               if (hit->preamp_pos == 0 || hit->preamp_pos == 16)
+                  fH->fHped_adc32_p0->Fill(ph);
+               else
+                  fH->fHped_adc32_pN->Fill(ph);
+            }
          }
 
          double ph_hit_thr_adc16 = 0;
@@ -729,9 +757,16 @@ public:
          } else if (runinfo->fRunNo < 2028) {
             ph_hit_thr_adc16 =  1000;
             ph_hit_thr_adc32 =   800;
-         } else if (runinfo->fRunNo < 9999) {
+         } else if (runinfo->fRunNo < 2164) {
             ph_hit_thr_adc16 =  2000;
             ph_hit_thr_adc32 =  1500;
+         } else if (runinfo->fRunNo < 9999) {
+            ph_hit_thr_adc16 =  2000000; // adc16 not connected
+            //if (hit->preamp_pos == 0 || hit->preamp_pos == 16) {
+            ph_hit_thr_adc32 =  2500;
+            //} else {
+            //ph_hit_thr_adc32 =  1000;
+            //}
          }
 
          double ph_hit_thr = 0;
@@ -758,9 +793,12 @@ public:
          } else if (runinfo->fRunNo < 1244) {
             pulse_time_middle_adc16 = 165; // ADC time bins
             pulse_time_middle_adc32 = 165; // ADC time bins
-         } else if (runinfo->fRunNo < 9999) {
+         } else if (runinfo->fRunNo < 2164) {
             pulse_time_middle_adc16 = 147; // ADC time bins
             pulse_time_middle_adc32 = 150; // ADC time bins
+         } else if (runinfo->fRunNo < 9999) {
+            pulse_time_middle_adc16 = 147; // ADC time bins
+            pulse_time_middle_adc32 = 135; // ADC time bins
          }
 
          double time_pc = 1000.0; // place PC drift times at 1000ns.
@@ -768,7 +806,7 @@ public:
          if (is_adc16)
             time_offset = time_pc - pulse_time_middle_adc16*time_bin;
          else if (is_adc32)
-            time_offset = time_pc - 2410;
+            time_offset = time_pc - pulse_time_middle_adc32*time_bin;
 
          double adc_gain = 1.0;
          double adc_offset = 0.0;
@@ -888,6 +926,9 @@ public:
       fft_first_adc32 = true;
 
       for (unsigned i=0; i<e->hits.size(); i++) {
+         if (fFlags->fFilterWaveform) {
+            FilterWaveform(e->hits[i]);
+         }
          AnalyzeHit(runinfo, e->hits[i], &flow_hits->fAwHits);
       }
 
@@ -932,6 +973,10 @@ public:
          }
          if (args[i] == "--adcsd") {
             fFlags.fAdcPlotScaledown = atoi(args[i+1].c_str());
+            i++;
+         }
+         if (args[i] == "--adcfwf") {
+            fFlags.fFilterWaveform = true;
             i++;
          }
       }
