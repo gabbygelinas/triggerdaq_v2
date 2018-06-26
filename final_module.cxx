@@ -251,7 +251,7 @@ public:
       h_aw_352 = new TH1D("h_aw_352", "h_aw_352", NUM_AW, -0.5, NUM_AW-0.5);
 #endif
 
-      h_adc16_bits = new TH1D("h_adc16_bits", "FPGA adc16_coinc_dff bits; link bit 0..15", 16, -0.5, 16-0.5);
+      h_adc16_bits = new TH1D("h_adc16_bits", "FPGA adc16_coinc_dff bits; link bit 0..15", 16+1, -0.5, 16-0.5+1);
       h_adc16_bits_vs_aw = new TH2D("h_adc16_bits_vs_aw", "FPGA adc16_coinc_dff bits vs AW tpc wire number; tpc wire number; link bit 0..15", NUM_AW, -0.5, NUM_AW-0.5, 16, -0.5, 16-0.5);
 
       h_pad_num_hits = new TH1D("h_pad_num_hits", "number of pad hits; number of hits in pads", 100, 0, MAX_HITS);
