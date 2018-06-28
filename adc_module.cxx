@@ -71,11 +71,18 @@ struct PlotHistograms
    TH1D* fHbaselineMean;
    TH1D* fHbaselineRms;
    TH1D* fHbaselineRange;
+   TH1D* fHbaselineBadRmsAwMap;
    TProfile* fHbaselineMeanAwMap;
    TProfile* fHbaselineRmsAwMap;
+   TProfile* fHbaselineRangeAwMap;
 
    TH1D* fHrange;
    TProfile* fHrangeAwMap;
+
+   TH1D* fAwMapPh500;
+   TH1D* fAwMapPh1000;
+   TH1D* fAwMapPh5000;
+   TH1D* fAwMapPh10000;
 
    TH1D* fHph;
    TH1D* fHph_adc16;
@@ -113,16 +120,24 @@ struct PlotHistograms
       TDirectory *dir = gDirectory->mkdir("summary");
       dir->cd();
 
-      fHbaselineMean = new TH1D("adc_baseline_mean", "waveform baseline mean; ADC counts", 100, -2000, 2000);
-      fHbaselineRms = new TH1D("adc_baseline_rms", "waveform baseline rms; ADC counts", 100, 0, MAX_AW_BRMS);
-      fHbaselineRange = new TH1D("adc_baseline_range", "waveform baseline range; ADC counts", 100, 0, MAX_AW_BRANGE);
+      fHbaselineMean = new TH1D("adc_baseline_mean", "waveform baseline mean, all wires; ADC counts", 100, -2000, 2000);
+      fHbaselineRms = new TH1D("adc_baseline_rms", "waveform baseline rms, all wires; ADC counts", 100, 0, MAX_AW_BRMS);
+      fHbaselineRange = new TH1D("adc_baseline_range", "waveform baseline range, all wires; ADC counts", 100, 0, MAX_AW_BRANGE);
 
-      fHbaselineMeanAwMap = new TProfile("adc_baseline_mean_vs_aw", "waveform baseline mean; TPC wire number; ADC counts", NUM_AW, -0.5, NUM_AW-0.5);
+      fHbaselineBadRmsAwMap = new TH1D("adc_baseline_bad_rms_vs_aw", "waveform with bad baseline vs wire number; TPC wire number", NUM_AW, -0.5, NUM_AW-0.5);
+
+      fHbaselineMeanAwMap = new TProfile("adc_baseline_mean_vs_aw", "waveform baseline mean vw wire number; TPC wire number; ADC counts", NUM_AW, -0.5, NUM_AW-0.5);
       fHbaselineRmsAwMap = new TProfile("adc_baseline_rms_vs_aw", "waveform baseline rms vs wire number; TPC wire number; ADC counts", NUM_AW, -0.5, NUM_AW-0.5);
       fHbaselineRmsAwMap->SetMinimum(0);
+      fHbaselineRangeAwMap = new TProfile("adc_baseline_range_vs_aw", "waveform baseline range vs wire number; TPC wire number; ADC counts", NUM_AW, -0.5, NUM_AW-0.5);
 
       fHrange = new TH1D("adc_range", "waveform range, max-min; ADC counts", 100, 0, MAX_AW_AMP);
       fHrangeAwMap = new TProfile("adc_range_vs_aw", "waveform range, max-min vs wire number; TPC wire number; ADC counts", NUM_AW, -0.5, NUM_AW-0.5);
+
+      fAwMapPh500 = new TH1D("aw_map_ph500_vs_aw", "waveforms with ph > 500 vs wire number; TPC wire number", NUM_AW, -0.5, NUM_AW-0.5);
+      fAwMapPh1000 = new TH1D("aw_map_ph1000_vs_aw", "waveforms with ph > 1000 vs wire number; TPC wire number", NUM_AW, -0.5, NUM_AW-0.5);
+      fAwMapPh5000 = new TH1D("aw_map_ph5000_vs_aw", "waveforms with ph > 5000 vs wire number; TPC wire number", NUM_AW, -0.5, NUM_AW-0.5);
+      fAwMapPh10000 = new TH1D("aw_map_ph10000_vs_aw", "waveforms with ph > 10000 vs wire number; TPC wire number", NUM_AW, -0.5, NUM_AW-0.5);
 
       fHph = new TH1D("adc_pulse_height", "waveform pulse height; ADC counts", 100, 0, MAX_AW_AMP);
 
@@ -568,7 +583,25 @@ public:
          r = 4; // fmc-adc32-rev1 gain 3
       }
 
-#if 0      
+#if 0
+      // blank off bad FMC-ADC32 channels
+      if (runinfo->fRunNo >= 2120 && runinfo->fRunNo < 99999) {
+         if (hit->adc_chan == 16) {
+            return;
+         }
+         if (hit->adc_chan == 25) {
+            return;
+         }
+         if (hit->adc_chan == 34) {
+            return;
+         }
+         if (hit->adc_chan == 41) {
+            return;
+         }
+      }
+#endif
+
+#if 0
       printf("hit: bank [%s], adc_module %d, adc_chan %d, preamp_pos %d, preamp_wire %d, tpc_wire %d. nbins %d+%d, seqno %d, region %d\n",
              hit->bank.c_str(),
              hit->adc_module,
@@ -671,6 +704,10 @@ public:
                fH->fHbaselineRange->Fill(brange);
             else
                fH->fHbaselineRange->Fill(MAX_AW_BRANGE-1);
+
+            if (is_aw) {
+               fH->fHbaselineBadRmsAwMap->Fill(iwire);
+            }
          }
       } else {
          have_baseline = true;
@@ -683,14 +720,16 @@ public:
             else
                fH->fHbaselineRms->Fill(MAX_AW_BRMS-1);
 
-            if (brange < MAX_AW_BRANGE)
+            if (brange < MAX_AW_BRANGE) {
                fH->fHbaselineRange->Fill(brange);
-            else
+            } else {
                fH->fHbaselineRange->Fill(MAX_AW_BRANGE-1);
+            }
 
             if (is_aw) {
                fH->fHbaselineMeanAwMap->Fill(iwire, bmean);
                fH->fHbaselineRmsAwMap->Fill(iwire, brms);
+               fH->fHbaselineRangeAwMap->Fill(iwire, brange);
             }
 
             if (wrange < MAX_AW_AMP) {
@@ -707,6 +746,17 @@ public:
          }
       
          ph = bmean - wmin;
+
+         if (is_aw) {
+            if (ph > 500)
+               fH->fAwMapPh500->Fill(iwire);
+            if (ph > 1000)
+               fH->fAwMapPh1000->Fill(iwire);
+            if (ph > 5000)
+               fH->fAwMapPh5000->Fill(iwire);
+            if (ph > 10000)
+               fH->fAwMapPh10000->Fill(iwire);
+         }
 
          double cfd_thr = 0.75*ph;
 
@@ -760,10 +810,17 @@ public:
          } else if (runinfo->fRunNo < 2164) {
             ph_hit_thr_adc16 =  2000;
             ph_hit_thr_adc32 =  1500;
-         } else if (runinfo->fRunNo < 9999) {
+         } else if (runinfo->fRunNo < 2181) {
             ph_hit_thr_adc16 =  2000000; // adc16 not connected
             //if (hit->preamp_pos == 0 || hit->preamp_pos == 16) {
             ph_hit_thr_adc32 =  2500;
+            //} else {
+            //ph_hit_thr_adc32 =  1000;
+            //}
+         } else if (runinfo->fRunNo < 9999) {
+            ph_hit_thr_adc16 =  2000000; // adc16 not connected
+            //if (hit->preamp_pos == 0 || hit->preamp_pos == 16) {
+            ph_hit_thr_adc32 =  750;
             //} else {
             //ph_hit_thr_adc32 =  1000;
             //}

@@ -1377,7 +1377,10 @@ public:
          
          double wpos_ns = wpos*16.0 - wpos_offset_ns + 1000.0;
 
-         if (runinfo->fRunNo >= 2028) {
+         
+         if (runinfo->fRunNo >= 2166) {
+            wpos_ns += 200.0 + 150;
+         } else if (runinfo->fRunNo >= 2028) {
             wpos_ns += 200.0;
          }
          

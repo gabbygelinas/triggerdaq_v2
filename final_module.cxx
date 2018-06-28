@@ -33,6 +33,8 @@
 #define PLOT_MIN_TIME (900.0)
 #define PLOT_MAX_TIME (5100.0)
 
+#define NUM_PREAMP 32
+
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
 
 #define MEMZERO(p) memset((p), 0, sizeof(p))
@@ -52,12 +54,28 @@ public:
    TH1D* h_aw_amp;
    TH2D* h_aw_amp_time;
 
+   TH1D* h_aw_time_preamp_even_pc;
+   TH1D* h_aw_amp_preamp_even_pc;
+
+   TH1D* h_aw_time_preamp_odd_pc;
+   TH1D* h_aw_amp_preamp_odd_pc;
+
    TH1D* h_aw_map;
    TH2D* h_aw_map_time;
    TH2D* h_aw_map_amp;
 
+   TH1D* h_preamp_map;
+   TH1D* h_preamp_map_pc;
+   TH1D* h_preamp_map_dc;
+   TH2D* h_preamp_map_time;
+   TH2D* h_preamp_map_amp;
+   TH2D* h_preamp_map_amp_pc;
+   TProfile* h_preamp_map_amp_prof;
+   TProfile* h_preamp_map_amp_prof_pc;
+
    TH1D* h_aw_map_early;
    TH1D* h_aw_map_pc;
+   TH1D* h_aw_map_pc_8000;
    TH1D* h_aw_map_dc;
    TH1D* h_aw_map_late;
 
@@ -101,6 +119,11 @@ public:
    TH1D* h_pad_hits_per_column = NULL;
    TH1D* h_pad_hits_per_row = NULL;
    TH2D* h_pad_hits_per_row_column = NULL;
+
+   TH2D* h_pad_time_per_column = NULL;
+   TH2D* h_pad_time_per_row = NULL;
+
+   TH1D* h_pad_time_pos[64];
 
    TH2D* h_aw_pad_num_hits;
    TH2D* h_aw_pad_hits;
@@ -219,14 +242,30 @@ public:
       h_aw_amp = new TH1D("h_aw_amp", "aw hit pulse height", 100, 0, MAX_AW_AMP);
       h_aw_amp_time = new TH2D("h_aw_amp_time", "aw p.h. vs time", 100, 0, MAX_TIME, 50, 0, MAX_AW_AMP);
 
+      h_aw_time_preamp_even_pc = new TH1D("h_aw_time_preamp_even_pc", "aw hit time, even preamp, PC hits; time, ns", 100, 0, MAX_TIME);
+      h_aw_amp_preamp_even_pc = new TH1D("h_aw_amp_preamp_even_pc", "aw hit pulse height, even preamp, PC hits", 100, 0, MAX_AW_AMP);
+
+      h_aw_time_preamp_odd_pc = new TH1D("h_aw_time_preamp_odd_pc", "aw hit time, odd preamp, PC hits; time, ns", 100, 0, MAX_TIME);
+      h_aw_amp_preamp_odd_pc = new TH1D("h_aw_amp_preamp_odd_pc", "aw hit pulse height, odd preamp, PC hits", 100, 0, MAX_AW_AMP);
+
       h_aw_map = new TH1D("h_aw_map", "aw hit occupancy", NUM_AW, -0.5, NUM_AW-0.5);
       h_aw_map_early = new TH1D("h_aw_map_early", "aw hit occupancy, early hits", NUM_AW, -0.5, NUM_AW-0.5);
       h_aw_map_pc = new TH1D("h_aw_map_pc", "aw hit occupancy, PC hits", NUM_AW, -0.5, NUM_AW-0.5);
+      h_aw_map_pc_8000 = new TH1D("h_aw_map_pc_8000", "aw hit occupancy, PC hits with p.h. > 8000", NUM_AW, -0.5, NUM_AW-0.5);
       h_aw_map_dc = new TH1D("h_aw_map_dc", "aw hit occupancy, DC hits", NUM_AW, -0.5, NUM_AW-0.5);
       h_aw_map_late = new TH1D("h_aw_map_late", "aw hit occupancy, late hits", NUM_AW, -0.5, NUM_AW-0.5);
 
       h_aw_map_time = new TH2D("h_aw_map_time", "aw hit time vs wire", NUM_AW, -0.5, NUM_AW-0.5, 50, 0, MAX_TIME);
       h_aw_map_amp  = new TH2D("h_aw_map_amp", "aw hit p.h. vs wire", NUM_AW, -0.5, NUM_AW-0.5, 50, 0, MAX_AW_AMP);
+
+      h_preamp_map = new TH1D("h_preamp_map", "preamp hit occupancy", NUM_PREAMP, -0.5, NUM_PREAMP-0.5);
+      h_preamp_map_pc = new TH1D("h_preamp_map_pc", "preamp hit occupancy, PC hits", NUM_PREAMP, -0.5, NUM_PREAMP-0.5);
+      h_preamp_map_dc = new TH1D("h_preamp_map_dc", "preamp hit occupancy, DC hits", NUM_PREAMP, -0.5, NUM_PREAMP-0.5);
+      h_preamp_map_time = new TH2D("h_preamp_map_time", "aw hit time vs preamp", NUM_PREAMP, -0.5, NUM_PREAMP-0.5, 50, 0, MAX_TIME);
+      h_preamp_map_amp  = new TH2D("h_preamp_map_amp", "aw hit p.h. vs preamp", NUM_PREAMP, -0.5, NUM_PREAMP-0.5, 50, 0, MAX_AW_AMP);
+      h_preamp_map_amp_pc  = new TH2D("h_preamp_map_amp_pc", "aw hit p.h. vs preamp, PC hits", NUM_PREAMP, -0.5, NUM_PREAMP-0.5, 50, 0, MAX_AW_AMP);
+      h_preamp_map_amp_prof = new TProfile("h_preamp_map_amp_prof", "aw hit p.h. vs preamp profile", NUM_PREAMP, -0.5, NUM_PREAMP-0.5);
+      h_preamp_map_amp_prof_pc = new TProfile("h_preamp_map_amp_prof_pc", "aw hit p.h. vs preamp profile, PC hits", NUM_PREAMP, -0.5, NUM_PREAMP-0.5);
 
       h_aw_aw_hits = new TH2D("h_aw_aw_hits", "hits in aw vs aw", NUM_AW, -0.5, NUM_AW-0.5, NUM_AW, -0.5, NUM_AW-0.5);
       h_aw_aw_time = new TH2D("h_aw_aw_time", "time in aw vs aw", 50, 0, MAX_TIME, 50, 0, MAX_TIME);
@@ -263,6 +302,17 @@ public:
       h_pad_hits_per_row = new TH1D("h_pad_hits_per_row", "pad hits per TPC row; tpc row", 8*4*18, -0.5, 8*4*18-0.5);
 
       h_pad_hits_per_row_column = new TH2D("h_pad_hits_per_row_column", "pad hits per TPC row and column; tpc row; tpc column", 8*4*18, -0.5, 8*4*18-0.5, 32, -0.5, 32-0.5);
+
+      h_pad_time_per_column = new TH2D("h_pad_time_per_column", "pad hit time per column; tpc column; time, ns", 32, -0.5, 32-0.5, 100, 0, MAX_TIME);
+      h_pad_time_per_row = new TH2D("h_pad_time_per_row", "pad hit time per row; tpc row; time, ns", 8*4*18, -0.5, 8*4*18-0.5, 100, 0, MAX_TIME);
+
+      for (int i=0; i<64; i++) {
+         char name[256];
+         char title[256];
+         sprintf(name, "h_pad_time_pwb_seqpos_%02d", i);
+         sprintf(title, "pad hit time pwb seqpos %d; time, ns", i);
+         h_pad_time_pos[i] = new TH1D(name, title, 100, 0, MAX_TIME);
+      }
 
       //int npads = MAX_FEAM*MAX_FEAM_PAD_COL*MAX_FEAM_PAD_ROWS;
       //h_pad_pad_num_hits = new TH2D("h_pad_pad_num_hits", "pad number vs pad number; pad number, col*N+row; pad number, col*N+row", npads, -0.5, npads-0.5, npads, -0.5, npads-0.5);
@@ -438,7 +488,9 @@ public:
          for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
             int adc_module = eawh->fAwHits[j].adc_module;
             int adc_chan = eawh->fAwHits[j].adc_chan;
+            //int preamp = eawh->fAwHits[j].preamp_pos;
             int wire = eawh->fAwHits[j].wire;
+            int preamp = wire/16;
             double time = eawh->fAwHits[j].time;
             double amp = eawh->fAwHits[j].amp;
 
@@ -450,14 +502,47 @@ public:
             h_aw_map_time->Fill(wire, time);
             h_aw_map_amp->Fill(wire, amp);
 
-            if (time < 800)
+            h_preamp_map->Fill(preamp);
+            h_preamp_map_time->Fill(preamp, time);
+            h_preamp_map_amp->Fill(preamp, amp);
+            if (amp < 10000) {
+               h_preamp_map_amp_prof->Fill(preamp, amp);
+            }
+
+            bool aw_early = false;
+            bool aw_pc = false;
+            bool aw_dc = false;
+            bool aw_late = false;
+
+            if (time < 800) {
+               aw_early = true;
                h_aw_map_early->Fill(wire);
-            else if (time < 1200)
+            } else if (time < 1200) {
+               aw_pc = true;
                h_aw_map_pc->Fill(wire);
-            else if (time < 5000)
+               if (amp > 8000) {
+                  h_aw_map_pc_8000->Fill(wire);
+               }
+               h_preamp_map_pc->Fill(preamp);
+               h_preamp_map_amp_pc->Fill(preamp, amp);
+               if (amp < 10000) {
+                  h_preamp_map_amp_prof_pc->Fill(preamp, amp);
+               }
+               if (preamp == 16+2 /*preamp%2 == 0*/) {
+                  h_aw_time_preamp_even_pc->Fill(time);
+                  h_aw_amp_preamp_even_pc->Fill(amp);
+               } else if (preamp == 16+3) {
+                  h_aw_time_preamp_odd_pc->Fill(time);
+                  h_aw_amp_preamp_odd_pc->Fill(amp);
+               }
+            } else if (time < 5000) {
+               aw_dc = true;
                h_aw_map_dc->Fill(wire);
-            else
+               h_preamp_map_dc->Fill(preamp);
+            } else {
+               aw_late = true;
                h_aw_map_late->Fill(wire);
+            }
 
             if (adc16_coinc_dff) {
                //printf("adc16_coinc_dff: 0x%04x: ", adc16_coinc_dff);
@@ -465,7 +550,9 @@ public:
                   if (adc16_coinc_dff & (1<<i)) {
                      //printf(" link%d", i);
                      //h_adc16_bits->Fill(i);
-                     h_adc16_bits_vs_aw->Fill(wire, i);
+                     if (aw_pc) {
+                        h_adc16_bits_vs_aw->Fill(wire, i);
+                     }
                   }
                }
                //printf("\n");
@@ -589,6 +676,16 @@ public:
             h_pad_hits_per_row->Fill(row);
 
             h_pad_hits_per_row_column->Fill(row, col);
+
+            h_pad_time_per_column->Fill(col, time);
+            h_pad_time_per_row->Fill(row, time);
+
+            int pwb_col = col/4;
+            int pwb_ring = row/(4*18);
+            int pwb_seqpos = pwb_col*8 + pwb_ring;
+            assert(pwb_seqpos >= 0 && pwb_seqpos < 64);
+
+            h_pad_time_pos[pwb_seqpos]->Fill(time);
 
 #if 0
             for (unsigned ii=0; ii<eph->fPadHits.size(); ii++) {
