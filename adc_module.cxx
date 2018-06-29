@@ -812,18 +812,13 @@ public:
             ph_hit_thr_adc32 =  1500;
          } else if (runinfo->fRunNo < 2181) {
             ph_hit_thr_adc16 =  2000000; // adc16 not connected
-            //if (hit->preamp_pos == 0 || hit->preamp_pos == 16) {
             ph_hit_thr_adc32 =  2500;
-            //} else {
-            //ph_hit_thr_adc32 =  1000;
-            //}
-         } else if (runinfo->fRunNo < 9999) {
+         } else if (runinfo->fRunNo < 2202) {
             ph_hit_thr_adc16 =  2000000; // adc16 not connected
-            //if (hit->preamp_pos == 0 || hit->preamp_pos == 16) {
             ph_hit_thr_adc32 =  750;
-            //} else {
-            //ph_hit_thr_adc32 =  1000;
-            //}
+         } else if (runinfo->fRunNo < 9999) {
+            ph_hit_thr_adc16 =  1000;
+            ph_hit_thr_adc32 =  750;
          }
 
          double ph_hit_thr = 0;
