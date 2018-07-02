@@ -33,10 +33,13 @@ void TrgAsm::Reset()
 TrigEvent* TrgAsm::UnpackBank(const char* ptr, int size)
 {
    TrigEvent* e = new TrigEvent;
+
+   //printf("TrgAsm::UnpackBank: ATAT: ptr %p, size %d\n", ptr, size);
    
    const uint32_t *p32 = (const uint32_t*)ptr;
-   for (unsigned i=0; i<size/4; i++) {
-      //printf("ATAT[%d]: 0x%08x (%d)\n", i, p32[i], p32[i]);
+   const unsigned n32 = size/4;
+   for (unsigned i=0; i<n32; i++) {
+      //printf("TrgAsm::UnpackBank: ATAT[%d]: 0x%08x (%d)\n", i, p32[i], p32[i]);
       e->udpData.push_back(p32[i]);
    }
 
