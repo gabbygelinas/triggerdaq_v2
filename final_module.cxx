@@ -439,6 +439,7 @@ public:
 
       uint32_t adc16_coinc_dff = 0;
       uint32_t aw16_prompt = 0;
+      uint32_t trig_bitmap  = 0;
 
       if (age->trig && age->trig->udpData.size() > 7) {
          adc16_coinc_dff = (age->trig->udpData[6]>>8)&0xFFFF;
@@ -446,6 +447,10 @@ public:
 
       if (age->trig && age->trig->udpData.size() > 9) {
          aw16_prompt = (age->trig->udpData[9])&0xFFFF;
+      }
+
+      if (age->trig && age->trig->udpData.size() > 7) {
+         trig_bitmap = age->trig->udpData[6];
       }
 
       int trig_counter = -1;
@@ -1093,6 +1098,16 @@ public:
                         printf(" %d", i);
                      }
                   }
+                  printf("\n");
+               }
+
+               if (1) {
+                  printf("trig_bitmap: 0x%08x: bits: ", trig_bitmap);
+                  if (trig_bitmap & (1<<0)) printf("adc16_grand_or ");
+                  if (trig_bitmap & (1<<1)) printf("adc32_grand_or ");
+                  if (trig_bitmap & (1<<2)) printf("adc_grand_or ");
+                  if (trig_bitmap & (1<<3)) printf("esata_nim_grand_or ");
+                  if (trig_bitmap & (1<<7)) printf("MLU ");
                   printf("\n");
                }
 
