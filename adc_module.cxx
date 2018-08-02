@@ -459,6 +459,8 @@ public:
    //std::vector<A16ChanHistograms*> fHC;
    std::vector<PlotA16*> fPlotA16;
 
+   std::vector<AnalyzeNoise> fAN16AWB;
+
 public:
    AdcModule(TARunInfo* runinfo, A16Flags* f)
       : TARunObject(runinfo)
@@ -479,6 +481,12 @@ public:
       if (fFlags->fFft) {
          fAN16 = new AnalyzeNoise("adc16", fft_file, fft_tmp, 701);
          fPN16 = new PlotNoise("adc16");
+
+         for(int awb=0; awb<32; ++awb)
+            {
+               TString ANname = TString::Format("adc16AWB%02d",awb);
+               fAN16AWB.emplace_back(ANname.Data(), fft_file, fft_tmp, 701);
+            }
 
          fAN32 = new AnalyzeNoise("adc32", fft_file, fft_tmp, 511);
          fPN32 = new PlotNoise("adc32");
@@ -522,6 +530,13 @@ public:
          printf("AdcModule::EndRun, run %d, events %d\n", runinfo->fRunNo, fCounter);
       if (fAN16)
          fAN16->Finish();
+      if(fAN16AWB.size())
+         {
+            for(int awb=0; awb<32; ++awb)
+            {
+               fAN16AWB.at(awb).Finish();
+            }
+         }
       if (fAN32)
          fAN32->Finish();
       //time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
@@ -640,10 +655,20 @@ public:
          fft_first_adc16 = false;
          if (fAN16 && fAN16->fCount < max_fft_count) {
             fAN16->AddWaveform(hit->adc_samples);
+            fAN16AWB.at(hit->preamp_pos).AddWaveform(hit->adc_samples);
             if (fPN16)
                fPN16->Plot(fAN16);
-         }
+         }                  
       }
+      
+      int max_fft_awb_count = 30000;
+      if (is_adc16 && fAN16AWB.size() > 0 ); 
+         {
+            if ( fAN16AWB.at(hit->preamp_pos).fCount < max_fft_awb_count) 
+               {
+                  fAN16AWB.at(hit->preamp_pos).AddWaveform(hit->adc_samples);
+               }                  
+         }
 
       if (is_adc32 && fft_first_adc32) {
          fft_first_adc32 = false;
