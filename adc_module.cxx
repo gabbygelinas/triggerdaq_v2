@@ -662,7 +662,7 @@ public:
       }
       
       int max_fft_awb_count = 30000;
-      if (is_adc16 && fAN16AWB.size() > 0 ); 
+      if (is_adc16 && fAN16AWB.size() > 0 )
          {
             if ( fAN16AWB.at(hit->preamp_pos).fCount < max_fft_awb_count) 
                {
