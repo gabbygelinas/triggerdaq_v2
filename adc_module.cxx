@@ -77,7 +77,8 @@ struct PlotHistograms
    TProfile* fHbaselineRangeAwMap;
 
    TH1D* fHrange;
-   TProfile* fHrangeAwMap;
+   // TProfile* fHrangeAwMap;
+   TH2D* fHrangeAwMap;
 
    TH1D* fAwMapPh500;
    TH1D* fAwMapPh1000;
@@ -132,7 +133,8 @@ struct PlotHistograms
       fHbaselineRangeAwMap = new TProfile("adc_baseline_range_vs_aw", "waveform baseline range vs wire number; TPC wire number; ADC counts", NUM_AW, -0.5, NUM_AW-0.5);
 
       fHrange = new TH1D("adc_range", "waveform range, max-min; ADC counts", 100, 0, MAX_AW_AMP);
-      fHrangeAwMap = new TProfile("adc_range_vs_aw", "waveform range, max-min vs wire number; TPC wire number; ADC counts", NUM_AW, -0.5, NUM_AW-0.5);
+      // fHrangeAwMap = new TProfile("adc_range_vs_aw", "waveform range, max-min vs wire number; TPC wire number; ADC counts", NUM_AW, -0.5, NUM_AW-0.5);
+      fHrangeAwMap = new TH2D("adc_range_vs_aw", "waveform range, max-min vs wire number; TPC wire number; ADC counts", NUM_AW, -0.5, NUM_AW-0.5,1000,0,10000);
 
       fAwMapPh500 = new TH1D("aw_map_ph500_vs_aw", "waveforms with ph > 500 vs wire number; TPC wire number", NUM_AW, -0.5, NUM_AW-0.5);
       fAwMapPh1000 = new TH1D("aw_map_ph1000_vs_aw", "waveforms with ph > 1000 vs wire number; TPC wire number", NUM_AW, -0.5, NUM_AW-0.5);
