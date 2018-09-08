@@ -422,6 +422,7 @@ public:
    bool fPrint = false;
    bool fFft = false;
    bool fFilterWaveform = false;
+   bool fInvertWaveform = false;
    std::vector<int> fPlotAdc16;
    std::vector<int> fPlotAdc32;
    int fAdcPlotScaledown = 1;
@@ -555,6 +556,14 @@ public:
             }
          }
          hit->adc_samples[i] = sum1/sum0;
+      }
+   }
+
+   void InvertWaveform(Alpha16Channel* hit)
+   {
+      int n = hit->adc_samples.size();
+      for (int i=0; i<n; i++) {
+         hit->adc_samples[i] = -hit->adc_samples[i];
       }
    }
 
@@ -816,9 +825,12 @@ public:
          } else if (runinfo->fRunNo < 2202) {
             ph_hit_thr_adc16 =  2000000; // adc16 not connected
             ph_hit_thr_adc32 =  750;
-         } else if (runinfo->fRunNo < 9999) {
+         } else if (runinfo->fRunNo < 902340) {
             ph_hit_thr_adc16 =  1000;
             ph_hit_thr_adc32 =  750;
+         } else if (runinfo->fRunNo < 999999) {
+            ph_hit_thr_adc16 =  1000;
+            ph_hit_thr_adc32 =  99999; // not used
          }
 
          double ph_hit_thr = 0;
@@ -981,6 +993,9 @@ public:
          if (fFlags->fFilterWaveform) {
             FilterWaveform(e->hits[i]);
          }
+         if (fFlags->fInvertWaveform) {
+            InvertWaveform(e->hits[i]);
+         }
          AnalyzeHit(runinfo, e->hits[i], &flow_hits->fAwHits);
       }
 
@@ -1029,6 +1044,10 @@ public:
          }
          if (args[i] == "--adcfwf") {
             fFlags.fFilterWaveform = true;
+            i++;
+         }
+         if (args[i] == "--adcinv") {
+            fFlags.fInvertWaveform = true;
             i++;
          }
       }
