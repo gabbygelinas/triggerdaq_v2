@@ -59,7 +59,14 @@ public:
    uint32_t ScaChannelsThreshold1;
    uint32_t ScaChannelsThreshold2;
    uint32_t ScaChannelsThreshold3;
-   uint32_t Reserved2;
+   // in rev0 and rev1 only
+   uint32_t Reserved2    = 0;
+   // added in rev2
+   uint32_t EventCounter = 0;
+   uint16_t ScaFifoMax   = 0;
+   uint8_t EventDescriptorWrite = 0;
+   uint8_t EventDescriptorRead  = 0;
+
    int start_of_data;
 
 public:
@@ -111,11 +118,11 @@ public:
    void Reset();
    void AddPacket(PwbUdpPacket* udp, const char* ptr, int size);
 
-   void BeginData(const char* ptr, int size, int start_of_data, int end_of_data, uint32_t ts);
-   void AddData(const char* ptr, int size, int start_of_data, int end_of_data);
+   void BeginData(const char* ptr, int size, int start_of_data, int end_of_data, uint32_t ts, bool last);
+   void AddData(const char* ptr, int size, int start_of_data, int end_of_data, bool last);
    void EndData();
 
-   void CopyData(const uint16_t* s, const uint16_t* e);
+   void CopyData(const uint16_t* s, const uint16_t* e, bool last);
 
    void AddSamples(int channel, const uint16_t* samples, int count);
 

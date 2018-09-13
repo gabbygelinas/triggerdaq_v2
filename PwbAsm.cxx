@@ -514,6 +514,8 @@ PwbEventHeader::PwbEventHeader(const char* ptr, int size)
    }
 
    fError = false;
+
+   const uint32_t* w32 = p32 + 4;
    
    FormatRevision  = (p32[5]>> 0) & 0xFF;
    ScaId           = (p32[5]>> 8) & 0xFF;
@@ -579,6 +581,41 @@ PwbEventHeader::PwbEventHeader(const char* ptr, int size)
       Reserved2             = 0;
       
       start_of_data = 16*4;
+   } else if (FormatRevision == 2) {
+      HardwareId1 = p32[6];
+      
+      HardwareId2 = (p32[7]>> 0) & 0xFFFF;
+      TriggerDelay     = (p32[7]>>16) & 0xFFFF;
+      
+      // NB timestamp clock is 125 MHz
+      
+      TriggerTimestamp1 = w32[4];
+      
+      TriggerTimestamp2 = (w32[5]>> 0) & 0xFFFF;
+      Reserved1         = (w32[5]>>16) & 0xFFFF;
+      
+      ScaLastCell = (w32[6]>> 0) & 0xFFFF;
+      ScaSamples  = (w32[6]>>16) & 0xFFFF;
+      
+      ScaChannelsSent1 = w32[7];
+      ScaChannelsSent2 = w32[8];
+      
+      ScaChannelsSent3 = (w32[9]>> 0) & 0xFFFF;
+      ScaChannelsThreshold1 = (w32[9]>>16) & 0xFFFF;
+      
+      ScaChannelsThreshold1 |= ((w32[10] & 0xFFFF) << 16) & 0xFFFF0000;
+      ScaChannelsThreshold2 = (w32[10]>>16) & 0xFFFF;
+      
+      ScaChannelsThreshold2 |= ((w32[11] & 0xFFFF) << 16) & 0xFFFF0000;
+      ScaChannelsThreshold3 = (w32[11]>>16) & 0xFFFF;
+
+      EventCounter = w32[12];
+
+      ScaFifoMax = (w32[13]>> 0)&0xFFFF;
+      EventDescriptorWrite = (w32[13]>>16)&0xFF;
+      EventDescriptorRead  = (w32[13]>>24)&0xFF;
+      
+      start_of_data = 18*4;
    } else {
       printf("PwbEventHeader::ctor: Error: invalid FormatRevision %d, expected 0 or 1\n", FormatRevision);
       fError = true;
@@ -588,7 +625,7 @@ PwbEventHeader::PwbEventHeader(const char* ptr, int size)
 void PwbEventHeader::Print() const
 {
    if (1) {
-      printf("PwbEventHeader: F 0x%02x, Sca 0x%02x, C 0x%02x, T 0x%02x, H 0x%08x, 0x%04x, Delay 0x%04x, TS 0x%08x, 0x%04x, R1 0x%04x, SCA LastCell 0x%04x, Samples 0x%04x, Sent 0x%08x 0x%08x 0x%08x, Thr 0x%08x 0x%08x 0x%08x, R2 0x%04x\n",
+      printf("PwbEventHeader: F 0x%02x, Sca 0x%02x, C 0x%02x, T 0x%02x, H 0x%08x, 0x%04x, Delay 0x%04x, TS 0x%08x, 0x%04x, R1 0x%04x, SCA LastCell 0x%04x, Samples 0x%04x, Sent 0x%08x 0x%08x 0x%08x, Thr 0x%08x 0x%08x 0x%08x, R2 0x%04x, EC 0x%08x, SFM 0x%04x, EDW 0x%02x, EDR 0x%02x\n",
              FormatRevision,
              ScaId,
              CompressionType,
@@ -605,7 +642,12 @@ void PwbEventHeader::Print() const
              ScaChannelsThreshold1,
              ScaChannelsThreshold2,
              ScaChannelsThreshold3,
-             Reserved2);
+             Reserved2,
+             EventCounter,
+             ScaFifoMax,
+             EventDescriptorWrite,
+             EventDescriptorRead
+             );
    }
 
    if (0) {
@@ -669,6 +711,8 @@ void PwbChannelAsm::AddSamples(int channel, const uint16_t* samples, int count)
       ri = channel + 1;
    } else if (fFormatRevision == 1) {
       ri = channel;
+   } else if (fFormatRevision == 2) {
+      ri = channel;
    } else {
       printf("PwbChannelAsm::AddSamples: Error: module %d sca %d state %d: invalid FormatRevision %d\n", fModule, fSca, fState, fFormatRevision);
       fCountErrors++;
@@ -717,7 +761,7 @@ void PwbChannelAsm::AddSamples(int channel, const uint16_t* samples, int count)
    }
 }
 
-void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e)
+void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e, bool last)
 {
    const uint16_t* p = s;
 
@@ -728,9 +772,14 @@ void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e)
          fCountErrors++;
          break;
       }
-      if (p[0] == 0xCCCC && p[1] == 0xCCCC && r == 2) {
-         printf("PwbChannelAsm::CopyData: module %d sca %d: ignoring unexpected 0xCCCC words at the end of a packet\n", fModule, fSca);
+      if (p[0] == 0xCCCC && p[1] == 0xCCCC && r == 2 && last) {
+         //printf("PwbChannelAsm::CopyData: module %d sca %d: ignoring unexpected 0xCCCC words at the end of last packet\n", fModule, fSca);
          //fCountErrors++;
+         break;
+      }
+      if (p[0] == 0xCCCC && p[1] == 0xCCCC && r == 2) {
+         printf("PwbChannelAsm::CopyData: module %d sca %d state %d: Error: unexpected 0xCCCC words at the end of a packet\n", fModule, fSca, fState);
+         fCountErrors++;
          break;
       }
       if (p[0] == 0xCCCC && p[1] == 0xCCCC) {
@@ -791,15 +840,15 @@ void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e)
    }
 }
 
-void PwbChannelAsm::BeginData(const char* ptr, int size, int start_of_data, int end_of_data, uint32_t ts)
+void PwbChannelAsm::BeginData(const char* ptr, int size, int start_of_data, int end_of_data, uint32_t ts, bool last)
 {
    fTs = ts;
    const uint16_t* s = (const uint16_t*)(ptr+start_of_data);
    const uint16_t* e = (const uint16_t*)(ptr+end_of_data);
-   CopyData(s, e);
+   CopyData(s, e, last);
 }
 
-void PwbChannelAsm::AddData(const char* ptr, int size, int start_of_data, int end_of_data)
+void PwbChannelAsm::AddData(const char* ptr, int size, int start_of_data, int end_of_data, bool last)
 {
    const uint16_t* s = (const uint16_t*)(ptr+start_of_data);
    const uint16_t* e = (const uint16_t*)(ptr+end_of_data);
@@ -835,7 +884,7 @@ void PwbChannelAsm::AddData(const char* ptr, int size, int start_of_data, int en
    }
 
    if (p < e) {
-      CopyData(p, e);
+      CopyData(p, e, last);
    } else if (p == e) {
       // good, no more data in this packet
    } else {
@@ -1004,6 +1053,8 @@ void PwbChannelAsm::AddPacket(PwbUdpPacket* udp, const char* ptr, int size)
       fLast_CHANNEL_SEQ++;
    }
 
+   bool last = udp->FLAGS & 1;
+
    if (fState == PWB_CA_ST_INIT || fState == PWB_CA_ST_LAST || fState == PWB_CA_ST_ERROR) {
       if (udp->CHUNK_ID == 0) {
          PwbEventHeader* eh = new PwbEventHeader(ptr, size);
@@ -1038,8 +1089,8 @@ void PwbChannelAsm::AddPacket(PwbUdpPacket* udp, const char* ptr, int size)
          } else {
             fState = PWB_CA_ST_DATA;
             fError = false;
-            BeginData(ptr, size, eh->start_of_data, udp->end_of_payload, ts);
-            if (udp->FLAGS & 1) {
+            BeginData(ptr, size, eh->start_of_data, udp->end_of_payload, ts, last);
+            if (last) {
                fState = PWB_CA_ST_LAST;
                EndData();
             }
@@ -1049,8 +1100,8 @@ void PwbChannelAsm::AddPacket(PwbUdpPacket* udp, const char* ptr, int size)
          printf("PwbChannelAsm::AddPacket: module %d sca %d state %d: Ignoring UDP packet with CHUNK_ID 0x%02x while waiting for an event header\n", fModule, fSca, fState, udp->CHUNK_ID);
       }
    } else if (fState == PWB_CA_ST_DATA) {
-      AddData(ptr, size, udp->start_of_payload, udp->end_of_payload);
-      if (udp->FLAGS & 1) {
+      AddData(ptr, size, udp->start_of_payload, udp->end_of_payload, last);
+      if (last) {
          fState = PWB_CA_ST_LAST;
          EndData();
       }
