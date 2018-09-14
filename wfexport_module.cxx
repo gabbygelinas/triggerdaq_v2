@@ -207,6 +207,8 @@ public:
          if (!hwf) {
             //printf("%s: ", wname.c_str()); gDirectory->pwd();
             hwf = new TH1D(wname.c_str(), wtitle.c_str(), nbins, 0, nbins);
+            hwf->SetMinimum( ADC_MIN_ADC );
+            hwf->SetMaximum( 4095. );
          }
          
          //printf("%s: first bin %d: ", wname.c_str(), first_bin);
@@ -286,6 +288,8 @@ public:
          if (!hwf) {
             //printf("%s: ", wname.c_str()); gDirectory->pwd();
             hwf = new TH1D(wname.c_str(), wtitle.c_str(), nbins, 0, nbins);
+            hwf->SetMinimum( ADC_MIN );
+            hwf->SetMaximum( ADC_MAX );
          }
          
          //printf("%s: first bin %d: ", wname.c_str(), first_bin);
