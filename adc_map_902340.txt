@@ -1,0 +1,6 @@
+# adc map for agmini, run 902340
+# module connector cable preamp
+adc19 0 A-BOT-00 B0
+#adc19 1 A-TOP-01 T1
+#adc19 2 A-TOP-02 T2
+#end
