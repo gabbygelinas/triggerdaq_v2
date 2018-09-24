@@ -36,10 +36,7 @@ MAIN := $(ROOTANASYS)/obj/manalyzer_main.o
 
 # uncomment and define analyzer modules here
 
-#RMODULES = reco_module.o
-#RLIBS = -L$(ANALYSIS_TPC) -lAGTPC -lAGUTILS -lGeom -lRGL
-
-MODULES += ncfm.o unpack_module.o adc_module.o pwb_module.o Alpha16.o feam_module.o TsSync.o Feam.o FeamEVB.o FeamAsm.o PwbAsm.o AgEvent.o AgEVB.o TrgAsm.o Unpack.o AgAsm.o $(RMODULES) wfexport_module.o final_module.o
+MODULES += ncfm.o unpack_module.o adc_module.o pwb_module.o Alpha16.o feam_module.o TsSync.o Feam.o FeamEVB.o FeamAsm.o PwbAsm.o AgEvent.o AgEVB.o TrgAsm.o Unpack.o AgAsm.o wfexport_module.o final_module.o coinc_module.o
 
 ALL     += agana.exe
 #ALL     += ncfm.exe
@@ -72,23 +69,6 @@ ncfm.exe: %.exe: %.o
 
 reco_module.o: reco_module.cxx
 	$(CXX) -o $@ -I$(AGTPC_ANALYSIS) -I$(ANALYSIS_TPC)/include -I$(GARFIELDPP) -I${SOURCE_TPC}/include $(CXXFLAGS) -c $<
-
-# Signals.o: HAVE_ROOT = ""
-# Signals.o: $(AGTPC_ANALYSIS)/Signals.cc
-# 	echo HAVE_ROOT = $(HAVE_ROOT)
-# 	$(CXX) -o $@ -I$(AGTPC_ANALYSIS) -I$(GARFIELDPP) $(CXXFLAGS) -c $<
-
-# SpacePoints.o: HAVE_ROOT = ""
-# SpacePoints.o: $(AGTPC_ANALYSIS)/SpacePoints.cc
-# 	echo HAVE_ROOT = $(HAVE_ROOT)
-# 	$(CXX) -o $@ -I$(AGTPC_ANALYSIS) -I$(ANALYSIS_TPC)/include -I$(GARFIELDPP) $(CXXFLAGS) -c $<
-
-# TLookUpTable.o: $(ANALYSIS_TPC)/src/TLookUpTable.cc
-# 	echo HAVE_ROOT = $(HAVE_ROOT)
-# 	$(CXX) -o $@ -I$(AGTPC_ANALYSIS) -I$(ANALYSIS_TPC)/include -I$(GARFIELDPP) $(CXXFLAGS) -c $<
-
-# TPCBase.o: $(GARFIELDPP)/TPCBase.cc
-# 	$(CXX) -o $@ -I$(GARFIELDPP) $(CXXFLAGS) -c $<
 
 %.o: %.cxx
 	$(CXX) -o $@ $(CXXFLAGS) -c $<
