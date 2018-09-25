@@ -288,8 +288,10 @@ public:
          if (!hwf) {
             //printf("%s: ", wname.c_str()); gDirectory->pwd();
             hwf = new TH1D(wname.c_str(), wtitle.c_str(), nbins, 0, nbins);
-            hwf->SetMinimum(-32800.);
-            hwf->SetMaximum(6500.);
+            //            hwf->SetMinimum(-32800.);
+            //            hwf->SetMaximum(6500.);
+            hwf->SetMinimum(-33000.);
+            hwf->SetMaximum(33000.);
          }
          
          //printf("%s: first bin %d: ", wname.c_str(), first_bin);
