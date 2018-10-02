@@ -11,6 +11,12 @@
 #include <math.h> // fabs()
 //#include <assert.h> // assert()
 
+static uint32_t getUint32(const void* ptr, int offset)
+{
+  uint8_t *ptr8 = (uint8_t*)(((char*)ptr)+offset);
+  return (ptr8[0]<<24) | (ptr8[1]<<16) | (ptr8[2]<<8) | ptr8[3];
+}
+
 AgAsm::AgAsm()
 {
    // empty
@@ -96,6 +102,93 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          }
 
          have_trg = true;
+      } else if (b->name == "TRBA") {
+
+         //if (!fTrgAsm) {
+         //   fTrgAsm = new TrgAsm();
+         //}
+         
+         const char* bkptr = me->GetBankData(b);
+         int bklen = b->data_size;
+
+         if (1) {
+            const uint32_t *p32 = (const uint32_t*)bkptr;
+            unsigned nprint = bklen/4;
+            unsigned maxprint = 120;
+            if (nprint > maxprint)
+               nprint=maxprint;
+            printf("TRBA: length %d bytes, %d words\n", bklen, bklen/4);
+
+            int state = 0;
+            unsigned cts_count = 0;
+            unsigned fpga_count = 0;
+
+            for (unsigned i=0; i<nprint; i++) {
+               uint32_t v = getUint32(bkptr, i*4);
+               //printf("TRBA[%d]: 0x%08x (%d)\n", i, p32[i], p32[i]);
+               unsigned threebits = (v>>29)&0x7;
+               printf("TRBA[%2d]: 0x%08x: ", i, v);
+
+               if (state == 0) {
+                  if ((i>=6)&&((v&0xFFFF) == 0xC001)) {
+                     cts_count = (v>>16)&0xFF;
+                     printf(" CTS data, count %d", cts_count);
+                     state = 2;
+                  } else if ((i>=6) && ((v&0xFFFC) == 0x0100)) {
+                     unsigned fpga = v&0x3;
+                     fpga_count = (v>>16)&0xFF;
+                     printf(" fpga %d tdc data, count %d", fpga, fpga_count);
+                     state = 1;
+                  } else if ((i>=6) && ((v&0xFFFF) == 0x5555)) {
+                     printf(" end of subevent data");
+                     state = 3;
+                  }
+               } else if (state == 1) {
+                  printf(" 3bits: %d", threebits);
+                  if (threebits == 0) {
+                     unsigned trigger_type = (v>>(8+16))&0xF; // 4 bits
+                     unsigned random_code = (v>>16)&0xFF; // 8 bits
+                     unsigned error_bits = v&0xFFFF; // 16 bits
+                     printf(" tdc trailer: tt %d, random 0x%02x, errors 0x%04x", trigger_type, random_code, error_bits);
+                  } else if (threebits == 1) {
+                     printf(" tdc header");
+                  } else if (threebits == 3) {
+                     uint32_t epoch = v & 0x0FFFFFFF;
+                     printf(" epoch counter: %d", epoch);
+                  } else if (threebits == 4) {
+                     unsigned chan = (v>>22)&0x7F; // 7 bits
+                     unsigned fine_time = (v>>12)&0x3FF; // 10 bits
+                     unsigned rising_edge = (v>>11)&1; // 1 bit
+                     unsigned coarse_time = (v>>0)&0x7FF; // 11 bits
+                     printf(" time data: chan %2d, fine %3d, re %1d, coarse %4d", chan, fine_time, rising_edge, coarse_time);
+                  }
+                  printf(" fpga word %d", fpga_count);
+                  if (fpga_count == 1) {
+                     state = 0;
+                  } else {
+                     fpga_count--;
+                  }
+               } else if (state == 2) {
+                  printf(" cts word %d", cts_count);
+                  if (cts_count == 1) {
+                     state = 0;
+                  } else {
+                     cts_count--;
+                  }
+               }
+               printf(" state %d\n", state);
+            }
+         }
+
+         //e->trig = fTrgAsm->UnpackBank(bkptr, bklen);
+
+         //if (1) {
+         //   printf("Unpacked TRG event: ");
+         //   e->trig->Print();
+         //   printf("\n");
+         //}
+
+         //have_trg = true;
       } else if (b->name[0] == 'A') {
          // ADC UDP packet bank from feudp
       } else if (b->name[0] == 'B' && b->name[1] == 'B') {
@@ -160,10 +253,10 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          //}
             
          const char* p8 = me->GetBankData(b);
-         const uint32_t *p32 = (const uint32_t*)p8;
-         const int n32 = b->data_size/4;
+         //const int n32 = b->data_size/4;
          
          if (0) {
+            const uint32_t *p32 = (const uint32_t*)p8;
             unsigned nprint = b->data_size/4;
             nprint=10;
             for (unsigned i=0; i<nprint; i++) {
@@ -227,8 +320,8 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          const PwbModuleMapEntry* map = fPwbModuleMap->FindPwb(imodule);
          
          const char* p8 = me->GetBankData(b);
-         const uint32_t *p32 = (const uint32_t*)p8;
-         const int n32 = b->data_size/4;
+         //const uint32_t *p32 = (const uint32_t*)p8;
+         //const int n32 = b->data_size/4;
          
          if (!fPwbAsm) {
             fPwbAsm = new PwbAsm();
@@ -239,6 +332,10 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
       } else {
          printf("AgAsm::UnpackEvent: unknown bank [%s]\n", b->name.c_str());
       }
+   }
+
+   if (e->trig && have_trg) {
+      // nothing to do?
    }
 
    if (e->a16 && have_adc) {
