@@ -13,6 +13,7 @@
 #include "TrgAsm.h"
 #include "PwbAsm.h"
 #include "FeamAsm.h"
+#include "Tdc.h"
 
 class AgAsm
 {
@@ -28,6 +29,7 @@ class AgAsm
    double fTrgMaxDt = 0;
    double fAdcMaxDt = 0;
    double fPwbMaxDt = 0;
+   double fTdcMaxDt = 0;
 
  public: // counters
    int fCountComplete   = 0;
@@ -49,6 +51,7 @@ class AgAsm
    PwbModuleMap* fPwbModuleMap = NULL;
    PwbAsm* fPwbAsm = NULL;
    FeamAsm* fFeamAsm = NULL;
+   TdcAsm* fTdcAsm = NULL;
 };
 
 #endif
