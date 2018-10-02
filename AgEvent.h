@@ -11,6 +11,7 @@
 #include "Trig.h"
 #include "Alpha16.h"
 #include "Feam.h"
+#include "Tdc.h"
 
 struct AgEvent
 {
@@ -23,6 +24,7 @@ struct AgEvent
    TrigEvent*    trig = NULL;
    Alpha16Event* a16  = NULL;
    FeamEvent*    feam = NULL;
+   TdcEvent*     tdc  = NULL;
 
    AgEvent(); // ctor
    ~AgEvent(); // dtor

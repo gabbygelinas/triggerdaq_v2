@@ -11,12 +11,6 @@
 #include <math.h> // fabs()
 //#include <assert.h> // assert()
 
-static uint32_t getUint32(const void* ptr, int offset)
-{
-  uint8_t *ptr8 = (uint8_t*)(((char*)ptr)+offset);
-  return (ptr8[0]<<24) | (ptr8[1]<<16) | (ptr8[2]<<8) | ptr8[3];
-}
-
 AgAsm::AgAsm()
 {
    // empty
@@ -46,7 +40,12 @@ AgAsm::~AgAsm()
       fFeamAsm = NULL;
    }
 
-   printf("AgAsm: Total events: %d, complete: %d, with error: %d, incomplete: %d, with error: %d, max timestamp difference trg/adc/pwb: %.0f/%.0f/%.0f ns\n", fCounter, fCountComplete, fCountCompleteWithError, fCountIncomplete, fCountIncompleteWithError, fTrgMaxDt*1e9, fAdcMaxDt*1e9, fPwbMaxDt*1e9);
+   if (fTdcAsm) {
+      delete fTdcAsm;
+      fTdcAsm = NULL;
+   }
+
+   printf("AgAsm: Total events: %d, complete: %d, with error: %d, incomplete: %d, with error: %d, max timestamp difference trg/adc/pwb/tdc: %.0f/%.0f/%.0f/%.0f ns\n", fCounter, fCountComplete, fCountCompleteWithError, fCountIncomplete, fCountIncompleteWithError, fTrgMaxDt*1e9, fAdcMaxDt*1e9, fPwbMaxDt*1e9, fTdcMaxDt*1e9);
 }
 
 void AgAsm::Print() const
@@ -64,6 +63,9 @@ void AgAsm::Print() const
    if (fPwbAsm) {
       //fPwbAsm->Print();
    }
+   if (fTdcAsm) {
+      fTdcAsm->Print();
+   }
 }
 
 AgEvent* AgAsm::UnpackEvent(TMEvent* me)
@@ -72,6 +74,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
    bool have_adc  = false;
    bool have_feam = false;
    bool have_pwb  = false;
+   bool have_tdc  = false;
 
    AgEvent* e = new AgEvent();
 
@@ -104,91 +107,19 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          have_trg = true;
       } else if (b->name == "TRBA") {
 
-         //if (!fTrgAsm) {
-         //   fTrgAsm = new TrgAsm();
-         //}
-         
+         if (!fTdcAsm) {
+            fTdcAsm = new TdcAsm();
+         }
+
          const char* bkptr = me->GetBankData(b);
          int bklen = b->data_size;
 
-         if (1) {
-            const uint32_t *p32 = (const uint32_t*)bkptr;
-            unsigned nprint = bklen/4;
-            unsigned maxprint = 120;
-            if (nprint > maxprint)
-               nprint=maxprint;
-            printf("TRBA: length %d bytes, %d words\n", bklen, bklen/4);
-
-            int state = 0;
-            unsigned cts_count = 0;
-            unsigned fpga_count = 0;
-
-            for (unsigned i=0; i<nprint; i++) {
-               uint32_t v = getUint32(bkptr, i*4);
-               //printf("TRBA[%d]: 0x%08x (%d)\n", i, p32[i], p32[i]);
-               unsigned threebits = (v>>29)&0x7;
-               printf("TRBA[%2d]: 0x%08x: ", i, v);
-
-               if (state == 0) {
-                  if ((i>=6)&&((v&0xFFFF) == 0xC001)) {
-                     cts_count = (v>>16)&0xFF;
-                     printf(" CTS data, count %d", cts_count);
-                     state = 2;
-                  } else if ((i>=6) && ((v&0xFFFC) == 0x0100)) {
-                     unsigned fpga = v&0x3;
-                     fpga_count = (v>>16)&0xFF;
-                     printf(" fpga %d tdc data, count %d", fpga, fpga_count);
-                     state = 1;
-                  } else if ((i>=6) && ((v&0xFFFF) == 0x5555)) {
-                     printf(" end of subevent data");
-                     state = 3;
-                  }
-               } else if (state == 1) {
-                  printf(" 3bits: %d", threebits);
-                  if (threebits == 0) {
-                     unsigned trigger_type = (v>>(8+16))&0xF; // 4 bits
-                     unsigned random_code = (v>>16)&0xFF; // 8 bits
-                     unsigned error_bits = v&0xFFFF; // 16 bits
-                     printf(" tdc trailer: tt %d, random 0x%02x, errors 0x%04x", trigger_type, random_code, error_bits);
-                  } else if (threebits == 1) {
-                     printf(" tdc header");
-                  } else if (threebits == 3) {
-                     uint32_t epoch = v & 0x0FFFFFFF;
-                     printf(" epoch counter: %d", epoch);
-                  } else if (threebits == 4) {
-                     unsigned chan = (v>>22)&0x7F; // 7 bits
-                     unsigned fine_time = (v>>12)&0x3FF; // 10 bits
-                     unsigned rising_edge = (v>>11)&1; // 1 bit
-                     unsigned coarse_time = (v>>0)&0x7FF; // 11 bits
-                     printf(" time data: chan %2d, fine %3d, re %1d, coarse %4d", chan, fine_time, rising_edge, coarse_time);
-                  }
-                  printf(" fpga word %d", fpga_count);
-                  if (fpga_count == 1) {
-                     state = 0;
-                  } else {
-                     fpga_count--;
-                  }
-               } else if (state == 2) {
-                  printf(" cts word %d", cts_count);
-                  if (cts_count == 1) {
-                     state = 0;
-                  } else {
-                     cts_count--;
-                  }
-               }
-               printf(" state %d\n", state);
-            }
+         if (!e->tdc) {
+            e->tdc = fTdcAsm->UnpackBank(bkptr, bklen);
+            e->tdc->Print(1);
          }
 
-         //e->trig = fTrgAsm->UnpackBank(bkptr, bklen);
-
-         //if (1) {
-         //   printf("Unpacked TRG event: ");
-         //   e->trig->Print();
-         //   printf("\n");
-         //}
-
-         //have_trg = true;
+         have_tdc = true;
       } else if (b->name[0] == 'A') {
          // ADC UDP packet bank from feudp
       } else if (b->name[0] == 'B' && b->name[1] == 'B') {
@@ -373,23 +304,34 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
       //PrintFeamChannels(e->feam->hits);
    }
 
+   if (e->tdc && have_tdc) {
+      // nothing to do?
+   }
+
    double time = 0;
 
    // extract timestamps and event counters
+
+   bool have_time = false;
    
    double trg_time = 0;
    double adc_time = 0;
    double pwb_time = 0;
+   double tdc_time = 0;
 
    int trg_counter = 0;
    int adc_counter = 0;
    int pwb_counter = 0;
+   int tdc_counter = 0;
 
    if (fTrgAsm) {
       if (e->trig) {
          trg_time = e->trig->time;
          trg_counter = e->trig->counter;
-         time = trg_time;
+         if (!have_time) {
+            time = trg_time;
+            have_time = true;
+         }
       } else {
          e->complete = false;
       }
@@ -399,7 +341,10 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
       if (e->a16) {
          adc_time = e->a16->time;
          adc_counter = e->a16->counter;
-         time = adc_time;
+         if (!have_time) {
+            time = adc_time;
+            have_time = true;
+         }
       } else {
          e->complete = false;
       }
@@ -409,7 +354,23 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
       if (e->feam) {
          pwb_time = e->feam->time;
          pwb_counter = e->feam->counter;
-         time = pwb_time;
+         if (!have_time) {
+            time = pwb_time;
+            have_time = true;
+         }
+      } else {
+         e->complete = false;
+      }
+   }
+
+   if (fTdcAsm) {
+      if (e->tdc) {
+         tdc_time = e->tdc->time;
+         tdc_counter = e->tdc->counter;
+         if (!have_time) {
+            time = tdc_time;
+            have_time = true;
+         }
       } else {
          e->complete = false;
       }
@@ -472,6 +433,24 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          }
          if (pwb_counter != e->counter) {
             printf("AgAsm::UnpackEvent: event %d pwb event counter mismatch: %d should be %d\n", e->counter, pwb_counter, e->counter);
+            e->error = true;
+         }
+      }
+   }
+
+   if (fTdcAsm) {
+      if (e->tdc) {
+         double dt = tdc_time - e->time;
+         double absdt = fabs(dt);
+         if (absdt > fAdcMaxDt)
+            fTdcMaxDt = absdt;
+         //printf("TDC check: ec %d %d, time %f %f sec, dt %.0f ns\n", e->counter, adc_counter, e->time, adc_time, dt*1e9);
+         if (absdt > fConfMaxDt) {
+            printf("AgAsm::UnpackEvent: event %d tdc timestamp mismatch: time %f should be %f, dt %.0f ns\n", e->counter, tdc_time, e->time, dt*1e9);
+            e->error = true;
+         }
+         if (tdc_counter != e->counter) {
+            printf("AgAsm::UnpackEvent: event %d tdc event counter mismatch: %d should be %d\n", e->counter, tdc_counter, e->counter);
             e->error = true;
          }
       }

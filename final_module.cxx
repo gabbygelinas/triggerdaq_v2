@@ -456,6 +456,7 @@ public:
       int trig_counter = -1;
       int adc_counter = -1;
       int pwb_counter = -1;
+      int tdc_counter = -1;
 
       if (age->trig) {
          trig_counter = age->trig->counter;
@@ -469,7 +470,11 @@ public:
          pwb_counter = age->feam->counter;
       }
 
-      printf("Have AgEvent: %d %d %d\n", trig_counter, adc_counter, pwb_counter);
+      if (age->tdc) {
+         tdc_counter = age->tdc->counter;
+      }
+
+      printf("Have AgEvent: %d %d %d %d\n", trig_counter, adc_counter, pwb_counter, tdc_counter);
 
       if (adc16_coinc_dff) {
          //printf("adc16_coinc_dff: 0x%04x\n", adc16_coinc_dff);
