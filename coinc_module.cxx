@@ -36,6 +36,9 @@ public:
    TH1D* h_padrow_awamp_pc_px;
    TProfile* h_padrow_awamp_pc_pfx;
 
+   TH1D* hawamp_match_pc;
+   TH1D* hawamp_pc; // this is not its place, it would be adc_module
+
    CoincModule(TARunInfo* runinfo): TARunObject(runinfo),
                                     fCoincTime(16.)
    {
@@ -67,11 +70,24 @@ public:
 
       h_coinc = new TH1D("h_coinc","Coincidence AW*Pads;Number;Events",100,0.,100.);
       h_padrow_awamp = new TH2D("h_padrow_awamp","AW amplitude vs Z;Pad Row;ADC counts",576,0.,576.,
-                                300,0.,30000.);
+                                //                               300,0.,30000.);
+                                300,0.,33000.);
       h_padrow_awamp_pc = new TH2D("h_padrow_awamp_pc","AW amplitude vs Z  Proportional Region;Pad Row;ADC counts",
-                                   576,0.,576.,300,0.,30000.);
+                                   //                                   576,0.,576.,300,0.,30000.);
+                                   576,0.,576.,300,0.,33000.);
 
+      h_padrow_awamp_pfx = new TProfile("h_padrow_awamp_pfx","AW amplitude vs Z  Profile;Pad Row;ADC counts",576,0.,576.);
+      h_padrow_awamp_pfx->SetMinimum(0.);
+      h_padrow_awamp_pfx->SetMaximum(33000.);
+      h_padrow_awamp_pc_pfx = new TProfile("h_padrow_awamp_pc_pfx","AW amplitude vs Z  Proportional Region  Profile;Pad Row;ADC counts",
+                                   576,0.,576.);
+      h_padrow_awamp_pc_pfx->SetMinimum(0.);
+      h_padrow_awamp_pc_pfx->SetMaximum(33000.);
 
+      hawamp_match_pc = new TH1D("hawamp_match_pc","AW amplitude with Matching in Proportional Region;ADC counts;",300,0.,33000.);
+
+      // this is not its place, it would be adc_module
+      hawamp_pc = new TH1D("hawamp_pc","AW amplitude in Proportional Region;ADC counts;",300,0.,33000.);
    }
 
    void EndRun(TARunInfo* runinfo)
@@ -85,13 +101,13 @@ public:
       ptitle+="   Projection";
       h_padrow_awamp_px->SetTitle(ptitle.Data());
 
-      h_padrow_awamp_pfx = h_padrow_awamp->ProfileX();
-      h_padrow_awamp_pfx->SetMinimum(0.);
-      TString pftitle(h_padrow_awamp->GetTitle());
-      pftitle+="  Profile;";
-      pftitle+=h_padrow_awamp->GetXaxis()->GetTitle();
-      pftitle+=";Average ADC counts";
-      h_padrow_awamp_pfx->SetTitle(pftitle.Data());
+      // h_padrow_awamp_pfx = h_padrow_awamp->ProfileX();
+      // h_padrow_awamp_pfx->SetMinimum(0.);
+      // TString pftitle(h_padrow_awamp->GetTitle());
+      // pftitle+="  Profile;";
+      // pftitle+=h_padrow_awamp->GetXaxis()->GetTitle();
+      // pftitle+=";Average ADC counts";
+      // h_padrow_awamp_pfx->SetTitle(pftitle.Data());
 
 
       h_padrow_awamp_pc_px = h_padrow_awamp_pc->ProjectionX();
@@ -100,13 +116,13 @@ public:
       ptitle+="   Projection";
       h_padrow_awamp_pc_px->SetTitle(ptitle.Data());
 
-      h_padrow_awamp_pc_pfx = h_padrow_awamp_pc->ProfileX();
-      h_padrow_awamp_pc_pfx->SetMinimum(0.);
-      pftitle = h_padrow_awamp_pc->GetTitle();
-      pftitle+="  Profile;";
-      pftitle+=h_padrow_awamp_pc->GetXaxis()->GetTitle();
-      pftitle+=";Average ADC counts";
-      h_padrow_awamp_pc_pfx->SetTitle(pftitle.Data());
+      // h_padrow_awamp_pc_pfx = h_padrow_awamp_pc->ProfileX();
+      // h_padrow_awamp_pc_pfx->SetMinimum(0.);
+      // pftitle = h_padrow_awamp_pc->GetTitle();
+      // pftitle+="  Profile;";
+      // pftitle+=h_padrow_awamp_pc->GetXaxis()->GetTitle();
+      // pftitle+=";Average ADC counts";
+      // h_padrow_awamp_pc_pfx->SetTitle(pftitle.Data());
 
       if(fTrace)
          printf("CoincModule::EndRun, run %d\n", runinfo->fRunNo);
@@ -141,7 +157,14 @@ public:
                printf("coinc event %d, time %f, anode wire hits: %d, pad hits: %d\n", ef->fEvent->counter, ef->fEvent->time, 
                       (int)eawh->fAwHits.size(), (int)eph->fPadHits.size());
 	
-            //      h_aw_pad_num_hits->Fill(eawh->fAwHits.size(), eph->fPadHits.size());
+            for( unsigned j=0; j<eawh->fAwHits.size(); j++ ) // this is not its place
+               {
+                  if( eawh->fAwHits[j].time > 1060. && eawh->fAwHits[j].time < 1320. ) // ns
+                     {
+                        hawamp_pc->Fill(eawh->fAwHits[j].amp );
+                     }
+               }
+            
 	
             h_aw_pad_num_hits->Fill(eawh->fAwHits.size(), eph->fPadHits.size());
             double counter=0.;
@@ -157,14 +180,21 @@ public:
                         h_aw_pad_hits->Fill(aw, col);
                         h_aw_pad_time->Fill(eawh->fAwHits[j].time, eph->fPadHits[i].time_ns);
                         int sec = aw/8;
-                        if( sec != col ) continue;
+                        if( sec != col ) continue; // sector matching
 	      
-                        if( fabs(eawh->fAwHits[j].time-eph->fPadHits[i].time_ns) > fCoincTime ) continue;
+                        if( fabs(eawh->fAwHits[j].time-eph->fPadHits[i].time_ns) > fCoincTime ) continue; // time matching
 	      
                         h_padrow_awamp->Fill( eph->fPadHits[i].tpc_row, eawh->fAwHits[j].amp );
+                        if( eawh->fAwHits[j].amp < 33000. )
+                           h_padrow_awamp_pfx->Fill( eph->fPadHits[i].tpc_row, eawh->fAwHits[j].amp );
 
-                        if( eawh->fAwHits[j].time > 800. && eawh->fAwHits[j].time < 1200. ) // ns
-                           h_padrow_awamp_pc->Fill( eph->fPadHits[i].tpc_row, eawh->fAwHits[j].amp );
+                        if( eawh->fAwHits[j].time > 1060. && eawh->fAwHits[j].time < 1320. ) // ns
+                           {
+                              h_padrow_awamp_pc->Fill( eph->fPadHits[i].tpc_row, eawh->fAwHits[j].amp );
+                              if( eawh->fAwHits[j].amp < 33000. )
+                                 h_padrow_awamp_pc_pfx->Fill( eph->fPadHits[i].tpc_row, eawh->fAwHits[j].amp );
+                              hawamp_match_pc->Fill(eawh->fAwHits[j].amp );
+                           }
 
                         ++counter;
                      }// loop aw
