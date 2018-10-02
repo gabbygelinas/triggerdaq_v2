@@ -202,7 +202,7 @@ class PwbModuleMap
 {
  public:
    std::vector<PwbModuleMapEntry*> fMap;
-   int fNumModules = 0;
+   unsigned fNumModules = 0;
  public:
    PwbModuleMap(); // ctor
    ~PwbModuleMap(); // dtor
