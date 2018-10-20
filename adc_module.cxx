@@ -127,7 +127,7 @@ struct PlotHistograms
 
       fHbaselineBadRmsAwMap = new TH1D("adc_baseline_bad_rms_vs_aw", "waveform with bad baseline vs wire number; TPC wire number", NUM_AW, -0.5, NUM_AW-0.5);
 
-      fHbaselineMeanAwMap = new TProfile("adc_baseline_mean_vs_aw", "waveform baseline mean vw wire number; TPC wire number; ADC counts", NUM_AW, -0.5, NUM_AW-0.5);
+      fHbaselineMeanAwMap = new TProfile("adc_baseline_mean_vs_aw", "waveform baseline mean vs wire number; TPC wire number; ADC counts", NUM_AW, -0.5, NUM_AW-0.5);
       fHbaselineRmsAwMap = new TProfile("adc_baseline_rms_vs_aw", "waveform baseline rms vs wire number; TPC wire number; ADC counts", NUM_AW, -0.5, NUM_AW-0.5);
       fHbaselineRmsAwMap->SetMinimum(0);
       fHbaselineRangeAwMap = new TProfile("adc_baseline_range_vs_aw", "waveform baseline range vs wire number; TPC wire number; ADC counts", NUM_AW, -0.5, NUM_AW-0.5);
