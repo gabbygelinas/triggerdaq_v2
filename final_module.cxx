@@ -102,8 +102,8 @@ public:
    TH1D* h_aw_352;
 #endif
 
-   TH1D* h_adc16_bits;
-   TH2D* h_adc16_bits_vs_aw;
+   //TH1D* h_adc16_bits;
+   //TH2D* h_adc16_bits_vs_aw;
 
    TH1D* h_aw16_prompt_bits;
    TH2D* h_aw16_prompt_bits_vs_aw;
@@ -293,8 +293,8 @@ public:
       h_aw_352 = new TH1D("h_aw_352", "h_aw_352", NUM_AW, -0.5, NUM_AW-0.5);
 #endif
 
-      h_adc16_bits = new TH1D("h_adc16_bits", "FPGA adc16_coinc_dff bits; link bit 0..15", 16+1, -0.5, 16-0.5+1);
-      h_adc16_bits_vs_aw = new TH2D("h_adc16_bits_vs_aw", "FPGA adc16_coinc_dff bits vs AW tpc wire number; tpc wire number; link bit 0..15", NUM_AW, -0.5, NUM_AW-0.5, 16, -0.5, 16-0.5);
+      //h_adc16_bits = new TH1D("h_adc16_bits", "FPGA adc16_coinc_dff bits; link bit 0..15", 16+1, -0.5, 16-0.5+1);
+      //h_adc16_bits_vs_aw = new TH2D("h_adc16_bits_vs_aw", "FPGA adc16_coinc_dff bits vs AW tpc wire number; tpc wire number; link bit 0..15", NUM_AW, -0.5, NUM_AW-0.5, 16, -0.5, 16-0.5);
 
       h_aw16_prompt_bits = new TH1D("h_aw16_prompt_bits", "FPGA aw16_prompt bits; link bit 0..15", 16+1, -0.5, 16-0.5+1);
       h_aw16_prompt_bits_vs_aw = new TH2D("h_aw16_prompt_bits_vs_aw", "FPGA aw16_prompt bits vs AW tpc wire number; tpc wire number; link bit 0..15", NUM_AW, -0.5, NUM_AW-0.5, 16, -0.5, 16-0.5);
@@ -437,13 +437,13 @@ public:
       h_time_between_events_zoom_1sec->Fill(age->timeIncr);
       h_time_between_events_zoom_01sec->Fill(age->timeIncr);
 
-      uint32_t adc16_coinc_dff = 0;
+      //uint32_t adc16_coinc_dff = 0;
       uint32_t aw16_prompt = 0;
       uint32_t trig_bitmap  = 0;
 
-      if (age->trig && age->trig->udpData.size() > 7) {
-         adc16_coinc_dff = (age->trig->udpData[6]>>8)&0xFFFF;
-      }
+      //if (age->trig && age->trig->udpData.size() > 7) {
+      //   adc16_coinc_dff = (age->trig->udpData[6]>>8)&0xFFFF;
+      //}
 
       if (age->trig && age->trig->udpData.size() > 9) {
          aw16_prompt = (age->trig->udpData[9])&0xFFFF;
@@ -476,17 +476,17 @@ public:
 
       printf("Have AgEvent: %d %d %d %d\n", trig_counter, adc_counter, pwb_counter, tdc_counter);
 
-      if (adc16_coinc_dff) {
-         //printf("adc16_coinc_dff: 0x%04x\n", adc16_coinc_dff);
-         for (int i=0; i<16; i++) {
-            if (adc16_coinc_dff & (1<<i)) {
-               h_adc16_bits->Fill(i);
-            }
-         }
-      }
+      //if (adc16_coinc_dff) {
+      //   //printf("adc16_coinc_dff: 0x%04x\n", adc16_coinc_dff);
+      //   for (int i=0; i<16; i++) {
+      //      if (adc16_coinc_dff & (1<<i)) {
+      //         h_adc16_bits->Fill(i);
+      //      }
+      //   }
+      //}
 
       if (aw16_prompt) {
-         //printf("adc16_coinc_dff: 0x%04x\n", adc16_coinc_dff);
+         //printf("aw16_prompt: 0x%04x\n", aw16_prompt);
          for (int i=0; i<16; i++) {
             if (aw16_prompt & (1<<i)) {
                h_aw16_prompt_bits->Fill(i);
@@ -572,20 +572,6 @@ public:
             } else {
                aw_late = true;
                h_aw_map_late->Fill(wire);
-            }
-
-            if (adc16_coinc_dff) {
-               //printf("adc16_coinc_dff: 0x%04x: ", adc16_coinc_dff);
-               for (int i=0; i<16; i++) {
-                  if (adc16_coinc_dff & (1<<i)) {
-                     //printf(" link%d", i);
-                     //h_adc16_bits->Fill(i);
-                     if (aw_pc) {
-                        h_adc16_bits_vs_aw->Fill(wire, i);
-                     }
-                  }
-               }
-               //printf("\n");
             }
 
             if (aw16_prompt) {
@@ -1087,16 +1073,6 @@ public:
                }
 
                if (1) {
-                  printf("adc16_coinc_dff: 0x%04x: link hits: ", adc16_coinc_dff);
-                  for (int i=0; i<16; i++) {
-                     if (adc16_coinc_dff & (1<<i)) {
-                        printf(" %d", i);
-                     }
-                  }
-                  printf("\n");
-               }
-
-               if (1) {
                   printf("aw16_prompt_bits: 0x%04x: link hits: ", aw16_prompt);
                   for (int i=0; i<16; i++) {
                      if (aw16_prompt & (1<<i)) {
@@ -1107,7 +1083,7 @@ public:
                }
 
                if (1) {
-                  printf("trig_bitmap: 0x%08x: bits: ", trig_bitmap);
+                  printf("(out of date!) trig_bitmap: 0x%08x: bits: ", trig_bitmap);
                   if (trig_bitmap & (1<<0)) printf("adc16_grand_or ");
                   if (trig_bitmap & (1<<1)) printf("adc32_grand_or ");
                   if (trig_bitmap & (1<<2)) printf("adc_grand_or ");
