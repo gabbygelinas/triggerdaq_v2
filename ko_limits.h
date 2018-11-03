@@ -7,6 +7,9 @@
 #ifndef KO_LIMITS_H
 #define KO_LIMITS_H
 
+// number of BSC bars (64 bottom, 64 top)
+#define NUM_BSC 128
+
 // number of TPC anode wires
 #define NUM_AW 512
 

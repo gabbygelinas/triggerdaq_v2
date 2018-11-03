@@ -624,7 +624,7 @@ void Alpha16Asm::AddChannel(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c
       }
    }
    
-   printf("AddBank: channel: "); c->Print(); printf("\n");
+   //printf("AddBank: channel: "); c->Print(); printf("\n");
 
    e->udp.push_back(p);
    e->hits.push_back(c);

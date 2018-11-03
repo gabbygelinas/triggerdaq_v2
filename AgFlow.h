@@ -53,6 +53,27 @@ class AgAwHitsFlow: public TAFlowEvent
    }
 };
 
+struct AgBscAdcHit
+{
+   int adc_module; // ADC module, 1..20
+   int adc_chan; // ADC channel, 0..15 and 16..47.
+   int bar; // bar number, 0..63 bottom, 64..127 top
+   double time; // hit time, ns
+   double amp;  // hit amplitude
+};
+
+class AgBscAdcHitsFlow: public TAFlowEvent
+{
+ public:
+   std::vector<AgBscAdcHit> fBscAdcHits;
+   
+ public:
+ AgBscAdcHitsFlow(TAFlowEvent* flow) // ctor
+    : TAFlowEvent(flow)
+   {
+   }
+};
+
 struct AgPadHit
 {
    int imodule; // pwbNN
