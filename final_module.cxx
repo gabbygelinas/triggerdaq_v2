@@ -48,6 +48,20 @@ public:
    TH1D* h_time_between_events_zoom_1sec = NULL;
    TH1D* h_time_between_events_zoom_01sec = NULL;
 
+   TH1D* h_bsc_adc_num_hits;
+
+   TH1D* h_bsc_adc_time;
+   TH1D* h_bsc_adc_amp;
+   TH2D* h_bsc_adc_amp_time;
+
+   TH1D* h_bsc_adc_map;
+   TH2D* h_bsc_adc_map_time;
+   TH2D* h_bsc_adc_map_amp;
+
+   TH2D* h_bsc_bsc_adc_hits;
+   TH2D* h_bsc_bsc_adc_time;
+   TH2D* h_bsc_bsc_adc_amp;
+
    TH1D* h_aw_num_hits;
 
    TH1D* h_aw_time;
@@ -107,6 +121,8 @@ public:
 
    TH1D* h_aw16_prompt_bits;
    TH2D* h_aw16_prompt_bits_vs_aw;
+
+   TH2D* h_aw_bsc_adc_hits;
 
    TH1D* h_pad_num_hits;
 
@@ -240,6 +256,19 @@ public:
       h_time_between_events_zoom_1sec = new TH1D("h_time_between_events_zoom_1sec", "time between events, zoom 1 sec; time, sec", 100, 0, 1.0);
       h_time_between_events_zoom_01sec = new TH1D("h_time_between_events_zoom_01sec", "time between events, zoom 0.1 sec; time, sec", 100, 0, 0.1);
 
+      h_bsc_adc_num_hits = new TH1D("h_bsc_adc_num_hits", "BSC ADC number of hits", 100, 0, MAX_HITS);
+      h_bsc_adc_time = new TH1D("h_bsc_adc_time", "BSC ADC hit time; time, ns", 100, 0, MAX_TIME);
+      h_bsc_adc_amp = new TH1D("h_bsc_adc_amp", "BSC ADC hit pulse height", 100, 0, MAX_AW_AMP);
+      h_bsc_adc_amp_time = new TH2D("h_bsc_adc_amp_time", "BSC ADC p.h. vs time", 100, 0, MAX_TIME, 50, 0, MAX_AW_AMP);
+
+      h_bsc_adc_map = new TH1D("h_bsc_adc_map", "BSC ADC hit occupancy", NUM_BSC, -0.5, NUM_BSC-0.5);
+      h_bsc_adc_map_time = new TH2D("h_bsc_adc_map_time", "BSC ADC hit time vs bar", NUM_BSC, -0.5, NUM_BSC-0.5, 50, 0, MAX_TIME);
+      h_bsc_adc_map_amp  = new TH2D("h_bsc_adc_map_amp", "BSC ADC hit p.h. vs bar", NUM_BSC, -0.5, NUM_BSC-0.5, 50, 0, MAX_AW_AMP);
+
+      h_bsc_bsc_adc_hits = new TH2D("h_bsc_bsc_adc_hits", "hits in bsc adc vs bsc adc", NUM_BSC, -0.5, NUM_BSC-0.5, NUM_BSC, -0.5, NUM_BSC-0.5);
+      h_bsc_bsc_adc_time = new TH2D("h_bsc_bsc_adc_time", "time in bsc adc vs bsc adc", 50, 0, MAX_TIME, 50, 0, MAX_TIME);
+      h_bsc_bsc_adc_amp  = new TH2D("h_bsc_bsc_adc_amp",  "p.h. in bsc adc vs bsc adc", 50, 0, MAX_AW_AMP, 50, 0, MAX_AW_AMP);
+
       h_aw_num_hits = new TH1D("h_aw_num_hits", "number of anode wire hits", 100, 0, MAX_HITS);
       h_aw_time = new TH1D("h_aw_time", "aw hit time; time, ns", 100, 0, MAX_TIME);
       h_aw_amp = new TH1D("h_aw_amp", "aw hit pulse height", 100, 0, MAX_AW_AMP);
@@ -298,6 +327,8 @@ public:
 
       h_aw16_prompt_bits = new TH1D("h_aw16_prompt_bits", "FPGA aw16_prompt bits; link bit 0..15", 16+1, -0.5, 16-0.5+1);
       h_aw16_prompt_bits_vs_aw = new TH2D("h_aw16_prompt_bits_vs_aw", "FPGA aw16_prompt bits vs AW tpc wire number; tpc wire number; link bit 0..15", NUM_AW, -0.5, NUM_AW-0.5, 16, -0.5, 16-0.5);
+
+      h_aw_bsc_adc_hits = new TH2D("h_aw_bsc_adc_hits", "hits in aw vs bsc adc", NUM_AW, -0.5, NUM_AW-0.5, NUM_BSC, -0.5, NUM_BSC-0.5);
 
       h_pad_num_hits = new TH1D("h_pad_num_hits", "number of pad hits; number of hits in pads", 100, 0, MAX_HITS);
       h_pad_time = new TH1D("h_pad_time", "pad hit time; time, ns", 100, 0, MAX_TIME);
@@ -428,6 +459,7 @@ public:
 
       AgAwHitsFlow* eawh = flow->Find<AgAwHitsFlow>();
       AgPadHitsFlow* eph = flow->Find<AgPadHitsFlow>();
+      AgBscAdcHitsFlow* eba = flow->Find<AgBscAdcHitsFlow>();
 
       //int force_plot = false;
 
@@ -490,6 +522,47 @@ public:
          for (int i=0; i<16; i++) {
             if (aw16_prompt & (1<<i)) {
                h_aw16_prompt_bits->Fill(i);
+            }
+         }
+      }
+
+      if (eba) {
+         if (1) {
+            printf("BA event %d, time %f, bsc adc hits: %d\n", ef->fEvent->counter, ef->fEvent->time, (int)eba->fBscAdcHits.size());
+         }
+
+         h_bsc_adc_num_hits->Fill(eba->fBscAdcHits.size());
+
+         for (unsigned j=0; j<eba->fBscAdcHits.size(); j++) {
+            //int adc_module = eba->fBscAdcHits[j].adc_module;
+            //int adc_chan = eba->fBscAdcHits[j].adc_chan;
+            //int preamp = eawh->fAwHits[j].preamp_pos;
+            int bar = eba->fBscAdcHits[j].bar;
+            double time = eba->fBscAdcHits[j].time;
+            double amp = eba->fBscAdcHits[j].amp;
+
+            h_bsc_adc_time->Fill(time);
+            h_bsc_adc_amp->Fill(amp);
+            h_bsc_adc_amp_time->Fill(time, amp);
+
+            h_bsc_adc_map->Fill(bar);
+            h_bsc_adc_map_time->Fill(bar, time);
+            h_bsc_adc_map_amp->Fill(bar, amp);
+
+            for (unsigned k=0; k<eba->fBscAdcHits.size(); k++) {
+               if (k==j)
+                  continue;
+               h_bsc_bsc_adc_hits->Fill(eba->fBscAdcHits[j].bar, eba->fBscAdcHits[k].bar);
+               h_bsc_bsc_adc_time->Fill(eba->fBscAdcHits[j].time, eba->fBscAdcHits[k].time);
+               h_bsc_bsc_adc_amp->Fill(eba->fBscAdcHits[j].amp, eba->fBscAdcHits[k].amp);
+            }
+         }
+      }
+
+      if (eba && eawh) {
+         for (unsigned j=0; j<eba->fBscAdcHits.size(); j++) {
+            for (unsigned k=0; k<eawh->fAwHits.size(); k++) {
+               h_aw_bsc_adc_hits->Fill(eawh->fAwHits[k].wire, eba->fBscAdcHits[j].bar);
             }
          }
       }
