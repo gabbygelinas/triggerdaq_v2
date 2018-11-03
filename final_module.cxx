@@ -263,9 +263,9 @@ public:
       h_bsc_adc_amp = new TH1D("h_bsc_adc_amp", "BSC ADC hit pulse height", 100, 0, MAX_AW_AMP);
       h_bsc_adc_amp_time = new TH2D("h_bsc_adc_amp_time", "BSC ADC p.h. vs time", 100, 0, MAX_TIME, 50, 0, MAX_AW_AMP);
 
-      h_bsc_adc_map = new TH1D("h_bsc_adc_map", "BSC ADC hit occupancy", NUM_BSC, -0.5, NUM_BSC-0.5);
-      h_bsc_adc_map_time = new TH2D("h_bsc_adc_map_time", "BSC ADC hit time vs bar", NUM_BSC, -0.5, NUM_BSC-0.5, 50, 0, MAX_TIME);
-      h_bsc_adc_map_amp  = new TH2D("h_bsc_adc_map_amp", "BSC ADC hit p.h. vs bar", NUM_BSC, -0.5, NUM_BSC-0.5, 50, 0, MAX_AW_AMP);
+      h_bsc_adc_map = new TH1D("h_bsc_adc_map", "BSC ADC bar occupancy; bar number", NUM_BSC, -0.5, NUM_BSC-0.5);
+      h_bsc_adc_map_time = new TH2D("h_bsc_adc_map_time", "BSC ADC hit time vs bar; bar number; hit time, ns", NUM_BSC, -0.5, NUM_BSC-0.5, 50, 0, MAX_TIME);
+      h_bsc_adc_map_amp  = new TH2D("h_bsc_adc_map_amp", "BSC ADC hit p.h. vs bar; bar number; hit p.h. adc units", NUM_BSC, -0.5, NUM_BSC-0.5, 50, 0, MAX_AW_AMP);
 
       h_bsc_bsc_adc_hits = new TH2D("h_bsc_bsc_adc_hits", "hits in bsc adc vs bsc adc", NUM_BSC, -0.5, NUM_BSC-0.5, NUM_BSC, -0.5, NUM_BSC-0.5);
       h_bsc_bsc_adc_time = new TH2D("h_bsc_bsc_adc_time", "time in bsc adc vs bsc adc", 50, 0, MAX_TIME, 50, 0, MAX_TIME);
