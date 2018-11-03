@@ -148,6 +148,8 @@ public:
    TH2D* h_aw_pad_hits;
    TH2D* h_aw_pad_time;
 
+   TH2D* h_pad_bsc_adc_hits = NULL;
+
    //TH2D* h_aw_pad_time_drift;
    //TH2D* h_aw_pad_amp_pc;
 
@@ -256,7 +258,7 @@ public:
       h_time_between_events_zoom_1sec = new TH1D("h_time_between_events_zoom_1sec", "time between events, zoom 1 sec; time, sec", 100, 0, 1.0);
       h_time_between_events_zoom_01sec = new TH1D("h_time_between_events_zoom_01sec", "time between events, zoom 0.1 sec; time, sec", 100, 0, 0.1);
 
-      h_bsc_adc_num_hits = new TH1D("h_bsc_adc_num_hits", "BSC ADC number of hits", 100, 0, MAX_HITS);
+      h_bsc_adc_num_hits = new TH1D("h_bsc_adc_num_hits", "BSC ADC number of hits", 20, 0-0.5, 20-0.5);
       h_bsc_adc_time = new TH1D("h_bsc_adc_time", "BSC ADC hit time; time, ns", 100, 0, MAX_TIME);
       h_bsc_adc_amp = new TH1D("h_bsc_adc_amp", "BSC ADC hit pulse height", 100, 0, MAX_AW_AMP);
       h_bsc_adc_amp_time = new TH2D("h_bsc_adc_amp_time", "BSC ADC p.h. vs time", 100, 0, MAX_TIME, 50, 0, MAX_AW_AMP);
@@ -359,6 +361,8 @@ public:
       h_aw_pad_num_hits = new TH2D("h_aw_pad_num_hits", "number of aw vs pad hits; number if hits in aw; number of hits in pads", 50, 0, MAX_HITS, 50, 0, MAX_HITS);
       h_aw_pad_hits = new TH2D("h_aw_pad_hits", "hits in aw vs hits in pads; tpc wire; pad column", NUM_AW, -0.5, NUM_AW-0.5, NUM_PC, -0.5, NUM_PC);
       h_aw_pad_time = new TH2D("h_aw_pad_time", "time of hits in aw vs pads; time in aw, ns; time in pads, ns", 50, 0, MAX_TIME, 50, 0, MAX_TIME);
+
+      h_pad_bsc_adc_hits = new TH2D("h_pad_bsc_adc_hits", "hits in pads vs hits in bsc adc; pad column; bsc bar", NUM_PC, -0.5, NUM_PC, NUM_BSC, -0.5, NUM_BSC);
 
       //h_aw_pad_time_drift = new TH2D("h_aw_pad_time_drift", "time of hits in aw vs pads, drift region", 50, 0, 500, 50, 0, MAX_TIME);
 
@@ -826,6 +830,14 @@ public:
                //if ((eawh->fAwHits[j].time < 200) && eph->fPadHits[i].time < 200) {
                //   h_aw_pad_amp_pc->Fill(eph->fPadHits[i].amp, eawh->fAwHits[j].amp);
                //}
+            }
+         }
+      }
+
+      if (eba && eph) {
+         for (unsigned j=0; j<eba->fBscAdcHits.size(); j++) {
+            for (unsigned k=0; k<eph->fPadHits.size(); k++) {
+               h_pad_bsc_adc_hits->Fill(eph->fPadHits[k].tpc_col, eba->fBscAdcHits[j].bar);
             }
          }
       }

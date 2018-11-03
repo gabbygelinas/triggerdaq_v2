@@ -566,8 +566,29 @@ void Alpha16Asm::AddChannel(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c
       int pos1 = fMap.fMap[imodule].preamp_1;
       int pos2 = fMap.fMap[imodule].preamp_2;
       if (c->adc_chan < 16 && pos0 >= 100) {
-         c->preamp_pos = pos0-100;
-         c->bsc_bar = c->preamp_pos*16 + c->adc_chan;
+         int xpos = pos0-100;
+         c->preamp_pos = xpos;
+         int bar = -1;
+         //c->bsc_bar = c->preamp_pos*16 + c->adc_chan;
+         switch (c->adc_chan) {
+         case 0: bar = 64+3; break;
+         case 1: bar = 64+2; break;
+         case 2: bar = 64+1; break;
+         case 3: bar = 64+0; break;
+         case 4: bar = 64+7; break;
+         case 5: bar = 64+6; break;
+         case 6: bar = 64+5; break;
+         case 7: bar = 64+4; break;
+         case 8: bar =    0; break;
+         case 9: bar =    1; break;
+         case 10: bar =   2; break;
+         case 11: bar =   3; break;
+         case 12: bar =   4; break;
+         case 13: bar =   5; break;
+         case 14: bar =   6; break;
+         case 15: bar =   7; break;
+         }
+         c->bsc_bar = xpos*8 + bar;
       } else {
          int xchan = -1;
          if (c->adc_chan < 16) {
