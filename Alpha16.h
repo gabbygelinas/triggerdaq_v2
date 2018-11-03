@@ -47,9 +47,10 @@ struct Alpha16Channel
    std::string bank;
    int adc_module = -1;  // ADC module mod1..mod20
    int adc_chan = -1;    // ADC channel: 0..15: GRIF16 onboard 100MHz, 16..47: FMC-ADC32 62.5MHz
-   int preamp_pos = -1;  // preamp position: 0..15: B0..B15, 16..31: T0..T15
+   int preamp_pos = -1;  // preamp position: 0..15: B0..B15, 16..31: T0..T15, 100..107: BSC
    int preamp_wire = -1; // preamp wire number 0..15
    int tpc_wire = -1;    // TPC anode wire 0..255 bottom, 256..511 top
+   int bsc_bar  = -1;    // BSC bar number 0..63 is bottom, 64..127 is top, preamp pos 100..107
 
    int first_bin = 0; /* usually 0 */
    std::vector<int> adc_samples;
