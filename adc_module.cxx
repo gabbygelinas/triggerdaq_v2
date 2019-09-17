@@ -857,7 +857,7 @@ public:
             ph_hit_thr_adc32 =  750;
          } else if (runinfo->fRunNo < 999999) {
             ph_hit_thr_adc16 =  1000;
-            ph_hit_thr_adc32 =  99999; // not used
+            ph_hit_thr_adc32 =  750;
          }
 
          double ph_hit_thr = 0;
@@ -890,6 +890,9 @@ public:
          } else if (runinfo->fRunNo < 9999) {
             pulse_time_middle_adc16 = 147; // ADC time bins
             pulse_time_middle_adc32 = 135; // ADC time bins
+         } else {
+            pulse_time_middle_adc16 = 147; // ADC time bins
+            pulse_time_middle_adc32 = 110; // ADC time bins
          }
 
          double time_pc = 1000.0; // place PC drift times at 1000ns.
