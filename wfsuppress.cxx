@@ -12,7 +12,7 @@ WfSuppress::~WfSuppress() // dtor
 
 }
 
-void WfSuppress::Init(uint16_t a, int16_t t)
+void WfSuppress::Init(int16_t a, int16_t t)
 {
   a0 = a;
   a1 = a;
@@ -33,12 +33,13 @@ void WfSuppress::Init(uint16_t a, int16_t t)
   amin = a;
   amax = a;
 
+  clipped = false;
   above_threshold = false;
   below_threshold = false;
   keep = false;
 }
 
-bool WfSuppress::Add(uint16_t a)
+bool WfSuppress::Add(int16_t a)
 {
   // this clock
 
@@ -47,12 +48,13 @@ bool WfSuppress::Add(uint16_t a)
 
   //printf("%d %d %d %d %d %d %d %d, abase %d\n", a0, a1, a2, a3, a4, a5, a6, a7, abase);
 
-  a &= 0xFFF; // 12-bit of ADC data
+  //a &= 0xFFF; // 12-bit of ADC data
 
   amp = a - abase;
 
-  bool above = (amp >= threshold) || (a == 0xFFF);
-  bool below = (amp <= -threshold) || (a == 0);
+  bool xclipped = (a == -2048) || (a == 2047);
+  bool above = (amp >= threshold);
+  bool below = (amp <= -threshold);
 
   if (amp < ampMin)
     ampMin = amp;
@@ -63,10 +65,11 @@ bool WfSuppress::Add(uint16_t a)
     amin = a;
   if (a > amax)
     amax = a;
-  
+
+  clipped |= xclipped;
   above_threshold |= above;
   below_threshold |= below;
-  keep |= (above||below);
+  keep |= (above||below||xclipped);
 
   // next clock
 
@@ -79,22 +82,12 @@ bool WfSuppress::Add(uint16_t a)
   a6 = a7;
   a7 = a;
 
-  return above||below;
-}
-
-uint16_t WfSuppress::GetBase() const
-{
-  return abase;
-}
-
-int16_t WfSuppress::GetAmp() const
-{
-  return amp;
+  return above||below||xclipped;
 }
 
 void WfSuppress::Print() const
 {
-  printf("thr %d, adc %d..%d, base %4d, amp %4d..%4d, keep %d %d %d", threshold, amin, amax, abase, ampMin, ampMax, below_threshold, above_threshold, keep);
+  printf("thr %d, adc %d..%d, base %4d, amp %4d..%4d, clip %d keep %d %d %d", threshold, amin, amax, abase, ampMin, ampMax, clipped, below_threshold, above_threshold, keep);
 }
 
 /* emacs

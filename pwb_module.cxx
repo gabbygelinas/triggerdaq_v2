@@ -380,6 +380,7 @@ class PwbFlags
 public:
    int  fPlotPad = -1;
    TCanvas* fPlotPadCanvas = NULL;
+   bool fWfSuppress = false;
 
 public:
    PwbFlags() // ctor
@@ -468,6 +469,12 @@ public:
    PwbFlags* fFlags = NULL;
 
    std::vector<std::vector<std::vector<WfSuppress*>>> fWfSuppress;
+   std::vector<TH1D*> fWfSuppressAdcMin;
+   TH1D* fWfSuppressAdcAmp = NULL;
+   TH1D* fWfSuppressAdcAmpPos = NULL;
+   TH1D* fWfSuppressAdcAmpNeg = NULL;
+   TH1D* fWfSuppressAdcAmpCumulA = NULL;
+   TH1D* fWfSuppressAdcAmpCumulB = NULL;
 
    TH1D* h_all_fpn_count = NULL;
 
@@ -528,6 +535,7 @@ public:
    //TH2D* hpadmap;
 
    TDirectory* hdir_summary = NULL;
+   TDirectory* hdir_wfsuppress = NULL;
    TDirectory* hdir_pwb  = NULL;
    TDirectory* hdir_pads = NULL;
    std::vector<PwbHistograms*> fHF;
@@ -591,6 +599,7 @@ public:
       hdir_pads->cd(); // select correct ROOT directory
 
       hdir_summary = hdir_pads->mkdir("summary");
+      hdir_wfsuppress = hdir_pads->mkdir("wfsuppress");
       hdir_pwb = hdir_pads->mkdir("pwb");
 
       hdir_summary->cd();
@@ -1220,47 +1229,102 @@ public:
          }
 #endif
 
-         // compute data suppression
+         if (fFlags->fWfSuppress) { // compute data suppression
+            hdir_wfsuppress->cd();
 
-         if (imodule >= (int)fWfSuppress.size())
-            fWfSuppress.resize(imodule+1);
-
-         if (isca >= (int)fWfSuppress[imodule].size())
-            fWfSuppress[imodule].resize(MAX_FEAM_SCA);
-
-         if (ichan >= (int)fWfSuppress[imodule][isca].size())
-            fWfSuppress[imodule][isca].resize(MAX_FEAM_READOUT);
-
-         //printf("imodule %d, size %d\n", imodule, (int)fWfSuppress.size());
-         //printf("isca %d, size %d\n", isca, (int)fWfSuppress[imodule].size());
-         //printf("ichan %d, size %d\n", isca, (int)fWfSuppress[imodule][isca].size());
-         
-         WfSuppress *s = fWfSuppress[imodule][isca][ichan];
-         if (!s) {
-            s = new WfSuppress();
-            fWfSuppress[imodule][isca][ichan] = s;
-         }
-
-         unsigned sfirst = 1;
-
-         s->Init(c->adc_samples[sfirst], 10000);
-
-         bool keep = false;
-         for (unsigned i=sfirst+1; i<c->adc_samples.size(); i++) {
-            bool k = s->Add(c->adc_samples[i]);
-            uint16_t base = s->GetBase();
-            int16_t amp = s->GetAmp();
-            keep |= k;
-            if (0) {
-               printf("pwb %02d, sca %d, chan %2d: bin %3d, adc %d, base %d, amp %4d, keep %d %d, state: ", imodule, isca, ichan, i, c->adc_samples[i], base, amp, k, keep);
-               s->Print();
-               printf("\n");
+            if (fWfSuppressAdcAmp == NULL) {
+               fWfSuppressAdcAmp = new TH1D("WfSuppress ADC amp", "WfSuppress ADC amp", 100, 0, 0xFFF + 2000);
             }
-         }
 
-         printf("pwb %02d, sca %d, chan %2d: wfsuppress: ", imodule, isca, ichan);
-         s->Print();
-         printf(", keep: %d\n", keep);
+            if (fWfSuppressAdcAmpPos == NULL) {
+               fWfSuppressAdcAmpPos = new TH1D("WfSuppress ADC amp pos", "WfSuppress ADC amp pos", 100, 0, 0xFFF + 200);
+            }
+
+            if (fWfSuppressAdcAmpNeg == NULL) {
+               fWfSuppressAdcAmpNeg = new TH1D("WfSuppress ADC amp neg", "WfSuppress ADC amp neg", 100, -(0xFFF + 200), 0);
+            }
+
+            if (fWfSuppressAdcAmpCumulA == NULL) {
+               fWfSuppressAdcAmpCumulA = new TH1D("WfSuppress cumul a", "WfSuppress cumul A", 100, 0, 0xFFF + 200);
+            }
+
+            if (fWfSuppressAdcAmpCumulB == NULL) {
+               fWfSuppressAdcAmpCumulB = new TH1D("WfSuppress cumul b", "WfSuppress cumul B", 100, 0, 0xFFF + 200);
+            }
+
+            if (imodule >= (int) fWfSuppressAdcMin.size())
+               fWfSuppressAdcMin.resize(imodule+1);
+
+            if (fWfSuppressAdcMin[imodule] == NULL) {
+               char name[256];
+               sprintf(name,  "pwb%02d_adc_min", imodule);
+               char title[256];
+               sprintf(title, "pwb%02d adc min", imodule);
+               fWfSuppressAdcMin[imodule] = new TH1D(name, title, 100, 0, 0xFFF);
+            }
+            
+            if (imodule >= (int)fWfSuppress.size())
+               fWfSuppress.resize(imodule+1);
+            
+            if (isca >= (int)fWfSuppress[imodule].size())
+               fWfSuppress[imodule].resize(MAX_FEAM_SCA);
+            
+            if (ichan >= (int)fWfSuppress[imodule][isca].size())
+               fWfSuppress[imodule][isca].resize(MAX_FEAM_READOUT);
+            
+            //printf("imodule %d, size %d\n", imodule, (int)fWfSuppress.size());
+            //printf("isca %d, size %d\n", isca, (int)fWfSuppress[imodule].size());
+            //printf("ichan %d, size %d\n", isca, (int)fWfSuppress[imodule][isca].size());
+            
+            WfSuppress *s = fWfSuppress[imodule][isca][ichan];
+            if (!s) {
+               s = new WfSuppress();
+               fWfSuppress[imodule][isca][ichan] = s;
+            }
+            
+            unsigned sfirst = 1;
+            
+            s->Init(c->adc_samples[sfirst], 10000);
+            
+            bool keep = false;
+            for (unsigned i=sfirst+1; i<c->adc_samples.size(); i++) {
+               bool k = s->Add(c->adc_samples[i]);
+               uint16_t base = s->GetBase();
+               int16_t amp = s->GetAmp();
+               keep |= k;
+               if (0) {
+                  printf("pwb %02d, sca %d, chan %2d: bin %3d, adc %d, base %d, amp %4d, keep %d %d, state: ", imodule, isca, ichan, i, c->adc_samples[i], base, amp, k, keep);
+                  s->Print();
+                  printf("\n");
+               }
+            }
+            
+            //double xampmax = fabs(s->GetAmpMax());
+            double xampmin = fabs(s->GetAmpMin());
+            //double xamp = std::min(xampmax, xampmin);
+            double xamp = xampmin;
+            if (s->GetClipped())
+               xamp = 0xFFF + 1;
+            
+            fWfSuppressAdcAmp->Fill(xamp);
+            fWfSuppressAdcAmpPos->Fill(s->GetAmpMax());
+            fWfSuppressAdcAmpNeg->Fill(s->GetAmpMin());
+
+            fWfSuppressAdcAmpCumulA->Fill(xamp);
+            for (int i=0; i<xamp; i++) {
+               fWfSuppressAdcAmpCumulA->Fill(i);
+            }
+
+            fWfSuppressAdcAmpCumulB->Fill(xamp);
+            for (int i=xamp+1; i<=0xFFF+10; i++) {
+               fWfSuppressAdcAmpCumulB->Fill(i);
+            }
+            fWfSuppressAdcMin[imodule]->Fill(s->GetAdcMin());
+
+            printf("pwb %02d, sca %d, chan %2d: wfsuppress: ", imodule, isca, ichan);
+            s->Print();
+            printf(", keep: %d, xamp %d\n", keep, (int)xamp);
+         }
 
          //exit(1);
 
@@ -1694,6 +1758,13 @@ public:
    PwbFlags fFlags;
    
 public:
+   void Usage()
+   {
+      printf("PwbModuleFactory flags:\n");
+      printf("--plot1 <fPlotPad>\n");
+      printf("--pwbwfsuppress -- enable waveform suppression code\n");
+   }
+
    void Init(const std::vector<std::string> &args)
    {
       printf("PwbModuleFactory::Init!\n");
@@ -1701,6 +1772,8 @@ public:
       for (unsigned i=0; i<args.size(); i++) {
          if (args[i] == "--plot1")
             fFlags.fPlotPad = atoi(args[i+1].c_str());
+         if (args[i] == "--pwbwfsuppress")
+            fFlags.fWfSuppress = true;
       }
    }
 
