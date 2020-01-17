@@ -22,6 +22,8 @@
 
 #include "AgFlow.h"
 
+#include "wfsuppress.h"
+
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
 
 #define MEMZERO(p) memset((p), 0, sizeof(p))
@@ -464,6 +466,8 @@ class PwbModule: public TARunObject
 {
 public:
    PwbFlags* fFlags = NULL;
+
+   std::vector<std::vector<std::vector<WfSuppress*>>> fWfSuppress;
 
    TH1D* h_all_fpn_count = NULL;
 
@@ -1216,6 +1220,50 @@ public:
          }
 #endif
 
+         // compute data suppression
+
+         if (imodule >= (int)fWfSuppress.size())
+            fWfSuppress.resize(imodule+1);
+
+         if (isca >= (int)fWfSuppress[imodule].size())
+            fWfSuppress[imodule].resize(MAX_FEAM_SCA);
+
+         if (ichan >= (int)fWfSuppress[imodule][isca].size())
+            fWfSuppress[imodule][isca].resize(MAX_FEAM_READOUT);
+
+         //printf("imodule %d, size %d\n", imodule, (int)fWfSuppress.size());
+         //printf("isca %d, size %d\n", isca, (int)fWfSuppress[imodule].size());
+         //printf("ichan %d, size %d\n", isca, (int)fWfSuppress[imodule][isca].size());
+         
+         WfSuppress *s = fWfSuppress[imodule][isca][ichan];
+         if (!s) {
+            s = new WfSuppress();
+            fWfSuppress[imodule][isca][ichan] = s;
+         }
+
+         unsigned sfirst = 1;
+
+         s->Init(c->adc_samples[sfirst], 10000);
+
+         bool keep = false;
+         for (unsigned i=sfirst+1; i<c->adc_samples.size(); i++) {
+            bool k = s->Add(c->adc_samples[i]);
+            uint16_t base = s->GetBase();
+            int16_t amp = s->GetAmp();
+            keep |= k;
+            if (0) {
+               printf("pwb %02d, sca %d, chan %2d: bin %3d, adc %d, base %d, amp %4d, keep %d %d, state: ", imodule, isca, ichan, i, c->adc_samples[i], base, amp, k, keep);
+               s->Print();
+               printf("\n");
+            }
+         }
+
+         printf("pwb %02d, sca %d, chan %2d: wfsuppress: ", imodule, isca, ichan);
+         s->Print();
+         printf(", keep: %d\n", keep);
+
+         //exit(1);
+
          // compute baseline
          
          double sum0 = 0;
@@ -1314,7 +1362,7 @@ public:
                //   }
                //}
             } else {
-               printf("XXX bad pad, pwb%02d, sca %d, readout %d, scachan %d, col %d, row %d, bmin %f, bmax %f, in hex 0x%04x, brms %f\n", imodule, isca, ichan, scachan, col, row, bmin, bmax, (uint16_t)bmin, brms);
+               //printf("XXX bad pad, pwb%02d, sca %d, readout %d, scachan %d, col %d, row %d, bmin %f, bmax %f, in hex 0x%04x, brms %f\n", imodule, isca, ichan, scachan, col, row, bmin, bmax, (uint16_t)bmin, brms);
                pad_is_ok = false;
             }
          }
