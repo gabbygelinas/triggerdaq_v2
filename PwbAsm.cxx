@@ -746,6 +746,13 @@ void PwbChannelAsm::AddSamples(int channel, const uint16_t* samples, int count)
       fCurrent->first_bin = 0;
    }
 
+   //if (fModule == 78 && fSca == 0 && (ri == 1 || ri == 2)) {
+   //   printf("module %d sca %d ri %d adding %d samples added to %d, total %d, fCurrent %p:\n", fModule, fSca, ri, count, (int)fCurrent->adc_samples.size(), (int)(count + fCurrent->adc_samples.size()), fCurrent);
+   //   for (int i=0; i<count; i++) {
+   //      printf("sample %d: 0x%04x 0x%04x\n", i, samples[i], signed_samples[i]);
+   //   }
+   //}
+
    for (int i=0; i<count; i++) {
       fCurrent->adc_samples.push_back(signed_samples[i]);
    }
@@ -795,7 +802,9 @@ void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e, bool last)
          fCountErrors++;
       }
 
-      if (samples != 511) {
+      if (samples == 510) {
+      } else if (samples == 511) {
+      } else {
          printf("PwbChannelAsm::CopyData: module %d sca %d state %d: Error: invalid number of samples %d\n", fModule, fSca, fState, samples);
          fCountErrors++;
       }
