@@ -549,6 +549,9 @@ public:
 
    int fCountBadPad = 0;
 
+   bool fEnableTestMode = false;
+   int  fTestMode = 0; // see PWB manual
+
    bool fTrace = false;
 
    PwbModule(TARunInfo* runinfo, PwbFlags* f)
@@ -587,6 +590,9 @@ public:
       //time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
       //printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
+      runinfo->fOdb->RB("Equipment/Ctrl/Settings/PWB/enable_test_mode", &fEnableTestMode);
+      runinfo->fOdb->RI("Equipment/Ctrl/Settings/PWB/test_mode", &fTestMode);
+      printf("test mode: enabled: %d, mode %d\n", fEnableTestMode, fTestMode);
    }
 
    void CreateHistograms(TARunInfo* runinfo)
@@ -1088,6 +1094,8 @@ public:
          CheckAndShiftFpn(e);
       }
 
+      std::vector<bool> test_pattern_ok;
+
       for (unsigned ii=0; ii<e->hits.size(); ii++) {
          FeamChannel* c = e->hits[ii];
          if (!c)
@@ -1229,27 +1237,118 @@ public:
          }
 #endif
 
+         if (fEnableTestMode) {
+            bool ok = true;
+            //printf("imodule %d, sca %d, ri %d\n", c->imodule, c->sca, c->sca_readout);
+            //if (c->imodule != 78)
+            //   continue;
+            //if (c->sca_readout != 2)
+            //   continue;
+
+            int ri = c->sca_readout;
+
+            switch (fTestMode) {
+               // see https://daqstore.triumf.ca/AgWiki/index.php/PWB#ESPER_Variables
+            default: break;
+            case 0: { // fixed pattern 0xa5a
+               break;
+            }
+            case 1: { // time bin counter
+               break;
+            }
+            case 2: { // time bin counter with channel number
+               for (unsigned i=0; i<c->adc_samples.size(); i++) {
+                  int a = c->adc_samples[i];
+                  int xa = a & 0x1FF; // 9 bits of bin number
+                  int xri = (a>>9)&0x7; // 3 bits of readout index
+                  int exp_xri = (ri-1)&0x7;
+                  
+                  //printf("bin %d: sample %d 0x%04x, ri %d, xri %d\n", i, a, a, exp_xri, xri);
+                  
+                  int exp_xa = i-1;
+                  if (i==0) {
+                     exp_xa = 509;
+                     exp_xri = (exp_xri-1)&0x7;
+                  }
+                  if ((c->sca_readout != 1) && (xa != exp_xa || xri != exp_xri)) {
+                     ok = false;
+                     printf("BBB imodule %02d, sca %d, ri %2d, bin %d: sample %d 0x%04x, xa %d expected %d, xri %d expected %d\n", c->imodule, c->sca, ri, i, a, a, xa, exp_xa, xri, exp_xri);
+                  }
+               }
+               break;
+            }
+            case 3: { // sequential adc sample counter
+               for (unsigned i=0; i<c->adc_samples.size(); i++) {
+                  int a = c->adc_samples[i];
+                  int xa = a & 0x1FF; // 9 bits of bin number
+                  
+                  int exp_xa = ((ri-1) + (i-0)*79) & 0x1FF;
+                  
+                  //printf("bin %d: sample %d 0x%04x, ri %d, xa %d expected %d\n", i, a, a, ri, xa, exp_xa);
+                  
+                  if (ri != 1) {
+                     if (xa != exp_xa) {
+                        ok = false;
+                        printf("BBB imodule %02d, sca %d, ri %2d, bin %d: sample %d 0x%04x, xa %d expected %d\n", c->imodule, c->sca, c->sca_readout, i, a, a, xa, exp_xa);
+                     }
+                  }
+               }
+               break;
+            }
+            case 4: { // channel suppression test {ch_crossed_out,trig_pos,trig_neg,adc[8:0]}
+               break;
+            }
+            case 5: { // channel suppression test {trig,adc[10:0]}
+               break;
+            }
+            } // switch
+
+            if (!ok) {
+               printf("BBBB imodule %02d, sca %d, ri %2d, failed test pattern test\n", c->imodule, c->sca, c->sca_readout);
+            }
+            
+            while ((int)test_pattern_ok.size() <= c->imodule) {
+               test_pattern_ok.push_back(true);
+            }
+
+            assert(c->imodule < (int)test_pattern_ok.size());
+
+            test_pattern_ok[c->imodule] = test_pattern_ok[c->imodule] && ok;
+
+            continue; // ADC test patterns do not go through the rest of normal analysis
+         }
+
          if (fFlags->fWfSuppress) { // compute data suppression
             hdir_wfsuppress->cd();
 
             if (fWfSuppressAdcAmp == NULL) {
-               fWfSuppressAdcAmp = new TH1D("WfSuppress ADC amp", "WfSuppress ADC amp", 100, 0, 0xFFF + 2000);
+               int min = 0;
+               int max = 4100;
+               fWfSuppressAdcAmp = new TH1D("WfSuppress ADC amp", "WfSuppress ADC amp", max-min, min, max);
             }
 
             if (fWfSuppressAdcAmpPos == NULL) {
-               fWfSuppressAdcAmpPos = new TH1D("WfSuppress ADC amp pos", "WfSuppress ADC amp pos", 100, 0, 0xFFF + 200);
+               int min = 0;
+               int max = 4100;
+               fWfSuppressAdcAmpPos = new TH1D("WfSuppress ADC amp pos", "WfSuppress ADC amp pos", max-min, min, max);
             }
 
             if (fWfSuppressAdcAmpNeg == NULL) {
-               fWfSuppressAdcAmpNeg = new TH1D("WfSuppress ADC amp neg", "WfSuppress ADC amp neg", 100, -(0xFFF + 200), 0);
+               int min = -4100;
+               int max = 0;
+               fWfSuppressAdcAmpNeg = new TH1D("WfSuppress ADC amp neg", "WfSuppress ADC amp neg", max-min, min, max);
             }
 
             if (fWfSuppressAdcAmpCumulA == NULL) {
-               fWfSuppressAdcAmpCumulA = new TH1D("WfSuppress cumul a", "WfSuppress cumul A", 100, 0, 0xFFF + 200);
+               int min = -1;
+               int max = 4200;
+               fWfSuppressAdcAmpCumulA = new TH1D("WfSuppress cumul a", "WfSuppress cumul A", max-min+1, min-0.5, max+0.5);
             }
 
             if (fWfSuppressAdcAmpCumulB == NULL) {
-               fWfSuppressAdcAmpCumulB = new TH1D("WfSuppress cumul b", "WfSuppress cumul B", 100, 0, 0xFFF + 200);
+               int min = -1;
+               int max = 4200;
+               fWfSuppressAdcAmpCumulB = new TH1D("WfSuppress cumul b", "WfSuppress cumul B", max-min+1, min-0.5, max+0.5);
             }
 
             if (imodule >= (int) fWfSuppressAdcMin.size())
@@ -1260,7 +1359,9 @@ public:
                sprintf(name,  "pwb%02d_adc_min", imodule);
                char title[256];
                sprintf(title, "pwb%02d adc min", imodule);
-               fWfSuppressAdcMin[imodule] = new TH1D(name, title, 100, 0, 0xFFF);
+               int min = -2050;
+               int max = 2050;
+               fWfSuppressAdcMin[imodule] = new TH1D(name, title, max-min, min, max);
             }
             
             if (imodule >= (int)fWfSuppress.size())
@@ -1310,13 +1411,13 @@ public:
             fWfSuppressAdcAmpPos->Fill(s->GetAmpMax());
             fWfSuppressAdcAmpNeg->Fill(s->GetAmpMin());
 
-            fWfSuppressAdcAmpCumulA->Fill(xamp);
+            //fWfSuppressAdcAmpCumulA->Fill(xamp);
             for (int i=0; i<xamp; i++) {
                fWfSuppressAdcAmpCumulA->Fill(i);
             }
 
-            fWfSuppressAdcAmpCumulB->Fill(xamp);
-            for (int i=xamp+1; i<=0xFFF+10; i++) {
+            //fWfSuppressAdcAmpCumulB->Fill(xamp);
+            for (int i=xamp; i<4200; i++) {
                fWfSuppressAdcAmpCumulB->Fill(i);
             }
             fWfSuppressAdcMin[imodule]->Fill(s->GetAdcMin());
@@ -1738,6 +1839,15 @@ public:
          
          hf->h_spike_seqsca->Fill(1); // event counter marker
          hf->hnhitchan->Fill(nhitchan_feam);
+      }
+
+      if (test_pattern_ok.size() > 0) {
+         for (unsigned imodule = 0; imodule < test_pattern_ok.size(); imodule++) {
+            bool ok = test_pattern_ok[imodule];
+            if (!ok) {
+               printf("BBBBB pwb%02d: test pattern check failure\n", imodule);
+            }
+         }
       }
 
       hnhitchan->Fill(nhitchan);
