@@ -23,6 +23,7 @@
 #include "AgFlow.h"
 
 #include "wfsuppress.h"
+#include "wfsuppress2.h"
 
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
 
@@ -375,12 +376,24 @@ public:
    }
 };
 
+TH1D* WfToTH1D(const char* name, const char* title, const std::vector<int> &adc)
+{
+   size_t nbins = adc.size();
+   TH1D* h = new TH1D(name, title, nbins, -0.5, nbins-0.5);
+   
+   for (size_t i=0; i<nbins; i++)
+      h->SetBinContent(i+1, adc[i]);
+   
+   return h;
+}
+
 class PwbFlags
 {
 public:
-   int  fPlotPad = -1;
-   TCanvas* fPlotPadCanvas = NULL;
+   //int  fPlotPad = -1;
+   //TCanvas* fPlotPadCanvas = NULL;
    bool fWfSuppress = false;
+   int  fWfThreshold = 0;
 
 public:
    PwbFlags() // ctor
@@ -389,7 +402,7 @@ public:
 
    ~PwbFlags() // dtor
    {
-      DELETE(fPlotPadCanvas);
+      //DELETE(fPlotPadCanvas);
    }
 };
 
@@ -468,13 +481,14 @@ class PwbModule: public TARunObject
 public:
    PwbFlags* fFlags = NULL;
 
-   std::vector<std::vector<std::vector<WfSuppress*>>> fWfSuppress;
+   //std::vector<std::vector<std::vector<WfSuppress*>>> fWfSuppress;
+   std::vector<std::vector<std::vector<WfSuppress2*>>> fWfSuppress;
    std::vector<TH1D*> fWfSuppressAdcMin;
    TH1D* fWfSuppressAdcAmp = NULL;
    TH1D* fWfSuppressAdcAmpPos = NULL;
    TH1D* fWfSuppressAdcAmpNeg = NULL;
-   TH1D* fWfSuppressAdcAmpCumulA = NULL;
-   TH1D* fWfSuppressAdcAmpCumulB = NULL;
+   TH1D* fWfSuppressAdcAmpCumulKeep = NULL;
+   TH1D* fWfSuppressAdcAmpCumulDrop = NULL;
 
    TH1D* h_all_fpn_count = NULL;
 
@@ -1318,7 +1332,15 @@ public:
             continue; // ADC test patterns do not go through the rest of normal analysis
          }
 
-         if (fFlags->fWfSuppress) { // compute data suppression
+         bool flag = true;
+         if (c->imodule == 30)
+            flag = false;
+         if (c->imodule == 31)
+            flag = false;
+         if (c->imodule == 32)
+            flag = false;
+         
+         if (fFlags->fWfSuppress && flag) { // compute data suppression
             hdir_wfsuppress->cd();
 
             if (fWfSuppressAdcAmp == NULL) {
@@ -1339,16 +1361,16 @@ public:
                fWfSuppressAdcAmpNeg = new TH1D("WfSuppress ADC amp neg", "WfSuppress ADC amp neg", max-min, min, max);
             }
 
-            if (fWfSuppressAdcAmpCumulA == NULL) {
+            if (fWfSuppressAdcAmpCumulKeep == NULL) {
                int min = -1;
                int max = 4200;
-               fWfSuppressAdcAmpCumulA = new TH1D("WfSuppress cumul a", "WfSuppress cumul A", max-min+1, min-0.5, max+0.5);
+               fWfSuppressAdcAmpCumulKeep = new TH1D("WfSuppress cumul keep", "WfSuppress cumulative kept channels", max-min+1, min-0.5, max+0.5);
             }
 
-            if (fWfSuppressAdcAmpCumulB == NULL) {
+            if (fWfSuppressAdcAmpCumulDrop == NULL) {
                int min = -1;
                int max = 4200;
-               fWfSuppressAdcAmpCumulB = new TH1D("WfSuppress cumul b", "WfSuppress cumul B", max-min+1, min-0.5, max+0.5);
+               fWfSuppressAdcAmpCumulDrop = new TH1D("WfSuppress cumul drop", "WfSuppress cumulative dropped channels", max-min+1, min-0.5, max+0.5);
             }
 
             if (imodule >= (int) fWfSuppressAdcMin.size())
@@ -1376,22 +1398,35 @@ public:
             //printf("imodule %d, size %d\n", imodule, (int)fWfSuppress.size());
             //printf("isca %d, size %d\n", isca, (int)fWfSuppress[imodule].size());
             //printf("ichan %d, size %d\n", isca, (int)fWfSuppress[imodule][isca].size());
-            
+
+#if 0            
             WfSuppress *s = fWfSuppress[imodule][isca][ichan];
             if (!s) {
                s = new WfSuppress();
                fWfSuppress[imodule][isca][ichan] = s;
             }
+#endif
             
-            unsigned sfirst = 1;
+            WfSuppress2 *s = fWfSuppress[imodule][isca][ichan];
+            if (!s) {
+               s = new WfSuppress2();
+               fWfSuppress[imodule][isca][ichan] = s;
+            }
             
-            s->Init(c->adc_samples[sfirst], 10000);
+            unsigned sfirst = 10;
+            
+            s->Init(c->adc_samples[sfirst], fFlags->fWfThreshold);
+
+            std::vector<int> samples_base;
+            std::vector<int> samples_amp;
             
             bool keep = false;
             for (unsigned i=sfirst+1; i<c->adc_samples.size(); i++) {
                bool k = s->Add(c->adc_samples[i]);
                uint16_t base = s->GetBase();
                int16_t amp = s->GetAmp();
+               samples_base.push_back(base);
+               samples_amp.push_back(amp);
                keep |= k;
                if (0) {
                   printf("pwb %02d, sca %d, chan %2d: bin %3d, adc %d, base %d, amp %4d, keep %d %d, state: ", imodule, isca, ichan, i, c->adc_samples[i], base, amp, k, keep);
@@ -1411,20 +1446,53 @@ public:
             fWfSuppressAdcAmpPos->Fill(s->GetAmpMax());
             fWfSuppressAdcAmpNeg->Fill(s->GetAmpMin());
 
-            //fWfSuppressAdcAmpCumulA->Fill(xamp);
+            //fWfSuppressAdcAmpCumulKeep->Fill(xamp);
             for (int i=0; i<xamp; i++) {
-               fWfSuppressAdcAmpCumulA->Fill(i);
+               fWfSuppressAdcAmpCumulKeep->Fill(i);
             }
 
-            //fWfSuppressAdcAmpCumulB->Fill(xamp);
+            //fWfSuppressAdcAmpCumulDrop->Fill(xamp);
             for (int i=xamp; i<4200; i++) {
-               fWfSuppressAdcAmpCumulB->Fill(i);
+               fWfSuppressAdcAmpCumulDrop->Fill(i);
             }
             fWfSuppressAdcMin[imodule]->Fill(s->GetAdcMin());
+
+            int range = s->GetAdcMax() - s->GetAdcMin();
 
             printf("pwb %02d, sca %d, chan %2d: wfsuppress: ", imodule, isca, ichan);
             s->Print();
             printf(", keep: %d, xamp %d\n", keep, (int)xamp);
+
+            if (!keep) {
+               printf("TTTT: ");
+               printf("pwb %02d, sca %d, chan %2d: wfsuppress: ", imodule, isca, ichan);
+               s->Print();
+               printf(", keep: %d, xamp %d", keep, (int)xamp);
+               printf(", mismatch!\n");
+
+               static int count = 0;
+
+               if (count < 100) {
+                  char name[256];
+                  char title[256];
+                  
+                  hdir_wfsuppress->cd();
+                  
+                  sprintf(name, "pwb_%02d_sca_%d_chan_%02d_range_%d_count_%d", imodule, isca, ichan, range, count);
+                  sprintf(title, "pwb %02d, sca %d, chan %2d, range %d, count %d", imodule, isca, ichan, range, count);
+                  WfToTH1D(name, title, c->adc_samples);
+                  
+                  sprintf(name, "pwb_%02d_sca_%d_chan_%02d_range_%d_count_%d_base", imodule, isca, ichan, range, count);
+                  sprintf(title, "pwb %02d, sca %d, chan %2d, range %d, count %d, baseline", imodule, isca, ichan, range, count);
+                  WfToTH1D(name, title, samples_base);
+                  
+                  sprintf(name, "pwb_%02d_sca_%d_chan_%02d_range_%d_count_%d_amp", imodule, isca, ichan, range, count);
+                  sprintf(title, "pwb %02d, sca %d, chan %2d, range %d, count %d, amplitude", imodule, isca, ichan, range, count);
+                  WfToTH1D(name, title, samples_amp);
+                  
+                  count++;
+               }
+            }
          }
 
          //exit(1);
@@ -1871,8 +1939,9 @@ public:
    void Usage()
    {
       printf("PwbModuleFactory flags:\n");
-      printf("--plot1 <fPlotPad>\n");
-      printf("--pwbwfsuppress -- enable waveform suppression code\n");
+      //printf("--plot1 <fPlotPad>\n");
+      printf("--pwb-wf-suppress -- enable waveform suppression code\n");
+      printf("--pwb-wf-threshold -- set the waveform suppression threshold\n");
    }
 
    void Init(const std::vector<std::string> &args)
@@ -1880,10 +1949,12 @@ public:
       printf("PwbModuleFactory::Init!\n");
 
       for (unsigned i=0; i<args.size(); i++) {
-         if (args[i] == "--plot1")
-            fFlags.fPlotPad = atoi(args[i+1].c_str());
-         if (args[i] == "--pwbwfsuppress")
+         //if (args[i] == "--plot1")
+         //   fFlags.fPlotPad = atoi(args[i+1].c_str());
+         if (args[i] == "--pwb-wf-suppress")
             fFlags.fWfSuppress = true;
+         if (args[i] == "--pwb-wf-threshold")
+            fFlags.fWfThreshold = atoi(args[i+1].c_str());
       }
    }
 

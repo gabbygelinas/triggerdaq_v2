@@ -5,6 +5,10 @@
 class WfSuppress
 {
  private:
+  int16_t aa;
+  int16_t ab;
+  int16_t ac;
+  int16_t ad;
   int16_t a0;
   int16_t a1;
   int16_t a2;
@@ -13,6 +17,14 @@ class WfSuppress
   int16_t a5;
   int16_t a6;
   int16_t a7;
+  int16_t a8;
+  int16_t a9;
+  int16_t a10;
+  int16_t a11;
+  int16_t a12;
+  int16_t a13;
+  int16_t a14;
+  int16_t a15;
   int16_t abase;
   int16_t amp;
   int16_t ampMin;
