@@ -626,6 +626,13 @@ void Unpack(FeamAdcData* a, FeamModuleData* m)
    const unsigned char* ptr = (const unsigned char*)m->fPtr;
    int count = 0;
 
+   if (ptr == NULL) {
+      printf("Feam.cxx::Unpack: Unexpected NULL ptr for module ");
+      m->Print();
+      printf("\n");
+      return;
+   }
+
    for (int ibin = 0; ibin < 511; ibin++) {
       for (int ichan = 0; ichan <= 3; ichan++) {
          for (int isca = 0; isca < 4; isca++) {
