@@ -36,7 +36,7 @@ MAIN := $(ROOTANASYS)/obj/manalyzer_main.o
 
 # uncomment and define analyzer modules here
 
-MODULES += ncfm.o unpack_module.o adc_module.o bsc_module.o pwb_module.o Alpha16.o feam_module.o TsSync.o Feam.o Tdc.o FeamEVB.o FeamAsm.o PwbAsm.o AgEvent.o AgEVB.o TrgAsm.o Unpack.o AgAsm.o wfsuppress.o wfsuppress2.o wfexport_module.o final_module.o coinc_module.o
+MODULES += ncfm.o unpack_module.o adc_module.o bsc_module.o pwb_module.o Alpha16.o feam_module.o TsSync.o Feam.o Tdc.o FeamEVB.o FeamAsm.o PwbAsm.o AgEvent.o AgEVB.o TrgAsm.o Unpack.o AgAsm.o wfsuppress.o wfsuppress2.o wfsuppress_pwb.o wfexport_module.o final_module.o coinc_module.o
 
 ALL     += agana.exe
 #ALL     += ncfm.exe

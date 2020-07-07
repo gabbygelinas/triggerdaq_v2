@@ -24,6 +24,7 @@
 
 #include "wfsuppress.h"
 #include "wfsuppress2.h"
+#include "wfsuppress_pwb.h"
 
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
 
@@ -483,6 +484,7 @@ public:
 
    //std::vector<std::vector<std::vector<WfSuppress*>>> fWfSuppress;
    std::vector<std::vector<std::vector<WfSuppress2*>>> fWfSuppress;
+   std::vector<std::vector<std::vector<WfSuppressPwb*>>> fWfSuppressPwb;
    std::vector<TH1D*> fWfSuppressAdcMin;
    TH1D* fWfSuppressAdcAmp = NULL;
    TH1D* fWfSuppressAdcAmpPos = NULL;
@@ -565,6 +567,8 @@ public:
 
    bool fEnableTestMode = false;
    int  fTestMode = 0; // see PWB manual
+
+   std::vector<int> fTestPatternErrors;
 
    bool fTrace = false;
 
@@ -717,6 +721,15 @@ public:
       }
 
       printf("PwbModule::EndRun: test for bad SCA: total events %d, bad events %d, bad sca %d, bad fpn %d, good fpn %d, bad pad %d\n", fCountTestScaEvents, fCountBadScaEvents, fCountBadSca, fCountBadFpn, fCountGoodFpn, fCountBadPad);
+
+      if (fTestPatternErrors.size() > 0) {
+         for (unsigned imodule = 0; imodule < fTestPatternErrors.size(); imodule++) {
+            int count = fTestPatternErrors[imodule];
+            if (count) {
+               printf("PwbModule::EndRun: pwb%02d: %d test pattern mismatches\n", imodule, count);
+            }
+         }
+      }
    }
 
    void PauseRun(TARunInfo* runinfo)
@@ -1110,6 +1123,15 @@ public:
 
       std::vector<bool> test_pattern_ok;
 
+      WfSuppressPwb ch_supp;
+
+      if (fEnableTestMode) {
+         int ch_threshold = 0;
+         runinfo->fOdb->RI("Equipment/Ctrl/Settings/PWB/ch_threshold", &ch_threshold);
+         printf("PWB ch_threshold %d\n", ch_threshold);
+         ch_supp.fThreshold = ch_threshold;
+      }
+
       for (unsigned ii=0; ii<e->hits.size(); ii++) {
          FeamChannel* c = e->hits[ii];
          if (!c)
@@ -1329,6 +1351,42 @@ public:
                break;
             }
             case 5: { // channel suppression test {trig,adc[10:0]}
+               if (c->imodule != 78)
+                  break;
+               //if (c->sca_readout != 5)
+               //   break;
+               ch_supp.Reset();
+               bool trigprev = false;
+               bool crossed = false;
+               bool tcrossed = false;
+               std::string buf;
+               for (unsigned i=0; i<c->adc_samples.size(); i++) {
+                  int a = c->adc_samples[i];
+                  int t = (a & 0x800) != 0;
+                  int xa = (a&0x7FF);
+                  bool trig = ch_supp.Add(xa);
+                  crossed |= trigprev;
+                  tcrossed |= t;
+
+                  char xbuf[1024];
+                  sprintf(xbuf, "BBB5 imodule %02d, sca %d, ri %2d, bin %d: sample %d 0x%03x 0x%03x, trig %d, t %d/%d c %d/%d, supp: ", c->imodule, c->sca, c->sca_readout, i, a, a&0xFFF, xa, trig, t, trigprev, tcrossed, crossed);
+                  buf += xbuf;
+                  buf += ch_supp.PrintToString();
+                  buf += "\n";
+
+                  if ((t != trigprev) || (tcrossed != crossed)) {
+                     ok = false;
+                  }
+                  trigprev = trig;
+               }
+               //if (!ok)
+               //   exit(1);
+               if (!ok) {
+                  printf("%s", buf.c_str());
+               }
+               break;
+            }
+            case 6: { // channel suppression test {ch_crossed_min,adc[10:0]}
                break;
             }
             } // switch
@@ -1344,6 +1402,16 @@ public:
             assert(c->imodule < (int)test_pattern_ok.size());
 
             test_pattern_ok[c->imodule] = test_pattern_ok[c->imodule] && ok;
+
+            if (!ok) {
+               while ((int)fTestPatternErrors.size() <= c->imodule) {
+                  fTestPatternErrors.push_back(0);
+               }
+               
+               assert(c->imodule < (int)fTestPatternErrors.size());
+               
+               fTestPatternErrors[c->imodule] = fTestPatternErrors[c->imodule] + 1;
+            }
 
             continue; // ADC test patterns do not go through the rest of normal analysis
          }
@@ -1929,7 +1997,7 @@ public:
          for (unsigned imodule = 0; imodule < test_pattern_ok.size(); imodule++) {
             bool ok = test_pattern_ok[imodule];
             if (!ok) {
-               printf("BBBBB pwb%02d: test pattern check failure\n", imodule);
+               printf("BBBBB pwb%02d: test pattern mismatch error\n", imodule);
             }
          }
       }
