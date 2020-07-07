@@ -1265,9 +1265,25 @@ public:
                // see https://daqstore.triumf.ca/AgWiki/index.php/PWB#ESPER_Variables
             default: break;
             case 0: { // fixed pattern 0xa5a
+               const int pattern = 0xa5a;
+               for (unsigned i=0; i<c->adc_samples.size(); i++) {
+                  int a = c->adc_samples[i];
+                  if ((a&0xFFF) != pattern) {
+                     ok = false;
+                     printf("BBB0 imodule %02d, sca %d, ri %2d, bin %d: sample %d 0x%03x expected 0x%03x\n", c->imodule, c->sca, ri, i, a, a&0xFFF, pattern&0xFFF);
+                  }
+               }
                break;
             }
             case 1: { // time bin counter
+               for (unsigned i=0; i<c->adc_samples.size(); i++) {
+                  int a = c->adc_samples[i];
+                  int exp = i;
+                  if ((a&0xFFF) != (exp&0xFFF)) {
+                     ok = false;
+                     printf("BBB1 imodule %02d, sca %d, ri %2d, bin %d: sample %d 0x%03x expected 0x%03x\n", c->imodule, c->sca, ri, i, a, a&0xFFF, exp&0xFFF);
+                  }
+               }
                break;
             }
             case 2: { // time bin counter with channel number
@@ -1279,14 +1295,14 @@ public:
                   
                   //printf("bin %d: sample %d 0x%04x, ri %d, xri %d\n", i, a, a, exp_xri, xri);
                   
-                  int exp_xa = i-1;
-                  if (i==0) {
-                     exp_xa = 509;
-                     exp_xri = (exp_xri-1)&0x7;
-                  }
+                  int exp_xa = i;
+                  //if (i==0) {
+                  //   exp_xa = 509;
+                  //   exp_xri = (exp_xri-1)&0x7;
+                  //}
                   if ((c->sca_readout != 1) && (xa != exp_xa || xri != exp_xri)) {
                      ok = false;
-                     printf("BBB imodule %02d, sca %d, ri %2d, bin %d: sample %d 0x%04x, xa %d expected %d, xri %d expected %d\n", c->imodule, c->sca, ri, i, a, a, xa, exp_xa, xri, exp_xri);
+                     printf("BBB2 imodule %02d, sca %d, ri %2d, bin %d: sample %d 0x%04x, xa %d expected %d, xri %d expected %d\n", c->imodule, c->sca, ri, i, a, a, xa, exp_xa, xri, exp_xri);
                   }
                }
                break;
@@ -1303,7 +1319,7 @@ public:
                   if (ri != 1) {
                      if (xa != exp_xa) {
                         ok = false;
-                        printf("BBB imodule %02d, sca %d, ri %2d, bin %d: sample %d 0x%04x, xa %d expected %d\n", c->imodule, c->sca, c->sca_readout, i, a, a, xa, exp_xa);
+                        printf("BBB3 imodule %02d, sca %d, ri %2d, bin %d: sample %d 0x%04x, xa %d expected %d\n", c->imodule, c->sca, c->sca_readout, i, a, a, xa, exp_xa);
                      }
                   }
                }
