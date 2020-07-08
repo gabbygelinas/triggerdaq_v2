@@ -1124,9 +1124,9 @@ public:
       std::vector<bool> test_pattern_ok;
 
       WfSuppressPwb ch_supp;
+      int ch_threshold = 0;
 
       if (fEnableTestMode) {
-         int ch_threshold = 0;
          runinfo->fOdb->RI("Equipment/Ctrl/Settings/PWB/ch_threshold", &ch_threshold);
          printf("PWB ch_threshold %d\n", ch_threshold);
          ch_supp.fThreshold = ch_threshold;
@@ -1351,8 +1351,8 @@ public:
                break;
             }
             case 5: { // channel suppression test {trig,adc[10:0]}
-               if (c->imodule != 78)
-                  break;
+               //if (c->imodule != 78)
+               //   break;
                //if (c->sca_readout != 5)
                //   break;
                ch_supp.Reset();
@@ -1368,11 +1368,13 @@ public:
                   crossed |= trigprev;
                   tcrossed |= t;
 
+#if 0
                   char xbuf[1024];
                   sprintf(xbuf, "BBB5 imodule %02d, sca %d, ri %2d, bin %d: sample %d 0x%03x 0x%03x, trig %d, t %d/%d c %d/%d, supp: ", c->imodule, c->sca, c->sca_readout, i, a, a&0xFFF, xa, trig, t, trigprev, tcrossed, crossed);
                   buf += xbuf;
                   buf += ch_supp.PrintToString();
                   buf += "\n";
+#endif
 
                   if ((t != trigprev) || (tcrossed != crossed)) {
                      ok = false;
@@ -1387,6 +1389,37 @@ public:
                break;
             }
             case 6: { // channel suppression test {ch_crossed_min,adc[10:0]}
+               //if (c->imodule != 78)
+               //   break;
+               //if (c->sca_readout != 5)
+               //   break;
+               std::string buf;
+               bool trigprev = false;
+               bool trigsum = false;
+               for (unsigned i=0; i<c->adc_samples.size(); i++) {
+                  int a = c->adc_samples[i];
+                  bool t = (a & 0x800) != 0;
+                  int xa = (a&0x7FF);
+                  bool trig = (xa <= ch_threshold);
+                  if (i<=32)
+                     trig = false;
+
+                  trigsum |= trigprev;
+
+                  char xbuf[1024];
+                  sprintf(xbuf, "BBB6 imodule %02d, sca %d, ri %2d, bin %d: sample %d 0x%03x 0x%03x, t %d, cmp %d/%d", c->imodule, c->sca, c->sca_readout, i, a, a&0xFFF, xa, trig, trigsum, t);
+                  buf += xbuf;
+                  buf += "\n";
+
+                  if (trigsum != t) {
+                     ok = false;
+                  }
+
+                  trigprev = trig;
+               }
+               if (!ok) {
+                  printf("%s", buf.c_str());
+               }
                break;
             }
             } // switch
