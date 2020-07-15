@@ -223,14 +223,19 @@ public:
    TH1D* h_cal_time_pos02_seqsca_04_minus_adc5_16 = NULL;
 
    bool fTrace = false;
+   bool fDoEventDisplay = false;
 
-   FinalModule(TARunInfo* runinfo)
+   FinalModule(TARunInfo* runinfo, bool do_event_display)
       : TARunObject(runinfo)
    {
       if (fTrace)
          printf("FinalModule::ctor!\n");
 
-      fC = new TCanvas("fC", "event display", 800, 800);
+      fDoEventDisplay = do_event_display;
+
+      if (fDoEventDisplay) {
+         fC = new TCanvas("fC", "event display", 800, 800);
+      }
    }
 
    ~FinalModule()
@@ -948,7 +953,7 @@ public:
 
       bool do_plot = (runinfo->fRoot->fgApp != NULL);
 
-      if (do_plot) {
+      if (fDoEventDisplay && do_plot) {
          if (fC) {
             TVirtualPad* save_gpad = gPad;
 
@@ -1736,6 +1741,15 @@ public:
 class FinalModuleFactory: public TAFactory
 {
 public:
+   bool fDoEventDisplay = true;
+
+public:
+   void Usage()
+   {
+      printf("FinalModuleFactory::Usage:\n");
+      printf("--nodisplay ## disable the event display\n");
+   }
+
    void Init(const std::vector<std::string> &args)
    {
       printf("FinalModuleFactory::Init!\n");
@@ -1749,6 +1763,9 @@ public:
          //   fDoPads = false;
          //if (args[i] == "--plot1")
          //   fPlotPad = atoi(args[i+1].c_str());
+
+         if (args[i] == "--nodisplay")
+            fDoEventDisplay = false;
       }
    }
 
@@ -1760,7 +1777,7 @@ public:
    TARunObject* NewRunObject(TARunInfo* runinfo)
    {
       printf("FinalModule::NewRunObject, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
-      return new FinalModule(runinfo);
+      return new FinalModule(runinfo, fDoEventDisplay);
    }
 };
 
