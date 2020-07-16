@@ -686,7 +686,7 @@ public:
          return flow;
       }
 
-      if (1) {
+      if (fFlags->fPrint) {
          printf("Have ADC event:  ");
          e->Print();
          printf("\n");

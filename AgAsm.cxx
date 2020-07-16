@@ -58,13 +58,13 @@ void AgAsm::Print() const
       //fAdcAsm->Print();
    }
    if (fFeamAsm) {
-      fFeamAsm->Print();
+      //fFeamAsm->Print();
    }
    if (fPwbAsm) {
       //fPwbAsm->Print();
    }
    if (fTdcAsm) {
-      fTdcAsm->Print();
+      //fTdcAsm->Print();
    }
 }
 
@@ -98,7 +98,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
 
          e->trig = fTrgAsm->UnpackBank(bkptr, bklen);
 
-         if (1) {
+         if (0) {
             printf("Unpacked TRG event: ");
             e->trig->Print();
             printf("\n");
@@ -116,7 +116,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
 
          if (!e->tdc) {
             e->tdc = fTdcAsm->UnpackBank(bkptr, bklen);
-            e->tdc->Print(1);
+            //e->tdc->Print(1);
          }
 
          have_tdc = true;
@@ -474,7 +474,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
 
    // print final result
    
-   if (1) {
+   if (0) {
       printf("AgAsm::UnpackEvent: returning event:\n");
       e->Print();
       printf("\n");

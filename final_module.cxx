@@ -42,6 +42,9 @@
 class FinalModule: public TARunObject
 {
 public:
+   bool fPrint = false;
+
+public:
    TCanvas* fC = NULL;
 
    TH1D* h_time_between_events = NULL;
@@ -225,12 +228,13 @@ public:
    bool fTrace = false;
    bool fDoEventDisplay = false;
 
-   FinalModule(TARunInfo* runinfo, bool do_event_display)
+   FinalModule(TARunInfo* runinfo, bool do_print, bool do_event_display)
       : TARunObject(runinfo)
    {
       if (fTrace)
          printf("FinalModule::ctor!\n");
 
+      fPrint = do_print;
       fDoEventDisplay = do_event_display;
 
       if (fDoEventDisplay) {
@@ -515,7 +519,9 @@ public:
          tdc_counter = age->tdc->counter;
       }
 
-      printf("Have AgEvent: %d %d %d %d\n", trig_counter, adc_counter, pwb_counter, tdc_counter);
+      if (fPrint) {
+         printf("Have AgEvent: %d %d %d %d\n", trig_counter, adc_counter, pwb_counter, tdc_counter);
+      }
 
       //if (adc16_coinc_dff) {
       //   //printf("adc16_coinc_dff: 0x%04x\n", adc16_coinc_dff);
@@ -536,7 +542,7 @@ public:
       }
 
       if (eba) {
-         if (1) {
+         if (fPrint) {
             printf("BA event %d, time %f, bsc adc hits: %d\n", ef->fEvent->counter, ef->fEvent->time, (int)eba->fBscAdcHits.size());
          }
 
@@ -591,7 +597,7 @@ public:
       double adc6_20 = -2160;
 
       if (eawh) {
-         if (1) {
+         if (fPrint) {
             printf("AW event %d, time %f, anode wire hits: %d\n", ef->fEvent->counter, ef->fEvent->time, (int)eawh->fAwHits.size());
          }
 
@@ -732,7 +738,7 @@ public:
       double pos03_seqsca05 = -80;
 
       if (eph) {
-         if (1) {
+         if (fPrint) {
             printf("PA event %d, time %f, pad hits: %d\n", ef->fEvent->counter, ef->fEvent->time, (int)eph->fPadHits.size());
          }
 
@@ -1741,12 +1747,14 @@ public:
 class FinalModuleFactory: public TAFactory
 {
 public:
+   bool fDoPrint = false;
    bool fDoEventDisplay = true;
 
 public:
    void Usage()
    {
       printf("FinalModuleFactory::Usage:\n");
+      printf("--print ## be verbose\n");
       printf("--nodisplay ## disable the event display\n");
    }
 
@@ -1764,6 +1772,8 @@ public:
          //if (args[i] == "--plot1")
          //   fPlotPad = atoi(args[i+1].c_str());
 
+         if (args[i] == "--print")
+            fDoPrint = true;
          if (args[i] == "--nodisplay")
             fDoEventDisplay = false;
       }
@@ -1777,7 +1787,7 @@ public:
    TARunObject* NewRunObject(TARunInfo* runinfo)
    {
       printf("FinalModule::NewRunObject, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
-      return new FinalModule(runinfo, fDoEventDisplay);
+      return new FinalModule(runinfo, fDoPrint, fDoEventDisplay);
    }
 };
 
