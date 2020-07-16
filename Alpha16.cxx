@@ -422,12 +422,31 @@ static const int adc32_rev1_chanmap[32] = {
    38, 46, 39, 47
 };
 
+// adc32 rev1.1 channel -> 16 channels of J1 preamp, followed by 16 channels of J2 preamp
+// map built by K.O. by pulsing J1 and J2 preamps one input at a time
+// from the attenuated field wire pulser.
+// Note: channels (16 and 25) and (34 and 41) are swapped vs adc32_rev_1.
+
+static const int adc32_rev1_1_chanmap[32] = {
+   18, 24, 17, 25,
+   16, 26, 19, 27,
+   20, 28, 21, 29,
+   22, 30, 23, 31,
+   32, 40, 33, 41,
+   34, 42, 35, 43,
+   36, 44, 37, 45,
+   38, 46, 39, 47
+};
+
 static int inv_adc32_rev1_chanmap[48];
+static int inv_adc32_rev1_1_chanmap[48];
 
 static int inv_adc32_chanmap[48];
 
 void Alpha16Asm::Init(int adc32_rev)
 {
+   printf("Alpha16Asm::Init: using ADC32 channel map revision %d\n", adc32_rev);
+
    // construct or check the inverted adc16 map
    
    for (int xchan=0; xchan<16; xchan++) {
@@ -504,6 +523,21 @@ void Alpha16Asm::Init(int adc32_rev)
       inv_adc32_rev1_chanmap[xchan] = ychan;
    }
 
+   for (int xchan=0; xchan<48; xchan++) {
+      inv_adc32_rev1_1_chanmap[xchan] = -1;
+   }
+
+   for (int xchan=0; xchan<48; xchan++) {
+      int ychan = -1;
+      for (int i=0; i<32; i++)
+         if (adc32_rev1_1_chanmap[i] == xchan) {
+            ychan = i;
+            break;
+         }
+      assert(inv_adc32_rev1_1_chanmap[xchan] == -1);
+      inv_adc32_rev1_1_chanmap[xchan] = ychan;
+   }
+
 #if 0
    printf("inv_adc32_rev1_chanmap:\n");
    for (int xchan=0; xchan<48; xchan++) {
@@ -539,6 +573,10 @@ void Alpha16Asm::Init(int adc32_rev)
    } else if (adc32_rev == 1) {
       for (int xchan=0; xchan<48; xchan++) {
          inv_adc32_chanmap[xchan] = inv_adc32_rev1_chanmap[xchan];
+      }
+   } else if (adc32_rev == 11) {
+      for (int xchan=0; xchan<48; xchan++) {
+         inv_adc32_chanmap[xchan] = inv_adc32_rev1_1_chanmap[xchan];
       }
    } else {
       printf("Alpha16Asm::Init: Error: invalid valud of adc32_rev %d, cannot continue!\n", adc32_rev);

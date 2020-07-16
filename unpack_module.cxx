@@ -123,7 +123,9 @@ public:
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
 
       int adc32_rev = 0;
-      if (runinfo->fRunNo >= 1694) {
+      if (runinfo->fRunNo >= 902660) {
+         adc32_rev = 11;
+      } else if (runinfo->fRunNo >= 1694) {
          adc32_rev = 1;
       }
 
