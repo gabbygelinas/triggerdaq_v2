@@ -120,6 +120,7 @@ struct PlotHistograms
    TH1D* fHleCal = NULL;
    TH1D* fHwiCal = NULL;
    TH1D* fHoccCal = NULL;
+   TH1D* fHoccCal1000 = NULL;
    TProfile* fHphVsChanCal = NULL;
    TProfile* fHleVsChanCal = NULL;
    TProfile* fHwiVsChanCal = NULL;
@@ -129,7 +130,7 @@ struct PlotHistograms
       TDirectory *dir = gDirectory->mkdir("summary");
       dir->cd();
 
-      fHbaselineMean = new TH1D("adc_baseline_mean", "waveform baseline mean, all wires; ADC counts", 100, -2000, 4000);
+      fHbaselineMean = new TH1D("adc_baseline_mean", "waveform baseline mean, all wires; ADC counts", 100, -4000, 4000);
       fHbaselineRms = new TH1D("adc_baseline_rms", "waveform baseline rms, all wires; ADC counts", 100, 0, MAX_AW_BRMS);
       fHbaselineRange = new TH1D("adc_baseline_range", "waveform baseline range, all wires; ADC counts", 100, 0, MAX_AW_BRANGE);
 
@@ -190,6 +191,8 @@ struct PlotHistograms
       fHwiCal = new TH1D("adccal_pulse_width", "pulse_width_cal; ADC time bins", 100, 0, 100);
       fHoccCal = new TH1D("adccal_channel_occupancy", "channel_occupancy_cal; TPC wire number", NUM_AW, -0.5, NUM_AW-0.5);
       fHoccCal->SetMinimum(0);
+      fHoccCal1000 = new TH1D("adccal_channel_occupancy_1000", "AW occupancy with ph > 1000; TPC wire number", NUM_AW, -0.5, NUM_AW-0.5);
+      fHoccCal1000->SetMinimum(0);
       fHphVsChanCal = new TProfile("adccal_pulse_height_vs_wire", "pulse_height_vs_chan_cal; TPC wire number; ADC counts", NUM_AW, -0.5, NUM_AW-0.5);
       fHleVsChanCal = new TProfile("adccal_pulse_time_vs_wire", "pulse_time_vs_chan_cal; TPC wire number; ADC time bins", NUM_AW, -0.5, NUM_AW-0.5);
       fHwiVsChanCal = new TProfile("adccal_pulse_width_vs_wire", "pulse_width_vs_chan_cal; TPC wire number; ADC time bins", NUM_AW, -0.5, NUM_AW-0.5);
@@ -1079,6 +1082,8 @@ public:
                fH->fHphCal->Fill(ph);
                if (is_aw) {
                   fH->fHoccCal->Fill(iwire);
+                  if (ph > 1000)
+                     fH->fHoccCal1000->Fill(iwire);
                   fH->fHleVsChanCal->Fill(iwire, le);
                   fH->fHwiVsChanCal->Fill(iwire, wi);
                   fH->fHphVsChanCal->Fill(iwire, ph);
@@ -1141,7 +1146,7 @@ public:
          return flow;
       }
 
-      if (1) {
+      if (fFlags->fPrint) {
          printf("Have ADC event:  ");
          e->Print();
          printf("\n");
