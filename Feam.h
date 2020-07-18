@@ -164,7 +164,7 @@ class FeamModuleAsm
 #define PWB_CHAN_RESET2 (-6) // SCA Reset channel
 #define PWB_CHAN_RESET3 (-7) // SCA Reset channel
 
-#define PWB_MODULE_LAST 79 // serial number of last PWB module (last used pwbNN name)
+#define PWB_MODULE_LAST 78 // serial number of last PWB module (last used pwbNN name)
 
 class PwbPadMap
 {
