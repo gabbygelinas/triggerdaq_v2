@@ -22,8 +22,8 @@
 
 #include "AgFlow.h"
 
-#include "wfsuppress.h"
-#include "wfsuppress2.h"
+//#include "wfsuppress.h"
+//#include "wfsuppress2.h"
 #include "wfsuppress_pwb.h"
 
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
@@ -483,7 +483,8 @@ public:
    PwbFlags* fFlags = NULL;
 
    //std::vector<std::vector<std::vector<WfSuppress*>>> fWfSuppress;
-   std::vector<std::vector<std::vector<WfSuppress2*>>> fWfSuppress;
+   //std::vector<std::vector<std::vector<WfSuppress2*>>> fWfSuppress;
+   std::vector<std::vector<std::vector<WfSuppressPwb*>>> fWfSuppress;
    std::vector<std::vector<std::vector<WfSuppressPwb*>>> fWfSuppressPwb;
    std::vector<TH1D*> fWfSuppressAdcMin;
    TH1D* fWfSuppressAdcAmp = NULL;
@@ -554,8 +555,10 @@ public:
    TDirectory* hdir_wfsuppress = NULL;
    TDirectory* hdir_pwb  = NULL;
    TDirectory* hdir_pads = NULL;
+   TDirectory* hdir_pwb_hit_map_pads = NULL;
    std::vector<PwbHistograms*> fHF;
    std::vector<ChanHistograms*> fHC;
+   std::vector<TH1D*> fHPwbHitMapPads;
 
    int fCountTestScaEvents = 0;
    int fCountBadScaEvents = 0;
@@ -619,12 +622,13 @@ public:
          return;
 
       runinfo->fRoot->fOutputFile->cd();
-      hdir_pads = gDirectory->mkdir("xpads");
+      hdir_pads = gDirectory->mkdir("pads");
       hdir_pads->cd(); // select correct ROOT directory
 
       hdir_summary = hdir_pads->mkdir("summary");
       hdir_wfsuppress = hdir_pads->mkdir("wfsuppress");
       hdir_pwb = hdir_pads->mkdir("pwb");
+      hdir_pwb_hit_map_pads = hdir_pads->mkdir("pwb_hit_map_pads");
 
       hdir_summary->cd();
 
@@ -705,6 +709,22 @@ public:
       }
 
       //hpadmap = new TH2D("hpadmap", "map from TPC pad number (col*4*18+row) to SCA readout channel (sca*80+chan)", 4*4*18, -0.5, 4*4*18-0.5, NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
+
+      hdir_pwb_hit_map_pads->cd();
+      for (int i=0; i<=78; i++) {
+         char xname[100];
+         char xtitle[100];
+         char name[100];
+         char title[100];
+         sprintf(xname, "pwb%02d", i);
+         sprintf(xtitle, "pwb%02d", i);
+         sprintf(name,  "%s_hit_map_pads", xname);
+         sprintf(title, "%s hits vs seqpad; col*4*18+row", xtitle);
+         TH1D* h = new TH1D(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL, -0.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5);
+         h->SetMinimum(0);
+         fHPwbHitMapPads.push_back(h);
+      }
+      hdir_summary->cd();
    }
 
    void EndRun(TARunInfo* runinfo)
@@ -1449,15 +1469,7 @@ public:
             continue; // ADC test patterns do not go through the rest of normal analysis
          }
 
-         bool flag = true;
-         if (c->imodule == 30)
-            flag = false;
-         if (c->imodule == 31)
-            flag = false;
-         if (c->imodule == 32)
-            flag = false;
-         
-         if (fFlags->fWfSuppress && flag) { // compute data suppression
+         if (fFlags->fWfSuppress) { // compute data suppression
             hdir_wfsuppress->cd();
 
             if (fWfSuppressAdcAmp == NULL) {
@@ -1523,45 +1535,63 @@ public:
                fWfSuppress[imodule][isca][ichan] = s;
             }
 #endif
-            
+
+#if 0            
             WfSuppress2 *s = fWfSuppress[imodule][isca][ichan];
             if (!s) {
                s = new WfSuppress2();
                fWfSuppress[imodule][isca][ichan] = s;
             }
-            
-            unsigned sfirst = 10;
-            
-            s->Init(c->adc_samples[sfirst], fFlags->fWfThreshold);
+#endif
 
-            std::vector<int> samples_base;
+            WfSuppressPwb *s = fWfSuppress[imodule][isca][ichan];
+            if (!s) {
+               s = new WfSuppressPwb();
+               fWfSuppress[imodule][isca][ichan] = s;
+            }
+            
+            //s->Init(c->adc_samples[sfirst], fFlags->fWfThreshold);
+            s->Reset();
+            s->fThreshold = fFlags->fWfThreshold;
+
+            //std::vector<int> samples_base;
             std::vector<int> samples_amp;
             
             bool keep = false;
-            for (unsigned i=sfirst+1; i<c->adc_samples.size(); i++) {
+            int ampmin = 0;
+            int ampmax = 0;
+            int adcmin = c->adc_samples[0];
+            for (unsigned i=0; i<c->adc_samples.size(); i++) {
+               if (c->adc_samples[i] < adcmin)
+                  adcmin = c->adc_samples[i];
                bool k = s->Add(c->adc_samples[i]);
-               uint16_t base = s->GetBase();
-               int16_t amp = s->GetAmp();
-               samples_base.push_back(base);
+               //uint16_t base = s->GetBase();
+               //int16_t amp = s->GetAmp();
+               //samples_base.push_back(base);
+               //samples_amp.push_back(amp);
+               int base = s->fBaseline;
+               int amp = s->fAdcValue;
+               if (amp > ampmax)
+                  ampmax = amp;
+               if (amp < ampmin)
+                  ampmin = amp;
                samples_amp.push_back(amp);
                keep |= k;
                if (0) {
-                  printf("pwb %02d, sca %d, chan %2d: bin %3d, adc %d, base %d, amp %4d, keep %d %d, state: ", imodule, isca, ichan, i, c->adc_samples[i], base, amp, k, keep);
-                  s->Print();
-                  printf("\n");
+                  printf("pwb %02d, sca %d, chan %2d: bin %3d, adc %d, base %d, amp %4d, keep %d %d, state: %s\n", imodule, isca, ichan, i, c->adc_samples[i], base, amp, k, keep, s->PrintToString().c_str());
                }
             }
             
             //double xampmax = fabs(s->GetAmpMax());
-            double xampmin = fabs(s->GetAmpMin());
+            double xampmin = fabs(ampmin);
             //double xamp = std::min(xampmax, xampmin);
             double xamp = xampmin;
-            if (s->GetClipped())
-               xamp = 0xFFF + 1;
+            //if (s->GetClipped())
+            //   xamp = 0xFFF + 1;
             
             fWfSuppressAdcAmp->Fill(xamp);
-            fWfSuppressAdcAmpPos->Fill(s->GetAmpMax());
-            fWfSuppressAdcAmpNeg->Fill(s->GetAmpMin());
+            fWfSuppressAdcAmpPos->Fill(ampmax);
+            fWfSuppressAdcAmpNeg->Fill(ampmin);
 
             //fWfSuppressAdcAmpCumulKeep->Fill(xamp);
             for (int i=0; i<xamp; i++) {
@@ -1572,20 +1602,15 @@ public:
             for (int i=xamp; i<4200; i++) {
                fWfSuppressAdcAmpCumulDrop->Fill(i);
             }
-            fWfSuppressAdcMin[imodule]->Fill(s->GetAdcMin());
+            fWfSuppressAdcMin[imodule]->Fill(adcmin);
 
-            int range = s->GetAdcMax() - s->GetAdcMin();
+            int range = ampmax - ampmin;
 
-            printf("pwb %02d, sca %d, chan %2d: wfsuppress: ", imodule, isca, ichan);
-            s->Print();
-            printf(", keep: %d, xamp %d\n", keep, (int)xamp);
+            printf("pwb %02d, sca %d, chan %2d: wfsuppress: %s, keep: %d, xamp %d\n", imodule, isca, ichan, s->PrintToString().c_str(), keep, (int)xamp);
 
             if (!keep) {
                printf("TTTT: ");
-               printf("pwb %02d, sca %d, chan %2d: wfsuppress: ", imodule, isca, ichan);
-               s->Print();
-               printf(", keep: %d, xamp %d", keep, (int)xamp);
-               printf(", mismatch!\n");
+               printf("pwb %02d, sca %d, chan %2d: wfsuppress: %s, , keep: %d, xamp %d, mismatch!\n", imodule, isca, ichan, s->PrintToString().c_str(), keep, (int)xamp);
 
                static int count = 0;
 
@@ -1599,9 +1624,9 @@ public:
                   sprintf(title, "pwb %02d, sca %d, chan %2d, range %d, count %d", imodule, isca, ichan, range, count);
                   WfToTH1D(name, title, c->adc_samples);
                   
-                  sprintf(name, "pwb_%02d_sca_%d_chan_%02d_range_%d_count_%d_base", imodule, isca, ichan, range, count);
-                  sprintf(title, "pwb %02d, sca %d, chan %2d, range %d, count %d, baseline", imodule, isca, ichan, range, count);
-                  WfToTH1D(name, title, samples_base);
+                  //sprintf(name, "pwb_%02d_sca_%d_chan_%02d_range_%d_count_%d_base", imodule, isca, ichan, range, count);
+                  //sprintf(title, "pwb %02d, sca %d, chan %2d, range %d, count %d, baseline", imodule, isca, ichan, range, count);
+                  //WfToTH1D(name, title, samples_base);
                   
                   sprintf(name, "pwb_%02d_sca_%d_chan_%02d_range_%d_count_%d_amp", imodule, isca, ichan, range, count);
                   sprintf(title, "pwb %02d, sca %d, chan %2d, range %d, count %d, amplitude", imodule, isca, ichan, range, count);
@@ -1999,6 +2024,7 @@ public:
                if (!spike) {
                   hf->hnhits_pad_nospike->Fill(seqpad);
                }
+               fHPwbHitMapPads[c->imodule]->Fill(seqpad);
             }
          }
          
