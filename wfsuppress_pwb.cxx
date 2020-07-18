@@ -19,6 +19,7 @@ void WfSuppressPwb::Reset()
    fBaselineCounter = 0;
    fBaselineSum = 0;
    fBaseline = 0;
+   fBaselineReady = false;
 
    fAdcValue = 0;
 
@@ -39,6 +40,7 @@ bool WfSuppressPwb::Add(int adc_stream)
          fBaselineCounter ++;
          if (fBaselineCounter == 64) {
             fBaseline = fBaselineSum/64;
+            fBaselineReady = true;
          }
          fAdcValue = 0;
       } else {

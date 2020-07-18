@@ -9,6 +9,7 @@ class WfSuppressPwb
    int fCounter = 0;
    int fBaselineCounter = 0;
    int fBaselineSum = 0;
+   bool fBaselineReady = false;
    int fBaseline = 0;
    int fAdcValue = 0;
    bool fTrigPos = false;
