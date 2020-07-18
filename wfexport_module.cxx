@@ -345,6 +345,13 @@ public:
    WfExportFlags fFlags;
    
 public:
+   void Usage()
+   {
+      printf("WfExportModuleFactory flags:\n");
+
+      printf("--wfexport # save waveforms to ROOT manalyzer/adc_waveforms and pwb_waveforms\n");
+   }
+
    void Init(const std::vector<std::string> &args)
    {
       printf("WfExportModuleFactory::Init!\n");
