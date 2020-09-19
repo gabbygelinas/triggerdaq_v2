@@ -85,7 +85,7 @@ public:
          printf("UnpackModule::ctor!\n");
 
       fFlags   = flags;
-      fCfm     = new Ncfm(getenv("AG_CFM"));
+      fCfm     = new Ncfm("agcfmdb");
    }
 
    ~UnpackModule()
