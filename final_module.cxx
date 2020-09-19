@@ -126,6 +126,7 @@ public:
    TH2D* h_aw16_prompt_bits_vs_aw;
 
    TH2D* h_aw_bsc_adc_hits;
+   TH2D* h_aw_pc_bsc_adc_hits;
 
    TH1D* h_pad_num_hits;
 
@@ -340,6 +341,7 @@ public:
       h_aw16_prompt_bits_vs_aw = new TH2D("h_aw16_prompt_bits_vs_aw", "FPGA aw16_prompt bits vs AW tpc wire number; tpc wire number; link bit 0..15", NUM_AW, -0.5, NUM_AW-0.5, 16, -0.5, 16-0.5);
 
       h_aw_bsc_adc_hits = new TH2D("h_aw_bsc_adc_hits", "hits in aw vs bsc adc", NUM_AW, -0.5, NUM_AW-0.5, NUM_BSC, -0.5, NUM_BSC-0.5);
+      h_aw_pc_bsc_adc_hits = new TH2D("h_aw_pc_bsc_adc_hits", "hits in aw (PC region) vs bsc adc", NUM_AW, -0.5, NUM_AW-0.5, NUM_BSC, -0.5, NUM_BSC-0.5);
 
       h_pad_num_hits = new TH1D("h_pad_num_hits", "number of pad hits; number of hits in pads", 100, 0, MAX_HITS);
       h_pad_time = new TH1D("h_pad_time", "pad hit time; time, ns", 100, 0, MAX_TIME);
@@ -577,7 +579,11 @@ public:
       if (eba && eawh) {
          for (unsigned j=0; j<eba->fBscAdcHits.size(); j++) {
             for (unsigned k=0; k<eawh->fAwHits.size(); k++) {
+               double time = eawh->fAwHits[k].time;
                h_aw_bsc_adc_hits->Fill(eawh->fAwHits[k].wire, eba->fBscAdcHits[j].bar);
+               if (time >= 800 && time < 1200) {
+                  h_aw_pc_bsc_adc_hits->Fill(eawh->fAwHits[k].wire, eba->fBscAdcHits[j].bar);
+               }
             }
          }
       }
