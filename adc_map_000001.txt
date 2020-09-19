@@ -1,4 +1,0 @@
-# empty adc map
-# module connector cable preamp
-#adc01 0 A T0
-#end
