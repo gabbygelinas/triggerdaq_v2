@@ -19,6 +19,7 @@
 #include "Unpack.h"
 #include "AgFlow.h"
 #include "ko_limits.h"
+#include "ncfm.h"
 
 #define MAX_AW_BRMS 600
 #define MAX_AW_BRANGE 2000
@@ -578,6 +579,8 @@ public:
    A16Flags* fFlags = NULL;
    int fCounter = 0;
    bool fTrace = false;
+   Ncfm* fCfm = NULL;
+   NcfmParser* fCfmCuts = NULL;
 
    PlotHistograms* fH = NULL;
    PlotNoise* fPN16 = NULL;
@@ -597,6 +600,7 @@ public:
       if (fTrace)
          printf("AdcModule::ctor!\n");
       fFlags = f;
+      fCfm = new Ncfm("agcfmdb");
 
       runinfo->fRoot->fOutputFile->cd();
       TDirectory* aw = gDirectory->mkdir("aw");
@@ -636,6 +640,14 @@ public:
          delete fH;
          fH = NULL;
       }
+      if (fCfmCuts) {
+         delete fCfmCuts;
+         fCfmCuts = NULL;
+      }
+      if (fCfm) {
+         delete fCfm;
+         fCfm = NULL;
+      }
    }
 
    void BeginRun(TARunInfo* runinfo)
@@ -644,6 +656,9 @@ public:
          printf("AdcModule::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
       //time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
       //printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
+
+      fCfmCuts = fCfm->ParseFile("adc", "cuts", runinfo->fRunNo);
+
       fCounter = 0;
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
 
@@ -812,10 +827,10 @@ public:
 
       // analyze baseline
       
-      int is_start = 0;
-      int is_baseline = 100;
-      int calStart = 330; // 160;
-      int calEnd = 350; // 200;
+      int is_start = fCfmCuts->GetInt("adc_bin_baseline_start", 0);
+      int is_baseline = fCfmCuts->GetInt("adc_bin_baseline_end", 100);
+      int calStart = fCfmCuts->GetInt("adc_bin_pulser_start", 330); // 160;
+      int calEnd = fCfmCuts->GetInt("adc_bin_pulser_end", 350); // 200;
 
       double bmean, brms, bmin, bmax;
 
@@ -846,7 +861,7 @@ public:
       double hit_time = 0;
       double hit_amp = 0;
 
-      double cut_brms = 500;
+      double cut_brms = fCfmCuts->GetDouble("cut_baseline_rms", 500);
 
       bool special = false;
 
@@ -917,7 +932,8 @@ public:
                fH->fAwMapPh10000->Fill(iwire);
          }
 
-         double cfd_thr = 0.75*ph;
+         double cfd_thr_pct = fCfmCuts->GetDouble("cfd_thr_pct", 0.75);
+         double cfd_thr = cfd_thr_pct*ph;
 
          if (wmin == -32768.0) {
             ph = MAX_AW_AMP-1;
@@ -979,8 +995,8 @@ public:
             ph_hit_thr_adc16 =  1000;
             ph_hit_thr_adc32 =  750;
          } else if (runinfo->fRunNo < 999999) {
-            ph_hit_thr_adc16 =  1000;
-            ph_hit_thr_adc32 =  750;
+            ph_hit_thr_adc16 =  fCfmCuts->GetDouble("ph_hit_thr_adc16", 1000);
+            ph_hit_thr_adc32 =  fCfmCuts->GetDouble("ph_hit_thr_adc32", 750);
          }
 
          double ph_hit_thr = 0;
@@ -1014,8 +1030,8 @@ public:
             pulse_time_middle_adc16 = 147; // ADC time bins
             pulse_time_middle_adc32 = 135; // ADC time bins
          } else {
-            pulse_time_middle_adc16 = 147; // ADC time bins
-            pulse_time_middle_adc32 = 110; // ADC time bins
+            pulse_time_middle_adc16 = fCfmCuts->GetInt("adc_bin_pc_middle_adc16", 147); // ADC time bins
+            pulse_time_middle_adc32 = fCfmCuts->GetInt("adc_bin_pc_middle_adc32", 110); // ADC time bins
          }
 
          double time_pc = 1000.0; // place PC drift times at 1000ns.
@@ -1104,7 +1120,7 @@ public:
             //   special = true;
             //}
 
-            if (1 || (hit_time > 700 && hit_time < 6000)) {
+            if (1) {
                have_hit = true;
 
                fH->fHawHitTime->Fill(hit_time);
