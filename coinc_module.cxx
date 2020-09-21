@@ -7,6 +7,8 @@
 //
 
 #include <stdio.h>
+#include <assert.h>
+
 #include "manalyzer.h"
 #include "midasio.h"
     
