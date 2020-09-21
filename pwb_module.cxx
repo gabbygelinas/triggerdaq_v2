@@ -26,6 +26,8 @@
 //#include "wfsuppress2.h"
 #include "wfsuppress_pwb.h"
 
+#include "ncfm.h"
+
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
 
 #define MEMZERO(p) memset((p), 0, sizeof(p))
@@ -481,6 +483,8 @@ class PwbModule: public TARunObject
 {
 public:
    PwbFlags* fFlags = NULL;
+   Ncfm* fCfm = NULL;
+   NcfmParser* fCfmCuts = NULL;
 
    //std::vector<std::vector<std::vector<WfSuppress*>>> fWfSuppress;
    //std::vector<std::vector<std::vector<WfSuppress2*>>> fWfSuppress;
@@ -504,8 +508,10 @@ public:
    TProfile* h_all_fpn_mean_bis_prof = NULL;
    TProfile* h_all_fpn_rms_bis_prof = NULL;
 
+#if 0
    std::vector<TProfile*> h_all_fpn_mean_per_col_prof;
    std::vector<TProfile*> h_all_fpn_rms_per_col_prof;
+#endif
 
    TH1D* h_all_pad_baseline_count = NULL;
    TH1D* h_all_pad_baseline_good_count = NULL;
@@ -527,16 +533,13 @@ public:
    //TH1D* h_adc_range_baseline = NULL;
    //TH1D* h_adc_range_drift = NULL;
 
-   TH1D* hamp_pad;
-   TH1D* hamp_pad_pedestal;
-   TH1D* hamp_pad_above_pedestal;
-   TH1D* hled_pad_amp;
-   TH1D* hled_pad_amp_ns;
-
-   TH1D* hled_all_hits;
-   TH1D* hamp_all_hits;
-
-   TH2D* h2led2amp;
+   TH1D* hpad_ph = NULL;
+   TH1D* hpad_ph_zoom_pedestal = NULL;
+   TH1D* hpad_ph_above_pedestal = NULL;
+   TH2D* hpad_time_ph = NULL;
+   TH1D* hpad_time_cut_ph = NULL;
+   TH1D* hpad_time_cut_ph_ns = NULL;
+   TH1D* hpad_ph_cut_time = NULL;
 
    //TH1D* hdrift_amp_all;
    //TH1D* hdrift_amp_all_pedestal;
@@ -545,8 +548,8 @@ public:
    //TH2D* hdrift_led2amp;
 
    //TH1D* hnhits;
-   TH1D* hled_hit;
-   TH1D* hamp_hit;
+   TH1D* hhit_time_ns = NULL;
+   TH1D* hhit_ph = NULL;
    //TH2D* h_amp_hit_col = NULL;
 
    bool  fPulser = true;
@@ -587,6 +590,7 @@ public:
          printf("PwbModule::ctor!\n");
 
       fFlags = f;
+      fCfm = new Ncfm("agcfmdb");
    }
 
    ~PwbModule()
@@ -607,6 +611,15 @@ public:
       //for (unsigned i=0; i<h_all_fpn_rms_per_col.size(); i++) {
       //   DELETE(h_all_fpn_rms_per_col[i]);
       //}
+
+      if (fCfmCuts) {
+         delete fCfmCuts;
+         fCfmCuts = NULL;
+      }
+      if (fCfm) {
+         delete fCfm;
+         fCfm = NULL;
+      }
    }
 
    void BeginRun(TARunInfo* runinfo)
@@ -615,6 +628,9 @@ public:
          printf("BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
       //time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
       //printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
+
+      fCfmCuts = fCfm->ParseFile("pwb", "cuts", runinfo->fRunNo);
+
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
       runinfo->fOdb->RB("Equipment/Ctrl/Settings/PWB/enable_test_mode", &fEnableTestMode);
       runinfo->fOdb->RI("Equipment/Ctrl/Settings/PWB/test_mode", &fTestMode);
@@ -647,6 +663,7 @@ public:
       h_all_fpn_mean_bis_prof  = new TProfile("all_fpn_mean_bis_prof", "mean of all fpn channels; sca+4*(ring+8*column)", max_pad, -0.5, max_pad-0.5);
       h_all_fpn_rms_bis_prof  = new TProfile("all_fpn_rms_bis_prof", "rms of all fpn channels; sca+4*(ring+8*column)", max_pad, -0.5, max_pad-0.5);
 
+#if 0
       for (unsigned i=0; i<8; i++) {
          char name[256];
          char title[256];
@@ -661,6 +678,7 @@ public:
          sprintf(title, "rms of fpn channels column %d; 4*ring+sca", i);
          h_all_fpn_rms_per_col_prof.push_back(new TProfile(name, title, num, -0.5, num-0.5));
       }
+#endif
 
       h_all_pad_baseline_count = new TH1D("all_pad_baseline_count", "count of all baselines; sca+4*(ring+8*column); pad count", max_pad, -0.5, max_pad-0.5);
 
@@ -684,28 +702,26 @@ public:
       //h_adc_range_baseline = new TH1D("adc_range_baseline", "waveform range (max-min), baseline region",  100, 0, ADC_RANGE_PED);
       //h_adc_range_drift    = new TH1D("adc_range_drift",    "waveform range (max-min), drift region",  100, 0, ADC_RANGE_PED);
 
-      hamp_pad         = new TH1D("hamp_pad",   "pad channels pulse height; adc counts", 100, 0, ADC_RANGE);
-      hamp_pad_pedestal = new TH1D("hamp_pad_pedestal", "pad channels pulse height, zoom on pedestal area; adc counts", 100, 0, ADC_RANGE_PED);
-      hamp_pad_above_pedestal = new TH1D("hamp_pad_above_pedestal", "pad channels pulse height, away from pedestal area; adc counts", 100, ADC_RANGE_PED, ADC_RANGE);
+      hpad_ph                = new TH1D("hpad_ph",                "pad waveform pulse height; adc counts", 100, 0, ADC_RANGE);
+      hpad_ph_zoom_pedestal  = new TH1D("hpad_ph_zoom_pedestal",  "pad waveform pulse height, zoom on pedestal area; adc counts", 100, 0, ADC_RANGE_PED);
+      hpad_ph_above_pedestal = new TH1D("hpad_ph_above_pedestal", "pad waveform pulse height, away from pedestal area; adc counts", 100, ADC_RANGE_PED, ADC_RANGE);
 
-      hled_pad_amp = new TH1D("hled_pad_amp",   "pad channels above threshold, pulse leading edge; adc time bins", 100, 0, MAX_TIME_BINS);
-      hled_pad_amp_ns = new TH1D("hled_pad_amp_ns",   "pad channels above threshold, pulse leading edge; time, ns", 100, 0, MAX_TIME_NS);
+      hpad_time_ph        = new TH2D("hpad_time_ph", "pad hit p.h. vs time; sca time bins; adc counts", 100, 0, MAX_TIME_BINS, 100, 0, ADC_RANGE);
 
-      h2led2amp  = new TH2D("h2led2amp", "pulse amp vs time, adc time bins", 100, 0, MAX_TIME_BINS, 100, 0, ADC_RANGE);
+      hpad_time_cut_ph    = new TH1D("hpad_time_cut_ph",    "pad hit time with p.h. cut; sca time bins", 100, 0, MAX_TIME_BINS);
+      hpad_time_cut_ph_ns = new TH1D("hpad_time_cut_ph_ns", "pad hit time with p.h. cut; time, ns", 100, 0, MAX_TIME_NS);
 
-      hled_all_hits = new TH1D("hled_all_hits",   "pulse leading edge, adc time bins, with p.h. cut", 100, 0, NUM_TIME_BINS);
-      hamp_all_hits = new TH1D("hamp_all_hits",   "pulse height, with time cut", 100, 0, ADC_RANGE);
+      hpad_ph_cut_time    = new TH1D("hpad_ph_cut_time",    "pad p.h. with time cut; adc counts", 100, 0, ADC_RANGE);
 
       //hdrift_amp_all = new TH1D("drift_amp", "drift region pulse height", 100, 0, ADC_RANGE);
       //hdrift_amp_all_pedestal = new TH1D("drift_amp_pedestal", "drift region pulse height, zoom on pedestal area", 100, 0, ADC_RANGE_PED);
       //hdrift_amp_all_above_pedestal = new TH1D("drift_amp_above_pedestal", "drift region pulse height, away from pedestal area", 100, ADC_RANGE_PED, ADC_RANGE);
-      //hdrift_led_all = new TH1D("drift_led", "drift region pulse leading edge, adc time bins, above pedestal", 100, 0, NUM_TIME_BINS);
-      //hdrift_led2amp = new TH2D("drift_led2amp", "drift region pulse amp vs time, adc time bins, above pedestal", 100, 0, NUM_TIME_BINS, 100, 0, ADC_RANGE);
+      //hdrift_led_all = new TH1D("drift_led", "drift region pulse leading edge, sca time bins, above pedestal", 100, 0, NUM_TIME_BINS);
+      //hdrift_led2amp = new TH2D("drift_led2amp", "drift region pulse amp vs time, sca time bins, above pedestal", 100, 0, NUM_TIME_BINS, 100, 0, ADC_RANGE);
 
       //hnhits = new TH1D("hnhits", "hits per channel", nchan, -0.5, nchan-0.5);
-      hled_hit = new TH1D("hled_hit", "hit time, adc time bins", 100, 0, NUM_TIME_BINS);
-      hamp_hit = new TH1D("hamp_hit", "hit pulse height", 100, 0, ADC_RANGE);
-      //h_amp_hit_col = new TH2D("hamp_hit_col", "hit pulse height vs column (ifeam*4+col)", 8*4, -0.5, 8*4-0.5, 100, 0, ADC_RANGE);
+      hhit_time_ns = new TH1D("hhit_time_ns", "pad hit time; time, ns", 100, 0, MAX_TIME_NS);
+      hhit_ph      = new TH1D("hhit_ph",   "pad hit pulse height; adc counts", 100, 0, ADC_RANGE);
 
       hnhitchan = new TH1D("hnhitchan", "number of hit channels per event", 100, 0, 1000);
 
@@ -1210,20 +1226,24 @@ public:
       //int iplot = 0;
       bool first_zero_range = true;
 
-      int ibaseline_start = 10;
-      int ibaseline_end = 100;
+      int ibaseline_start = fCfmCuts->GetInt("sca_bin_baseline_start", 10);
+      int ibaseline_end   = fCfmCuts->GetInt("sca_bin_baseline_end",  100);
 
-      //int iwire_start = 130;
-      int iwire_end = 160;
+      int iwire_start   = fCfmCuts->GetInt("sca_bin_pc_start",  130);
+      double iwire_middle = fCfmCuts->GetDouble("sca_bin_pc_middle", 145);
+      int iwire_end     = fCfmCuts->GetInt("sca_bin_pc_end",    160);
 
-      int idrift_start = iwire_end;
-      //int idrift_cut = iwire_end;
-      int idrift_end = 410;
+      int idrift_start  = fCfmCuts->GetInt("sca_bin_drift_start", iwire_end);
+      int idrift_cut    = fCfmCuts->GetInt("sca_bin_drift_cut",   iwire_end);
+      int idrift_end    = fCfmCuts->GetInt("sca_bin_drift_end", 410);
 
-      int ipulser_start = 400;
-      int ipulser_end   = 500;
+      int ipulser_start = fCfmCuts->GetInt("sca_bin_pulser_start", 400);
+      int ipulser_end   = fCfmCuts->GetInt("sca_bin_pulser_end",   500);
 
-      double hit_amp_threshold = 100;
+      double wpos_min_ns = fCfmCuts->GetDouble("pad_hit_time_min_ns", 800.0);
+      double wpos_max_ns = fCfmCuts->GetDouble("pad_hit_time_max_ns", 5600.0);
+
+      double hit_amp_threshold = fCfmCuts->GetDouble("pad_hit_thr", 100);
 
       int nhitchan = 0;
 
@@ -1770,6 +1790,7 @@ public:
             h_all_fpn_mean_bis_prof->Fill(seqpwbsca, bmean);
             h_all_fpn_rms_bis_prof->Fill(seqpwbsca, brms);
 
+#if 0
             if (pwb_column >= 0 && pwb_column < (int)h_all_fpn_mean_per_col_prof.size()) {
                h_all_fpn_mean_per_col_prof[pwb_column]->Fill(pwb_ring*4+isca, bmean);
             }
@@ -1777,6 +1798,7 @@ public:
             if (pwb_column >= 0 && pwb_column < (int)h_all_fpn_rms_per_col_prof.size()) {
                h_all_fpn_rms_per_col_prof[pwb_column]->Fill(pwb_ring*4+isca, brms);
             }
+#endif
 
             //h_all_fpn_rms_bis->Fill(seqpwbsca, brms);
 
@@ -1851,20 +1873,26 @@ public:
          if (scachan_is_pad) {
             hf->h_amp->Fill(wamp);
          }
-         
-         //int wpos = find_pulse(c->adc_samples, nbins, bmean, -1.0, wamp/2.0);
-         double wpos = find_pulse_time(c->adc_samples, nbins, bmean, -1.0, wamp/2.0);
-         
-         double wpos_offset_ns = 2350.0;
-         
-         double wpos_ns = wpos*16.0 - wpos_offset_ns + 1000.0;
 
+         double cfd_thr_pct = fCfmCuts->GetDouble("pad_cfd_thr_pct", 0.5);
+         double cfd_thr = cfd_thr_pct*wamp;
          
-         if (runinfo->fRunNo >= 2166) {
+         //int wpos = find_pulse(c->adc_samples, nbins, bmean, -1.0, cfd_thr);
+         double wpos = find_pulse_time(c->adc_samples, nbins, bmean, -1.0, cfd_thr);
+
+         double time_bin = 1000.0/62.5; // 62.5 MHz SCA sampling (write) clock
+         
+         double wpos_ns = (wpos - iwire_middle)*time_bin + 1000.0;
+
+         if (runinfo->fRunNo >= 900000) {
+            wpos_ns += 0.0;
+         } else if (runinfo->fRunNo >= 2166) {
             wpos_ns += 200.0 + 150;
          } else if (runinfo->fRunNo >= 2028) {
             wpos_ns += 200.0;
          }
+         
+         //printf("ZZZ wpos %f, middle %f, time bin %f, wpos_ns %f %f\n", wpos, iwire_middle, time_bin, wpos_ns, (wpos - iwire_middle)*time_bin + 1000.0);
          
          //double damp = bmean - dmin;
          //int dpos = find_pulse(c->adc_samples, idrift_start, idrift_end, bmean, -1.0, damp/2.0);
@@ -1875,7 +1903,7 @@ public:
          bool hit_amp = false;
          bool hit = false;
          
-         if (scachan_is_pad && (wpos_ns > 800.0) && (wpos_ns < 5600.0)) {
+         if (scachan_is_pad && (wpos_ns > wpos_min_ns) && (wpos_ns < wpos_max_ns)) {
             hit_time = true;
          }
          
@@ -1980,12 +2008,17 @@ public:
          }
          
          if (scachan_is_pad) {
-            hamp_pad->Fill(wamp);
-            hamp_pad_pedestal->Fill(wamp);
-            hamp_pad_above_pedestal->Fill(wamp);
+            hpad_ph->Fill(wamp);
+            hpad_ph_zoom_pedestal->Fill(wamp);
+            hpad_ph_above_pedestal->Fill(wamp);
+            hpad_time_ph->Fill(wpos, wamp);
             if (hit_amp) {
-               hled_pad_amp->Fill(wpos);
-               hled_pad_amp_ns->Fill(wpos_ns);
+               hpad_time_cut_ph->Fill(wpos);
+               hpad_time_cut_ph_ns->Fill(wpos_ns);
+            }
+
+            if (hit_time) {
+               hpad_ph_cut_time->Fill(wamp);
             }
          }
          
@@ -2018,18 +2051,6 @@ public:
             if (scachan_is_fpn) {
                hf->hbrms_fpn->Fill(brms);
             }
-            
-            h2led2amp->Fill(wpos, wamp);
-         }
-         
-         // plots for hits
-         
-         if (hit_amp) {
-            hled_all_hits->Fill(wpos);
-         }
-         
-         if (hit_time) {
-            hamp_all_hits->Fill(wamp);
          }
          
          // plots for the drift region
@@ -2050,8 +2071,8 @@ public:
          
          if (hit) {
             //hnhits->Fill(seqchan);
-            hled_hit->Fill(wpos);
-            hamp_hit->Fill(wamp);
+            hhit_time_ns->Fill(wpos_ns);
+            hhit_ph->Fill(wamp);
             
             if (fPulser) {
                h_pulser_led_hit->Fill(wpos);
