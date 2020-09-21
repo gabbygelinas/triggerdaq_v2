@@ -9,6 +9,21 @@
 
 #include <string>
 #include <vector>
+#include <map>
+
+class NcfmParser
+{
+ public:
+   std::map<std::string,std::string> fMap;
+
+ public:
+   NcfmParser(const std::vector<std::string>& file);
+
+ public:
+   int GetInt(const char* varname, int defaultValue = 0);
+   double GetDouble(const char* varname, double defaultValue = 0);
+   std::string GetString(const char* varname, const char* defaultValue = NULL);
+};
 
 class NcfmData;
 
@@ -27,6 +42,7 @@ public:
    int GetRev(const char* system, const char* subsystem, int runno);
    std::string GetFilename(const char* system, const char* subsystem, int runno);
    std::vector<std::string> ReadFile(const char* system, const char* subsystem, int runno);
+   NcfmParser* ParseFile(const char* system, const char* subsystem, int runno);
 
 public:
    std::string MakeFilename(const char* system, const char* subsystem, int rev) const;

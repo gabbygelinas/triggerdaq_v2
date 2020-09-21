@@ -71,7 +71,7 @@ NcfmData* Ncfm::LoadIndexFile(const char* system, const char* subsystem) const
       c->fIndex.push_back(ind);
     }
 
-   printf("CFM: Loaded %d entries from \'%s\'\n", (int)c->fIndex.size(), f.c_str());
+   fprintf(stderr, "CFM: Loaded %d entries from \'%s\'\n", (int)c->fIndex.size(), f.c_str());
 
    return c;
 }
@@ -99,7 +99,7 @@ NcfmData* Ncfm::GetIndex(const char* system, const char* subsystem)
    if (c == NULL)
       return NULL;
 
-   c->Print();
+   //c->Print();
 
    fData.push_back(c);
 
@@ -182,6 +182,8 @@ std::vector<std::string> Ncfm::ReadFile(const char* system, const char* subsyste
 
 std::vector<std::string> Ncfm::ReadFile(const char* filename) const
 {
+   fprintf(stderr, "CFM: Reading file \'%s\'\n", filename);
+
    std::vector<std::string> v;
   
    FILE* fp = fopen(filename, "r");
@@ -234,6 +236,121 @@ std::vector<std::string> Ncfm::ReadFile(const char* filename) const
    fclose(fp);
 
    return v;
+}
+
+NcfmParser::NcfmParser(const std::vector<std::string>& file)
+{
+   for (unsigned i=0; i<file.size(); i++) {
+      //printf("file[%d] [%s]\n", i, file[i].c_str());
+      std::string varname;
+      unsigned j=0;
+      // skip empty line
+      if (file[i].length() < 1) // empty line
+         continue;
+      // skip comments
+      if (file[i][0] == '#') // # comment line
+         continue;
+      if (file[i][0] == '/') // // comment line
+         continue;
+
+      // skip spaces
+      for (; j<file[i].length(); j++) {
+         char c = file[i][j];
+         if (!isspace(c))
+            break;
+      }
+
+      // parse varname
+      for (; j<file[i].length(); j++) {
+         char c = file[i][j];
+         if (isspace(c))
+            break;
+         if (c == '=')
+            break;
+         if (c == ':')
+            break;
+         varname += c;
+      }
+
+      // skip spaces
+      for (; j<file[i].length(); j++) {
+         char c = file[i][j];
+         if (isspace(c))
+            continue;
+         break;
+      }
+
+      // skip '=' and ':'
+      if (1) {
+         char c = file[i][j];
+         if (c == '=')
+            j++;
+         if (c == ':')
+            j++;
+      }
+
+      // skip spaces
+      for (; j<file[i].length(); j++) {
+         char c = file[i][j];
+         if (isspace(c))
+            continue;
+         break;
+      }
+
+      std::string varvalue = file[i].substr(j);
+      
+      //printf("varname [%s] value [%s]\n", varname.c_str(), varvalue.c_str());
+
+      fMap[varname] = varvalue;
+   }
+}
+
+NcfmParser* Ncfm::ParseFile(const char* system, const char* subsystem, int runno)
+{
+   return new NcfmParser(ReadFile(system, subsystem, runno));
+}
+
+std::string NcfmParser::GetString(const char* varname, const char* default_value)
+{
+   std::string s = fMap[varname];
+
+   if (s.length() > 0) {
+      return s;
+   }
+
+   if (default_value) {
+      fprintf(stderr, "CFM: No value for \'%s\', returning default value \'%s\'\n", varname, default_value);
+      return default_value;
+   } else {
+      fprintf(stderr, "CFM: No value for \'%s\', returning an empty string\n", varname);
+      return "";
+   }
+}
+
+int NcfmParser::GetInt(const char* varname, int default_value)
+{
+   std::string s = fMap[varname];
+
+   if (s.length() > 0) {
+      return strtol(s.c_str(), NULL, 0);
+   }
+
+   fprintf(stderr, "CFM: No value for \'%s\', returning default value %d\n", varname, default_value);
+
+   return default_value;
+}
+
+double NcfmParser::GetDouble(const char* varname, double default_value)
+{
+   std::string s = fMap[varname];
+
+   if (s.length() > 0) {
+      return strtod(s.c_str(), NULL);
+   }
+
+   fprintf(stderr, "CFM: No value for \'%s\', returning default value %f\n", varname, default_value);
+
+   return default_value;
 }
 
 #if 0
