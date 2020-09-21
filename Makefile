@@ -67,9 +67,6 @@ $(EXAMPLE_ALL): %.exe:
 ncfm.exe: %.exe: %.o
 	$(CXX) -o $@ $< $(CXXFLAGS) $(LIBS) -lm -lz -lpthread
 
-reco_module.o: reco_module.cxx
-	$(CXX) -o $@ -I$(AGTPC_ANALYSIS) -I$(ANALYSIS_TPC)/include -I$(GARFIELDPP) -I${SOURCE_TPC}/include $(CXXFLAGS) -c $<
-
 %.o: %.cxx
 	$(CXX) -o $@ $(CXXFLAGS) -c $<
 
