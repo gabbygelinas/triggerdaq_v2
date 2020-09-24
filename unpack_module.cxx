@@ -18,6 +18,10 @@
 
 #include "ncfm.h"
 
+#ifdef _TIME_ANALYSIS_
+#include "AnalysisTimer.h"
+#endif
+
 #define DELETE(x) if (x) { delete (x); (x) = NULL; }
 
 #define MEMZERO(p) memset((p), 0, sizeof(p))
@@ -307,6 +311,10 @@ public:
       if (event->event_id != 1)
          return flow;
 
+#ifdef _TIME_ANALYSIS_ 
+      START_TIMER 
+#endif    
+
       bool short_tpc = (runinfo->fRunNo < 1450);
 
       if (0) {
@@ -507,6 +515,12 @@ public:
             printf("\n");
          }
 
+#ifdef _TIME_ANALYSIS_ 
+         if (TimeModules) {
+            flow = new AgAnalysisReportFlow(flow, "unpack_module(AgAsm)", timer_start);
+         }
+#endif 
+
          return new AgEventFlow(flow, e);
       }
 
@@ -533,13 +547,13 @@ public:
          }
       }
 
-      if (1) {
+      if (0) {
          TMBank* pwb_bank = event->FindBank("PB05");
 
          if (pwb_bank) {
             const char* p8 = event->GetBankData(pwb_bank);
             const uint32_t *p32 = (const uint32_t*)p8;
-            const int n32 = pwb_bank->data_size/4;
+            //const int n32 = pwb_bank->data_size/4;
 
             if (0) {
                unsigned nprint = pwb_bank->data_size/4;
@@ -748,6 +762,12 @@ public:
             runinfo->AddToFlowQueue(new AgEventFlow(NULL, e));
          }
       }
+
+#ifdef _TIME_ANALYSIS_ 
+      if (TimeModules) {
+         flow = new AgAnalysisReportFlow(flow, "unpack_module", timer_start);
+      }
+#endif 
 
       return flow;
    }
