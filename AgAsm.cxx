@@ -280,10 +280,12 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          e->feam = new FeamEvent();
       }
       fPwbAsm->BuildEvent(e->feam);
-      printf("PwbAsm built an event:\n");
-      e->feam->Print();
-      printf("\n");
-      //PrintFeamChannels(e->feam->hits);
+      if (0) {
+         printf("PwbAsm built an event:\n");
+         e->feam->Print();
+         printf("\n");
+         //PrintFeamChannels(e->feam->hits);
+      }
    }
 
    if (fFeamAsm && have_feam) {
