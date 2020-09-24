@@ -509,7 +509,7 @@ public:
          
          AgEvent* e = fAgAsm->UnpackEvent(event);
 
-         if (1) {
+         if (fFlags->fPrint) {
             printf("Unpacked AgEvent:   ");
             e->Print();
             printf("\n");
@@ -785,6 +785,14 @@ public:
    UnpackFlags fFlags;
 
 public:
+   void Usage()
+   {
+      printf("UnpackModuleFactory flags:\n");
+      printf("--print -- print something about every event\n");
+      printf("--noadc -- (obsolete) do not unpack ADC data\n");
+      printf("--nopwb -- (obsolete) do not unpack PWB data\n");
+   }
+
    void Init(const std::vector<std::string> &args)
    {
       printf("UnpackModuleFactory::Init!\n");
