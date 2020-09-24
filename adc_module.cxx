@@ -608,10 +608,10 @@ public:
 
       fH = new PlotHistograms();
 
-      TDirectory* fft_file = aw->mkdir("noise_fft");
-      TDirectory* fft_tmp = runinfo->fRoot->fgDir->mkdir("aw_noise_fft");
-
       if (fFlags->fFft) {
+         TDirectory* fft_file = aw->mkdir("noise_fft");
+         TDirectory* fft_tmp = runinfo->fRoot->fgDir->mkdir("aw_noise_fft");
+
          fAN16 = new AnalyzeNoise("adc16", fft_file, fft_tmp, 701);
          fPN16 = new PlotNoise("adc16");
 

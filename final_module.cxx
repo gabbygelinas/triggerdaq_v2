@@ -50,6 +50,7 @@ public:
    TH1D* h_time_between_events = NULL;
    TH1D* h_time_between_events_zoom_1sec = NULL;
    TH1D* h_time_between_events_zoom_01sec = NULL;
+   TH1D* h_time_between_events_zoom_001sec = NULL;
 
    TH1D* h_bsc_adc_num_hits;
 
@@ -71,11 +72,13 @@ public:
    TH1D* h_aw_amp;
    TH2D* h_aw_amp_time;
 
+#if 0
    TH1D* h_aw_time_preamp_even_pc;
    TH1D* h_aw_amp_preamp_even_pc;
 
    TH1D* h_aw_time_preamp_odd_pc;
    TH1D* h_aw_amp_preamp_odd_pc;
+#endif
 
    TH1D* h_aw_map;
    TH2D* h_aw_map_time;
@@ -267,6 +270,7 @@ public:
       h_time_between_events = new TH1D("h_time_between_events", "time between events; time, sec", 100, 0, 3.0);
       h_time_between_events_zoom_1sec = new TH1D("h_time_between_events_zoom_1sec", "time between events, zoom 1 sec; time, sec", 100, 0, 1.0);
       h_time_between_events_zoom_01sec = new TH1D("h_time_between_events_zoom_01sec", "time between events, zoom 0.1 sec; time, sec", 100, 0, 0.1);
+      h_time_between_events_zoom_001sec = new TH1D("h_time_between_events_zoom_001sec", "time between events, zoom 0.01 sec; time, sec", 500, 0, 0.01);
 
       h_bsc_adc_num_hits = new TH1D("h_bsc_adc_num_hits", "BSC ADC number of hits", 20, 0-0.5, 20-0.5);
       h_bsc_adc_time = new TH1D("h_bsc_adc_time", "BSC ADC hit time; time, ns", 100, 0, MAX_TIME);
@@ -286,11 +290,13 @@ public:
       h_aw_amp = new TH1D("h_aw_amp", "aw hit pulse height", 100, 0, MAX_AW_AMP);
       h_aw_amp_time = new TH2D("h_aw_amp_time", "aw p.h. vs time", 100, 0, MAX_TIME, 50, 0, MAX_AW_AMP);
 
+#if 0
       h_aw_time_preamp_even_pc = new TH1D("h_aw_time_preamp_even_pc", "aw hit time, even preamp, PC hits; time, ns", 100, 0, MAX_TIME);
       h_aw_amp_preamp_even_pc = new TH1D("h_aw_amp_preamp_even_pc", "aw hit pulse height, even preamp, PC hits", 100, 0, MAX_AW_AMP);
 
       h_aw_time_preamp_odd_pc = new TH1D("h_aw_time_preamp_odd_pc", "aw hit time, odd preamp, PC hits; time, ns", 100, 0, MAX_TIME);
       h_aw_amp_preamp_odd_pc = new TH1D("h_aw_amp_preamp_odd_pc", "aw hit pulse height, odd preamp, PC hits", 100, 0, MAX_AW_AMP);
+#endif
 
       h_aw_map = new TH1D("h_aw_map", "aw hit occupancy", NUM_AW, -0.5, NUM_AW-0.5);
       h_aw_map_early = new TH1D("h_aw_map_early", "aw hit occupancy, early hits", NUM_AW, -0.5, NUM_AW-0.5);
@@ -356,12 +362,14 @@ public:
       h_pad_time_per_column = new TH2D("h_pad_time_per_column", "pad hit time per column; tpc column; time, ns", 32, -0.5, 32-0.5, 100, 0, MAX_TIME);
       h_pad_time_per_row = new TH2D("h_pad_time_per_row", "pad hit time per row; tpc row; time, ns", 8*4*18, -0.5, 8*4*18-0.5, 100, 0, MAX_TIME);
 
-      for (int i=0; i<64; i++) {
-         char name[256];
-         char title[256];
-         sprintf(name, "h_pad_time_pwb_seqpos_%02d", i);
-         sprintf(title, "pad hit time pwb seqpos %d; time, ns", i);
-         h_pad_time_pos[i] = new TH1D(name, title, 100, 0, MAX_TIME);
+      for (int icol=0; icol<8; icol++) {
+         for (int iring=0; iring<8; iring++) {
+            char name[256];
+            char title[256];
+            sprintf(name, "h_pad_time_pwb_c%dr%d", icol, iring);
+            sprintf(title, "pad hit time pwb col %d ring %d; time, ns", icol, iring);
+            h_pad_time_pos[icol*8+iring] = new TH1D(name, title, 100, 0, MAX_TIME);
+         }
       }
 
       //int npads = MAX_FEAM*MAX_FEAM_PAD_COL*MAX_FEAM_PAD_ROWS;
@@ -483,6 +491,7 @@ public:
       h_time_between_events->Fill(age->timeIncr);
       h_time_between_events_zoom_1sec->Fill(age->timeIncr);
       h_time_between_events_zoom_01sec->Fill(age->timeIncr);
+      h_time_between_events_zoom_001sec->Fill(age->timeIncr);
 
       //uint32_t adc16_coinc_dff = 0;
       uint32_t aw16_prompt = 0;
@@ -652,6 +661,7 @@ public:
                if (amp < 10000) {
                   h_preamp_map_amp_prof_pc->Fill(preamp, amp);
                }
+#if 0
                if (preamp == 16+2 /*preamp%2 == 0*/) {
                   h_aw_time_preamp_even_pc->Fill(time);
                   h_aw_amp_preamp_even_pc->Fill(amp);
@@ -659,6 +669,7 @@ public:
                   h_aw_time_preamp_odd_pc->Fill(time);
                   h_aw_amp_preamp_odd_pc->Fill(amp);
                }
+#endif
             } else if (time < 5000) {
                aw_dc = true;
                h_aw_map_dc->Fill(wire);

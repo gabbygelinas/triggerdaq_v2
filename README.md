@@ -40,7 +40,14 @@ run903333.root - output histograms
 
 ./agana.exe ... -- --wfexport
 
-view the ADC waveforms under manalyzer/adc_waveforms
-view the PWB waveforms under manalyzer/pwb_waveforms
+- view the ADC waveforms under manalyzer/adc_waveforms
+- view the PWB waveforms under manalyzer/pwb_waveforms
+
+## Diagnostics of bad PWB waveform
+
+Bad PWB waveforms are reported with prefix XXX, they can
+be saved into the output ROOT file:
+
+./agana.exe ... -- --pwb-wf-save-bad | grep ^XXX
 
 # End

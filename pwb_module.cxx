@@ -278,107 +278,6 @@ static double find_pulse_time(const std::vector<int>& adc, int nbins, double bas
    return 0;
 }
 
-class ChanHistograms
-{
-public:
-   std::string fNameBase;
-   std::string fTitleBase;
-   int fNbins = 0;
-   TDirectory* fDirBad = NULL;
-
-   TH1D* hbmean = NULL;
-   TH1D* hbrms  = NULL;
-
-   TH1D* hwaveform_first = NULL;
-   TH1D* hwaveform_bad   = NULL;
-   TH1D* hwaveform_max   = NULL;
-   TH1D* hwaveform_max_drift = NULL;
-   TH1D* hwaveform_avg   = NULL;
-   TH1D* hwaveform_avg_drift = NULL;
-
-   int nwf = 0;
-   int nwf_drift = 0;
-
-   double fMaxWamp = 0;
-   double fMaxWampDrift = 0;
-
-
-public:
-   ChanHistograms(const char* xname, const char* xtitle, TDirectory* dir, int nbins) // ctor
-   {
-      TDirectory* dir_first = dir->GetDirectory("pchan_waveform_first");
-      if(!dir_first) dir_first = dir->mkdir("pchan_waveform_first");
-      TDirectory* dir_bad = dir->GetDirectory("pchan_waveform_bad");
-      if(!dir_bad) dir_bad = dir->mkdir("pchan_waveform_bad");
-      TDirectory* dir_max = dir->GetDirectory("pchan_waveform_max");
-      if(!dir_max) dir_max = dir->mkdir("pchan_waveform_max");
-      TDirectory* dir_max_drift = dir->GetDirectory("pchan_waveform_max_drift");
-      if(!dir_max_drift) dir_max_drift = dir->mkdir("pchan_waveform_max_drift");
-      TDirectory* dir_avg = dir->GetDirectory("pchan_waveform_avg");
-      if(!dir_avg) dir_avg = dir->mkdir("pchan_waveform_avg");
-      TDirectory* dir_avg_drift = dir->GetDirectory("pchan_waveform_avg_drift");
-      if(!dir_avg_drift) dir_avg_drift = dir->mkdir("pchan_waveform_avg_drift");
-
-      fNameBase = xname;
-      fTitleBase = xtitle;
-      fNbins = nbins;
-      fDirBad = dir_bad;
-
-      char name[256];
-      char title[256];
-
-      sprintf(name, "hpwf_first_%s", xname);
-      sprintf(title, "%s first waveform", xtitle);
-
-      dir_first->cd();
-      hwaveform_first = new TH1D(name, title, nbins, -0.5, nbins-0.5);
-
-      sprintf(name, "hpwf_max_%s", xname);
-      sprintf(title, "%s biggest waveform", xtitle);
-      dir_max->cd();
-      hwaveform_max = new TH1D(name, title, nbins, -0.5, nbins-0.5);
-
-      sprintf(name, "hpwf_max_drift_%s", xname);
-      sprintf(title, "%s biggest waveform, drift region", xtitle);
-      dir_max_drift->cd();
-      hwaveform_max_drift = new TH1D(name, title, nbins, -0.5, nbins-0.5);
-
-      sprintf(name, "hpwf_avg_%s", xname);
-      sprintf(title, "%s average waveform", xtitle);
-      dir_avg->cd();
-      hwaveform_avg = new TH1D(name, title, nbins, -0.5, nbins-0.5);
-
-      sprintf(name, "hpwf_avg_drift_%s", xname);
-      sprintf(title, "%s average waveform, drift region", xtitle);
-      dir_avg_drift->cd();
-      hwaveform_avg_drift = new TH1D(name, title, nbins, -0.5, nbins-0.5);
-   }
-
-   ~ChanHistograms() // dtor
-   {
-
-   }
-
-   bool SaveBad(int nbins, const std::vector<int> &adc)
-   {
-      if (hwaveform_bad == NULL) {
-         char name[256];
-         char title[256];
-         sprintf(name, "hpwf_bad_%s", fNameBase.c_str());
-         sprintf(title, "%s bad waveform", fTitleBase.c_str());
-         fDirBad->cd();
-         hwaveform_bad = new TH1D(name, title, nbins, -0.5, nbins-0.5);
-
-         for (int i=0; i<nbins; i++)
-            hwaveform_bad->SetBinContent(i+1, adc[i]);
-
-         return true;
-      }
-
-      return false;
-   }
-};
-
 TH1D* WfToTH1D(const char* name, const char* title, const std::vector<int> &adc)
 {
    size_t nbins = adc.size();
@@ -397,6 +296,7 @@ public:
    //TCanvas* fPlotPadCanvas = NULL;
    bool fWfSuppress = false;
    int  fWfThreshold = 0;
+   bool fWfSaveBad = false;
 
 public:
    PwbFlags() // ctor
@@ -561,11 +461,11 @@ public:
 
    TDirectory* hdir_summary = NULL;
    TDirectory* hdir_wfsuppress = NULL;
+   TDirectory* hdir_waveforms  = NULL;
    TDirectory* hdir_pwb  = NULL;
    TDirectory* hdir_pads = NULL;
    TDirectory* hdir_pwb_hit_map_pads = NULL;
    std::vector<PwbHistograms*> fHF;
-   std::vector<ChanHistograms*> fHC;
    std::vector<TH1D*> fHPwbHitMapPads;
 
    int fCountTestScaEvents = 0;
@@ -599,9 +499,6 @@ public:
          printf("PwbModule::dtor!\n");
       for (unsigned i=0; i<fHF.size(); i++) {
          DELETE(fHF[i]);
-      }
-      for (unsigned i=0; i<fHC.size(); i++) {
-         DELETE(fHC[i]);
       }
 
       //for (unsigned i=0; i<h_all_fpn_mean_per_col.size(); i++) {
@@ -648,6 +545,7 @@ public:
 
       hdir_summary = hdir_pads->mkdir("summary");
       hdir_wfsuppress = hdir_pads->mkdir("wfsuppress");
+      hdir_waveforms  = hdir_pads->mkdir("waveforms");
       hdir_pwb = hdir_pads->mkdir("pwb");
       hdir_pwb_hit_map_pads = hdir_pads->mkdir("pwb_hit_map_pads");
 
@@ -847,12 +745,6 @@ public:
          printf("PwbModule::EndRun, run %d\n", runinfo->fRunNo);
       //time_t run_stop_time = runinfo->fOdb->odbReadUint32("/Runinfo/Stop time binary", 0, 0);
       //printf("ODB Run stop time: %d: %s", (int)run_stop_time, ctime(&run_stop_time));
-      for(auto *hc: fHC){
-         if(hc){
-            if(hc->nwf) hc->hwaveform_avg->Scale(1./double(hc->nwf));
-            if(hc->nwf_drift) hc->hwaveform_avg_drift->Scale(1./double(hc->nwf_drift));
-         }
-      }
 
       printf("PwbModule::EndRun: test for bad SCA: total events %d, bad events %d, bad sca %d, bad fpn %d, good fpn %d, bad pad %d\n", fCountTestScaEvents, fCountBadScaEvents, fCountBadSca, fCountBadFpn, fCountGoodFpn, fCountBadPad);
 
@@ -1275,6 +1167,8 @@ public:
          if (!c)
             continue;
 
+         bool bad_wf = false;
+
          int imodule    = c->imodule;
          int pwb_column = c->pwb_column;
          int pwb_ring   = c->pwb_ring;
@@ -1343,17 +1237,6 @@ public:
             sprintf(xtitle, "pwb%02d, sca %d, readout chan %d", imodule, isca, ichan);
          }
          
-         // create per-channel data
-         
-         //if (seqchan >= fHC.size()) {
-         //   for (unsigned i=fHC.size(); i<=seqchan; i++)
-         //      fHC.push_back(NULL);
-         //}
-         
-         //if (fHC[seqchan] == NULL) {
-         //   fHC[seqchan] = new ChanHistograms(xname, xtitle, hdir_pads, nbins);
-         //}
-         
          // check for spikes
          
          bool spike = false;
@@ -1382,34 +1265,6 @@ public:
          if (spike_max > 500 && spike_num > 10) {
             spike = true;
          }
-
-#if 0         
-         if (spike) {
-            spike = true;
-            if (fHC[seqchan]->SaveBad(nbins, c->adc_samples)) {
-               if (verbose)
-                  printf("BBB pwb%02d, seqsca %d, spike %f %d\n", imodule, seqsca, spike_max, spike_num);
-               
-               for (int i=1; i<nbins-1; i++) {
-                  double a0 = c->adc_samples[i-1];
-                  double a1 = c->adc_samples[i];
-                  double a2 = c->adc_samples[i+1];
-                  if (a0 <= a1 && a1 <= a2)
-                     continue;
-                  if (a0 >= a1 && a1 >= a2)
-                     continue;
-                  double aa = (a0+a2)/2.0;
-                  double da = fabs(a1 - aa);
-                  if (da > spike_max)
-                     spike_max = da;
-                  if (da > 300) {
-                     if (verbose)
-                        printf("bin %d, %.0f %.0f %.0f, aa %.0f, da %.0f\n", i, a0, a1, a2, aa, da);
-                  }
-               }
-            }
-         }
-#endif
 
          if (fEnableTestMode) {
             bool ok = true;
@@ -1806,6 +1661,7 @@ public:
             } else {
                printf("XXX bad fpn, pwb%02d, sca %d, readout %d, scachan %d, col %d, row %d, bmin %f, bmax %f, in hex 0x%04x, brms %f\n", imodule, isca, ichan, scachan, col, row, bmin, bmax, (uint16_t)bmin, brms);
                fpn_is_ok = false;
+               bad_wf = true;
             }
          }
 
@@ -1837,6 +1693,7 @@ public:
                if (first_zero_range) {
                   first_zero_range = false;
                   printf("XXX zero baseline range, pwb%02d, sca %d, readout %d, scachan %d, col %d, row %d, bmin %f, bmax %f, in hex 0x%04x\n", imodule, isca, ichan, scachan, col, row, bmin, bmax, (uint16_t)bmin);
+                  bad_wf = true;
                }
             }
          }
@@ -1953,6 +1810,36 @@ public:
          if (doPrint) {
             printf("chan %3d: baseline %8.1f, rms %8.1f, min %8.1f, max %8.1f, amp %8.1f, wpos %5.1f, hit %d\n", ichan, bmean, brms, wmin, wmax, wamp, wpos, hit);
             //exit(1);
+         }
+
+         // save bad waveform
+
+         if (fFlags->fWfSaveBad && bad_wf) {
+            static int count = 0;
+            
+            if (count < 100) {
+               char name[256];
+               char title[256];
+               
+               hdir_waveforms->cd();
+               
+               if (scachan_is_reset) {
+                  sprintf(name, "pwb_%02d_sca_%d_chan_%02d_bad_reset_wf_%d", imodule, isca, ichan, count);
+                  sprintf(title, "bad reset waveform pwb %02d, sca %d, chan %2d, event %d", imodule, isca, ichan, ef->fEvent->counter);
+               } else if (scachan_is_fpn) {
+                  sprintf(name, "pwb_%02d_sca_%d_chan_%02d_bad_fpn_wf_%d", imodule, isca, ichan, count);
+                  sprintf(title, "bad FPN waveform pwb %02d, sca %d, chan %2d, event %d", imodule, isca, ichan, ef->fEvent->counter);
+               } else {
+                  sprintf(name, "pwb_%02d_sca_%d_chan_%02d_bad_pad_wf_%d", imodule, isca, ichan, count);
+                  sprintf(title, "bad pad waveform pwb %02d, sca %d, chan %2d, event %d", imodule, isca, ichan, ef->fEvent->counter);
+               }
+
+               printf("XXX saving waveform %s %s\n", name, title);
+
+               WfToTH1D(name, title, c->adc_samples);
+               
+               count++;
+            }
          }
          
          // save first waveform
@@ -2165,6 +2052,7 @@ public:
       //printf("--plot1 <fPlotPad>\n");
       printf("--pwb-wf-suppress -- enable waveform suppression code\n");
       printf("--pwb-wf-threshold -- set the waveform suppression threshold\n");
+      printf("--pwb-wf-save-bad  -- write bad waveforms to the root output file\n");
    }
 
    void Init(const std::vector<std::string> &args)
@@ -2178,6 +2066,8 @@ public:
             fFlags.fWfSuppress = true;
          if (args[i] == "--pwb-wf-threshold")
             fFlags.fWfThreshold = atoi(args[i+1].c_str());
+         if (args[i] == "--pwb-wf-save-bad")
+            fFlags.fWfSaveBad = true;
       }
    }
 
