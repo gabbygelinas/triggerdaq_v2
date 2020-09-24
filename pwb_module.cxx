@@ -174,24 +174,24 @@ public:
       sprintf(title, "%s number of hit channels; number of hits", xtitle);
       hnhitchan = new TH1D(name, title, 100, 0, 100);
 
-      sprintf(name,  "%s_nhitchan_map", xname);
+      sprintf(name,  "%s_nhitchan_map_seqsca", xname);
       sprintf(title, "%s hit channels vs seqsca; SCA*80 + readout index; number of hits", xtitle);
       h_nhitchan_seqsca = new TH1D(name, title, NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
 
-      sprintf(name,  "%s_hit_map", xname);
-      sprintf(title, "%s hits vs seqsca; SCA*80 + readout index", xtitle);
+      sprintf(name,  "%s_hits_map_seqsca", xname);
+      sprintf(title, "%s hits vs seqsca; SCA*80 + readout index; number of hits", xtitle);
       h_nhits_seqsca = new TH1D(name, title, NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
 
       sprintf(name,  "%s_spike_seqsca", xname);
-      sprintf(title, "%s spikes vs seqsca; SCA*80 + readout index", xtitle);
+      sprintf(title, "%s spikes vs seqsca; SCA*80 + readout index; number of hits", xtitle);
       h_spike_seqsca = new TH1D(name, title, NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
 
-      sprintf(name,  "%s_hit_map_pads", xname);
-      sprintf(title, "%s hits vs seqpad; col*4*18+row", xtitle);
+      sprintf(name,  "%s_hit_map_seqpad", xname);
+      sprintf(title, "%s hits vs seqpad; col*4*18+row; number of hits", xtitle);
       h_nhits_seqpad  = new TH1D(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL, -0.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5);
 
-      sprintf(name,  "%s_hit_map_pads_nospike", xname);
-      sprintf(title, "%s hits with spikes removed vs seqpad; col*4*18+row", xtitle);
+      sprintf(name,  "%s_hit_map_seqpad_nospike", xname);
+      sprintf(title, "%s hits with spikes removed vs seqpad; col*4*18+row; number of hits", xtitle);
       hnhits_pad_nospike = new TH1D(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL, -0.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5);
 
       //sprintf(name,  "%s_hit_map_pads_drift", xname);
@@ -1540,7 +1540,7 @@ public:
 
             int range = ampmax - ampmin;
 
-            printf("pwb %02d, sca %d, chan %2d: wfsuppress: %s, keep: %d, xamp %d\n", imodule, isca, ichan, s->PrintToString().c_str(), keep, (int)xamp);
+            //printf("pwb %02d, sca %d, chan %2d: wfsuppress: %s, keep: %d, xamp %d\n", imodule, isca, ichan, s->PrintToString().c_str(), keep, (int)xamp);
 
             if (!keep) {
                printf("TTTT: ");
