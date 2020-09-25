@@ -117,18 +117,8 @@ struct PlotHistograms
    TH1D* fHawHitAmp;
    TH1D* fHawHitMap;
 
-   TH1D* fHphCal = NULL;
-   TH1D* fHleCal = NULL;
-   TH1D* fHwiCal = NULL;
-   TH1D* fHoccCal = NULL;
-   TH1D* fHoccCal1000 = NULL;
-   TProfile* fHphVsChanCal = NULL;
-   TProfile* fHleVsChanCal = NULL;
-   TProfile* fHwiVsChanCal = NULL;
-
-   PlotHistograms() // ctor
+   PlotHistograms(TDirectory* dir) // ctor
    {
-      TDirectory *dir = gDirectory->mkdir("summary");
       dir->cd();
 
       fHbaselineMean = new TH1D("adc_baseline_mean", "waveform baseline mean, all wires; ADC counts", 100, -4000, 4000);
@@ -186,17 +176,6 @@ struct PlotHistograms
       fHawHitTime = new TH1D("aw_hit_time", "hit time, after ADC and time cut; time, ns", 200, 0, MAX_TIME);
       fHawHitAmp = new TH1D("aw_hit_amp", "hit amplitude, after ADC and time cut; pulse height, ADC c.u.", 200, 0, MAX_AW_AMP);
       fHawHitMap = new TH1D("aw_hit_map", "hit map, after ADC and time cut; TPC wire", NUM_AW, -0.5, NUM_AW-0.5);
-
-      fHphCal = new TH1D("adccal_pulse_height", "pulse_height_cal; ADC counts", 100, 0, MAX_AW_AMP);
-      fHleCal = new TH1D("adccal_pulse_time", "pulse_time_cal; ADC time bins", 100, 300, 400);
-      fHwiCal = new TH1D("adccal_pulse_width", "pulse_width_cal; ADC time bins", 100, 0, 100);
-      fHoccCal = new TH1D("adccal_channel_occupancy", "channel_occupancy_cal; TPC wire number", NUM_AW, -0.5, NUM_AW-0.5);
-      fHoccCal->SetMinimum(0);
-      fHoccCal1000 = new TH1D("adccal_channel_occupancy_1000", "AW occupancy with ph > 1000; TPC wire number", NUM_AW, -0.5, NUM_AW-0.5);
-      fHoccCal1000->SetMinimum(0);
-      fHphVsChanCal = new TProfile("adccal_pulse_height_vs_wire", "pulse_height_vs_chan_cal; TPC wire number; ADC counts", NUM_AW, -0.5, NUM_AW-0.5);
-      fHleVsChanCal = new TProfile("adccal_pulse_time_vs_wire", "pulse_time_vs_chan_cal; TPC wire number; ADC time bins", NUM_AW, -0.5, NUM_AW-0.5);
-      fHwiVsChanCal = new TProfile("adccal_pulse_width_vs_wire", "pulse_width_vs_chan_cal; TPC wire number; ADC time bins", NUM_AW, -0.5, NUM_AW-0.5);
    }
 };
 
@@ -512,10 +491,11 @@ struct PlotAwWaveforms
    }
 };
 
-class A16Flags
+class AdcFlags
 {
 public:
    bool fPrint = false;
+   bool fPulser = false;
    bool fFft = false;
    bool fFilterWaveform = false;
    bool fInvertWaveform = false;
@@ -576,11 +556,17 @@ static double find_pulse_width(int iwire, const int* adc, int nbins, double base
 class AdcModule: public TARunObject
 {
 public:
-   A16Flags* fFlags = NULL;
+   AdcFlags* fFlags = NULL;
    int fCounter = 0;
    bool fTrace = false;
    Ncfm* fCfm = NULL;
    NcfmParser* fCfmCuts = NULL;
+
+   int fPulserStart = 0;
+   int fPulserEnd   = 0;
+
+   TDirectory* fDirSummary = NULL;
+   TDirectory* fDirPulser = NULL;
 
    PlotHistograms* fH = NULL;
    PlotNoise* fPN16 = NULL;
@@ -593,8 +579,22 @@ public:
 
    PlotAwWaveforms* fPlotAwWaveforms = NULL;
 
+   // pulser analysis plots
+
+   TH1D* fHpulserPh = NULL;
+   TH1D* fHpulserLe = NULL;
+   TH1D* fHpulserWi = NULL;
+   TH1D* fHpulserAwMap = NULL;
+   TH1D* fHpulserAwPh  = NULL;
+   TH1D* fHpulserAwLe  = NULL;
+   TH1D* fHpulserAwWi  = NULL;
+   TProfile* fHpulserAwPhMap = NULL;
+   TProfile* fHpulserAwLeMap = NULL;
+   TProfile* fHpulserAwWiMap = NULL;
+   TH2D* fHpulserAwWiPh = NULL;
+
 public:
-   AdcModule(TARunInfo* runinfo, A16Flags* f)
+   AdcModule(TARunInfo* runinfo, AdcFlags* f)
       : TARunObject(runinfo)
    {
       if (fTrace)
@@ -603,10 +603,16 @@ public:
       fCfm = new Ncfm("agcfmdb");
 
       runinfo->fRoot->fOutputFile->cd();
-      TDirectory* aw = gDirectory->mkdir("aw");
+      TDirectory* aw = gDirectory->mkdir("adc");
       aw->cd(); // select correct ROOT directory
 
-      fH = new PlotHistograms();
+      fDirSummary = aw->mkdir("summary");
+
+      if (fFlags->fPulser) {
+         fDirPulser = aw->mkdir("pulser");
+      }
+
+      fH = new PlotHistograms(fDirSummary);
 
       if (fFlags->fFft) {
          TDirectory* fft_file = aw->mkdir("noise_fft");
@@ -659,6 +665,9 @@ public:
 
       fCfmCuts = fCfm->ParseFile("adc", "cuts", runinfo->fRunNo);
 
+      fPulserStart = fCfmCuts->GetInt("adc_bin_pulser_start", 330); // 160;
+      fPulserEnd   = fCfmCuts->GetInt("adc_bin_pulser_end", 350); // 200;
+
       fCounter = 0;
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
 
@@ -669,6 +678,32 @@ public:
       for (unsigned i=0; i<fFlags->fPlotAdc32.size(); i++) {
          fPlotA16.push_back(new PlotA16(NULL, fFlags->fPlotAdc32[i], 1));
          fPlotA16.push_back(new PlotA16(NULL, fFlags->fPlotAdc32[i], 2));
+      }
+
+      if (fFlags->fPulser) {
+         fDirPulser->cd();
+
+         double wi_start = 0;
+         double wi_end =  30;
+         double wi_bins = 100.0;
+
+         fHpulserPh = new TH1D("adc_pulser_ph",    "ADC pulser pulse height; ADC counts", 100, 0, MAX_AW_AMP);
+         fHpulserLe = new TH1D("adc_pulser_time",  "ADC pulser pulse time; ADC time bins", 100.0, fPulserStart, fPulserEnd);
+         fHpulserWi = new TH1D("adc_pulser_width", "ADC pulser pulse width; ADC time bins", wi_bins, wi_start, wi_end);
+
+
+         fHpulserAwMap = new TH1D("adc_pulser_aw_map", "AW pulser map; AW wire number", NUM_AW, -0.5, NUM_AW-0.5);
+         fHpulserAwMap->SetMinimum(0);
+         fHpulserAwPh = new TH1D("adc_pulser_aw_ph",    "AW pulser pulse height; ADC counts", 100, 0, MAX_AW_AMP);
+         fHpulserAwLe = new TH1D("adc_pulser_aw_time",  "AW pulser pulse time; ADC time bins", 100.0, fPulserStart, fPulserEnd);
+         fHpulserAwWi = new TH1D("adc_pulser_aw_width", "AW pulser pulse width; ADC time bins", wi_bins, wi_start, wi_end);
+
+         fHpulserAwPhMap = new TProfile("adc_pulse_aw_ph_map", "AW pulser pulse height vs wire number; AW wire number; ADC counts", NUM_AW, -0.5, NUM_AW-0.5);
+         fHpulserAwLeMap = new TProfile("adc_pulse_aw_time_map", "AW pulser pulse time vs wire number; AW wire number; ADC time bins", NUM_AW, -0.5, NUM_AW-0.5, fPulserStart, fPulserEnd);
+         fHpulserAwLeMap->SetMinimum(fPulserStart);
+         fHpulserAwLeMap->SetMaximum(fPulserEnd);
+         fHpulserAwWiMap = new TProfile("adc_pulse_aw_width_map", "AW pulser pulse width vs wire number; AW wire number; ADC time bins", NUM_AW, -0.5, NUM_AW-0.5, wi_start, wi_end);
+         fHpulserAwWiPh  = new TH2D("adc_pulse_aw_width_vs_ph", "AW pulser pulse width vs pulse height; pulse height, ADC counts; pulse width, ADC time bins", 100, 0, MAX_AW_AMP, wi_bins, wi_start, wi_end);
       }
    }
 
@@ -786,12 +821,14 @@ public:
              r);
 #endif
 
-      if (i < 0)
-         return false;
+      //if (i < 0)
+      //   return false;
 
       int iwire = i;
 
-      bool is_aw = true;
+      bool is_aw = (iwire >= 0);
+      bool is_bsc = true;
+
       bool is_adc16 = (hit->adc_chan < 16);
       bool is_adc32 = (hit->adc_chan >= 16);
 
@@ -829,8 +866,6 @@ public:
       
       int is_start = fCfmCuts->GetInt("adc_bin_baseline_start", 0);
       int is_baseline = fCfmCuts->GetInt("adc_bin_baseline_end", 100);
-      int calStart = fCfmCuts->GetInt("adc_bin_pulser_start", 330); // 160;
-      int calEnd = fCfmCuts->GetInt("adc_bin_pulser_end", 350); // 200;
 
       double bmean, brms, bmin, bmax;
 
@@ -1092,17 +1127,26 @@ public:
                }
             }
             
-            if (le > calStart && le < calEnd) {
-               fH->fHleCal->Fill(le);
-               fH->fHwiCal->Fill(wi);
-               fH->fHphCal->Fill(ph);
-               if (is_aw) {
-                  fH->fHoccCal->Fill(iwire);
-                  if (ph > 1000)
-                     fH->fHoccCal1000->Fill(iwire);
-                  fH->fHleVsChanCal->Fill(iwire, le);
-                  fH->fHwiVsChanCal->Fill(iwire, wi);
-                  fH->fHphVsChanCal->Fill(iwire, ph);
+            if (fFlags->fPulser) {
+               if (le > fPulserStart && le < fPulserEnd) {
+                  fHpulserPh->Fill(ph);
+                  fHpulserLe->Fill(le);
+                  fHpulserWi->Fill(wi);
+
+                  if (is_aw) {
+                     fHpulserAwMap->Fill(iwire);
+                     fHpulserAwPh->Fill(ph);
+                     fHpulserAwLe->Fill(le);
+                     fHpulserAwWi->Fill(wi);
+                     fHpulserAwPhMap->Fill(iwire, ph);
+                     fHpulserAwLeMap->Fill(iwire, le);
+                     fHpulserAwWiMap->Fill(iwire, wi);
+                     fHpulserAwWiPh->Fill(ph, wi);
+                  }
+
+                  if (is_bsc) {
+
+                  }
                }
             }
             
@@ -1213,12 +1257,13 @@ public:
 class AdcModuleFactory: public TAFactory
 {
 public:
-   A16Flags fFlags;
+   AdcFlags fFlags;
    
 public:
    void Usage()
    {
       printf("AdcModuleFactory flags:\n");
+      printf("--pulser # enable field-wire pulser analysis\n");
       printf("--adcprint\n");
       printf("--adcfft\n");
       printf("--adc16 <imodule> # plot adc16 waveforms\n");
@@ -1236,6 +1281,8 @@ public:
       for (unsigned i=0; i<args.size(); i++) {
          if (args[i] == "--adcprint")
             fFlags.fPrint = true;
+         if (args[i] == "--pulser")
+            fFlags.fPulser = true;
          if (args[i] == "--adcfft")
             fFlags.fFft = true;
          if (args[i] == "--adc16") {
