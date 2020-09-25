@@ -547,7 +547,7 @@ public:
       hdir_wfsuppress = hdir_pads->mkdir("wfsuppress");
       hdir_waveforms  = hdir_pads->mkdir("waveforms");
       hdir_pwb = hdir_pads->mkdir("pwb");
-      hdir_pwb_hit_map_pads = hdir_pads->mkdir("pwb_hit_map_pads");
+      hdir_pwb_hit_map_pads = hdir_pads->mkdir("pwb_hit_map_seqpad");
 
       hdir_summary->cd();
 
@@ -638,7 +638,7 @@ public:
             char title[100];
             sprintf(xname, "pwb%02d", i);
             sprintf(xtitle, "pwb%02d", i);
-            sprintf(name,  "%s_hit_map_pads", xname);
+            sprintf(name,  "%s_hit_map_seqpad", xname);
             sprintf(title, "%s hits vs seqpad; col*4*18+row", xtitle);
             TH1D* h = new TH1D(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL, -0.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5);
             h->SetMinimum(0);
@@ -732,7 +732,7 @@ public:
             sprintf(title, "pwb%02d adc_min for channel suppression; adc counts", i);
             int min = -2050;
             int max = 2050;
-            TH1D* h = new TH1D(name, title, max-min, min, max);
+            TH1D* h = new TH1D(name, title, (max-min)/10.0, min, max);
             fWfSuppressAdcMin.push_back(h);
          }
          hdir_summary->cd();
