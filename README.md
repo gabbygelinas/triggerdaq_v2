@@ -2,11 +2,16 @@
 
 # To build
 
-git clone git clone https://bitbucket.org/teamalphag/agana.git
+git clone https://bitbucket.org/teamalphag/agana.git
+
 cd agana
+
 git clone https://bitbucket.org/teamalphag/agcfmdb.git
+
 make
+
 ./agana.exe -h
+
 
 # To run online from midas
 
