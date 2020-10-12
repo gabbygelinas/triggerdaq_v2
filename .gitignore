@@ -1,2 +1,8 @@
 *.root
 *.pdf
+*.log
+*.exe
+*.o
+*~
+agcfmdb
+core*
