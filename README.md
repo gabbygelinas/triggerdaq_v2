@@ -55,7 +55,7 @@ be saved into the output ROOT file:
 
 ./agana.exe ... -- --pwb-wf-save-bad | grep ^XXX
 
-## PWB data suppression calibration
+## Calibration of PWB data suppression
 
 The pwb_module has an exact simulator of the PWB data suppression algorithm. It is used
 to calibrate the data suppression (measure the best threshold value) and
