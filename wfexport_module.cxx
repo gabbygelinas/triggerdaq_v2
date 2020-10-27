@@ -155,8 +155,8 @@ public:
          bool scachan_is_fpn = PwbPadMap::chan_is_fpn(scachan);
          bool scachan_is_reset = PwbPadMap::chan_is_reset(scachan);
 
-         char xdir[256];
-         char xhdr[256];
+         char xdir[128];
+         char xhdr[128];
          char xname[256];
          char xtitle[256];
 
@@ -247,8 +247,8 @@ public:
          int first_bin = c->first_bin;
          unsigned nbins = c->adc_samples.size();
 
-         char xdir[256];
-         char xhdr[256];
+         char xdir[128];
+         char xhdr[128];
          char xname[256];
          char xtitle[256];
 

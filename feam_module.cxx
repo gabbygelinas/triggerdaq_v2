@@ -92,8 +92,8 @@ public:
 
    void CreateHistograms(TDirectory* hdir, int imodule, int icolumn, int iring, int nbins, bool pulser)
    {
-      char xname[256];
-      char xtitle[256];
+      char xname[128];
+      char xtitle[128];
 
       sprintf(xname,  "pwb%02d_c%dr%d", imodule, icolumn, iring);
       sprintf(xtitle, "pwb%02d, col %d, ring %d", imodule, icolumn, iring);
