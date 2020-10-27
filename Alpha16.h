@@ -29,16 +29,22 @@ struct Alpha16Packet
    int moduleId;
    int channelType;
    int channelId;
-   int nsamples;
-   int checksum;
-   int length;
-   int xcrc16;
+   int nsamples = 0; // number of samples requested
+   int nsamples_supp = 0; // number of samples after suppression
+   //int checksum; // not implemented in fw
+   //int length; // obsolete
+   //int xcrc16; // not implemented in fw
+   uint16_t baseline = 0; // baseline computed by data suppression
+   int  keep_last = 0;    // last sample with keep_bit
+   bool keep_bit = false; // at least some samples have the keep_bit
+   bool supp_enabled;     // data suppression is enabled
 
    static int PacketType(const void*ptr, int bklen8);
    static int PacketVersion(const void*ptr, int bklen8);
-   static uint32_t PacketTimestamp(const void*ptr, int bklen8);
-   static int PacketChannel(const void*ptr, int bklen8);
-   static Alpha16Packet* Unpack(const void* bkptr, int bklen8);
+   //static uint32_t PacketTimestamp(const void*ptr, int bklen8);
+   //static int PacketChannel(const void*ptr, int bklen8);
+   static Alpha16Packet* UnpackVer1(const void* bkptr, int bklen8);
+   static Alpha16Packet* UnpackVer2(const void* bkptr, int bklen8);
    void Print() const;
 };
 
@@ -55,7 +61,7 @@ struct Alpha16Channel
    int first_bin = 0; /* usually 0 */
    std::vector<int> adc_samples;
 
-   void Print() const;
+   void Print(bool printSamples = false) const;
 };
 
 struct Alpha16MapEntry

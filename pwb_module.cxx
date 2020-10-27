@@ -104,8 +104,8 @@ public:
 
    void CreateHistograms(TDirectory* hdir, int imodule, int icolumn, int iring, bool pulser)
    {
-      char xname[256];
-      char xtitle[256];
+      char xname[128];
+      char xtitle[128];
 
       sprintf(xname,  "pwb%02d_c%dr%d", imodule, icolumn, iring);
       sprintf(xtitle, "pwb %02d, col %d, ring %d", imodule, icolumn, iring);
@@ -639,8 +639,8 @@ public:
       if (1) {
          hdir_pwb_hit_map_pads->cd();
          for (int i=0; i<=PWB_MODULE_LAST; i++) {
-            char xname[100];
-            char xtitle[100];
+            char xname[50];
+            char xtitle[50];
             char name[100];
             char title[100];
             sprintf(xname, "pwb%02d", i);
