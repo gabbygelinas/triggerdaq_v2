@@ -483,6 +483,9 @@ public:
 
    bool fTrace = false;
 
+   int fPulserStart = 0;
+   int fPulserEnd   = 0;
+
    PwbModule(TARunInfo* runinfo, PwbFlags* f)
       : TARunObject(runinfo)
    {
@@ -491,6 +494,25 @@ public:
 
       fFlags = f;
       fCfm = new Ncfm("agcfmdb");
+      fCfmCuts = fCfm->ParseFile("pwb", "cuts", runinfo->fRunNo);
+
+      fPulserStart = fCfmCuts->GetInt("sca_bin_pulser_start", 400);
+      fPulserEnd   = fCfmCuts->GetInt("sca_bin_pulser_end",   500);
+
+      runinfo->fRoot->fOutputFile->cd();
+      hdir_pads = gDirectory->mkdir("pads");
+      hdir_pads->cd(); // select correct ROOT directory
+
+      hdir_summary = hdir_pads->mkdir("summary");
+      hdir_wfsuppress = hdir_pads->mkdir("wfsuppress");
+      hdir_waveforms  = hdir_pads->mkdir("waveforms");
+      hdir_pwb = hdir_pads->mkdir("pwb");
+      hdir_pwb_hit_map_pads = hdir_pads->mkdir("pwb_hit_map_seqpad");
+
+      if (fPulser) {
+         hdir_summary->cd();
+         h_pulser_led_hit = new TH1D("pulser_led_hit", "pulser time, adc bins", fPulserEnd - fPulserStart, fPulserStart, fPulserEnd);
+      }
    }
 
    ~PwbModule()
@@ -526,7 +548,6 @@ public:
       //time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
       //printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
 
-      fCfmCuts = fCfm->ParseFile("pwb", "cuts", runinfo->fRunNo);
 
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
       runinfo->fOdb->RB("Equipment/Ctrl/Settings/PWB/enable_test_mode", &fEnableTestMode);
@@ -538,16 +559,6 @@ public:
    {
       if (hbmean_all) // already created
          return;
-
-      runinfo->fRoot->fOutputFile->cd();
-      hdir_pads = gDirectory->mkdir("pads");
-      hdir_pads->cd(); // select correct ROOT directory
-
-      hdir_summary = hdir_pads->mkdir("summary");
-      hdir_wfsuppress = hdir_pads->mkdir("wfsuppress");
-      hdir_waveforms  = hdir_pads->mkdir("waveforms");
-      hdir_pwb = hdir_pads->mkdir("pwb");
-      hdir_pwb_hit_map_pads = hdir_pads->mkdir("pwb_hit_map_seqpad");
 
       hdir_summary->cd();
 
@@ -622,10 +633,6 @@ public:
       hhit_ph      = new TH1D("hhit_ph",   "pad hit pulse height; adc counts", 100, 0, ADC_RANGE);
 
       hnhitchan = new TH1D("hnhitchan", "number of hit channels per event", 100, 0, 1000);
-
-      if (fPulser) {
-         h_pulser_led_hit = new TH1D("pulser_led_hit", "pulser time, adc bins", 30, 180-0.5, 210-0.5);
-      }
 
       //hpadmap = new TH2D("hpadmap", "map from TPC pad number (col*4*18+row) to SCA readout channel (sca*80+chan)", 4*4*18, -0.5, 4*4*18-0.5, NUM_SEQSCA, 0.5, NUM_SEQSCA+0.5);
 
@@ -1128,9 +1135,6 @@ public:
       int idrift_start  = fCfmCuts->GetInt("sca_bin_drift_start", iwire_end);
       int idrift_cut    = fCfmCuts->GetInt("sca_bin_drift_cut",   iwire_end);
       int idrift_end    = fCfmCuts->GetInt("sca_bin_drift_end", 410);
-
-      int ipulser_start = fCfmCuts->GetInt("sca_bin_pulser_start", 400);
-      int ipulser_end   = fCfmCuts->GetInt("sca_bin_pulser_end",   500);
 
       double wpos_min_ns = fCfmCuts->GetDouble("pad_hit_time_min_ns", 800.0);
       double wpos_max_ns = fCfmCuts->GetDouble("pad_hit_time_max_ns", 5600.0);
@@ -1765,7 +1769,7 @@ public:
          }
          
          if (fPulser) {
-            if ((wpos > ipulser_start) && (wpos < ipulser_end)) {
+            if ((wpos > fPulserStart) && (wpos < fPulserEnd)) {
                hit_time = true;
             }
          }
