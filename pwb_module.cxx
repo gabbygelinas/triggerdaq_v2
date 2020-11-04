@@ -56,8 +56,6 @@
 #define ADC_RMS_PAD_MIN 2.500
 #define ADC_RMS_PAD_MAX 25.0
 
-#define ADC_PULSER_TIME 450
-
 #define NUM_SEQSCA (3*80+79)
 
 #define NUM_TIME_BINS 512
@@ -230,10 +228,6 @@ public:
          sprintf(name,  "%s_pulser_hit_time_zoom", xname);
          sprintf(title, "%s pulser hit time zoom; hit amp, adc counts", xtitle);
          h_pulser_hit_time_zoom = new TH1D(name, title, 100, pulser_start, pulser_end);
-
-         //sprintf(name,  "%s_pulser_hit_time_seqsca4_zoom", xname);
-         //sprintf(title, "%s pulser hit time seqsca 4 zoom", xtitle);
-         //h_pulser_hit_time_seqsca4_zoom = new TH1D(name, title, 100, ADC_PULSER_TIME-10, ADC_PULSER_TIME+10);
 
          sprintf(name,  "%s_pulser_hit_amp_seqpad_prof", xname);
          sprintf(title, "%s pulser hit p.h. vs seqpad; seqpad = col*4*18+row; hit amp, adc counts", xtitle);
