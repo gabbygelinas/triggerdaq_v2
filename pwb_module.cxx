@@ -102,7 +102,7 @@ public:
    {
    };
 
-   void CreateHistograms(TDirectory* hdir, int imodule, int icolumn, int iring, bool pulser)
+   void CreateHistograms(TDirectory* hdir, int imodule, int icolumn, int iring, bool pulser, double pulser_start, double pulser_end)
    {
       char xname[128];
       char xtitle[128];
@@ -220,32 +220,36 @@ public:
 
       if (pulser) {
          sprintf(name,  "%s_pulser_hit_amp", xname);
-         sprintf(title, "%s pulser hit p.h.", xtitle);
+         sprintf(title, "%s pulser hit amp; hit amp, adc counts", xtitle);
          h_pulser_hit_amp = new TH1D(name, title, ADC_BINS_PULSER, 0, ADC_RANGE_PULSER);
 
          sprintf(name,  "%s_pulser_hit_time", xname);
-         sprintf(title, "%s pulser hit time", xtitle);
+         sprintf(title, "%s pulser hit time; sca time bins", xtitle);
          h_pulser_hit_time = new TH1D(name, title, NUM_TIME_BINS, 0, NUM_TIME_BINS);
 
          sprintf(name,  "%s_pulser_hit_time_zoom", xname);
-         sprintf(title, "%s pulser hit time zoom", xtitle);
-         h_pulser_hit_time_zoom = new TH1D(name, title, 100, ADC_PULSER_TIME-10, ADC_PULSER_TIME+10);
+         sprintf(title, "%s pulser hit time zoom; hit amp, adc counts", xtitle);
+         h_pulser_hit_time_zoom = new TH1D(name, title, 100, pulser_start, pulser_end);
 
          //sprintf(name,  "%s_pulser_hit_time_seqsca4_zoom", xname);
          //sprintf(title, "%s pulser hit time seqsca 4 zoom", xtitle);
          //h_pulser_hit_time_seqsca4_zoom = new TH1D(name, title, 100, ADC_PULSER_TIME-10, ADC_PULSER_TIME+10);
 
          sprintf(name,  "%s_pulser_hit_amp_seqpad_prof", xname);
-         sprintf(title, "%s pulser hit p.h. vs seqpad (col*4*18+row)", xtitle);
+         sprintf(title, "%s pulser hit p.h. vs seqpad; seqpad = col*4*18+row; hit amp, adc counts", xtitle);
          h_pulser_hit_amp_seqpad_prof = new TProfile(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL+1, -1.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5);
 
          sprintf(name,  "%s_pulser_hit_time_seqpad_prof", xname);
-         sprintf(title, "%s pulser hit time vs seqpad; col*4*18+row; hit time, sca time bins", xtitle);
+         sprintf(title, "%s pulser hit time vs seqpad; seqpad = col*4*18+row; hit time, sca time bins", xtitle);
          h_pulser_hit_time_seqpad_prof = new TProfile(name, title, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL, -0.5, MAX_FEAM_PAD_ROWS*MAX_FEAM_PAD_COL-0.5);
+         h_pulser_hit_time_seqpad_prof->SetMinimum(pulser_start);
+         h_pulser_hit_time_seqpad_prof->SetMaximum(pulser_end);
 
          sprintf(name,  "%s_pulser_hit_time_seqsca_prof", xname);
-         sprintf(title, "%s pulser hit time vs seqsca; SCA*80 + readout index; hit time, sca time bins", xtitle);
-         h_pulser_hit_time_seqsca_prof = new TProfile(name, title, NUM_SEQSCA, -0.5, NUM_SEQSCA-0.5);
+         sprintf(title, "%s pulser hit time vs seqsca; seqsca = SCA*80 + readout index; hit time, sca time bins", xtitle);
+         h_pulser_hit_time_seqsca_prof = new TProfile(name, title, NUM_SEQSCA, -0.5, NUM_SEQSCA-0.5, pulser_start, pulser_end);
+         h_pulser_hit_time_seqsca_prof->SetMinimum(pulser_start);
+         h_pulser_hit_time_seqsca_prof->SetMaximum(pulser_end);
       }
    }
 };
@@ -453,13 +457,17 @@ public:
    //TH2D* h_amp_hit_col = NULL;
 
    bool  fPulser = true;
-   TH1D* h_pulser_led_hit = NULL;
+   TH1D* h_pulser_hit_amp  = NULL;
+   TH1D* h_pulser_hit_time = NULL;
+   TProfile* h_pulser_hit_amp_seqpwbsca_prof  = NULL;
+   TProfile* h_pulser_hit_time_seqpwbsca_prof = NULL;
 
    TH1D* hnhitchan = NULL;
 
    //TH2D* hpadmap;
 
    TDirectory* hdir_summary = NULL;
+   TDirectory* hdir_pulser  = NULL;
    TDirectory* hdir_wfsuppress = NULL;
    TDirectory* hdir_waveforms  = NULL;
    TDirectory* hdir_pwb  = NULL;
@@ -496,22 +504,33 @@ public:
       fCfm = new Ncfm("agcfmdb");
       fCfmCuts = fCfm->ParseFile("pwb", "cuts", runinfo->fRunNo);
 
-      fPulserStart = fCfmCuts->GetInt("sca_bin_pulser_start", 400);
-      fPulserEnd   = fCfmCuts->GetInt("sca_bin_pulser_end",   500);
+      fPulserStart = fCfmCuts->GetInt("sca_bin_pulser_start", 200);
+      fPulserEnd   = fCfmCuts->GetInt("sca_bin_pulser_end",   240);
 
       runinfo->fRoot->fOutputFile->cd();
       hdir_pads = gDirectory->mkdir("pads");
       hdir_pads->cd(); // select correct ROOT directory
 
       hdir_summary = hdir_pads->mkdir("summary");
+      hdir_pulser  = hdir_pads->mkdir("pulser");
       hdir_wfsuppress = hdir_pads->mkdir("wfsuppress");
       hdir_waveforms  = hdir_pads->mkdir("waveforms");
       hdir_pwb = hdir_pads->mkdir("pwb");
       hdir_pwb_hit_map_pads = hdir_pads->mkdir("pwb_hit_map_seqpad");
 
       if (fPulser) {
-         hdir_summary->cd();
-         h_pulser_led_hit = new TH1D("pulser_led_hit", "pulser time, adc bins", fPulserEnd - fPulserStart, fPulserStart, fPulserEnd);
+         hdir_pulser->cd();
+
+         h_pulser_hit_amp = new TH1D("pulser_hit_amp", "pulser hit amp; hit amp , adc counts", ADC_BINS_PULSER, 0, ADC_RANGE_PULSER);
+         h_pulser_hit_time = new TH1D("pulser_hit_time", "pulser hit time; sca time bins", 100, fPulserStart, fPulserEnd);
+
+         h_pulser_hit_amp_seqpwbsca_prof  = new TProfile("pulser_hit_amp_seqpwbsca_prof", "pulser hit amp vs seqpwbsca; seqpwb*4 + isca; hit amp , adc counts", NUM_PWB*4, -0.5, NUM_PWB*4-0.5);
+         h_pulser_hit_amp_seqpwbsca_prof->SetMinimum(0);
+         h_pulser_hit_amp_seqpwbsca_prof->SetMaximum(ADC_RANGE_PULSER);
+
+         h_pulser_hit_time_seqpwbsca_prof = new TProfile("pulser_hit_time_seqpwbsca_prof", "pulser hit time vs seqpwbsca; seqpwb*4 + isca; sca time bins", NUM_PWB*4, -0.5, NUM_PWB*4-0.5);
+         h_pulser_hit_time_seqpwbsca_prof->SetMinimum(fPulserStart);
+         h_pulser_hit_time_seqpwbsca_prof->SetMaximum(fPulserEnd);
       }
    }
 
@@ -550,9 +569,13 @@ public:
 
 
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
+
       runinfo->fOdb->RB("Equipment/Ctrl/Settings/PWB/enable_test_mode", &fEnableTestMode);
       runinfo->fOdb->RI("Equipment/Ctrl/Settings/PWB/test_mode", &fTestMode);
       printf("test mode: enabled: %d, mode %d\n", fEnableTestMode, fTestMode);
+
+      runinfo->fOdb->RB("Equipment/Ctrl/Settings/FwPulserEnable", &fPulser);
+      printf("pulser mode: enabled: %d\n", fPulser);
    }
 
    void CreateHistograms(TARunInfo* runinfo)
@@ -1062,7 +1085,7 @@ public:
 
          if (!fHF[imodule]) {
             fHF[imodule] = new PwbHistograms();
-            fHF[imodule]->CreateHistograms(hdir_pwb, imodule, e->hits[i]->pwb_column, e->hits[i]->pwb_ring, fPulser);
+            fHF[imodule]->CreateHistograms(hdir_pwb, imodule, e->hits[i]->pwb_column, e->hits[i]->pwb_ring, fPulser, fPulserStart, fPulserEnd);
          }
       }
    }
@@ -1966,7 +1989,10 @@ public:
             hhit_ph->Fill(wamp);
             
             if (fPulser) {
-               h_pulser_led_hit->Fill(wpos);
+               h_pulser_hit_amp->Fill(wamp);
+               h_pulser_hit_time->Fill(wpos);
+               h_pulser_hit_amp_seqpwbsca_prof->Fill(seqpwbsca, wamp);
+               h_pulser_hit_time_seqpwbsca_prof->Fill(seqpwbsca, wpos);
                hf->h_pulser_hit_amp_seqpad_prof->Fill(-1, 0); // force plot to start from 0
                hf->h_pulser_hit_amp_seqpad_prof->Fill(seqpad, wamp);
                hf->h_pulser_hit_time_seqpad_prof->Fill(seqpad, wpos);
