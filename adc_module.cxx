@@ -607,10 +607,7 @@ public:
       aw->cd(); // select correct ROOT directory
 
       fDirSummary = aw->mkdir("summary");
-
-      if (fFlags->fPulser) {
-         fDirPulser = aw->mkdir("pulser");
-      }
+      fDirPulser  = aw->mkdir("pulser");
 
       fH = new PlotHistograms(fDirSummary);
 
@@ -662,6 +659,9 @@ public:
          printf("AdcModule::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
       //time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
       //printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
+
+      runinfo->fOdb->RB("Equipment/Ctrl/Settings/FwPulserEnable", &fFlags->fPulser);
+      printf("pulser mode: enabled: %d\n", fFlags->fPulser);
 
       fCfmCuts = fCfm->ParseFile("adc", "cuts", runinfo->fRunNo);
 
