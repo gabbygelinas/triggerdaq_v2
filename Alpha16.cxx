@@ -125,7 +125,8 @@ Alpha16Packet* Alpha16Packet::UnpackVer1(const void*ptr, int bklen8)
    p->packetType = getUint8(ptr, 0);
    p->packetVersion = getUint8(ptr, 1);
    p->acceptedTrigger = getUint16(ptr, 2);
-   p->hardwareId = getUint32(ptr, 4);
+   p->macMsw = getUint16(ptr, 4);
+   p->macLsw = getUint32(ptr, 6);
    p->buildTimestamp = getUint32(ptr, 10);
    //int zero = getUint16(ptr, 14);
    p->eventTimestamp = getUint32(ptr, 18);
@@ -219,7 +220,8 @@ Alpha16Packet* Alpha16Packet::UnpackVer2(const void*ptr, int bklen8)
    p->packetType = getUint8(ptr, 0);
    p->packetVersion = getUint8(ptr, 1);
    p->acceptedTrigger = getUint16(ptr, 4);
-   p->hardwareId = getUint32(ptr, 6);
+   p->macMsw = getUint16(ptr, 6);
+   p->macLsw = getUint32(ptr, 8);
    p->buildTimestamp = getUint32(ptr, 12);
    //int zero = getUint16(ptr, 14);
    p->eventTimestamp = getUint32(ptr, 20);
@@ -240,6 +242,45 @@ Alpha16Packet* Alpha16Packet::UnpackVer2(const void*ptr, int bklen8)
    //p->length = 32 + p->nsamples*2;
    //p->xcrc16 = 0;
 
+   return p;
+}
+
+Alpha16Packet* Alpha16Packet::UnpackVer3(const void*ptr, int bklen8)
+{
+   Alpha16Packet* p = new Alpha16Packet();
+
+   // packet version 3 has same data as version 1 and 2,
+   // but data fields are arranged in a different order
+   // to allow sending a short packet when keep_bit is not
+   // set and all adc samples are suppressed. KO 2020-NOV-12.
+   
+   p->bankLength      = bklen8;
+   p->packetType      = getUint8(ptr, 0);
+   p->packetVersion   = getUint8(ptr, 1);
+   p->acceptedTrigger = getUint16(ptr, 2);
+   p->moduleId        = getUint8(ptr, 4);
+   int chanX          = getUint8(ptr, 5);
+   p->channelType     = chanX & 0x80;
+   p->channelId       = chanX & 0x7F;
+   p->nsamples        = getUint16(ptr, 6);
+   p->nsamples_supp   = 0;
+   p->eventTimestamp  = getUint32(ptr, 8);
+
+   if (bklen8 > 16) {
+      // zero   = getUint16(ptr, 12);
+      p->macMsw = getUint16(ptr, 14);
+      p->macLsw = getUint32(ptr, 16);
+      p->eventTimestampMsw = getUint32(ptr, 20);
+      p->triggerOffset     = getUint32(ptr, 24);
+      p->buildTimestamp    = getUint32(ptr, 28);
+      p->nsamples_supp     = (bklen8 - 32 - 4) / 2;
+   }
+
+   uint32_t footer = getUint32(ptr, bklen8 - 4);
+   p->baseline  =   (footer & 0x0000FFFF) >> 0;
+   p->keep_last =   (footer & 0x0FFF0000) >> 16;
+   p->keep_bit     = footer & 0x10000000;
+   p->supp_enabled = footer & 0x20000000;
    return p;
 }
 
@@ -271,7 +312,7 @@ void Alpha16Packet::Print() const
    printf("ALPHA16 data packet:\n");
    printf("  packet type:    0x%02x (%d)\n", packetType, packetType);
    printf("  packet version: 0x%02x (%d)\n", packetVersion, packetVersion);
-   printf("  hwid:     0x%08x\n", hardwareId);
+   printf("  mac addr:       0x%04x%08x\n", macMsw, macLsw);
    printf("  buildts:  0x%08x\n", buildTimestamp);
    printf("  mod id:   0x%02x\n", moduleId);
    printf("  trig no:  0x%04x (%d)\n", acceptedTrigger, acceptedTrigger);
@@ -334,6 +375,48 @@ Alpha16Channel* UnpackVer1(const char* bankname, int module, const Alpha16Packet
 Alpha16Channel* UnpackVer2(const char* bankname, int module, const Alpha16Packet* p, const void* bkptr, int bklen8)
 {
    assert(p->packetVersion == 2);
+   Alpha16Channel* c = new Alpha16Channel;
+
+   c->bank = bankname;
+   c->adc_module = module;
+   if (p->channelType == 0) {
+      c->adc_chan = p->channelId;
+   } else {
+      c->adc_chan = 16 + p->channelId;
+   }
+   c->preamp_pos  = -1;
+   c->preamp_wire = -1;
+   c->tpc_wire    = -1;
+   c->first_bin   = 0;
+
+   int nsamples = p->nsamples;
+   int nactual  = p->nsamples_supp;
+
+   c->adc_samples.reserve(nsamples);
+   c->adc_samples.clear();
+   
+   for (int i=0; i<nactual; i++) {
+      unsigned v = getUint16(bkptr, 32 + i*2);
+      // manual sign extension
+      if (v & 0x8000)
+         v |= 0xffff0000;
+      c->adc_samples.push_back(v);
+   }
+
+   for (int i=nactual; i<nsamples; i++) {
+      unsigned v = p->baseline;
+      // manual sign extension
+      if (v & 0x8000)
+         v |= 0xffff0000;
+      c->adc_samples.push_back(v);
+   }
+
+   return c;
+};
+
+Alpha16Channel* UnpackVer3(const char* bankname, int module, const Alpha16Packet* p, const void* bkptr, int bklen8)
+{
+   assert(p->packetVersion == 3);
    Alpha16Channel* c = new Alpha16Channel;
 
    c->bank = bankname;
@@ -951,6 +1034,17 @@ void Alpha16Asm::AddBank(Alpha16Event* e, int imodule, const char* bkname, const
    } else if (packetType == 1 && packetVersion == 2) {
       Alpha16Packet* p = Alpha16Packet::UnpackVer2(bkptr, bklen);
       Alpha16Channel* c = UnpackVer2(bkname, imodule, p, bkptr, bklen);
+      
+      //p->Print();
+      //printf("\n");
+      
+      //c->Print(true);
+      //printf("\n");
+      
+      AddChannel(e, p, c);
+   } else if (packetType == 1 && packetVersion == 3) {
+      Alpha16Packet* p = Alpha16Packet::UnpackVer3(bkptr, bklen);
+      Alpha16Channel* c = UnpackVer3(bkname, imodule, p, bkptr, bklen);
       
       //p->Print();
       //printf("\n");

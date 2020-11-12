@@ -22,9 +22,11 @@ struct Alpha16Packet
    int packetType;
    int packetVersion;
    int acceptedTrigger;
-   uint32_t hardwareId;
+   uint32_t macLsw; // mac address
+   uint32_t macMsw; // high bits of 48-bit mac address
    uint32_t buildTimestamp;
-   uint32_t eventTimestamp;
+   uint32_t eventTimestamp;    // low 32 bits of the timestamp
+   uint32_t eventTimestampMsw; // high 32 bits of the timestamp
    uint32_t triggerOffset;
    int moduleId;
    int channelType;
@@ -45,6 +47,7 @@ struct Alpha16Packet
    //static int PacketChannel(const void*ptr, int bklen8);
    static Alpha16Packet* UnpackVer1(const void* bkptr, int bklen8);
    static Alpha16Packet* UnpackVer2(const void* bkptr, int bklen8);
+   static Alpha16Packet* UnpackVer3(const void* bkptr, int bklen8);
    void Print() const;
 };
 
