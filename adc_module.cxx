@@ -614,8 +614,6 @@ public:
    TH2D* fWfSuppressAdcAmpCumulDropMap = NULL;
    std::vector<TH1D*> fWfSuppressAdcAmpCumulKeep;
    std::vector<TH1D*> fWfSuppressAdcAmpCumulDrop;
-   TH2D* fWfSuppressAdcMinMap = NULL;
-   std::vector<TH1D*> fWfSuppressAdcMin;
 
 public:
    AdcModule(TARunInfo* runinfo, AdcFlags* f)
@@ -734,91 +732,77 @@ public:
       if (fFlags->fWfSuppress) {
          fDirWfSuppress->cd();
 
+         int adc_amp = 32000;
+
          if (fWfSuppressAdcAmp == NULL) {
             int min = 0;
-            int max = 4100;
+            int max = adc_amp;
             fWfSuppressAdcAmp = new TH1D("WfSuppress ADC amp", "WfSuppress ADC amp; adc counts", max-min, min, max);
          }
          
          if (fWfSuppressAdcAmpPos == NULL) {
             int min = 0;
-            int max = 4100;
+            int max = adc_amp;
             fWfSuppressAdcAmpPos = new TH1D("WfSuppress ADC amp pos", "WfSuppress ADC amp pos; adc counts", max-min, min, max);
          }
          
          if (fWfSuppressAdcAmpNeg == NULL) {
-            int min = -4100;
+            int min = -adc_amp;
             int max = 0;
             fWfSuppressAdcAmpNeg = new TH1D("WfSuppress ADC amp neg", "WfSuppress ADC amp neg; adc counts", max-min, min, max);
          }
          
          if (fWfSuppressAdcAmpCumulKeepAll == NULL) {
             int min = -1;
-            int max = 4200;
+            int max = adc_amp;
             fWfSuppressAdcAmpCumulKeepAll = new TH1D("WfSuppress cumul keep", "WfSuppress cumulative kept channels; ch_threshold, adc counts", max-min+1, min-0.5, max+0.5);
          }
          
          if (fWfSuppressAdcAmpCumulDropAll == NULL) {
             int min = -1;
-            int max = 4200;
+            int max = adc_amp;
             fWfSuppressAdcAmpCumulDropAll = new TH1D("WfSuppress cumul drop", "WfSuppress cumulative dropped channels; ch_threshold, adc_counts", max-min+1, min-0.5, max+0.5);
          }
 
          if (fWfSuppressAdcAmpCumulKeepMap == NULL) {
             int min = -1;
-            int max = 4200;
-            fWfSuppressAdcAmpCumulKeepMap = new TH2D("WfSuppress cumul keep map", "WfSuppress cumulative kept channels; pwbNN; ch_threshold, adc counts", PWB_MODULE_LAST+1, 0-0.5, PWB_MODULE_LAST+1-0.5, max-min+1, min-0.5, max+0.5);
+            int max = adc_amp;
+            fWfSuppressAdcAmpCumulKeepMap = new TH2D("WfSuppress cumul keep map", "WfSuppress cumulative kept channels; adcNN; ch_threshold, adc counts", ADC_MODULE_LAST+1, 0-0.5, ADC_MODULE_LAST+1-0.5, max-min+1, min-0.5, max+0.5);
          }
          
          if (fWfSuppressAdcAmpCumulDropMap == NULL) {
             int min = -1;
-            int max = 4200;
-            fWfSuppressAdcAmpCumulDropMap = new TH2D("WfSuppress cumul drop map", "WfSuppress cumulative dropped channels; pwbNN; ch_threshold, adc_counts", PWB_MODULE_LAST+1, 0-0.5, PWB_MODULE_LAST+1-0.5, max-min+1, min-0.5, max+0.5);
+            int max = adc_amp;
+            fWfSuppressAdcAmpCumulDropMap = new TH2D("WfSuppress cumul drop map", "WfSuppress cumulative dropped channels; adcNN; ch_threshold, adc_counts", ADC_MODULE_LAST+1, 0-0.5, ADC_MODULE_LAST+1-0.5, max-min+1, min-0.5, max+0.5);
          }
 
-         for (int i=0; i<=PWB_MODULE_LAST; i++) {
+         for (int i=0; i<=ADC_MODULE_LAST; i++) {
             char name[100];
             char title[100];
 
-            sprintf(name,  "pwb%02d_keep", i);
-            sprintf(title, "pwb%02d cumulative kept channels; ch_threshold, adc counts", i);
+            sprintf(name,  "adc%02d_keep", i);
+            sprintf(title, "adc%02d cumulative kept channels; ch_threshold, adc counts", i);
 
             int min = -1;
-            int max = 4200;
+            int max = adc_amp;
             TH1D* h = new TH1D(name, title, max-min+1, min-0.5, max+0.5);
 
             fWfSuppressAdcAmpCumulKeep.push_back(h);
          }
          
-         for (int i=0; i<=PWB_MODULE_LAST; i++) {
+         for (int i=0; i<=ADC_MODULE_LAST; i++) {
             char name[100];
             char title[100];
 
-            sprintf(name,  "pwb%02d_drop", i);
-            sprintf(title, "pwb%02d cumulative dropped channels; ch_threshold, adc counts", i);
+            sprintf(name,  "adc%02d_drop", i);
+            sprintf(title, "adc%02d cumulative dropped channels; ch_threshold, adc counts", i);
 
             int min = -1;
-            int max = 4200;
+            int max = adc_amp;
             TH1D* h = new TH1D(name, title, max-min+1, min-0.5, max+0.5);
             fWfSuppressAdcAmpCumulDrop.push_back(h);
          }
 
-         if (fWfSuppressAdcMinMap == NULL) {
-            int min = -2050;
-            int max = 2050;
-            fWfSuppressAdcMinMap = new TH2D("WfSuppress_adc_min_map", "WfSuppress adc_min for each PWB; pwbNN; adc counts", PWB_MODULE_LAST+1, 0-0.5, PWB_MODULE_LAST+1-0.5, max-min, min, max);
-         }
-
-         for (int i=0; i<=PWB_MODULE_LAST; i++) {
-            char name[100];
-            char title[100];
-            sprintf(name,  "pwb%02d_adc_min", i);
-            sprintf(title, "pwb%02d adc_min for channel suppression; adc counts", i);
-            int min = -2050;
-            int max = 2050;
-            TH1D* h = new TH1D(name, title, (max-min)/10.0, min, max);
-            fWfSuppressAdcMin.push_back(h);
-         }
          fDirSummary->cd();
       }
    }
@@ -994,7 +978,7 @@ public:
 
       // analyze data suppression
 
-      if (fFlags->fWfSuppress) {
+      if (fFlags->fWfSuppress && is_adc32) {
          int imodule = hit->adc_module;
          int ichan = hit->adc_chan;
          
@@ -1039,7 +1023,10 @@ public:
          int ampmin = 0;
          int ampmax = 0;
          int adcmin = hit->adc_samples[0];
-         for (unsigned i=0; i<hit->adc_samples.size(); i++) {
+         int nsamples = hit->adc_samples.size();
+         if (p->nsamples_supp)
+            nsamples = p->nsamples_supp;
+         for (int i=0; i<nsamples; i++) {
             if (hit->adc_samples[i] < adcmin)
                adcmin = hit->adc_samples[i];
             bool k = s->Add(hit->adc_samples[i]);
@@ -1069,7 +1056,6 @@ public:
          //if (s->GetClipped())
          //   xamp = 0xFFF + 1;
          
-#if 0
          fWfSuppressAdcAmp->Fill(xamp);
          fWfSuppressAdcAmpPos->Fill(ampmax);
          fWfSuppressAdcAmpNeg->Fill(ampmin);
@@ -1082,26 +1068,28 @@ public:
          }
          
          //fWfSuppressAdcAmpCumulDrop->Fill(xamp);
-         for (int i=xamp; i<4200; i++) {
+         for (int i=xamp; i<32000; i++) {
             fWfSuppressAdcAmpCumulDropAll->Fill(i);
             fWfSuppressAdcAmpCumulDrop[imodule]->Fill(i);
             fWfSuppressAdcAmpCumulDropMap->Fill(imodule, i);
          }
-         fWfSuppressAdcMinMap->Fill(imodule, adcmin);
-         fWfSuppressAdcMin[imodule]->Fill(adcmin);
-#endif
          
          int range = ampmax - ampmin;
 
          bool bad_baseline = false;
 
-         if (p->baseline && (baseline != p->baseline)) {
+         if (baseline < 0) {
+            //baseline -= 1;
+            //baseline &= 0xFFFF;
+         }
+         
+         if (s->fBaselineReady && p->baseline && (baseline != p->baseline)) {
             bad_baseline = true;
          }
          
-         printf("adc %02d, chan %2d: wfsuppress: %s, keep: %d, xamp %d, keep_bit %d, keep_last %d, baseline %d", imodule, ichan, s->PrintToString().c_str(), keep, (int)xamp, p->keep_bit, p->keep_last, p->baseline);
+         printf("adc %02d, chan %2d: wfsuppress: %s, keep: %d, xamp %d, kept %3d, keep_bit %d, keep_last %d, baseline %d", imodule, ichan, s->PrintToString().c_str(), keep, (int)xamp, p->nsamples_supp, p->keep_bit, p->keep_last, p->baseline);
          if (bad_baseline)
-            printf(" *** bad baseline ");
+            printf(" AAA bad baseline %d", baseline);
          printf("\n");
 
 #if 0

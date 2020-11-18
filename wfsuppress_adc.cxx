@@ -32,22 +32,17 @@ bool WfSuppressAdc::Add(int adc_stream)
 {
    fCounter++;
 
-   if (fCounter < 5) {
+   if (fBaselineCounter < 64) {
+      fBaselineSum += adc_stream;
+      fBaselineCounter ++;
+      if (fBaselineCounter == 64) {
+         fBaseline = fBaselineSum/64;
+         fBaselineReady = true;
+      }
       fAdcValue = 0;
    } else {
-      if (fBaselineCounter < 64) {
-         fBaselineSum += adc_stream;
-         fBaselineCounter ++;
-         if (fBaselineCounter == 64) {
-            fBaseline = fBaselineSum/64;
-            fBaselineReady = true;
-         }
-         fAdcValue = 0;
-      } else {
-         fAdcValue = adc_stream - fBaseline;
-      }
+      fAdcValue = adc_stream - fBaseline;
    }
-
    
    //bool xclipped = false; // (a == -2048) || (a == 2047);
    fTrigPos = (fAdcValue >= fThreshold);
