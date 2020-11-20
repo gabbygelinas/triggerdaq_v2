@@ -12,6 +12,13 @@ WfSuppressAdc::~WfSuppressAdc() // dtor
 
 }
 
+void WfSuppressAdc::Config(int threshold, int keep_more, int nsamples)
+{
+   fThreshold = threshold;
+   fKeepMore  = keep_more;
+   fNumSamples = nsamples;
+}
+
 void WfSuppressAdc::Reset()
 {
    fCounter = 0;
@@ -26,6 +33,12 @@ void WfSuppressAdc::Reset()
    fTrigPos = false;
    fTrigNeg = false;
    fTrig = false;
+
+   fKeepBit = false;
+   fKeepLast = 0;
+   fAdcLast  = 0;
+   fAdcMaxPos = 0;
+   fAdcMaxNeg = 0;
 }
 
 bool WfSuppressAdc::Add(int adc_stream)
@@ -48,6 +61,23 @@ bool WfSuppressAdc::Add(int adc_stream)
    fTrigPos = (fAdcValue >= fThreshold);
    fTrigNeg = (fAdcValue <= -fThreshold);
    fTrig = fTrigPos | fTrigNeg;
+
+   // data suppression does not see the first 64 or so samples
+   // and it does not see the last few samples. KO 2020-NOV-19
+   if (fBaselineReady && fCounter > 66 && fCounter <= fNumSamples - 6) {
+      if (fAdcValue > fAdcMaxPos)
+         fAdcMaxPos = fAdcValue;
+      if (fAdcValue < fAdcMaxNeg)
+         fAdcMaxNeg = fAdcValue;
+
+      if (fTrig) {
+         fKeepBit |= true;
+         if (fCounter < fNumSamples - 7) {
+            fKeepLast = (fCounter+1)/2 + 1;
+            fAdcLast  = fAdcValue;
+         }
+      }
+   }
    
    return fTrig;
 }

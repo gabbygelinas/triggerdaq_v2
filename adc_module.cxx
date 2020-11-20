@@ -509,6 +509,8 @@ public:
    bool fWfVerbose  = false;
    int  fWfThresholdAdc16 = 0;
    int  fWfThresholdAdc32 = 0;
+   int  fWfKeepMoreAdc16 = 0;
+   int  fWfKeepMoreAdc32 = 0;
    bool fWfSaveBad = false;
 };
 
@@ -602,6 +604,11 @@ public:
    TH2D* fHpulserAwWiPh = NULL;
 
    // data suppression plots
+
+   int fWfThresholdAdc16 = 0;
+   int fWfThresholdAdc32 = 0;
+   int fWfKeepMoreAdc16  = 0;
+   int fWfKeepMoreAdc32  = 0;
 
    std::vector<WfSuppressAdc*> fWfSuppressAdc16;
    std::vector<WfSuppressAdc*> fWfSuppressAdc32;
@@ -731,6 +738,30 @@ public:
       }
 
       if (fFlags->fWfSuppress) {
+
+         if (fFlags->fWfThresholdAdc16)
+            fWfThresholdAdc16 = fFlags->fWfThresholdAdc16;
+         else
+            runinfo->fOdb->RI("Equipment/Ctrl/Settings/ADC/adc16_sthreshold", &fWfThresholdAdc16);
+
+         if (fFlags->fWfThresholdAdc32)
+            fWfThresholdAdc32 = fFlags->fWfThresholdAdc32;
+         else
+            runinfo->fOdb->RI("Equipment/Ctrl/Settings/ADC/adc32_sthreshold", &fWfThresholdAdc32);
+
+         if (fFlags->fWfKeepMoreAdc16)
+            fWfKeepMoreAdc16 = fFlags->fWfKeepMoreAdc16;
+         else
+            runinfo->fOdb->RI("Equipment/Ctrl/Settings/ADC/adc16_keep", &fWfKeepMoreAdc16);
+
+         if (fFlags->fWfKeepMoreAdc32)
+            fWfKeepMoreAdc32 = fFlags->fWfKeepMoreAdc32;
+         else
+            runinfo->fOdb->RI("Equipment/Ctrl/Settings/ADC/adc32_keep", &fWfKeepMoreAdc32);
+
+         fprintf(stderr, "ADC data suppression: adc16 threshold %d, keep_more %d\n", fWfThresholdAdc16, fWfKeepMoreAdc16);
+         fprintf(stderr, "ADC data suppression: adc32 threshold %d, keep_more %d\n", fWfThresholdAdc32, fWfKeepMoreAdc32);
+
          fDirWfSuppress->cd();
 
          //int adc_amp = 32000;
@@ -878,18 +909,6 @@ public:
       //sprintf(xtitle, "AW Waveform ADC module %d, channel %d, tpc wire %d", hit->adc_module, hit->adc_chan, hit->tpc_wire);
 
       WfSuppressAdc ch_supp;
-      int adc16_threshold = 0;
-      int adc32_threshold = 0;
-      int adc16_keep_more = 0;
-      int adc32_keep_more = 0;
-
-      if (fFlags->fWfSuppress) {
-         runinfo->fOdb->RI("Equipment/Ctrl/Settings/ADC/adc16_sthreshold", &adc16_threshold);
-         runinfo->fOdb->RI("Equipment/Ctrl/Settings/ADC/adc32_sthreshold", &adc32_threshold);
-
-         runinfo->fOdb->RI("Equipment/Ctrl/Settings/ADC/adc16_keep", &adc16_keep_more);
-         runinfo->fOdb->RI("Equipment/Ctrl/Settings/ADC/adc32_keep", &adc32_keep_more);
-      }
 
       int i = hit->tpc_wire;
       int r = 1;
@@ -999,8 +1018,8 @@ public:
                fWfSuppressAdc16[imodule] = s;
             }
             
+            s->Config(fWfThresholdAdc16, fWfKeepMoreAdc16, p->nsamples);
             s->Reset();
-            s->fThreshold = fFlags->fWfThresholdAdc16;
          }
          
          if (is_adc32) {
@@ -1013,89 +1032,104 @@ public:
                fWfSuppressAdc32[imodule] = s;
             }
             
+            s->Config(fWfThresholdAdc32, fWfKeepMoreAdc32, p->nsamples);
             s->Reset();
-            s->fThreshold = fFlags->fWfThresholdAdc32;
          }
 
          assert(s != NULL);
          
-         //std::vector<int> samples_base;
-         std::vector<int> samples_amp;
-         
-         bool keep = false;
-         int ampmin = 0;
-         int ampmax = 0;
-         int adcmin = hit->adc_samples[0];
          int nsamples = hit->adc_samples.size();
+         
+         // do not pass fake samples added by unpacking to the data supression code
          if (p->nsamples_supp)
             nsamples = p->nsamples_supp;
+
+         //if (nsamples > p->nsamples - 6)
+         //   nsamples = p->nsamples - 6;
+
          for (int i=0; i<nsamples; i++) {
-            if (hit->adc_samples[i] < adcmin)
-               adcmin = hit->adc_samples[i];
-            bool k = s->Add(hit->adc_samples[i]);
-            //uint16_t base = s->GetBase();
-            //int16_t amp = s->GetAmp();
-            //samples_base.push_back(base);
-            //samples_amp.push_back(amp);
-            int base = s->fBaseline;
-            int amp = s->fAdcValue;
-            if (amp > ampmax)
-               ampmax = amp;
-            if (amp < ampmin)
-               ampmin = amp;
-            samples_amp.push_back(amp);
-            keep |= k;
-            if (0) {
-               printf("adc %02d, chan %2d: bin %3d, adc %d, base %d, amp %4d, keep %d %d, state: %s\n", imodule, ichan, i, hit->adc_samples[i], base, amp, k, keep, s->PrintToString().c_str());
-            }
+            s->Add(hit->adc_samples[i]);
+            //if (0) {
+            //   printf("adc %02d, chan %2d: bin %3d, adc %d, base %d, amp %4d, keep %d %d, state: %s\n", imodule, ichan, i, hit->adc_samples[i], base, amp, k, keep, s->PrintToString().c_str());
+            //}
          }
 
-         int baseline = s->fBaseline;
-         
-         //double xampmax = fabs(s->GetAmpMax());
-         double xampmin = fabs(ampmin);
-         //double xamp = std::min(xampmax, xampmin);
-         double xamp = xampmin;
-         //if (s->GetClipped())
-         //   xamp = 0xFFF + 1;
+         double xamp = -s->fAdcMaxNeg;
+         if (s->fAdcMaxPos > xamp)
+            xamp = s->fAdcMaxPos;
          
          fWfSuppressAdc32Amp->Fill(xamp);
-         fWfSuppressAdc32AmpPos->Fill(ampmax);
-         fWfSuppressAdc32AmpNeg->Fill(ampmin);
+         fWfSuppressAdc32AmpPos->Fill(s->fAdcMaxPos);
+         fWfSuppressAdc32AmpNeg->Fill(s->fAdcMaxNeg);
          
-         //fWfSuppressAdcAmpCumulKeep->Fill(xamp);
          for (int i=0; i<xamp; i++) {
             fWfSuppressAdc32AmpCumulKeepAll->Fill(i);
             fWfSuppressAdc32AmpCumulKeep[imodule]->Fill(i);
             fWfSuppressAdc32AmpCumulKeepMap->Fill(imodule, i);
          }
          
-         //fWfSuppressAdcAmpCumulDrop->Fill(xamp);
          for (int i=xamp; i<32000; i++) {
             fWfSuppressAdc32AmpCumulDropAll->Fill(i);
             fWfSuppressAdc32AmpCumulDrop[imodule]->Fill(i);
             fWfSuppressAdc32AmpCumulDropMap->Fill(imodule, i);
          }
          
-         int range = ampmax - ampmin;
+         //int range = ampmax - ampmin;
 
-         bool bad_baseline = false;
+         bool bad_baseline  = false;
+         bool bad_keep_bit  = false;
+         bool bad_keep_last = false;
+         bool bad_kept = false;
+         bool bad = false;
 
-         if (baseline < 0) {
-            //baseline -= 1;
-            //baseline &= 0xFFFF;
-         }
-         
-         if (s->fBaselineReady && p->baseline && (baseline != p->baseline)) {
+         if (s->fBaselineReady && p->baseline && (s->fBaseline != p->baseline)) {
             bad_baseline = true;
+            bad = true;
          }
          
-         if (fFlags->fWfVerbose || bad_baseline) {
-            printf("adc %02d, chan %2d: wfsuppress: %s, keep: %d, xamp %d, kept %3d, keep_bit %d, keep_last %d, baseline %d", imodule, ichan, s->PrintToString().c_str(), keep, (int)xamp, p->nsamples_supp, p->keep_bit, p->keep_last, p->baseline);
+         if (s->fBaselineReady && p->baseline && (s->fKeepBit != p->keep_bit)) {
+            bad_keep_bit = true;
+            bad = true;
+         }
+         
+         if (s->fBaselineReady && p->baseline && (s->fKeepLast != p->keep_last)) {
+            bad_keep_last = true;
+            bad = true;
+         }
+
+         int kept = 2*s->fKeepLast + 2*s->fKeepMore + 4;
+         if (kept > p->nsamples - 2)
+            kept = p->nsamples - 2;
+         
+         if (s->fBaselineReady && p->baseline && p->supp_enabled && (kept != p->nsamples_supp)) {
+            bad_kept = true;
+            bad = true;
+         }
+         
+         if (fFlags->fWfVerbose || bad) {
+            //printf("adc %02d, chan %2d: wfsuppress: %s, keep: %d, xamp %4d, kept %3d, keep_bit %d, keep_last %d, baseline %d", imodule, ichan, s->PrintToString().c_str(), keep, (int)xamp, p->nsamples_supp, p->keep_bit, p->keep_last, p->baseline);
+            printf("adc %02d, chan %2d: samples %3d/%3d, baseline %d %4d vs %4d, range %5d..%4d, keep_bit %d vs %d, keep_last %3d vs %3d, adc_last %5d, supp %d, kept %3d vs %3d", imodule, ichan, (int)hit->adc_samples.size(), p->nsamples_supp, s->fBaselineReady, s->fBaseline, p->baseline, s->fAdcMaxNeg, s->fAdcMaxPos, s->fKeepBit, p->keep_bit, s->fKeepLast, p->keep_last, s->fAdcLast, p->supp_enabled, p->nsamples_supp, kept);
             if (bad_baseline)
-               printf(" AAA bad baseline %d", baseline);
+               printf(" AAA bad baseline %4d should be %4d", s->fBaseline, p->baseline);
+            if (bad_keep_bit)
+               printf(" AAA bad keep_bit %d should be %d", s->fKeepBit, p->keep_bit);
+            if (bad_keep_last)
+               printf(" AAA bad keep_last %3d should be %3d", s->fKeepLast, p->keep_last);
+            if (bad_kept)
+               printf(" AAA bad kept %3d should be %3d", kept, p->nsamples_supp);
             printf("\n");
          }
+
+#if 0
+         if (bad) {
+            printf("AAA samples: ");
+            for (unsigned i=0; i<hit->adc_samples.size(); i++) {
+               printf(" %4d", hit->adc_samples[i] - s->fBaseline);
+            }
+            printf("\n");
+            exit(123);
+         }
+#endif
 
 #if 0
          if (!keep) {
@@ -1590,6 +1624,10 @@ public:
             fFlags.fWfThresholdAdc16 = atoi(args[i+1].c_str());
          if (args[i] == "--adc32-wf-threshold")
             fFlags.fWfThresholdAdc32 = atoi(args[i+1].c_str());
+         if (args[i] == "--adc16-wf-keep-more")
+            fFlags.fWfKeepMoreAdc16 = atoi(args[i+1].c_str());
+         if (args[i] == "--adc32-wf-keep-more")
+            fFlags.fWfKeepMoreAdc32 = atoi(args[i+1].c_str());
          if (args[i] == "--adc-wf-save-bad")
             fFlags.fWfSaveBad = true;
       }
