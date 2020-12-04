@@ -2,7 +2,6 @@
 cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 project(agana)
 
-
 # You need to tell CMake where to find the ROOT installation. This can be done in a number of ways:
 #   - ROOT built with classic configure/make use the provided $ROOTSYS/etc/cmake/FindROOT.cmake
 #   - ROOT built with CMake. Add in CMAKE_PREFIX_PATH the installation prefix for ROOT
@@ -38,6 +37,28 @@ link_directories($ENV{ROOTANASYS}/lib)
 # determine whether ROOTANA is a submodule
 string(COMPARE EQUAL "$ENV{ROOTANASYS}" "${CMAKE_SOURCE_DIR}/rootana" _rootana_default )
 
+SET(_AGANA_LIBS rootana z m dl pthread Thread MultiProc Gui XMLParser XMLIO RHTTP)
+
+# MIDAS -- live analyzer
+set(MIDASSYS "" CACHE PATH "")
+if(MIDASSYS STREQUAL "")
+    set(MIDASSYS "$ENV{MIDASSYS}")
+endif()
+if(MIDASSYS STREQUAL "")
+    find_package(Midas QUIET)
+else()
+    set(MIDAS_FOUND TRUE)
+    set(MIDAS_INCLUDE_DIRS "$ENV{MIDASSYS}/include")
+    set(MIDAS_LIBRARIES "$ENV{MIDASSYS}/lib/libmidas.a" -lutil -lrt)
+endif()
+if(MIDAS_FOUND)
+    message(DEBUG "[${PROJECT_NAME}] MIDAS_INCLUDE_DIRS = ${MIDAS_INCLUDE_DIRS}")
+    message(DEBUG "[${PROJECT_NAME}] MIDAS_LIBRARIES = ${MIDAS_LIBRARIES}")
+    list(APPEND _AGANA_LIBS midas)
+    link_libraries(${MIDAS_LIBRARIES})
+    link_directories($ENV{MIDASSYS}/lib)
+endif()
+
 file(GLOB Sources "*.cxx")
 
 
@@ -50,7 +71,8 @@ if( _agana_standalone )
 
   add_executable(agana.exe $ENV{ROOTANASYS}/manalyzer/manalyzer_main ${Sources} )
 
-  target_link_libraries(agana.exe rootana z m dl pthread Thread MultiProc Gui XMLParser XMLIO RHTTP)
+  #target_link_libraries(agana.exe rootana z m dl pthread Thread MultiProc Gui XMLParser XMLIO RHTTP)
+  target_link_libraries(agana.exe ${_AGANA_LIBS})
 
   install(
     TARGETS agana.exe
