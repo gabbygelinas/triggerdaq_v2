@@ -63,25 +63,21 @@ file(GLOB Sources "*.cxx")
 
 
 # determine whether agana is a submodule or standalone
-string(COMPARE EQUAL "${CMAKE_BINARY_DIR}" "${CMAKE_SOURCE_DIR}/build" _agana_standalone )
-
-if( _agana_standalone )
+if( _AGANA_STATIC )
+  message(STATUS "building agana static library")
+  add_library(agana STATIC ${Sources})
+  if(_rootana_default)
+    add_dependencies(agana rootana)
+  endif()
+else()
   message(STATUS "building agana standalone")
   set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
 
   add_executable(agana.exe $ENV{ROOTANASYS}/manalyzer/manalyzer_main ${Sources} )
-
-  #target_link_libraries(agana.exe rootana z m dl pthread Thread MultiProc Gui XMLParser XMLIO RHTTP)
   target_link_libraries(agana.exe ${_AGANA_LIBS})
 
   install(
     TARGETS agana.exe
     DESTINATION ${CMAKE_INSTALL_PREFIX}
     )
-else()
-  message(STATUS "building agana static library")
-  add_library(agana STATIC ${Sources})
-  if(_rootana_default)
-    add_dependencies(agana rootana)
-  endif()
 endif()
