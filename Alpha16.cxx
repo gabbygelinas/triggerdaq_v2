@@ -38,6 +38,7 @@ static std::string toString(int v)
    return buf;
 }
 
+#if 0
 // CRC16 from http://stackoverflow.com/questions/10564491/function-to-calculate-a-crc16-checksum
 static unsigned short crc16(const unsigned char* data_p, unsigned char length){
    unsigned char x;
@@ -50,8 +51,9 @@ static unsigned short crc16(const unsigned char* data_p, unsigned char length){
    }
    return crc;
 }
+#endif
 
-Alpha16Packet* Alpha16Packet::Unpack(const void*ptr, int bklen8)
+Alpha16Packet* Alpha16Packet::UnpackVer1(const void*ptr, int bklen8)
 {
    Alpha16Packet* p = new Alpha16Packet();
    /*
@@ -123,7 +125,8 @@ Alpha16Packet* Alpha16Packet::Unpack(const void*ptr, int bklen8)
    p->packetType = getUint8(ptr, 0);
    p->packetVersion = getUint8(ptr, 1);
    p->acceptedTrigger = getUint16(ptr, 2);
-   p->hardwareId = getUint32(ptr, 4);
+   p->macMsw = getUint16(ptr, 4);
+   p->macLsw = getUint32(ptr, 6);
    p->buildTimestamp = getUint32(ptr, 10);
    //int zero = getUint16(ptr, 14);
    p->eventTimestamp = getUint32(ptr, 18);
@@ -133,11 +136,151 @@ Alpha16Packet* Alpha16Packet::Unpack(const void*ptr, int bklen8)
    p->channelType = chanX & 0x80;
    p->channelId = chanX & 0x7F;
    p->nsamples = getUint16(ptr, 28);
-   p->checksum = getUint16(ptr, 30 + p->nsamples*2);
-   p->length = 32 + p->nsamples*2;
-   
-   p->xcrc16 = crc16((const unsigned char*)ptr, 32 + p->nsamples*2);
+   p->nsamples_supp = p->nsamples;
+   //p->checksum = getUint16(ptr, 30 + p->nsamples*2);
+   //p->length = 32 + p->nsamples*2;
+   //p->xcrc16 = crc16((const unsigned char*)ptr, 32 + p->nsamples*2);
 
+   return p;
+}
+
+Alpha16Packet* Alpha16Packet::UnpackVer2(const void*ptr, int bklen8)
+{
+   Alpha16Packet* p = new Alpha16Packet();
+   /*
+     ALPHA16 UDP packet data format from Bryerton: this is packet version 1:
+     
+     Date: Mon, 20 Jun 2016 15:07:08 -0700
+     From bryerton@triumf.ca  Mon Jun 20 15:07:05 2016
+     From: Bryerton Shaw <bryerton@triumf.ca>
+     To: Konstantin Olchanski <olchansk@triumf.ca>
+     Subject: Re: eta on udp data?
+     
+     Hi Konstantin,
+     
+     Just trying to iron out one last bug, it was (is?) locking up if I
+     saturated the link, but I think I just resolved that! So we ve got all
+     16 channels outputting pretty steadily up to 40kHz or so, if I reduce
+     it to 3 channels, we can get 150+ kHz event rates per channel.
+     
+     I am going to add a checksum onto the packet structure but it looks as
+     follows, broken down by BYTE offset
+      
+      0 Packet Type - Currently fixed at0x01
+      1 Packet Version - Currently fixed at0x01
+      2 Accepted Trigger MSB - Inside the firmware logic Accepted Trigger is unsigned 32bits, providing the lower 16bits here for useful as a dropped UDP packet check
+      3 Accepted Trigger LSB
+      4 MSB Hardware ID - Currently the lower 48 bits of the ArriaV ChipID. It will be the MAC address shortly however
+      5 "" ""
+      6 "" ""
+      7 "" ""
+      8 "" ""
+      9 LSB Hardware ID
+      10 Build Timestamp (UNIX timestamp, aka seconds since Jan 01, 1980 UTC)
+      11 "" ""
+      12 "" ""
+      13 "" ""
+      14 0x00
+      15 0x00
+      16 MSB Event Timestamp
+      17 "" ""
+      18 "" ""
+      19 "" ""
+      20 "" ""
+      21 LSB Event Timestamp
+      22 MSB Trigger Offset - Trigger Point in relation to the start of the waveform packet. Signed 32bit integer
+      23
+      24
+      25 LSB Trigger Offset
+      26 ModuleID - Logical Identifier for the Alpha16 board. unsigned byte
+      27 [7] Channel Type - Either 0 or 1, for BScint or Anode. The MSB of this byte
+      27 [6:0] Channel ID - Unsigned 7bits, identifies the ADC channel (0-15) used
+      28 MSB Sample Count - Unsigned 16 bit value indicating the number of samples (1-N)
+      29 LSB Sample Count
+      30 MSB First Waveform Sample - Signed 16 bit value
+      31 LSB First Waveform Sample
+      ....
+      30 + (SampleCount*2) MSB Checksum
+      31 + (SampleCount*2) LSB Checksum
+      
+      I will give you the checksum details in a moment, I am just adding it in
+      now. Most likely will be a crc16 based on 1+x^2+x^15+x^16 .
+      The byte positions may not be ideal, but we can sort that out.
+      
+      Cheers,
+      
+      Bryerton
+   */
+
+   // packet version 2 has two extra bytes on the front
+   // the last DWORD of the packet is not the CRC16,
+   // but is the data suppression info. KO 2020-OCT-26.
+   
+   p->bankLength = bklen8;
+   p->packetType = getUint8(ptr, 0);
+   p->packetVersion = getUint8(ptr, 1);
+   p->acceptedTrigger = getUint16(ptr, 4);
+   p->macMsw = getUint16(ptr, 6);
+   p->macLsw = getUint32(ptr, 8);
+   p->buildTimestamp = getUint32(ptr, 12);
+   //int zero = getUint16(ptr, 14);
+   p->eventTimestamp = getUint32(ptr, 20);
+   p->triggerOffset = getUint32(ptr, 24);
+   p->moduleId = getUint8(ptr, 28);
+   int chanX = getUint8(ptr, 29);
+   p->channelType = chanX & 0x80;
+   p->channelId = chanX & 0x7F;
+   p->nsamples = getUint16(ptr, 30);
+   p->nsamples_supp = (bklen8 - 32 - 4) / 2;
+   uint32_t footer = getUint32(ptr, bklen8 - 4);
+   p->baseline  =   (footer & 0x0000FFFF) >> 0;
+   p->keep_last =   (footer & 0x0FFF0000) >> 16;
+   p->keep_bit     = footer & 0x10000000;
+   p->supp_enabled = footer & 0x20000000;
+
+   //p->checksum = 0;
+   //p->length = 32 + p->nsamples*2;
+   //p->xcrc16 = 0;
+
+   return p;
+}
+
+Alpha16Packet* Alpha16Packet::UnpackVer3(const void*ptr, int bklen8)
+{
+   Alpha16Packet* p = new Alpha16Packet();
+
+   // packet version 3 has same data as version 1 and 2,
+   // but data fields are arranged in a different order
+   // to allow sending a short packet when keep_bit is not
+   // set and all adc samples are suppressed. KO 2020-NOV-12.
+   
+   p->bankLength      = bklen8;
+   p->packetType      = getUint8(ptr, 0);
+   p->packetVersion   = getUint8(ptr, 1);
+   p->acceptedTrigger = getUint16(ptr, 2);
+   p->moduleId        = getUint8(ptr, 4);
+   int chanX          = getUint8(ptr, 5);
+   p->channelType     = chanX & 0x80;
+   p->channelId       = chanX & 0x7F;
+   p->nsamples        = getUint16(ptr, 6);
+   p->nsamples_supp   = 0;
+   p->eventTimestamp  = getUint32(ptr, 8);
+
+   if (bklen8 > 16) {
+      // zero   = getUint16(ptr, 12);
+      p->macMsw = getUint16(ptr, 14);
+      p->macLsw = getUint32(ptr, 16);
+      p->eventTimestampMsw = getUint32(ptr, 20);
+      p->triggerOffset     = getUint32(ptr, 24);
+      p->buildTimestamp    = getUint32(ptr, 28);
+      p->nsamples_supp     = (bklen8 - 32 - 4) / 2;
+   }
+
+   uint32_t footer = getUint32(ptr, bklen8 - 4);
+   p->baseline  =   (footer & 0x0000FFFF) >> 0;
+   p->keep_last =   (footer & 0x0FFF0000) >> 16;
+   p->keep_bit     = footer & 0x10000000;
+   p->supp_enabled = footer & 0x20000000;
    return p;
 }
 
@@ -151,43 +294,54 @@ int Alpha16Packet::PacketVersion(const void*ptr, int bklen8)
    return getUint8(ptr, 1);
 }
 
-uint32_t Alpha16Packet::PacketTimestamp(const void*ptr, int bklen8)
-{
-   return getUint32(ptr, 18);
-}
+//uint32_t Alpha16Packet::PacketTimestamp(const void*ptr, int bklen8)
+//{
+//   return getUint32(ptr, 18);
+//}
 
-int Alpha16Packet::PacketChannel(const void*ptr, int bklen8)
-{
-   int chanX = getUint8(ptr, 27);
-   //int channelType = chanX & 0x80;
-   int channelId = chanX & 0x7F;
-   return channelId;
-}
+//int Alpha16Packet::PacketChannel(const void*ptr, int bklen8)
+//{
+//   int chanX = getUint8(ptr, 27);
+//   //int channelType = chanX & 0x80;
+//   int channelId = chanX & 0x7F;
+//   return channelId;
+//}
 
 void Alpha16Packet::Print() const
 {
    printf("ALPHA16 data packet:\n");
    printf("  packet type:    0x%02x (%d)\n", packetType, packetType);
    printf("  packet version: 0x%02x (%d)\n", packetVersion, packetVersion);
-   printf("  hwid:     0x%08x\n", hardwareId);
+   printf("  mac addr:       0x%04x%08x\n", macMsw, macLsw);
    printf("  buildts:  0x%08x\n", buildTimestamp);
    printf("  mod id:   0x%02x\n", moduleId);
    printf("  trig no:  0x%04x (%d)\n", acceptedTrigger, acceptedTrigger);
    printf("  event ts: 0x%08x (%d)\n", eventTimestamp, eventTimestamp);
    printf("  trig offset:   %d\n", triggerOffset);
    printf("  channel: type: %d, id: %d\n", channelType, channelId);
-   printf("  nsamples: %d\n", nsamples);
-   printf("  checksum: 0x%04x, computed checksum 0x%04x\n", checksum, xcrc16);
-   printf("length: %d, bank length %d\n", length, bankLength);
+   printf("  nsamples: %d requested, %d actual\n", nsamples, nsamples_supp);
+   //printf("  checksum: 0x%04x, computed checksum 0x%04x\n", checksum, xcrc16);
+   //printf("length: %d, bank length %d\n", length, bankLength);
+   printf("  baseline %d, keep_bit %d, keep_last %d, suppression enabled %d\n", baseline, keep_bit, keep_last, supp_enabled);
+   printf("bank length %d\n", bankLength);
 };
 
-void Alpha16Channel::Print() const
+void Alpha16Channel::Print(bool printSamples) const
 {
    printf("Alpha16Channel: bank %s, adc module %2d chan %2d, preamp pos %2d, wire %2d, tpc_wire %3d, bsc_bar %3d, first_bin %d, samples %d", bank.c_str(), adc_module, adc_chan, preamp_pos, preamp_wire, tpc_wire, bsc_bar, first_bin, (int)adc_samples.size());
+   if (printSamples) {
+      printf(": ");
+      for (unsigned i=0; i<adc_samples.size(); i++) {
+         if (i!=0)
+            printf(", ");
+         printf("%d", adc_samples[i]);
+      }
+   }
 }
 
-Alpha16Channel* Unpack(const char* bankname, int module, const Alpha16Packet* p, const void* bkptr, int bklen8)
+Alpha16Channel* UnpackVer1(const char* bankname, int module, const Alpha16Packet* p, const void* bkptr, int bklen8)
 {
+   assert(p->packetVersion == 1);
    Alpha16Channel* c = new Alpha16Channel;
 
    c->bank = bankname;
@@ -209,6 +363,90 @@ Alpha16Channel* Unpack(const char* bankname, int module, const Alpha16Packet* p,
    
    for (int i=0; i<nsamples; i++) {
       unsigned v = getUint16(bkptr, 30 + i*2);
+      // manual sign extension
+      if (v & 0x8000)
+         v |= 0xffff0000;
+      c->adc_samples.push_back(v);
+   }
+
+   return c;
+};
+
+Alpha16Channel* UnpackVer2(const char* bankname, int module, const Alpha16Packet* p, const void* bkptr, int bklen8)
+{
+   assert(p->packetVersion == 2);
+   Alpha16Channel* c = new Alpha16Channel;
+
+   c->bank = bankname;
+   c->adc_module = module;
+   if (p->channelType == 0) {
+      c->adc_chan = p->channelId;
+   } else {
+      c->adc_chan = 16 + p->channelId;
+   }
+   c->preamp_pos  = -1;
+   c->preamp_wire = -1;
+   c->tpc_wire    = -1;
+   c->first_bin   = 0;
+
+   int nsamples = p->nsamples;
+   int nactual  = p->nsamples_supp;
+
+   c->adc_samples.reserve(nsamples);
+   c->adc_samples.clear();
+   
+   for (int i=0; i<nactual; i++) {
+      unsigned v = getUint16(bkptr, 32 + i*2);
+      // manual sign extension
+      if (v & 0x8000)
+         v |= 0xffff0000;
+      c->adc_samples.push_back(v);
+   }
+
+   for (int i=nactual; i<nsamples; i++) {
+      unsigned v = p->baseline;
+      // manual sign extension
+      if (v & 0x8000)
+         v |= 0xffff0000;
+      c->adc_samples.push_back(v);
+   }
+
+   return c;
+};
+
+Alpha16Channel* UnpackVer3(const char* bankname, int module, const Alpha16Packet* p, const void* bkptr, int bklen8)
+{
+   assert(p->packetVersion == 3);
+   Alpha16Channel* c = new Alpha16Channel;
+
+   c->bank = bankname;
+   c->adc_module = module;
+   if (p->channelType == 0) {
+      c->adc_chan = p->channelId;
+   } else {
+      c->adc_chan = 16 + p->channelId;
+   }
+   c->preamp_pos  = -1;
+   c->preamp_wire = -1;
+   c->tpc_wire    = -1;
+   c->first_bin   = 0;
+
+   int nsamples = p->nsamples;
+   int nactual  = p->nsamples_supp;
+
+   c->adc_samples.reserve(nsamples);
+   c->adc_samples.clear();
+   
+   for (int i=0; i<nactual; i++) {
+      unsigned v = getUint16(bkptr, 32 + i*2);
+      // manual sign extension
+      if (v & 0x8000)
+         v |= 0xffff0000;
+      c->adc_samples.push_back(v);
+   }
+
+   for (int i=nactual; i<nsamples; i++) {
+      unsigned v = p->baseline;
       // manual sign extension
       if (v & 0x8000)
          v |= 0xffff0000;
@@ -777,19 +1015,41 @@ void Alpha16Asm::AddBank(Alpha16Event* e, int imodule, const char* bkname, const
       printf("  packet type:    0x%02x (%d)\n", packetType, packetType);
       printf("  packet version: 0x%02x (%d)\n", packetVersion, packetVersion);
       
-      Alpha16Packet *p = Alpha16Packet::Unpack(bkptr, bklen);
-      p->Print();
-      delete p;
+      //Alpha16Packet *p = Alpha16Packet::Unpack(bkptr, bklen);
+      //p->Print();
+      //delete p;
    }
    
    if (packetType == 1 && packetVersion == 1) {
-      Alpha16Packet* p = Alpha16Packet::Unpack(bkptr, bklen);
-      Alpha16Channel* c = Unpack(bkname, imodule, p, bkptr, bklen);
+      Alpha16Packet* p = Alpha16Packet::UnpackVer1(bkptr, bklen);
+      Alpha16Channel* c = UnpackVer1(bkname, imodule, p, bkptr, bklen);
       
       //p->Print();
       //printf("\n");
       
       //c->Print();
+      //printf("\n");
+      
+      AddChannel(e, p, c);
+   } else if (packetType == 1 && packetVersion == 2) {
+      Alpha16Packet* p = Alpha16Packet::UnpackVer2(bkptr, bklen);
+      Alpha16Channel* c = UnpackVer2(bkname, imodule, p, bkptr, bklen);
+      
+      //p->Print();
+      //printf("\n");
+      
+      //c->Print(true);
+      //printf("\n");
+      
+      AddChannel(e, p, c);
+   } else if (packetType == 1 && packetVersion == 3) {
+      Alpha16Packet* p = Alpha16Packet::UnpackVer3(bkptr, bklen);
+      Alpha16Channel* c = UnpackVer3(bkname, imodule, p, bkptr, bklen);
+      
+      //p->Print();
+      //printf("\n");
+      
+      //c->Print(true);
       //printf("\n");
       
       AddChannel(e, p, c);
