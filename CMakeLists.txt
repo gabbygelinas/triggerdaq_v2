@@ -20,6 +20,28 @@ link_libraries(${ROOT_LIBRARIES})
 include(${ROOT_USE_FILE})
 
 
+find_package(Git REQUIRED)
+if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
+   option(GIT_SUBMODULE "Check submodules during build" ON)
+endif()
+
+function(get_submodule MODULE_NAME)
+   if(GIT_SUBMODULE)
+      if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_NAME}/.git")
+         message("${MODULE_NAME} submodule ok")
+      else()
+         message(STATUS "Submodule ${MODULE_NAME} update --init")
+         execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init ${MODULE_NAME}
+                        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                        RESULT_VARIABLE GIT_SUBMOD_RESULT)
+         if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+            message(FATAL_ERROR "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+         endif()
+      endif()
+    endif()
+endfunction()
+
+
 # You need to tell CMake where to find the ROOTANA installation. This can be done in a number of ways, this is a painful one.
 if(EXISTS $ENV{ROOTANASYS}/rootana-config.cmake)
     if(NOT DEFINED $ENV{CMAKE_PREFIX_PATH})
@@ -61,6 +83,7 @@ endif()
 
 file(GLOB Sources "*.cxx")
 
+get_submodule( agcfmdb )
 
 # determine whether agana is a submodule or standalone
 if( _AGANA_STATIC )
