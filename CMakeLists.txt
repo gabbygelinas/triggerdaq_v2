@@ -87,11 +87,16 @@ get_submodule( agcfmdb )
 
 # determine whether agana is a submodule or standalone
 if( _AGANA_STATIC )
+
   message(STATUS "building agana static library")
   add_library(agana STATIC ${Sources})
   if(_rootana_default)
     add_dependencies(agana rootana)
   endif()
+add_custom_command( TARGET agana POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/include
+                    COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/*.h ${CMAKE_INSTALL_PREFIX}/include
+		    )
 else()
   message(STATUS "building agana standalone")
   set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
