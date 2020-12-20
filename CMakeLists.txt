@@ -93,10 +93,10 @@ if( _AGANA_STATIC )
   if(_rootana_default)
     add_dependencies(agana rootana)
   endif()
-add_custom_command( TARGET agana POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_INSTALL_PREFIX}/include
-                    COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/*.h ${CMAKE_INSTALL_PREFIX}/include
-		    )
+
+file(GLOB HEADER_FILES include/*.h)
+install(FILES ${HEADER_FILES} DESTINATION include)
+
 else()
   message(STATUS "building agana standalone")
   set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
