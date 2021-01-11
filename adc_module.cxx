@@ -630,7 +630,14 @@ public:
       if (fTrace)
          printf("AdcModule::ctor!\n");
       fFlags = f;
-      fCfm = new Ncfm("agcfmdb");
+
+      std::string agcfmdb_path="agcfmdb";
+      if (getenv("AGRELEASE"))
+      {
+         agcfmdb_path=getenv("AGRELEASE");
+         agcfmdb_path+="/agana/agcfmdb";
+      }
+      fCfm     = new Ncfm(agcfmdb_path.c_str());
 
       runinfo->fRoot->fOutputFile->cd();
       TDirectory* aw = gDirectory->mkdir("adc");
