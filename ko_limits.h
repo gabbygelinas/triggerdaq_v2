@@ -24,9 +24,9 @@
 
 // TPC field wire pulser time, ns
 
-#define AW_PULSER_TIME_100 1800
-#define AW_PULSER_TIME_625 1800
-#define PAD_PULSER_TIME_625 7200
+//#define AW_PULSER_TIME_100 1800
+//#define AW_PULSER_TIME_625 1800
+#define PAD_PULSER_TIME_625 2650
 
 // number of TPC pad columns
 #define NUM_PC (8*4)

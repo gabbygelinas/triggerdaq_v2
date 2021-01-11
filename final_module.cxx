@@ -177,62 +177,34 @@ public:
    TH1D* h_cal_adcnn_16[ADC_MODULE_LAST+1];
    TProfile* h_cal_adcnn_profile_16 = NULL;
 
-#if 0
-   TH1D* h_cal_adc05_0_full_range = NULL;
-   TH1D* h_cal_adc05_16_full_range = NULL;
-
-   TH1D* h_cal_adc05_0 = NULL;
-   TH1D* h_cal_adc05_16 = NULL;
-   TH1D* h_cal_adc05_17 = NULL;
-
-   // time across to next channel
-   TH1D* h_cal_adc05_0_1 = NULL;
-
-   // time across to another 100 MHz ADC on the same module
-   TH1D* h_cal_adc05_0_4 = NULL;
-   TH1D* h_cal_adc05_0_8 = NULL;
-   TH1D* h_cal_adc05_0_12 = NULL;
-
-   // time across to the 62.5 MHz 32ch ADC on the same module
-   TH1D* h_cal_adc05_0_16 = NULL;
-
-   // time across to next channel 62.5 MHz ADC on the same module
-   TH1D* h_cal_adc05_16_17 = NULL;
-   TH1D* h_cal_adc06_16_20 = NULL;
-
-   // time across to another 62.5 MHz ADC on the same module
-   TH1D* h_cal_adc05_16_24 = NULL;
-   TH1D* h_cal_adc05_16_32 = NULL;
-   TH1D* h_cal_adc05_16_40 = NULL;
-
-   // time across all 32 channels pf 62.5 MHz ADC
-   TProfile* h_cal_adc05_16_xx = NULL;
-
-   // time across to the next module, 100 MHz and 62.5 MHz ADC
-   TH1D* h_cal_adc_05_06_chan0 = NULL;
-   TH1D* h_cal_adc_05_06_chan16 = NULL;
-#endif
-
    // time of PWB calibration pulse
    TH1D* h_cal_time_pos00_seqsca_04_full_range = NULL;
    TH1D* h_cal_time_pos01_seqsca_04_full_range = NULL;
    TH1D* h_cal_time_pos02_seqsca_04_full_range = NULL;
+   TH1D* h_cal_time_pos03_seqsca_04_full_range = NULL;
+
    TH1D* h_cal_time_pos00_seqsca_04 = NULL;
    TH1D* h_cal_time_pos01_seqsca_04 = NULL;
    TH1D* h_cal_time_pos02_seqsca_04 = NULL;
+   TH1D* h_cal_time_pos03_seqsca_04 = NULL;
 
    // time across to next channel
    TH1D* h_cal_time_pos00_seqsca_04_05 = NULL;
    TH1D* h_cal_time_pos01_seqsca_04_05 = NULL;
    TH1D* h_cal_time_pos02_seqsca_04_05 = NULL;
+   TH1D* h_cal_time_pos03_seqsca_04_05 = NULL;
 
    // time across to next SCA
+   TH1D* h_cal_time_pos00_seqsca_04_84 = NULL;
    TH1D* h_cal_time_pos01_seqsca_04_84 = NULL;
    TH1D* h_cal_time_pos02_seqsca_04_84 = NULL;
+   TH1D* h_cal_time_pos03_seqsca_04_84 = NULL;
 
    // time across to next ADC
+   TH1D* h_cal_time_pos00_seqsca_04_164 = NULL;
    TH1D* h_cal_time_pos01_seqsca_04_164 = NULL;
    TH1D* h_cal_time_pos02_seqsca_04_164 = NULL;
+   TH1D* h_cal_time_pos03_seqsca_04_164 = NULL;
 
    // time across 2 PWB boards
    TH1D* h_cal_time_pos_01_02_seqsca04 = NULL;
@@ -241,10 +213,16 @@ public:
    TH1D* h_cal_time_pos_01_03_seqsca05 = NULL;
 
    // time across 100MHz ADC to PWB
-   TH1D* h_cal_time_pos01_seqsca_04_minus_adc5_0 = NULL;
-   TH1D* h_cal_time_pos01_seqsca_04_minus_adc5_16 = NULL;
-   TH1D* h_cal_time_pos02_seqsca_04_minus_adc5_0 = NULL;
-   TH1D* h_cal_time_pos02_seqsca_04_minus_adc5_16 = NULL;
+   TH1D* h_cal_time_pos00_seqsca_04_minus_adc_0 = NULL;
+   TH1D* h_cal_time_pos01_seqsca_04_minus_adc_0 = NULL;
+   TH1D* h_cal_time_pos02_seqsca_04_minus_adc_0 = NULL;
+   TH1D* h_cal_time_pos03_seqsca_04_minus_adc_0 = NULL;
+
+   // time across 62.5MHz ADC to PWB
+   TH1D* h_cal_time_pos00_seqsca_04_minus_adc_16 = NULL;
+   TH1D* h_cal_time_pos01_seqsca_04_minus_adc_16 = NULL;
+   TH1D* h_cal_time_pos02_seqsca_04_minus_adc_16 = NULL;
+   TH1D* h_cal_time_pos03_seqsca_04_minus_adc_16 = NULL;
 
    bool fTrace = false;
    bool fDoEventDisplay = false;
@@ -441,12 +419,16 @@ public:
       h_cal_time_pos00_seqsca_04_full_range = new TH1D("h_cal_time_pos00_seqsca_04_full_range", "calibration pulse time, pos00 seqsca 04, full range; time, ns", 200, 0, MAX_TIME);
       h_cal_time_pos01_seqsca_04_full_range = new TH1D("h_cal_time_pos01_seqsca_04_full_range", "calibration pulse time, pos01 seqsca 04, full range; time, ns", 200, 0, MAX_TIME);
       h_cal_time_pos02_seqsca_04_full_range = new TH1D("h_cal_time_pos02_seqsca_04_full_range", "calibration pulse time, pos02 seqsca 04, full range; time, ns", 200, 0, MAX_TIME);
+      h_cal_time_pos03_seqsca_04_full_range = new TH1D("h_cal_time_pos03_seqsca_04_full_range", "calibration pulse time, pos03 seqsca 04, full range; time, ns", 200, 0, MAX_TIME);
 
       h_cal_time_pos00_seqsca_04 = new TH1D("h_cal_time_pos00_seqsca_04", "calibration pulse time, pos00 seqsca 04; time, ns", 200, PAD_PULSER_TIME_625-50.0, PAD_PULSER_TIME_625+50.0);
       h_cal_time_pos01_seqsca_04 = new TH1D("h_cal_time_pos01_seqsca_04", "calibration pulse time, pos01 seqsca 04; time, ns", 200, PAD_PULSER_TIME_625-50.0, PAD_PULSER_TIME_625+50.0);
       h_cal_time_pos02_seqsca_04 = new TH1D("h_cal_time_pos02_seqsca_04", "calibration pulse time, pos02 seqsca 04; time, ns", 200, PAD_PULSER_TIME_625-50.0, PAD_PULSER_TIME_625+50.0);
+      h_cal_time_pos03_seqsca_04 = new TH1D("h_cal_time_pos03_seqsca_04", "calibration pulse time, pos03 seqsca 04; time, ns", 200, PAD_PULSER_TIME_625-50.0, PAD_PULSER_TIME_625+50.0);
 
       h_cal_time_pos00_seqsca_04_05 = new TH1D("h_cal_time_pos00_seqsca_04_05", "calibration pulse time, pos00 seqsca 05-04; time, ns", 101, -50, 50);
+      h_cal_time_pos00_seqsca_04_84 = new TH1D("h_cal_time_pos00_seqsca_04_84", "calibration pulse time, pos00 seqsca 84-04; time, ns", 101, -50, 50);
+      h_cal_time_pos00_seqsca_04_164 = new TH1D("h_cal_time_pos00_seqsca_04_164", "calibration pulse time, pos00 seqsca 164-04; time, ns", 101, -50, 50);
 
       h_cal_time_pos01_seqsca_04_05 = new TH1D("h_cal_time_pos01_seqsca_04_05", "calibration pulse time, pos01 seqsca 05-04; time, ns", 101, -50, 50);
       h_cal_time_pos01_seqsca_04_84 = new TH1D("h_cal_time_pos01_seqsca_04_84", "calibration pulse time, pos01 seqsca 84-04; time, ns", 101, -50, 50);
@@ -456,6 +438,10 @@ public:
       h_cal_time_pos02_seqsca_04_84 = new TH1D("h_cal_time_pos02_seqsca_04_84", "calibration pulse time, pos02 seqsca 84-04; time, ns", 101, -50, 50);
       h_cal_time_pos02_seqsca_04_164 = new TH1D("h_cal_time_pos02_seqsca_04_164", "calibration pulse time, pos02 seqsca 164-04; time, ns", 101, -50, 50);
 
+      h_cal_time_pos03_seqsca_04_05 = new TH1D("h_cal_time_pos03_seqsca_04_05", "calibration pulse time, pos03 seqsca 05-04; time, ns", 101, -50, 50);
+      h_cal_time_pos03_seqsca_04_84 = new TH1D("h_cal_time_pos03_seqsca_04_84", "calibration pulse time, pos03 seqsca 84-04; time, ns", 101, -50, 50);
+      h_cal_time_pos03_seqsca_04_164 = new TH1D("h_cal_time_pos03_seqsca_04_164", "calibration pulse time, pos03 seqsca 164-04; time, ns", 101, -50, 50);
+
       h_cal_time_pos_01_02_seqsca04 = new TH1D("h_cal_time_pos_01_02_seqsca04", "calibration pulse time, pos02-pos01 seqsca 04; time, ns", 101, -50, 50);
       h_cal_time_pos_01_02_seqsca05 = new TH1D("h_cal_time_pos_01_02_seqsca05", "calibration pulse time, pos02-pos01 seqsca 05; time, ns", 101, -50, 50);
 
@@ -464,10 +450,15 @@ public:
 
       // timing across PWB and Alpha16
 
-      h_cal_time_pos01_seqsca_04_minus_adc5_0 = new TH1D("h_cal_time_pos01_seqsca_04_minus_adc5_0", "calibration pulse time, PWB pos01 - adc05 chan 0; time, ns", 101, -50, 50);
-      h_cal_time_pos01_seqsca_04_minus_adc5_16 = new TH1D("h_cal_time_pos01_seqsca_04_minus_adc5_16", "calibration pulse time, PWB pos01 - adc05 chan 16; time, ns", 101, -50, 50);
-      h_cal_time_pos02_seqsca_04_minus_adc5_0 = new TH1D("h_cal_time_pos02_seqsca_04_minus_adc5_0", "calibration pulse time, PWB pos02 - adc05 chan 0; time, ns", 101, -50, 50);
-      h_cal_time_pos02_seqsca_04_minus_adc5_16 = new TH1D("h_cal_time_pos02_seqsca_04_minus_adc5_16", "calibration pulse time, PWB pos02 - adc05 chan 16; time, ns", 101, -50, 50);
+      h_cal_time_pos00_seqsca_04_minus_adc_0 = new TH1D("h_cal_time_pos00_seqsca_04_minus_adc_0", "calibration pulse time, PWB pos00 - adc chan 0; time, ns", 101, -50, 50);
+      h_cal_time_pos01_seqsca_04_minus_adc_0 = new TH1D("h_cal_time_pos01_seqsca_04_minus_adc_0", "calibration pulse time, PWB pos01 - adc chan 0; time, ns", 101, -50, 50);
+      h_cal_time_pos02_seqsca_04_minus_adc_0 = new TH1D("h_cal_time_pos02_seqsca_04_minus_adc_0", "calibration pulse time, PWB pos02 - adc chan 0; time, ns", 101, -50, 50);
+      h_cal_time_pos03_seqsca_04_minus_adc_0 = new TH1D("h_cal_time_pos03_seqsca_04_minus_adc_0", "calibration pulse time, PWB pos03 - adc chan 0; time, ns", 101, -50, 50);
+
+      h_cal_time_pos00_seqsca_04_minus_adc_16 = new TH1D("h_cal_time_pos00_seqsca_04_minus_adc_16", "calibration pulse time, PWB pos00 - adc chan 16; time, ns", 101, -50, 50);
+      h_cal_time_pos01_seqsca_04_minus_adc_16 = new TH1D("h_cal_time_pos01_seqsca_04_minus_adc_16", "calibration pulse time, PWB pos01 - adc chan 16; time, ns", 101, -50, 50);
+      h_cal_time_pos02_seqsca_04_minus_adc_16 = new TH1D("h_cal_time_pos02_seqsca_04_minus_adc_16", "calibration pulse time, PWB pos02 - adc chan 16; time, ns", 101, -50, 50);
+      h_cal_time_pos03_seqsca_04_minus_adc_16 = new TH1D("h_cal_time_pos03_seqsca_04_minus_adc_16", "calibration pulse time, PWB pos03 - adc chan 16; time, ns", 101, -50, 50);
    }
 
    void EndRun(TARunInfo* runinfo)
@@ -616,7 +607,7 @@ public:
          }
       }
 
-#if 1
+#if 0
       double adc5_0  = -1010;
       double adc5_1  = -1020;
       double adc5_4  = -1030;
@@ -719,10 +710,11 @@ public:
                //printf("\n");
             }
 
-            printf("RRR adc_module %d, adc_chan %d, time %f\n", adc_module, adc_chan, time);
+            //printf("RRR adc_module %d, adc_chan %d, time %f\n", adc_module, adc_chan, time);
 
             adc_time[adc_module][adc_chan] = time;
 
+#if 0
             if (adc_module == 5) {
                if (adc_chan ==  0) adc5_0  = time;
                if (adc_chan ==  1) adc5_1  = time;
@@ -741,6 +733,7 @@ public:
                if (adc_chan == 16) adc6_16 = time;
                if (adc_chan == 20) adc6_20 = time;
             }
+#endif
 
             for (unsigned k=0; k<eawh->fAwHits.size(); k++) {
                if (k==j)
@@ -773,6 +766,8 @@ public:
 
       double pos00_seqsca04 = -10;
       double pos00_seqsca05 = -20;
+      double pos00_seqsca84 = -130;
+      double pos00_seqsca164 = -140;
 
       double pos01_seqsca04 = -30;
       double pos01_seqsca05 = -40;
@@ -786,6 +781,8 @@ public:
 
       double pos03_seqsca04 = -70;
       double pos03_seqsca05 = -80;
+      double pos03_seqsca84 = -150;
+      double pos03_seqsca164 = -160;
 
       if (eph) {
          if (fPrint) {
@@ -810,6 +807,8 @@ public:
             if (ipwb==0) {
                if (seqsca == 4) pos00_seqsca04 = time;
                if (seqsca == 5) pos00_seqsca05 = time;
+               if (seqsca == 84) pos00_seqsca84 = time;
+               if (seqsca == 164) pos00_seqsca164 = time;
             }
 
             if (ipwb==1) {
@@ -829,6 +828,8 @@ public:
             if (ipwb==3) {
                if (seqsca == 4) pos03_seqsca04 = time;
                if (seqsca == 5) pos03_seqsca05 = time;
+               if (seqsca == 84) pos03_seqsca84 = time;
+               if (seqsca == 164) pos03_seqsca164 = time;
             }
 
             h_pad_time->Fill(time);
@@ -903,6 +904,7 @@ public:
          }
       }
 
+      double first_adc_time_0 = 0;
       double first_adc_time_16 = 0;
 
       for (int iadc = ADC_MODULE_FIRST; iadc <= ADC_MODULE_LAST; iadc++) {
@@ -947,10 +949,12 @@ public:
                   h_first_adc = iadc;
             }
 
-            printf("adc%02d chan 16 %f, chan 17 %f, 17_16 %f\n", iadc, adc_time[iadc][16], adc_time[iadc][17], adc_time[iadc][17]-adc_time[iadc][16]);
+            //printf("adc%02d chan 16 %f, chan 17 %f, 17_16 %f\n", iadc, adc_time[iadc][16], adc_time[iadc][17], adc_time[iadc][17]-adc_time[iadc][16]);
 
-            if (iadc == h_first_adc)
+            if (iadc == h_first_adc) {
                first_adc_time_16 = adc_time[iadc][16];
+               first_adc_time_0 = adc_time[iadc][0];
+            }
 
             h_cal_adcxx_16_full_range[iadc]->Fill(adc_time[iadc][16]);
             h_cal_adcxx_17_full_range[iadc]->Fill(adc_time[iadc][17]);
@@ -1069,7 +1073,8 @@ public:
          }
 #endif
 
-         double pulse_width = 5350.0 + 30.0 + 40.0;
+         double pulse_width = -2040.0;
+         //double pulse_width = 5350.0 + 30.0 + 40.0;
          //double xpad = pos01_seqsca04;
          // double t = xpad - adc5_0 - pulse_width;
          //printf("aw %.1f pad %.1f %.1f, diff %.1f\n", adc5_0, pos01_seqsca04, xpad, t);
@@ -1081,21 +1086,28 @@ public:
          h_cal_time_pos00_seqsca_04_full_range->Fill(pos00_seqsca04);
          h_cal_time_pos01_seqsca_04_full_range->Fill(pos01_seqsca04);
          h_cal_time_pos02_seqsca_04_full_range->Fill(pos02_seqsca04);
+         h_cal_time_pos03_seqsca_04_full_range->Fill(pos03_seqsca04);
 
          h_cal_time_pos00_seqsca_04->Fill(pos00_seqsca04);
          h_cal_time_pos01_seqsca_04->Fill(pos01_seqsca04);
          h_cal_time_pos02_seqsca_04->Fill(pos02_seqsca04);
+         h_cal_time_pos03_seqsca_04->Fill(pos03_seqsca04);
 
          h_cal_time_pos00_seqsca_04_05->Fill(pos00_seqsca05-pos00_seqsca04);
+         h_cal_time_pos00_seqsca_04_84->Fill(pos00_seqsca84-pos00_seqsca04);
+         h_cal_time_pos00_seqsca_04_164->Fill(pos00_seqsca164-pos00_seqsca04);
 
          h_cal_time_pos01_seqsca_04_05->Fill(pos01_seqsca05-pos01_seqsca04);
          h_cal_time_pos01_seqsca_04_84->Fill(pos01_seqsca84-pos01_seqsca04);
          h_cal_time_pos01_seqsca_04_164->Fill(pos01_seqsca164-pos01_seqsca04);
 
          h_cal_time_pos02_seqsca_04_05->Fill(pos02_seqsca05-pos02_seqsca04);
-         h_cal_time_pos02_seqsca_04_05->Fill(pos02_seqsca05-pos02_seqsca04);
          h_cal_time_pos02_seqsca_04_84->Fill(pos02_seqsca84-pos02_seqsca04);
          h_cal_time_pos02_seqsca_04_164->Fill(pos02_seqsca164-pos02_seqsca04);
+
+         h_cal_time_pos03_seqsca_04_05->Fill(pos03_seqsca05-pos03_seqsca04);
+         h_cal_time_pos03_seqsca_04_84->Fill(pos03_seqsca84-pos03_seqsca04);
+         h_cal_time_pos03_seqsca_04_164->Fill(pos03_seqsca164-pos03_seqsca04);
 
          h_cal_time_pos_01_02_seqsca04->Fill(pos02_seqsca04-pos01_seqsca04);
          h_cal_time_pos_01_02_seqsca05->Fill(pos02_seqsca05-pos01_seqsca05);
@@ -1103,11 +1115,20 @@ public:
          h_cal_time_pos_01_03_seqsca04->Fill(pos03_seqsca04-pos01_seqsca04);
          h_cal_time_pos_01_03_seqsca05->Fill(pos03_seqsca05-pos01_seqsca05);
 
-         h_cal_time_pos01_seqsca_04_minus_adc5_0->Fill(pos01_seqsca04 - adc5_0 - pulse_width);
-         h_cal_time_pos01_seqsca_04_minus_adc5_16->Fill(pos01_seqsca04 - adc5_16 - pulse_width);
+         if (first_adc_time_0 > 0) {
+            h_cal_time_pos00_seqsca_04_minus_adc_0->Fill(pos00_seqsca04 - first_adc_time_0 - pulse_width);
+            h_cal_time_pos01_seqsca_04_minus_adc_0->Fill(pos01_seqsca04 - first_adc_time_0 - pulse_width);
+            h_cal_time_pos02_seqsca_04_minus_adc_0->Fill(pos02_seqsca04 - first_adc_time_0 - pulse_width);
+            h_cal_time_pos03_seqsca_04_minus_adc_0->Fill(pos03_seqsca04 - first_adc_time_0 - pulse_width);
+         }
 
-         h_cal_time_pos02_seqsca_04_minus_adc5_0->Fill(pos02_seqsca04 - adc5_0 - pulse_width);
-         h_cal_time_pos02_seqsca_04_minus_adc5_16->Fill(pos02_seqsca04 - adc5_16 - pulse_width);
+         if (first_adc_time_16 > 0) {
+            printf("PWB %f, ADC %f, diff %f, plot %f\n", pos00_seqsca04, first_adc_time_16, pos00_seqsca04 - first_adc_time_16, pos00_seqsca04 - first_adc_time_16 - pulse_width);
+            h_cal_time_pos00_seqsca_04_minus_adc_16->Fill(pos00_seqsca04 - first_adc_time_16 - pulse_width);
+            h_cal_time_pos01_seqsca_04_minus_adc_16->Fill(pos01_seqsca04 - first_adc_time_16 - pulse_width);
+            h_cal_time_pos02_seqsca_04_minus_adc_16->Fill(pos02_seqsca04 - first_adc_time_16 - pulse_width);
+            h_cal_time_pos03_seqsca_04_minus_adc_16->Fill(pos03_seqsca04 - first_adc_time_16 - pulse_width);
+         }
       }
 
       bool do_plot = (runinfo->fRoot->fgApp != NULL);
