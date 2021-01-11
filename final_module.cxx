@@ -162,6 +162,22 @@ public:
 
    // time of calibration pulse relative to ADC trigger
 
+   TDirectory* hdir_pulser = NULL;
+
+   TH1D* h_cal_adcxx_16_full_range[ADC_MODULE_LAST+1];
+   TH1D* h_cal_adcxx_17_full_range[ADC_MODULE_LAST+1];
+   TH1D* h_cal_adcxx_32_full_range[ADC_MODULE_LAST+1];
+   TH1D* h_cal_adcxx_xx_16[ADC_MODULE_LAST+1];
+   TH1D* h_cal_adcxx_17_16_zoom[ADC_MODULE_LAST+1];
+   TH1D* h_cal_adcxx_32_16_zoom[ADC_MODULE_LAST+1];
+   TProfile* h_cal_adcxx_profile_16[ADC_MODULE_LAST+1];
+
+   int h_first_adc = 0;
+   TH1D* h_cal_adcnn_16_all = NULL;
+   TH1D* h_cal_adcnn_16[ADC_MODULE_LAST+1];
+   TProfile* h_cal_adcnn_profile_16 = NULL;
+
+#if 0
    TH1D* h_cal_adc05_0_full_range = NULL;
    TH1D* h_cal_adc05_16_full_range = NULL;
 
@@ -195,6 +211,7 @@ public:
    // time across to the next module, 100 MHz and 62.5 MHz ADC
    TH1D* h_cal_adc_05_06_chan0 = NULL;
    TH1D* h_cal_adc_05_06_chan16 = NULL;
+#endif
 
    // time of PWB calibration pulse
    TH1D* h_cal_time_pos00_seqsca_04_full_range = NULL;
@@ -387,10 +404,12 @@ public:
 
       //h_aw_pad_amp_pc = new TH2D("h_aw_pad_amp_pc", "p.h. of hits in aw vs pads, pc region", 50, 0, MAX_PAD_AMP, 50, 0, MAX_AW_AMP);
 
-      dir->mkdir("pulser")->cd();
+      hdir_pulser = dir->mkdir("pulser");
+      hdir_pulser->cd();
 
       // ADC timing
 
+#if 0
       h_cal_adc05_0_full_range = new TH1D("h_cal_time_adc05_0_full_range", "calibration pulse time, adc05 chan 0, full time range; time, ns", 200, 0, MAX_TIME);
       h_cal_adc05_16_full_range = new TH1D("h_cal_time_adc05_16_ful_range", "calibration pulse time, adc05 chan 16, full time range; time, ns", 200, 0, MAX_TIME);
 
@@ -415,7 +434,7 @@ public:
       h_cal_adc05_16_40 = new TH1D("h_cal_time_adc05_16_40", "calibration pulse time, adc05 chan 40-16; time, ns", 201, -50, 50);
 
       h_cal_adc05_16_xx = new TProfile("h_cal_time_adc05_16_xx", "calibration pulse time, adc05 chan 16..47-16; adc chan; time, ns", 32, 16-0.5, 48-0.5);
-
+#endif
 
       // PWB timing
 
@@ -597,6 +616,7 @@ public:
          }
       }
 
+#if 1
       double adc5_0  = -1010;
       double adc5_1  = -1020;
       double adc5_4  = -1030;
@@ -610,6 +630,15 @@ public:
       double adc6_0  = -2060;
       double adc6_16 = -2150;
       double adc6_20 = -2160;
+#endif
+
+      double adc_time[ADC_MODULE_LAST+1][48];
+
+      for (int iadc=ADC_MODULE_FIRST; iadc<=ADC_MODULE_LAST; iadc++) {
+         for (int ichan=0; ichan<48; ichan++) {
+            adc_time[iadc][ichan] = 0;
+         }
+      }
 
       if (eawh) {
          if (fPrint) {
@@ -689,6 +718,10 @@ public:
                }
                //printf("\n");
             }
+
+            printf("RRR adc_module %d, adc_chan %d, time %f\n", adc_module, adc_chan, time);
+
+            adc_time[adc_module][adc_chan] = time;
 
             if (adc_module == 5) {
                if (adc_chan ==  0) adc5_0  = time;
@@ -870,6 +903,107 @@ public:
          }
       }
 
+      double first_adc_time_16 = 0;
+
+      for (int iadc = ADC_MODULE_FIRST; iadc <= ADC_MODULE_LAST; iadc++) {
+         if (adc_time[iadc][16] > 0) {
+            if (h_cal_adcxx_16_full_range[iadc] == NULL) {
+               char name[256];
+               char title[256];
+
+               hdir_pulser->cd();
+
+               sprintf(name, "h_cal_time_adc%02d_16_full_range", iadc);
+               sprintf(title, "calibration pulse time, adc%02d chan 16, full time range; time, ns", iadc);
+               h_cal_adcxx_16_full_range[iadc] = new TH1D(name, title, 200, 0, MAX_TIME);
+
+               sprintf(name, "h_cal_time_adc%02d_17_full_range", iadc);
+               sprintf(title, "calibration pulse time, adc%02d chan 17, full time range; time, ns", iadc);
+               h_cal_adcxx_17_full_range[iadc] = new TH1D(name, title, 200, 0, MAX_TIME);
+
+               sprintf(name, "h_cal_time_adc%02d_32_full_range", iadc);
+               sprintf(title, "calibration pulse time, adc%02d chan 32, full time range; time, ns", iadc);
+               h_cal_adcxx_32_full_range[iadc] = new TH1D(name, title, 200, 0, MAX_TIME);
+
+               sprintf(name, "h_cal_time_adc%02d_xx_16", iadc);
+               sprintf(title, "calibration pulse time, adc%02d channels vs chan 16; time, ns", iadc);
+               h_cal_adcxx_xx_16[iadc] = new TH1D(name, title, 200, -50, +50);
+
+               sprintf(name, "h_cal_time_adc%02d_17_16_zoom", iadc);
+               sprintf(title, "calibration pulse time, adc%02d chan 17 vs chan 16; time, ns", iadc);
+               h_cal_adcxx_17_16_zoom[iadc] = new TH1D(name, title, 200, -5, +5);
+
+               sprintf(name, "h_cal_time_adc%02d_32_16_zoom", iadc);
+               sprintf(title, "calibration pulse time, adc%02d chan 32 vs chan 16; time, ns", iadc);
+               h_cal_adcxx_32_16_zoom[iadc] = new TH1D(name, title, 200, -5, +5);
+
+               sprintf(name, "h_cal_time_adc%02d_profile_16", iadc);
+               sprintf(title, "calibration pulse time, adc%02d chan 0..47 vs chan 16; ADC channel, 0..15 are 100MHz, 16..47 are 62.5MHz", iadc);
+               h_cal_adcxx_profile_16[iadc] = new TProfile(name, title, 48, -0.5, 47.5, -10, 10);
+               h_cal_adcxx_profile_16[iadc]->SetMaximum(+5.0);
+               h_cal_adcxx_profile_16[iadc]->SetMinimum(-5.0);
+
+               if (h_first_adc == 0)
+                  h_first_adc = iadc;
+            }
+
+            printf("adc%02d chan 16 %f, chan 17 %f, 17_16 %f\n", iadc, adc_time[iadc][16], adc_time[iadc][17], adc_time[iadc][17]-adc_time[iadc][16]);
+
+            if (iadc == h_first_adc)
+               first_adc_time_16 = adc_time[iadc][16];
+
+            h_cal_adcxx_16_full_range[iadc]->Fill(adc_time[iadc][16]);
+            h_cal_adcxx_17_full_range[iadc]->Fill(adc_time[iadc][17]);
+            h_cal_adcxx_17_16_zoom[iadc]->Fill(adc_time[iadc][17] - adc_time[iadc][16]);
+
+            h_cal_adcxx_32_full_range[iadc]->Fill(adc_time[iadc][32]);
+            h_cal_adcxx_32_16_zoom[iadc]->Fill(adc_time[iadc][32] - adc_time[iadc][16]);
+
+            for (int ichan=0; ichan<48; ichan++) {
+               if (adc_time[iadc][ichan] > 0) {
+                  h_cal_adcxx_xx_16[iadc]->Fill(adc_time[iadc][ichan] - adc_time[iadc][16]);
+                  h_cal_adcxx_profile_16[iadc]->Fill(ichan, adc_time[iadc][ichan] - adc_time[iadc][16]);
+               }
+            }
+         }
+      }
+
+      if (h_cal_adcnn_16_all == NULL) {
+         char name[256];
+         char title[256];
+         
+         hdir_pulser->cd();
+         
+         sprintf(name, "h_cal_time_adcNN_16_all");
+         sprintf(title, "calibration pulse time, adcNN chan 16 vs chan 16, all ADCs; time, ns");
+         h_cal_adcnn_16_all = new TH1D(name, title, 200, -50, +50);
+         
+         for (int iadc = ADC_MODULE_FIRST; iadc <= ADC_MODULE_LAST; iadc++) {
+            if (adc_time[iadc][16] > 0) {
+               sprintf(name, "h_cal_time_adc%02d_16_NN", iadc);
+               sprintf(title, "calibration pulse time, adc%02d chan 16 vs chan 16; time, ns", iadc);
+               h_cal_adcnn_16[iadc] = new TH1D(name, title, 200, -50, +50);
+            }
+         }
+ 
+         sprintf(name, "h_cal_time_adcNN_profile_16");
+         sprintf(title, "calibration pulse time, adcNN chan 16 vs chan 16; ADC module, adcNN");
+         h_cal_adcnn_profile_16 = new TProfile(name, title, ADC_MODULE_LAST-ADC_MODULE_FIRST+1, ADC_MODULE_FIRST-0.5, ADC_MODULE_LAST+0.5, -50, 50);
+         h_cal_adcnn_profile_16->SetMaximum(+50.0);
+         h_cal_adcnn_profile_16->SetMinimum(-50.0);
+      }
+
+      for (int iadc = ADC_MODULE_FIRST; iadc <= ADC_MODULE_LAST; iadc++) {
+         if (adc_time[iadc][16] > 0) {
+            if (first_adc_time_16 > 0) {
+               printf("adc%02d chan 16 %f, first %f, diff %f\n", iadc, adc_time[iadc][16], first_adc_time_16, adc_time[iadc][16]-first_adc_time_16);
+               h_cal_adcnn_16_all->Fill(adc_time[iadc][16] - first_adc_time_16);
+               h_cal_adcnn_16[iadc]->Fill(adc_time[iadc][16] - first_adc_time_16);
+               h_cal_adcnn_profile_16->Fill(iadc, adc_time[iadc][16] - first_adc_time_16);
+            }
+         }
+      }
+
       if (1 || ((pos00_seqsca04 > 0)
                 && (pos00_seqsca05 > 0)
                 && (pos01_seqsca04 > 0)
@@ -890,6 +1024,7 @@ public:
                 );
 #endif
 
+#if 0
          if (adc5_0 > 0) {
             h_cal_adc05_0_full_range->Fill(adc5_0);
             h_cal_adc05_16_full_range->Fill(adc5_16);
@@ -932,6 +1067,7 @@ public:
             h_cal_adc_05_06_chan0->Fill(adc6_0-adc5_0);
             h_cal_adc_05_06_chan16->Fill(adc6_16-adc5_16);
          }
+#endif
 
          double pulse_width = 5350.0 + 30.0 + 40.0;
          //double xpad = pos01_seqsca04;
