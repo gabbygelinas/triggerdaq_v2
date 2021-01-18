@@ -308,6 +308,9 @@ public:
    {
       //printf("PulserModule::Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
 
+      if (!fPulser)
+         return flow;
+
       AgEventFlow *ef = flow->Find<AgEventFlow>();
 
       if (!ef || !ef->fEvent)
