@@ -149,19 +149,21 @@ public:
    TH1D* h_cal_time_pwbdd_seqsca_04_minus_adc_16 = NULL;
 
    bool fTrace = false;
+   bool fPulser = false;
    
    int fPwbAA = 12; // pwb12 col0 row0 "M"
    int fPwbBB = 13; // pwb13 col0 row1 "M"
    int fPwbCC = 20; // pwb20 col1 row0 "STC"
    int fPwbDD = 21; // pwb21 col1 row1 "STC"
 
-   PulserModule(TARunInfo* runinfo, bool do_print, int pwbaa, int pwbbb, int pwbcc, int pwbdd)
+   PulserModule(TARunInfo* runinfo, bool do_print, bool pulser, int pwbaa, int pwbbb, int pwbcc, int pwbdd)
       : TARunObject(runinfo)
    {
       if (fTrace)
          printf("PulserModule::ctor!\n");
 
       fPrint = do_print;
+      fPulser = pulser;
 
       if (pwbaa >= 0)
          fPwbAA = pwbaa;
@@ -188,6 +190,12 @@ public:
          printf("PulserModule::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
       //time_t run_start_time = runinfo->fOdb->odbReadUint32("/Runinfo/Start time binary", 0, 0);
       //printf("ODB Run start time: %d: %s", (int)run_start_time, ctime(&run_start_time));
+
+      bool pulser = fPulser;
+      runinfo->fOdb->RB("Equipment/Ctrl/Settings/FwPulserEnable", &pulser);
+      if (pulser)
+         fPulser = true;
+      printf("pulser mode: enabled: %d\n", fPulser);
 
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
 
@@ -660,7 +668,7 @@ public:
       }
 
       for (int iadc = ADC_MODULE_FIRST; iadc <= ADC_MODULE_LAST; iadc++) {
-         if (adc_time[iadc][0] > 0) {
+         if (h_cal_adcnn_00[iadc] && adc_time[iadc][0] > 0) {
             if (first_adc_time_0 > 0) {
                printf("adc%02d chan 00 %f, first %f, diff %f\n", iadc, adc_time[iadc][0], first_adc_time_0, adc_time[iadc][0]-first_adc_time_0);
                h_cal_adcnn_00_all->Fill(adc_time[iadc][0] - first_adc_time_0);
@@ -668,7 +676,7 @@ public:
                h_cal_adcnn_profile_00->Fill(iadc, adc_time[iadc][0] - first_adc_time_0);
             }
          }
-         if (adc_time[iadc][16] > 0) {
+         if (h_cal_adcnn_16[iadc] && adc_time[iadc][16] > 0) {
             if (first_adc_time_16 > 0) {
                printf("adc%02d chan 16 %f, first %f, diff %f\n", iadc, adc_time[iadc][16], first_adc_time_16, adc_time[iadc][16]-first_adc_time_16);
                h_cal_adcnn_16_all->Fill(adc_time[iadc][16] - first_adc_time_16);
@@ -685,123 +693,63 @@ public:
                 && (pwbcc_seqsca04 > 0)
                 && (pwbcc_seqsca05 > 0))) {
 
-#if 0
-         printf("ADC times: adc05: 100MHz: %f %f %f %f %f, 62.5MHz: %f %f, adc06: %f\n",
-                adc5_0,
-                adc5_1,
-                adc5_4,
-                adc5_8,
-                adc5_12,
-                adc5_16,
-                adc5_17,
-                adc6_0
-                );
-#endif
-
-#if 0
-         if (adc5_0 > 0) {
-            h_cal_adc05_0_full_range->Fill(adc5_0);
-            h_cal_adc05_16_full_range->Fill(adc5_16);
-
-            h_cal_adc05_0->Fill(adc5_0);
-            h_cal_adc05_16->Fill(adc5_16);
-            h_cal_adc05_17->Fill(adc5_17);
-
-            h_cal_adc05_0_1->Fill(adc5_1-adc5_0);
-            h_cal_adc05_0_4->Fill(adc5_4-adc5_0);
-            h_cal_adc05_0_8->Fill(adc5_8-adc5_0);
-            h_cal_adc05_0_12->Fill(adc5_12-adc5_0);
-            h_cal_adc05_0_16->Fill(adc5_16-adc5_0);
-
-            h_cal_adc05_16_17->Fill(adc5_17-adc5_16);
-            h_cal_adc05_16_24->Fill(adc5_24-adc5_16);
-            h_cal_adc05_16_32->Fill(adc5_32-adc5_16);
-            h_cal_adc05_16_40->Fill(adc5_40-adc5_16);
-
-            for (unsigned j=0; j<eawh->fAwHits.size(); j++) {
-               int adc_module = eawh->fAwHits[j].adc_module;
-               int adc_chan = eawh->fAwHits[j].adc_chan;
-               //int wire = eawh->fAwHits[j].wire;
-               double time = eawh->fAwHits[j].time;
-               //double amp = eawh->fAwHits[j].amp;
-
-               if (adc_module == 5) {
-                  if (adc_chan >= 16 && adc_chan < 48) {
-                     //printf("AAA ADC chan %d, %f %f, %f\n", adc_chan, time, adc5_16, time-adc5_16);
-                     double dt = time-adc5_16;
-                     if (fabs(dt) < 50.0) {
-                        h_cal_adc05_16_xx->Fill(adc_chan, dt);
-                     }
-                  }
-               }
-            }
-
-            h_cal_adc06_16_20->Fill(adc6_20-adc6_16);
-
-            h_cal_adc_05_06_chan0->Fill(adc6_0-adc5_0);
-            h_cal_adc_05_06_chan16->Fill(adc6_16-adc5_16);
-         }
-#endif
-
          double offset_0 = 203;
          double offset_16 = -2040.0 +45.0;
-         //double pulse_width = -2040.0 +45.0;
-         //double pulse_width = 5350.0 + 30.0 + 40.0;
-         //double xpad = pwbbb_seqsca04;
-         // double t = xpad - adc5_0 - pulse_width;
-         //printf("aw %.1f pad %.1f %.1f, diff %.1f\n", adc5_0, pwbbb_seqsca04, xpad, t);
 
 #if 0
          printf("PAD times: %f %f %f\n", pwbaa_seqsca04, pwbbb_seqsca04, pwbcc_seqsca04);
 #endif
 
-         h_cal_time_pwbaa_seqsca_04_full_range->Fill(pwbaa_seqsca04);
-         h_cal_time_pwbbb_seqsca_04_full_range->Fill(pwbbb_seqsca04);
-         h_cal_time_pwbcc_seqsca_04_full_range->Fill(pwbcc_seqsca04);
-         h_cal_time_pwbdd_seqsca_04_full_range->Fill(pwbdd_seqsca04);
+         if (h_cal_time_pwbaa_seqsca_04_full_range) {
 
-         h_cal_time_pwbaa_seqsca_04->Fill(pwbaa_seqsca04);
-         h_cal_time_pwbbb_seqsca_04->Fill(pwbbb_seqsca04);
-         h_cal_time_pwbcc_seqsca_04->Fill(pwbcc_seqsca04);
-         h_cal_time_pwbdd_seqsca_04->Fill(pwbdd_seqsca04);
+            h_cal_time_pwbaa_seqsca_04_full_range->Fill(pwbaa_seqsca04);
+            h_cal_time_pwbbb_seqsca_04_full_range->Fill(pwbbb_seqsca04);
+            h_cal_time_pwbcc_seqsca_04_full_range->Fill(pwbcc_seqsca04);
+            h_cal_time_pwbdd_seqsca_04_full_range->Fill(pwbdd_seqsca04);
+            
+            h_cal_time_pwbaa_seqsca_04->Fill(pwbaa_seqsca04);
+            h_cal_time_pwbbb_seqsca_04->Fill(pwbbb_seqsca04);
+            h_cal_time_pwbcc_seqsca_04->Fill(pwbcc_seqsca04);
+            h_cal_time_pwbdd_seqsca_04->Fill(pwbdd_seqsca04);
+            
+            h_cal_time_pwbaa_seqsca_04_05->Fill(pwbaa_seqsca05-pwbaa_seqsca04);
+            h_cal_time_pwbaa_seqsca_04_84->Fill(pwbaa_seqsca84-pwbaa_seqsca04);
+            h_cal_time_pwbaa_seqsca_04_164->Fill(pwbaa_seqsca164-pwbaa_seqsca04);
+            
+            h_cal_time_pwbbb_seqsca_04_05->Fill(pwbbb_seqsca05-pwbbb_seqsca04);
+            h_cal_time_pwbbb_seqsca_04_84->Fill(pwbbb_seqsca84-pwbbb_seqsca04);
+            h_cal_time_pwbbb_seqsca_04_164->Fill(pwbbb_seqsca164-pwbbb_seqsca04);
+            
+            h_cal_time_pwbcc_seqsca_04_05->Fill(pwbcc_seqsca05-pwbcc_seqsca04);
+            h_cal_time_pwbcc_seqsca_04_84->Fill(pwbcc_seqsca84-pwbcc_seqsca04);
+            h_cal_time_pwbcc_seqsca_04_164->Fill(pwbcc_seqsca164-pwbcc_seqsca04);
+            
+            h_cal_time_pwbdd_seqsca_04_05->Fill(pwbdd_seqsca05-pwbdd_seqsca04);
+            h_cal_time_pwbdd_seqsca_04_84->Fill(pwbdd_seqsca84-pwbdd_seqsca04);
+            h_cal_time_pwbdd_seqsca_04_164->Fill(pwbdd_seqsca164-pwbdd_seqsca04);
+            
+            h_cal_time_pos_00_01_seqsca04->Fill(pwbbb_seqsca04-pwbaa_seqsca04);
+            h_cal_time_pos_00_02_seqsca04->Fill(pwbcc_seqsca04-pwbaa_seqsca04);
+            h_cal_time_pos_00_03_seqsca04->Fill(pwbdd_seqsca04-pwbaa_seqsca04);
+            h_cal_time_pos_01_02_seqsca04->Fill(pwbcc_seqsca04-pwbbb_seqsca04);
+            h_cal_time_pos_01_03_seqsca04->Fill(pwbdd_seqsca04-pwbbb_seqsca04);
+            h_cal_time_pos_02_03_seqsca04->Fill(pwbdd_seqsca04-pwbcc_seqsca04);
+            
+            if (first_adc_time_0 > 0) {
+               printf("PWB %f, ADC_00 %f, diff %f, plot %f\n", pwbaa_seqsca04, first_adc_time_0, pwbaa_seqsca04 - first_adc_time_0, pwbaa_seqsca04 - first_adc_time_0 - offset_0);
+               h_cal_time_pwbaa_seqsca_04_minus_adc_0->Fill(pwbaa_seqsca04 - first_adc_time_0 - offset_0);
+               h_cal_time_pwbbb_seqsca_04_minus_adc_0->Fill(pwbbb_seqsca04 - first_adc_time_0 - offset_0);
+               h_cal_time_pwbcc_seqsca_04_minus_adc_0->Fill(pwbcc_seqsca04 - first_adc_time_0 - offset_0);
+               h_cal_time_pwbdd_seqsca_04_minus_adc_0->Fill(pwbdd_seqsca04 - first_adc_time_0 - offset_0);
+            }
 
-         h_cal_time_pwbaa_seqsca_04_05->Fill(pwbaa_seqsca05-pwbaa_seqsca04);
-         h_cal_time_pwbaa_seqsca_04_84->Fill(pwbaa_seqsca84-pwbaa_seqsca04);
-         h_cal_time_pwbaa_seqsca_04_164->Fill(pwbaa_seqsca164-pwbaa_seqsca04);
-
-         h_cal_time_pwbbb_seqsca_04_05->Fill(pwbbb_seqsca05-pwbbb_seqsca04);
-         h_cal_time_pwbbb_seqsca_04_84->Fill(pwbbb_seqsca84-pwbbb_seqsca04);
-         h_cal_time_pwbbb_seqsca_04_164->Fill(pwbbb_seqsca164-pwbbb_seqsca04);
-
-         h_cal_time_pwbcc_seqsca_04_05->Fill(pwbcc_seqsca05-pwbcc_seqsca04);
-         h_cal_time_pwbcc_seqsca_04_84->Fill(pwbcc_seqsca84-pwbcc_seqsca04);
-         h_cal_time_pwbcc_seqsca_04_164->Fill(pwbcc_seqsca164-pwbcc_seqsca04);
-
-         h_cal_time_pwbdd_seqsca_04_05->Fill(pwbdd_seqsca05-pwbdd_seqsca04);
-         h_cal_time_pwbdd_seqsca_04_84->Fill(pwbdd_seqsca84-pwbdd_seqsca04);
-         h_cal_time_pwbdd_seqsca_04_164->Fill(pwbdd_seqsca164-pwbdd_seqsca04);
-
-         h_cal_time_pos_00_01_seqsca04->Fill(pwbbb_seqsca04-pwbaa_seqsca04);
-         h_cal_time_pos_00_02_seqsca04->Fill(pwbcc_seqsca04-pwbaa_seqsca04);
-         h_cal_time_pos_00_03_seqsca04->Fill(pwbdd_seqsca04-pwbaa_seqsca04);
-         h_cal_time_pos_01_02_seqsca04->Fill(pwbcc_seqsca04-pwbbb_seqsca04);
-         h_cal_time_pos_01_03_seqsca04->Fill(pwbdd_seqsca04-pwbbb_seqsca04);
-         h_cal_time_pos_02_03_seqsca04->Fill(pwbdd_seqsca04-pwbcc_seqsca04);
-
-         if (first_adc_time_0 > 0) {
-            printf("PWB %f, ADC_00 %f, diff %f, plot %f\n", pwbaa_seqsca04, first_adc_time_0, pwbaa_seqsca04 - first_adc_time_0, pwbaa_seqsca04 - first_adc_time_0 - offset_0);
-            h_cal_time_pwbaa_seqsca_04_minus_adc_0->Fill(pwbaa_seqsca04 - first_adc_time_0 - offset_0);
-            h_cal_time_pwbbb_seqsca_04_minus_adc_0->Fill(pwbbb_seqsca04 - first_adc_time_0 - offset_0);
-            h_cal_time_pwbcc_seqsca_04_minus_adc_0->Fill(pwbcc_seqsca04 - first_adc_time_0 - offset_0);
-            h_cal_time_pwbdd_seqsca_04_minus_adc_0->Fill(pwbdd_seqsca04 - first_adc_time_0 - offset_0);
-         }
-
-         if (first_adc_time_16 > 0) {
-            printf("PWB %f, ADC_16 %f, diff %f, plot %f\n", pwbaa_seqsca04, first_adc_time_16, pwbaa_seqsca04 - first_adc_time_16, pwbaa_seqsca04 - first_adc_time_16 - offset_16);
-            h_cal_time_pwbaa_seqsca_04_minus_adc_16->Fill(pwbaa_seqsca04 - first_adc_time_16 - offset_16);
-            h_cal_time_pwbbb_seqsca_04_minus_adc_16->Fill(pwbbb_seqsca04 - first_adc_time_16 - offset_16);
-            h_cal_time_pwbcc_seqsca_04_minus_adc_16->Fill(pwbcc_seqsca04 - first_adc_time_16 - offset_16);
-            h_cal_time_pwbdd_seqsca_04_minus_adc_16->Fill(pwbdd_seqsca04 - first_adc_time_16 - offset_16);
+            if (first_adc_time_16 > 0) {
+               printf("PWB %f, ADC_16 %f, diff %f, plot %f\n", pwbaa_seqsca04, first_adc_time_16, pwbaa_seqsca04 - first_adc_time_16, pwbaa_seqsca04 - first_adc_time_16 - offset_16);
+               h_cal_time_pwbaa_seqsca_04_minus_adc_16->Fill(pwbaa_seqsca04 - first_adc_time_16 - offset_16);
+               h_cal_time_pwbbb_seqsca_04_minus_adc_16->Fill(pwbbb_seqsca04 - first_adc_time_16 - offset_16);
+               h_cal_time_pwbcc_seqsca_04_minus_adc_16->Fill(pwbcc_seqsca04 - first_adc_time_16 - offset_16);
+               h_cal_time_pwbdd_seqsca_04_minus_adc_16->Fill(pwbdd_seqsca04 - first_adc_time_16 - offset_16);
+            }
          }
       }
 
@@ -819,12 +767,14 @@ class PulserModuleFactory: public TAFactory
 {
 public:
    bool fDoPrint = false;
+   bool fPulser  = false;
 
 public:
    void Usage()
    {
       printf("PulserModuleFactory::Usage:\n");
       printf("--print ## be verbose\n");
+      printf("--pulser # enable field-wire pulser analysis\n");
    }
 
    void Init(const std::vector<std::string> &args)
@@ -834,6 +784,8 @@ public:
       for (unsigned i=0; i<args.size(); i++) {
          if (args[i] == "--print")
             fDoPrint = true;
+         if (args[i] == "--pulser")
+            fPulser = true;
       }
    }
 
@@ -845,7 +797,7 @@ public:
    TARunObject* NewRunObject(TARunInfo* runinfo)
    {
       printf("PulserModule::NewRunObject, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
-      return new PulserModule(runinfo, fDoPrint, -1, -1, -1, -1);
+      return new PulserModule(runinfo, fDoPrint, fPulser, -1, -1, -1, -1);
    }
 };
 
