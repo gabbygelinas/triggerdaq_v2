@@ -1700,6 +1700,19 @@ public:
             }
          }
          
+#if 0
+         if (fFlags->fWfSuppress) {
+            // this is special code, only use on pulser data
+            // where no real hits are expected. K.O.
+            if (fabs(wmax - wmin) > 1000) {
+               printf("XXX bad suppress, pwb%02d, sca %d, readout %d, scachan %d, col %d, row %d, wmin %7.1f, wmax %7.1f, diff %7.1f\n", imodule, isca, ichan, scachan, col, row, wmin, wmax, wmax - wmin);
+               bad_wf = true;
+            } else {
+               bad_wf = false;
+            }
+         }
+#endif
+
          // diagnostics
          
 #if 0
