@@ -90,7 +90,13 @@ public:
          printf("UnpackModule::ctor!\n");
 
       fFlags   = flags;
-      fCfm     = new Ncfm("agcfmdb");
+      std::string agcfmdb_path="agcfmdb";
+      if (getenv("AGRELEASE"))
+      {
+         agcfmdb_path=getenv("AGRELEASE");
+         agcfmdb_path+="/agana/agcfmdb";
+      }
+      fCfm     = new Ncfm(agcfmdb_path.c_str());
    }
 
    ~UnpackModule()
