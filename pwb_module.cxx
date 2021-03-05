@@ -495,7 +495,13 @@ public:
          printf("PwbModule::ctor!\n");
 
       fFlags = f;
-      fCfm = new Ncfm("agcfmdb");
+      std::string agcfmdb_path="agcfmdb";
+      if (getenv("AGRELEASE"))
+      {
+         agcfmdb_path=getenv("AGRELEASE");
+         agcfmdb_path+="/agana/agcfmdb";
+      }
+      fCfm     = new Ncfm(agcfmdb_path.c_str());
       fCfmCuts = fCfm->ParseFile("pwb", "cuts", runinfo->fRunNo);
 
       fPulserStart = fCfmCuts->GetInt("sca_bin_pulser_start", 200);
