@@ -1159,6 +1159,13 @@ public:
          int kept = 2*s->fKeepLast + 2*s->fKeepMore + 4;
          if (kept > p->nsamples - 2)
             kept = p->nsamples - 2;
+
+         if (p->packetVersion == 3) {
+            if (p->supp_enabled && !p->keep_bit) {
+               // keep_bit is not set, this is a short packet without any adc samples.
+               kept = 0;
+            }
+         }
          
          if (s->fBaselineReady && p->baseline && p->supp_enabled && (kept != p->nsamples_supp)) {
             bad_kept = true;
