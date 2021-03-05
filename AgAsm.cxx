@@ -20,6 +20,11 @@ AgAsm::~AgAsm()
 {
    //Print();
 
+   if (fTrgAsm) {
+      delete fTrgAsm;
+      fTrgAsm = NULL;
+   }
+
    if (fAdcAsm) {
       delete fAdcAsm;
       fAdcAsm = NULL;

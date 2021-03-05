@@ -20,6 +20,11 @@ AgEvent::AgEvent() // ctor
 
 AgEvent::~AgEvent() // dtor
 {
+   if( trig ) { 
+      delete trig;
+      trig=0;
+   }
+
    if (a16) {
       delete a16;
       a16 = NULL;
