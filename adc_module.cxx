@@ -190,9 +190,10 @@ public:
    TH1* fFft = NULL;
    TH1D* fFftSum = NULL;
    int fCount = 0;
+   int fNbins;
 
 public:
-   AnalyzeNoise(const char* prefix, TDirectory* file, TDirectory* tmp, int nbins = 701) // ctor
+   AnalyzeNoise(const char* prefix, TDirectory* file, TDirectory* tmp, int nbins = 701):fNbins(nbins) // ctor
    {
       fDirFile = file;
       fDirFile->cd();
@@ -225,7 +226,7 @@ public:
    void Finish()
    {
       if (fCount > 0) {
-         fFftSum->Scale(1./(fCount*sqrt(701.)));
+         fFftSum->Scale(1./(fCount*sqrt(double(fNbins))));
       }
    }
 };
@@ -586,6 +587,7 @@ public:
    std::vector<PlotA16*> fPlotA16;
 
    std::vector<AnalyzeNoise> fAN16AWB;
+   std::vector<AnalyzeNoise> fAN32AWB;
 
    PlotAwWaveforms* fPlotAwWaveforms = NULL;
 
@@ -651,7 +653,8 @@ public:
 
       if (fFlags->fFft) {
          TDirectory* fft_file = aw->mkdir("noise_fft");
-         TDirectory* fft_tmp = runinfo->fRoot->fgDir->mkdir("aw_noise_fft");
+
+         TDirectory* fft_tmp = runinfo->fRoot->fgDir->mkdir("bv_noise_fft");
 
          fAN16 = new AnalyzeNoise("adc16", fft_file, fft_tmp, 701);
          fPN16 = new PlotNoise("adc16");
@@ -662,8 +665,16 @@ public:
                fAN16AWB.emplace_back(ANname.Data(), fft_file, fft_tmp, 701);
             }
 
+         fft_tmp = runinfo->fRoot->fgDir->mkdir("aw_noise_fft");
+
          fAN32 = new AnalyzeNoise("adc32", fft_file, fft_tmp, 511);
          fPN32 = new PlotNoise("adc32");
+
+         for(int awb=0; awb<32; ++awb)
+            {
+               TString ANname = TString::Format("adc32AWB%02d",awb);
+               fAN32AWB.emplace_back(ANname.Data(), fft_file, fft_tmp, 511);
+            }
       }
 
       aw->cd(); // select correct ROOT directory
@@ -1040,6 +1051,15 @@ public:
                fPN32->Plot(fAN32);
          }
       }
+
+
+      if (!is_adc16 && fAN32AWB.size() > 0 )
+         {
+            if ( fAN32AWB.at(hit->preamp_pos).fCount < max_fft_awb_count) 
+               {
+                  fAN32AWB.at(hit->preamp_pos).AddWaveform(hit->adc_samples);
+               }                  
+         }
 
       // analyze data suppression
 
