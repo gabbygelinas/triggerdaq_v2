@@ -33,7 +33,7 @@ all:: $(MODULES)
 all:: $(ALL)
 
 %.exe: $(MODULES)
-	$(CXX) -o $@ $(MODULES) $(CXXFLAGS) $(LIBS) $(RLIBS) -lm -lz -lpthread
+	$(CXX) -o $@ $(MODULES) $(CXXFLAGS) $(LIBS) $(RLIBS) -lm -lz -lpthread -Wl,-rpath,$(ROOTSYS)/lib
 
 ncfm.exe: %.exe: %.o
 	$(CXX) -o $@ $< $(CXXFLAGS) $(LIBS) -lm -lz -lpthread
