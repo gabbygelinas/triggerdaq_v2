@@ -46,6 +46,7 @@ public:
 
    TDirectory* hdir_pulser = NULL;
 
+   bool  f_h_cal_adcxx_00_full_range = false;
    TH1D* h_cal_adcxx_00_full_range[ADC_MODULE_LAST+1];
    TH1D* h_cal_adcxx_01_full_range[ADC_MODULE_LAST+1];
    TH1D* h_cal_adcxx_04_full_range[ADC_MODULE_LAST+1];
@@ -518,9 +519,11 @@ public:
       double first_adc_time_0 = 0;
       double first_adc_time_16 = 0;
 
-      for (int iadc = ADC_MODULE_FIRST; iadc <= ADC_MODULE_LAST; iadc++) {
-         if ((adc_time[iadc][0] > 0) || (adc_time[iadc][16] > 0)) {
-            if (h_cal_adcxx_16_full_range[iadc] == NULL) {
+      if (!f_h_cal_adcxx_00_full_range) {
+         f_h_cal_adcxx_00_full_range = true;
+
+         for (int iadc = ADC_MODULE_FIRST; iadc <= ADC_MODULE_LAST; iadc++) {
+            if (1 || (adc_time[iadc][0] > 0) || (adc_time[iadc][16] > 0)) {
                char name[256];
                char title[256];
 
@@ -578,6 +581,11 @@ public:
                h_cal_adcxx_profile_16[iadc]->SetMaximum(+10.0);
                h_cal_adcxx_profile_16[iadc]->SetMinimum(-10.0);
             }
+         }
+      }
+
+      for (int iadc = ADC_MODULE_FIRST; iadc <= ADC_MODULE_LAST; iadc++) {
+         if ((adc_time[iadc][0] > 0) || (adc_time[iadc][16] > 0)) {
 
             if (h_first_adc_0 == 0)
                if (adc_time[iadc][0] > 0)
