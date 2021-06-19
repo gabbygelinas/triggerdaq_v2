@@ -632,7 +632,7 @@ public:
          h_cal_adcnn_00_all = new TH1D(name, title, 200, -50, +50);
          
          for (int iadc = ADC_MODULE_FIRST; iadc <= ADC_MODULE_LAST; iadc++) {
-            if (adc_time[iadc][16] > 0) {
+            if (1 || adc_time[iadc][16] > 0) {
                sprintf(name, "h_cal_time_adc%02d_00_NN", iadc);
                sprintf(title, "calibration pulse time, adc%02d chan 0 vs chan 0; time, ns", iadc);
                h_cal_adcnn_00[iadc] = new TH1D(name, title, 200, -50, +50);
@@ -657,7 +657,7 @@ public:
          h_cal_adcnn_16_all = new TH1D(name, title, 200, -50, +50);
          
          for (int iadc = ADC_MODULE_FIRST; iadc <= ADC_MODULE_LAST; iadc++) {
-            if (adc_time[iadc][16] > 0) {
+            if (1 || adc_time[iadc][16] > 0) {
                sprintf(name, "h_cal_time_adc%02d_16_NN", iadc);
                sprintf(title, "calibration pulse time, adc%02d chan 16 vs chan 16; time, ns", iadc);
                h_cal_adcnn_16[iadc] = new TH1D(name, title, 200, -50, +50);
