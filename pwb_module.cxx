@@ -1780,14 +1780,6 @@ public:
          double time_bin = 1000.0/62.5; // 62.5 MHz SCA sampling (write) clock
          
          double wpos_ns = (wpos - iwire_middle)*time_bin + 1000.0;
-
-         if (runinfo->fRunNo >= 900000) {
-            wpos_ns += 0.0;
-         } else if (runinfo->fRunNo >= 2166) {
-            wpos_ns += 200.0 + 150;
-         } else if (runinfo->fRunNo >= 2028) {
-            wpos_ns += 200.0;
-         }
          
          //printf("ZZZ wpos %f, middle %f, time bin %f, wpos_ns %f %f\n", wpos, iwire_middle, time_bin, wpos_ns, (wpos - iwire_middle)*time_bin + 1000.0);
          
