@@ -37,7 +37,7 @@ else()
   message(FATAL "ROOTANA not found")
 endif(ROOTANA_FOUND)
 # specify the location of the ROOTANA headers
-include_directories(${ROOTANA_INCLUDE_DIRS})
+include_directories(${ROOTANA_INCLUDE_DIRS} $ENV{ROOTANASYS}/manalyzer $ENV{ROOTANASYS}/midasio)
 # specify the location of the ROOTANA library
 link_directories(${ROOTANA_LIBRARY_DIRS})
 
