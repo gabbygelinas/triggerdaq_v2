@@ -13,9 +13,12 @@ endif()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "$ENV{ROOTSYS}/cmake ")
 # Locate the ROOT package and defines a number of variables 
 find_package(ROOT REQUIRED COMPONENTS XMLIO XMLParser RHTTP Gui)
-include_directories(${ROOT_INCLUDE_DIRS})
-# Define useful ROOT functions and macros (e.g. ROOT_GENERATE_DICTIONARY)
-include(${ROOT_USE_FILE})
+if(ROOT_FOUND)
+  add_compile_definitions(HAVE_ROOT)
+  include_directories(${ROOT_INCLUDE_DIRS})
+  # Define useful ROOT functions and macros (e.g. ROOT_GENERATE_DICTIONARY)
+  include(${ROOT_USE_FILE})
+endif()
 
 # ROOTANA
 if(EXISTS $ENV{ROOTANASYS}/rootana-config.cmake)
@@ -29,11 +32,12 @@ find_package(ROOTANA REQUIRED)
 if(ROOTANA_FOUND)
   message(STATUS "${ROOTANA_PACKAGE_NAME} ok $ENV{ROOTANASYS}")
   set(ROOTANA_LIBRARY_DIRS "$ENV{ROOTANASYS}/lib")
+  message(STATUS "ROOTANA header files: ${ROOTANA_INCLUDE_DIRS}")
 else()
   message(FATAL "ROOTANA not found")
 endif(ROOTANA_FOUND)
 # specify the location of the ROOTANA headers
-include_directories(${ROOTANA_INCLUDE_DIRS})
+include_directories(${ROOTANA_INCLUDE_DIRS} $ENV{ROOTANASYS}/manalyzer $ENV{ROOTANASYS}/midasio)
 # specify the location of the ROOTANA library
 link_directories(${ROOTANA_LIBRARY_DIRS})
 
