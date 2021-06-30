@@ -56,6 +56,7 @@ list(APPEND CMAKE_PREFIX_PATH $ENV{MIDASSYS})
 find_package(Midas QUIET)
 if(MIDAS_FOUND)
   set(MIDASSYS "$ENV{MIDASSYS}")
+  set(MIDAS_LIBRARIES midas)
   message(STATUS "MIDAS found ${MIDASSYS}")
   message(STATUS "[${PROJECT_NAME}] MIDAS_INCLUDE_DIRS = ${MIDAS_INCLUDE_DIRS}")
   message(STATUS "[${PROJECT_NAME}] MIDAS_LIBRARIES = ${MIDAS_LIBRARIES}")
@@ -113,8 +114,8 @@ else()
   message(STATUS "building agana standalone")
   set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
 
-  add_executable(agana.exe "$ENV{ROOTANASYS}/manalyzer/manalyzer_main.cxx" "$ENV{ROOTANASYS}/manalyzer/manalyzer.cxx" ${Sources} ${Headers})
-  target_link_libraries(agana.exe ${ROOT_LIBRARIES} rootana z ${MIDAS_LIBRARIES} util rt) 
+  add_executable(agana.exe ${Sources} ${Headers})
+  target_link_libraries(agana.exe ${ROOT_LIBRARIES} manalyzer_main rootana z ${MIDAS_LIBRARIES} util rt) 
 
   install(
     TARGETS agana.exe
