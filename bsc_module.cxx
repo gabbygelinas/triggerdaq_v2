@@ -295,6 +295,8 @@ public:
 
    std::vector<AnalyzeNoise> fAN16AWB;
 
+   TH1D* fHtdcSeqtdc = NULL;
+
 public:
    BscModule(TARunInfo* runinfo, A16Flags* f)
       : TARunObject(runinfo)
@@ -307,12 +309,17 @@ public:
       TDirectory* bsc = gDirectory->mkdir("bsc");
       bsc->cd(); // select correct ROOT directory
 
+      //TDirectory *dir = gDirectory->mkdir("summary");
+      //dir->cd();
+
+      fHtdcSeqtdc = new TH1D("bsc_tdc_seqtdc", "BSC TDC occupancy ifpga*16+ichan", 16*4*4, -0.5, 16*4*4-0.5);
+
       fH = new PlotHistograms();
 
-      TDirectory* fft_file = bsc->mkdir("noise_fft");
-      TDirectory* fft_tmp = runinfo->fRoot->fgDir->mkdir("bv_noise_fft");
-
       if (fFlags->fFft) {
+         TDirectory* fft_file = bsc->mkdir("noise_fft");
+         TDirectory* fft_tmp = runinfo->fRoot->fgDir->mkdir("bv_noise_fft");
+
          fAN16 = new AnalyzeNoise("adc16", fft_file, fft_tmp, 701);
          fPN16 = new PlotNoise("adc16");
 
@@ -686,11 +693,53 @@ public:
          return flow;
       }
 
+      TdcEvent* t = ef->fEvent->tdc;
+
+      if (!t) {
+         return flow;
+      }
+
       if (fFlags->fPrint) {
          printf("Have ADC event:  ");
          e->Print();
          printf("\n");
+         printf("Have TDC event:  ");
+         t->Print();
+         printf("\n");
       }
+
+      if (t) {
+         bool invalid = false;
+         for (unsigned i=0; i<t->hits.size(); i++) {
+            int ifpga  = t->hits[i]->fpga;
+            int ichan  = t->hits[i]->chan;
+            int re     = t->hits[i]->rising_edge;
+            int coarse_time = t->hits[i]->coarse_time;
+            int fine_time =   t->hits[i]->fine_time;
+            double time_ns = coarse_time/200e6*1e+9;
+
+            double fine_time_ns = 0;
+            if (ichan==0) {
+               fine_time_ns = (fine_time-409.0)/(435.0-409.0) * 0.0;
+            } else {
+               fine_time_ns =  - (fine_time-17.0)/(450.0-17.0) * 5.0;
+            }
+
+            if (ichan == 0) {
+               //printf("tdc[%3d] fpga %d, chan %d, re %d, time %f %f\n", i, ifpga, ichan, re, time_ns, fine_time_ns);
+            } else {
+               //printf("tdc[%3d] fpga %d, chan %d, re %d, time %f %f\n", i, ifpga, ichan, re, time_ns, fine_time_ns);
+               if (ichan>=1 && ichan<=48) {
+                  int seqtdc = ifpga*64 + (ichan-1);
+                  fHtdcSeqtdc->Fill(seqtdc);
+               } else {
+                  invalid = true;
+               }
+            }
+         }
+         assert(invalid == false);
+      }
+
 
       AgBscAdcHitsFlow* flow_hits = new AgBscAdcHitsFlow(flow);
       flow = flow_hits;
