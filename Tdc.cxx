@@ -10,7 +10,7 @@
 
 #include <stdio.h>
 //#include <string.h>
-//#include <assert.h>
+#include <assert.h> // assert()
 
 static std::string toString(int v)
 {
@@ -101,6 +101,8 @@ TdcEvent* TdcAsm::UnpackBank(const void* bkptr, int bklen)
 
    uint32_t event_epoch = 0;
    uint32_t event_coarse = 0;
+
+   bool crash_at_end = false;
    
    for (unsigned i=0; i<n32; i++) {
       uint32_t v = getUint32(bkptr, i*4);
@@ -118,7 +120,7 @@ TdcEvent* TdcAsm::UnpackBank(const void* bkptr, int bklen)
          } else if ((i>=6) && ((v&0xFFFC) == 0x0100)) {
             unsigned fpga = v&0x3;
             xfpga = fpga;
-            fpga_count = (v>>16)&0xFF;
+            fpga_count = (v>>16)&0x1FF;
             if (print)
                printf(" fpga %d tdc data, count %d", fpga, fpga_count);
             state = 1;
@@ -192,6 +194,8 @@ TdcEvent* TdcAsm::UnpackBank(const void* bkptr, int bklen)
       if (print)
          printf(" state %d\n", state);
    }
+
+   assert(crash_at_end==false);
 
    double epoch_freq = 97656.25; // 200MHz/(2<<11);
    double coarse_freq = 200.0e6; // 200MHz
