@@ -35,13 +35,6 @@ TrigEvent* TrgAsm::UnpackBank(const char* ptr, int size)
    TrigEvent* e = new TrigEvent;
 
    //printf("TrgAsm::UnpackBank: ATAT: ptr %p, size %d\n", ptr, size);
-
-   if(!ptr)
-      {
-         e->complete = false;
-         e->error = true;
-         return e;
-      }
    
    const uint32_t *p32 = (const uint32_t*)ptr;
    const unsigned n32 = size/4;
