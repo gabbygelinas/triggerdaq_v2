@@ -1,3 +1,18 @@
 [submodule "agcfmdb"]
 	path = agcfmdb
 	url = https://bitbucket.org/expalpha/agcfmdb.git
+[submodule "mxml"]
+	path = mxml
+	url = https://bitbucket.org/tmidas/mxml.git
+[submodule "mjson"]
+	path = mjson
+	url = https://bitbucket.org/tmidas/mjson.git
+[submodule "mvodb"]
+	path = mvodb
+	url = https://bitbucket.org/tmidas/mvodb.git
+[submodule "midasio"]
+	path = midasio
+	url = https://bitbucket.org/tmidas/midasio.git
+[submodule "manalyzer"]
+	path = manalyzer
+	url = https://bitbucket.org/tmidas/manalyzer.git
