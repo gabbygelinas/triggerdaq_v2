@@ -26,6 +26,29 @@ function(get_submodule MODULE_NAME)
     endif()
 endfunction()
 
+function(clone_module MODULE_NAME MODULE_URL)
+   if(GIT_SUBMODULE)
+      if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_NAME}")
+         message(STATUS "${MODULE_NAME} submodule ok")
+	 execute_process(COMMAND ${GIT_EXECUTABLE} pull
+           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_NAME}
+           RESULT_VARIABLE GIT_SUBMOD_UPDATE)
+         if(NOT GIT_SUBMOD_UPDATE EQUAL "0")
+            message(FATAL_ERROR "git clone ${MODULE_NAME} ${GIT_SUBMOD_RESULT}, please check submodules")
+         endif()
+      else()
+         message(STATUS "Cloning Submodule ${MODULE_NAME}")
+         execute_process(COMMAND ${GIT_EXECUTABLE} clone ${MODULE_URL}
+                        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                        RESULT_VARIABLE GIT_SUBMOD_RESULT)
+         if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+            message(FATAL_ERROR "git clone ${MODULE_URL} FAILED with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+         endif()
+      endif()
+    endif()
+endfunction()
+
+
 # electronics database
 get_submodule( agcfmdb )
 ##########################################
@@ -108,11 +131,16 @@ else()
     target_link_directories(agana.exe PUBLIC ${MIDAS_LIBRARY_DIRS})
   else()
     # get midas-analyzer submodules
-    get_submodule(midasio)
-    get_submodule(mvodb)
-    get_submodule(mjson)
-    get_submodule(mxml)
-    get_submodule(manalyzer)
+    #get_submodule(midasio)
+    #get_submodule(mvodb)
+    #get_submodule(mjson)
+    #get_submodule(mxml)
+    #get_submodule(manalyzer)
+    clone_module(midasio https://bitbucket.org/tmidas/midasio.git)
+    clone_module(mvodb https://bitbucket.org/tmidas/mvodb.git)
+    clone_module(mjson https://bitbucket.org/tmidas/mjson.git)
+    clone_module(mxml https://bitbucket.org/tmidas/mxml.git)
+    clone_module(manalyzer https://bitbucket.org/tmidas/manalyzer.git)
     set(manalyzer_objs
       ${PROJECT_SOURCE_DIR}/midasio/midasio.cxx
       ${PROJECT_SOURCE_DIR}/midasio/lz4frame.c
