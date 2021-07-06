@@ -14,7 +14,7 @@ CXXFLAGS += -I$(ROOTANASYS)/include
 LIBS += -L$(ROOTANASYS)/lib -lmanalyzer_main -lmanalyzer
 else
 norootanasys:
-	@echo Error: ROOTANASYS in not defined, please source thisrootana.{sh,csh}
+	@echo Error: MIDASSYS or ROOTANASYS should be defined
 endif
 
 # add ROOT
