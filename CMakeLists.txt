@@ -98,6 +98,8 @@ endif()
 # determine whether agana is a submodule or standalone
 if( _AGANA_STATIC )
   message(STATUS "building agana static library")
+  list(FILTER Sources EXCLUDE REGEX "*_module.cxx$")
+  message(STATUS "from ${Sources}")
   add_library(agana STATIC ${Sources})
   
   if( BUILD_MANALYZER )
