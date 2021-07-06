@@ -120,7 +120,7 @@ TdcEvent* TdcAsm::UnpackBank(const void* bkptr, int bklen)
          } else if ((i>=6) && ((v&0xFFFC) == 0x0100)) {
             unsigned fpga = v&0x3;
             xfpga = fpga;
-            fpga_count = (v>>16)&0x1FF;
+            fpga_count = (v>>16)&0x1FFF;
             if (print)
                printf(" fpga %d tdc data, count %d", fpga, fpga_count);
             state = 1;
@@ -178,6 +178,12 @@ TdcEvent* TdcAsm::UnpackBank(const void* bkptr, int bklen)
          if (print)
             printf(" fpga word %d", fpga_count);
          if (fpga_count == 1) {
+            state = 0;
+         } else if (fpga_count == 0) {
+            if (print) {
+               printf("\n***XXX***\n");
+               crash_at_end = true;
+            }
             state = 0;
          } else {
             fpga_count--;
