@@ -748,7 +748,7 @@ public:
             h_cal_time_pos_02_03_seqsca04->Fill(pwbdd_seqsca04-pwbcc_seqsca04);
             
             if (first_adc_time_0 > 0) {
-               printf("PWB %f, ADC_00 %f, diff %f, plot %f\n", pwbaa_seqsca04, first_adc_time_0, pwbaa_seqsca04 - first_adc_time_0, pwbaa_seqsca04 - first_adc_time_0 - offset_0);
+               //printf("PWB %f, ADC_00 %f, diff %f, plot %f\n", pwbaa_seqsca04, first_adc_time_0, pwbaa_seqsca04 - first_adc_time_0, pwbaa_seqsca04 - first_adc_time_0 - offset_0);
                h_cal_time_pwbaa_seqsca_04_minus_adc_0->Fill(pwbaa_seqsca04 - first_adc_time_0 - offset_0);
                h_cal_time_pwbbb_seqsca_04_minus_adc_0->Fill(pwbbb_seqsca04 - first_adc_time_0 - offset_0);
                h_cal_time_pwbcc_seqsca_04_minus_adc_0->Fill(pwbcc_seqsca04 - first_adc_time_0 - offset_0);
@@ -756,7 +756,7 @@ public:
             }
 
             if (first_adc_time_16 > 0) {
-               printf("PWB %f, ADC_16 %f, diff %f, plot %f\n", pwbaa_seqsca04, first_adc_time_16, pwbaa_seqsca04 - first_adc_time_16, pwbaa_seqsca04 - first_adc_time_16 - offset_16);
+               //printf("PWB %f, ADC_16 %f, diff %f, plot %f\n", pwbaa_seqsca04, first_adc_time_16, pwbaa_seqsca04 - first_adc_time_16, pwbaa_seqsca04 - first_adc_time_16 - offset_16);
                h_cal_time_pwbaa_seqsca_04_minus_adc_16->Fill(pwbaa_seqsca04 - first_adc_time_16 - offset_16);
                h_cal_time_pwbbb_seqsca_04_minus_adc_16->Fill(pwbbb_seqsca04 - first_adc_time_16 - offset_16);
                h_cal_time_pwbcc_seqsca_04_minus_adc_16->Fill(pwbcc_seqsca04 - first_adc_time_16 - offset_16);
