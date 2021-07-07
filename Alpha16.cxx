@@ -836,7 +836,7 @@ void Alpha16Asm::Init(int adc32_rev)
 
 void Alpha16Asm::Reset()
 {
-   // empty
+   fEventCount = 0;
 }
 
 void Alpha16Asm::AddChannel(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c)
