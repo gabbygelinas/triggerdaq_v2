@@ -57,6 +57,8 @@ class UnpackFlags
 {
 public:
    bool fPrint = false;
+   int  fAgeSec = 0;
+   int  fSleepUSec = 0;
 };
 
 class UnpackModule: public TARunObject
@@ -169,6 +171,8 @@ public:
          printf("ResumeModule, run %d\n", runinfo->fRunNo);
    }
 
+   uint32_t fNextSerialNumber = 0;
+
    TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
    {
       //printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
@@ -176,25 +180,48 @@ public:
       if (event->event_id != 1)
          return flow;
 
-#ifdef _TIME_ANALYSIS_ 
-      START_TIMER 
-#endif    
-
-      if (0) {
+      if (fFlags->fAgeSec > 0) {
          const time_t now = time(NULL);
          const time_t t = event->time_stamp;
          int dt = now - t;
-         printf("UnpackModule: serial %d, time %d, age %d, date %s\n", event->serial_number, event->time_stamp, dt, ctime(&t));
+         //printf("UnpackModule: serial %d, time %d, age %d, date %s", event->serial_number, event->time_stamp, dt, ctime(&t));
+         if (dt >= fFlags->fAgeSec) {
+            printf("skipping old event, age %d!\n", dt);
+            return flow;
+         }
       }
 
+#ifdef _TIME_ANALYSIS_ 
+      START_TIMER 
+#endif    
       assert(fAgAsm != NULL);
-         
+
+      if (event->serial_number != fNextSerialNumber) {
+         printf("UnpackModule: event serial number jump from %d to %d, lost %d events\n", fNextSerialNumber, event->serial_number, event->serial_number - fNextSerialNumber);
+         fAgAsm->Reset();
+      }
+
+      fNextSerialNumber = event->serial_number + 1;
+
+      if (0) {
+         return flow;
+      }
+
       AgEvent* e = fAgAsm->UnpackEvent(event);
 
       if (fFlags->fPrint) {
          printf("Unpacked AgEvent:   ");
          e->Print();
          printf("\n");
+      }
+
+      if (fFlags->fSleepUSec) {
+         ::usleep(fFlags->fSleepUSec);
+      }
+
+      if (0) {
+         delete e;
+         return flow;
       }
 
 #ifdef _TIME_ANALYSIS_ 
@@ -223,6 +250,8 @@ public:
    {
       printf("UnpackModuleFactory flags:\n");
       printf("--print -- print something about every event\n");
+      printf("--skip-old SEC -- skip events older then given age in seconds (for online use)\n");
+      printf("--sleep-usec USEC -- sleep after unpacking each event (for debug use)\n");
    }
 
    void Init(const std::vector<std::string> &args)
@@ -230,8 +259,15 @@ public:
       printf("UnpackModuleFactory::Init!\n");
 
       for (unsigned i=0; i<args.size(); i++) {
-         if (args[i] == "--print")
+         if (args[i] == "--print") {
             fFlags.fPrint = true;
+         } else if (args[i] == "--skip-old") {
+            i++;
+            fFlags.fAgeSec = atoi(args[i].c_str());
+         } else if (args[i] == "--sleep-usec") {
+            i++;
+            fFlags.fSleepUSec = atoi(args[i].c_str());
+         }
       }
    }
 
