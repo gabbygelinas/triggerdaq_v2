@@ -78,6 +78,7 @@ void TdcAsm::Reset()
    fFirstEventTime = 0;
    fLastEventTs = 0;
    fLastEventTime = 0;
+   fEventCount = 0;
 }
 
 static uint32_t getUint32(const void* ptr, int offset)
