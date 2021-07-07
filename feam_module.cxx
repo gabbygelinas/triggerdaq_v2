@@ -895,7 +895,7 @@ public:
          return flow;
       }
 
-      if (1) {
+      if (0) {
          printf("Have FEAM event: ");
          e->Print();
          printf("\n");

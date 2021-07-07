@@ -1107,7 +1107,7 @@ public:
          return flow;
       }
 
-      if (1) {
+      if (0) {
          printf("Have PWB  event: ");
          e->Print();
          printf("\n");
