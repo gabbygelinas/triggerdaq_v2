@@ -28,6 +28,11 @@ FeamAsm::~FeamAsm()
    }
 }
 
+void FeamAsm::Reset()
+{
+   // empty
+}
+
 void FeamAsm::AddPacket(int imodule, int icolumn, int iring, int format, const FeamPacket* p, const char* ptr, int size)
 {
    assert(imodule >= 0);

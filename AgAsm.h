@@ -40,6 +40,7 @@ class AgAsm
  public: // member functions
    AgAsm(); // ctor
    ~AgAsm(); // dtor
+   void Reset();
    AgEvent* UnpackEvent(TMEvent* me);
    void Print() const;
 

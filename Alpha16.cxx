@@ -834,6 +834,11 @@ void Alpha16Asm::Init(int adc32_rev)
 
 }
 
+void Alpha16Asm::Reset()
+{
+   // empty
+}
+
 void Alpha16Asm::AddChannel(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c)
 {
    int imodule = c->adc_module;

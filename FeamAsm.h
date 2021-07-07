@@ -32,6 +32,7 @@ class FeamAsm
    void AddPacket(int imodule, int icolumn, int iring, int format, const FeamPacket* p, const char* ptr, int size);
    void Print() const;
    void BuildEvent(FeamEvent* event);
+   void Reset();
 };
 
 #endif

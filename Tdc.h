@@ -58,6 +58,7 @@ class TdcAsm
 
  public: // member functions
    void Print() const;
+   void Reset();
    TdcEvent* UnpackBank(const void* bkptr, int bklen8);
 
  public: // internal state

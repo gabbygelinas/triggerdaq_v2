@@ -120,6 +120,7 @@ class Alpha16Asm
    void AddChannel(Alpha16Event* e, Alpha16Packet* p, Alpha16Channel* c);
    void CheckEvent(Alpha16Event* e);
    void AddBank(Alpha16Event* e, int imodule, const char* bank_name, const char* bank_data, int bank_size);
+   void Reset();
 
  public: // internal state
    int fEventCount = 0; // event counter

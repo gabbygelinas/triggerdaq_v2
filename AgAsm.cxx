@@ -53,6 +53,25 @@ AgAsm::~AgAsm()
    printf("AgAsm: Total events: %d, complete: %d, with error: %d, incomplete: %d, with error: %d, max timestamp difference trg/adc/pwb/tdc: %.0f/%.0f/%.0f/%.0f ns\n", fCounter, fCountComplete, fCountCompleteWithError, fCountIncomplete, fCountIncompleteWithError, fTrgMaxDt*1e9, fAdcMaxDt*1e9, fPwbMaxDt*1e9, fTdcMaxDt*1e9);
 }
 
+void AgAsm::Reset()
+{
+   if (fTrgAsm) {
+      fTrgAsm->Reset();
+   }
+   if (fAdcAsm) {
+      fAdcAsm->Reset();
+   }
+   if (fFeamAsm) {
+      fFeamAsm->Reset();
+   }
+   if (fPwbAsm) {
+      fPwbAsm->Reset();
+   }
+   if (fTdcAsm) {
+      fTdcAsm->Reset();
+   }
+}
+
 void AgAsm::Print() const
 {
    printf("AgAsm::Print:\n");
