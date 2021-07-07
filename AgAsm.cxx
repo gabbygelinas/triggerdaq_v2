@@ -55,6 +55,7 @@ AgAsm::~AgAsm()
 
 void AgAsm::Reset()
 {
+   fCounter = 0;
    if (fTrgAsm) {
       fTrgAsm->Reset();
    }
