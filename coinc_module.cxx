@@ -155,9 +155,7 @@ public:
 
       if(eawh && eph)
          {
-            if( fTrace ) 
-               printf("coinc event %d, time %f, anode wire hits: %d, pad hits: %d\n", ef->fEvent->counter, ef->fEvent->time, 
-                      (int)eawh->fAwHits.size(), (int)eph->fPadHits.size());
+            //printf("coinc event %d, time %f, anode wire hits: %d, pad hits: %d\n", ef->fEvent->counter, ef->fEvent->time, (int)eawh->fAwHits.size(), (int)eph->fPadHits.size());
 	
             for( unsigned j=0; j<eawh->fAwHits.size(); j++ ) // this is not its place
                {
