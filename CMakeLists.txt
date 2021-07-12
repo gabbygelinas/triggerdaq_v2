@@ -78,33 +78,6 @@ else()
 endif()
 
 ##########################################
-# ROOT
-##########################################
-
-if (ROOT_FOUND)
-else()
-if(EXISTS $ENV{ROOTSYS}/cmake/ROOTConfig.cmake)
-    if(NOT DEFINED $ENV{CMAKE_PREFIX_PATH})
-        list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
-    endif()
-endif()
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "$ENV{ROOTSYS}/cmake ")
-# Locate the ROOT package and defines a number of variables 
-find_package(ROOT REQUIRED COMPONENTS XMLIO XMLParser RHTTP Gui)
-if(ROOT_FOUND)
-  separate_arguments(ROOT_CXX_FLAGS UNIX_COMMAND "${ROOT_CXX_FLAGS}")
-  add_compile_definitions(HAVE_ROOT)
-  add_compile_definitions(HAVE_THTTP_SERVER)
-  include_directories(${ROOT_INCLUDE_DIRS})
-  # Define useful ROOT functions and macros (e.g. ROOT_GENERATE_DICTIONARY)
-  #include(${ROOT_USE_FILE})
-  #message(STATUS "${PROJECT_NAME}: Found ROOT version " ${ROOT_VERSION} " in " $ENV{ROOTSYS})
-  message(STATUS "${PROJECT_NAME}: Found ROOT: flags: ${ROOT_CXX_FLAGS} and includes: ${ROOT_INCLUDE_DIRS}")
-endif()
-endif()
-##########################################
-
-##########################################
 # determine whether agana is a submodule or standalone
 if( _AGANA_STATIC )
   message(STATUS "building agana static library")
@@ -134,8 +107,9 @@ else()
   add_executable(agana.exe ${Sources} ${Headers})
 
   if(MIDAS_FOUND)
-    message(STATUS "MIDAS found in AGANA standalone")
+    message(STATUS "using manalyzer from MIDAS")
   else()
+    message(STATUS "building our own manalyzer")
     # get midas-analyzer submodules
     #get_submodule(midasio)
     #get_submodule(mvodb)
@@ -147,37 +121,10 @@ else()
     clone_module(mjson https://bitbucket.org/tmidas/mjson.git)
     clone_module(mxml https://bitbucket.org/tmidas/mxml.git)
     clone_module(manalyzer https://bitbucket.org/tmidas/manalyzer.git)
-    set(manalyzer_objs
-      ${PROJECT_SOURCE_DIR}/midasio/midasio.cxx
-      ${PROJECT_SOURCE_DIR}/midasio/lz4frame.c
-      ${PROJECT_SOURCE_DIR}/midasio/xxhash.c
-      ${PROJECT_SOURCE_DIR}/mvodb/mvodb.cxx
-      ${PROJECT_SOURCE_DIR}/mvodb/nullodb.cxx
-      ${PROJECT_SOURCE_DIR}/mvodb/mjsonodb.cxx
-      ${PROJECT_SOURCE_DIR}/mvodb/mxmlodb.cxx
-      ${PROJECT_SOURCE_DIR}/mjson/mjson.cxx
-      ${PROJECT_SOURCE_DIR}/mxml/mxml.cxx
-      )
-    add_library(manalyzer      STATIC ${PROJECT_SOURCE_DIR}/manalyzer/manalyzer ${manalyzer_objs})
-    add_library(manalyzer_main STATIC ${PROJECT_SOURCE_DIR}/manalyzer/manalyzer_main)
-    
-    target_include_directories(manalyzer      PUBLIC ${PROJECT_SOURCE_DIR})
-    target_include_directories(manalyzer_main PUBLIC ${PROJECT_SOURCE_DIR})
-    
-    target_compile_features(manalyzer      PUBLIC cxx_std_11)
-    target_compile_features(manalyzer_main PUBLIC cxx_std_11)
-    
-    target_include_directories(manalyzer      PUBLIC ${PROJECT_SOURCE_DIR}/midasio ${PROJECT_SOURCE_DIR}/mvodb ${PROJECT_SOURCE_DIR}/mjson ${PROJECT_SOURCE_DIR}/mxml ${PROJECT_SOURCE_DIR}/manalyzer)
-    target_include_directories(manalyzer_main PUBLIC ${PROJECT_SOURCE_DIR}/midasio ${PROJECT_SOURCE_DIR}/mvodb ${PROJECT_SOURCE_DIR}/manalyzer)
- 
-
-    target_include_directories(manalyzer      PUBLIC ${ROOT_INCLUDE_DIRS})
-    target_include_directories(manalyzer_main PUBLIC ${ROOT_INCLUDE_DIRS})
-    target_compile_definitions(manalyzer      PUBLIC ${ROOT_CXX_FLAGS} -DHAVE_ROOT -DHAVE_ROOT_HTTP -DHAVE_THTTP_SERVER)
-    target_compile_definitions(manalyzer_main PUBLIC ${ROOT_CXX_FLAGS} -DHAVE_ROOT -DHAVE_ROOT_HTTP -DHAVE_THTTP_SERVER)
+    add_subdirectory(manalyzer)
   endif()
 
-   target_link_libraries(agana.exe ${ROOT_LIBRARIES} manalyzer_main manalyzer ${MIDAS_LIBRARIES})
+  target_link_libraries(agana.exe manalyzer_main ${ROOT_LIBRARIES})
    
   install(
     TARGETS agana.exe
