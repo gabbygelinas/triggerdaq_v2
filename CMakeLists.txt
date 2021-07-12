@@ -1,5 +1,5 @@
 # CMakeLists.txt for basic analysis package. It creates a library with dictionary and a main program
-cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 project(agana)
 
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
@@ -58,7 +58,31 @@ file(GLOB Headers ${PROJECT_SOURCE_DIR}/*.h)
 file(GLOB Sources ${PROJECT_SOURCE_DIR}/*.cxx)
 ##########################################
 
+##########################################
+# MIDAS and manalyzer
+##########################################
+
+if(NO_MIDAS)
+   message(STATUS "${PROJECT_NAME}: MIDAS support is disabled via NO_MIDAS")
+   unset(MIDAS_FOUND)
+elseif(DEFINED ENV{MIDASSYS} AND (NOT ("$ENV{MIDASSYS}" STREQUAL "")))
+   include($ENV{MIDASSYS}/lib/midas-targets.cmake)
+   message(STATUS "${PROJECT_NAME}: Building with MIDAS from $ENV{MIDASSYS}/lib/midas-targets.cmake")
+   set(MIDAS_FOUND TRUE)
+   include($ENV{MIDASSYS}/lib/manalyzer-targets.cmake)
+   message(STATUS "${PROJECT_NAME}: Building with manalyzer from $ENV{MIDASSYS}/lib/manalyzer-targets.cmake")
+   set(ROOT_FOUND TRUE)
+else()
+   message(STATUS "${PROJECT_NAME}: Building without MIDAS")
+   unset(MIDAS_FOUND)
+endif()
+
+##########################################
 # ROOT
+##########################################
+
+if (ROOT_FOUND)
+else()
 if(EXISTS $ENV{ROOTSYS}/cmake/ROOTConfig.cmake)
     if(NOT DEFINED $ENV{CMAKE_PREFIX_PATH})
         list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
@@ -68,31 +92,17 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "$ENV{ROOTSYS}/cmake ")
 # Locate the ROOT package and defines a number of variables 
 find_package(ROOT REQUIRED COMPONENTS XMLIO XMLParser RHTTP Gui)
 if(ROOT_FOUND)
+  separate_arguments(ROOT_CXX_FLAGS UNIX_COMMAND "${ROOT_CXX_FLAGS}")
   add_compile_definitions(HAVE_ROOT)
   add_compile_definitions(HAVE_THTTP_SERVER)
   include_directories(${ROOT_INCLUDE_DIRS})
   # Define useful ROOT functions and macros (e.g. ROOT_GENERATE_DICTIONARY)
-  include(${ROOT_USE_FILE})
+  #include(${ROOT_USE_FILE})
+  #message(STATUS "${PROJECT_NAME}: Found ROOT version " ${ROOT_VERSION} " in " $ENV{ROOTSYS})
+  message(STATUS "${PROJECT_NAME}: Found ROOT: flags: ${ROOT_CXX_FLAGS} and includes: ${ROOT_INCLUDE_DIRS}")
+endif()
 endif()
 ##########################################
-
-# MIDAS
-if(NO_MIDAS)
-   message(STATUS "${PROJECT_NAME}: MIDAS support is disabled via NO_MIDAS")
-   unset(MIDAS_FOUND)
-elseif(DEFINED ENV{MIDASSYS})
-   include($ENV{MIDASSYS}/lib/midas-targets.cmake)
-   message(STATUS "${PROJECT_NAME}: Building with MIDAS from $ENV{MIDASSYS}/lib/midas-targets.cmake")
-   set(MIDAS_FOUND TRUE)
-   set(MIDASSYS "$ENV{MIDASSYS}")
-   set(MIDAS_LIBRARIES midas)
-   set(MIDAS_LIBRARY_DIRS "${MIDASSYS}/lib")
-   message(STATUS "MIDAS found ${MIDASSYS}")
-else()
-   message(STATUS "${PROJECT_NAME}: Building without MIDAS")
-   unset(MIDAS_FOUND)
-endif()
-
 
 ##########################################
 # determine whether agana is a submodule or standalone
@@ -125,12 +135,6 @@ else()
 
   if(MIDAS_FOUND)
     message(STATUS "MIDAS found in AGANA standalone")
-   
-    #set(manalyzer_objs)
-    target_include_directories(agana.exe PUBLIC ${MIDAS_INCLUDE_DIRS})
-    target_include_directories(agana.exe PUBLIC ${MIDASSYS}/manalyzer)
-    target_compile_definitions(agana.exe PUBLIC -DHAVE_MIDAS -DHAVE_TMFE)
-    target_link_directories(agana.exe PUBLIC ${MIDAS_LIBRARY_DIRS})
   else()
     # get midas-analyzer submodules
     #get_submodule(midasio)
@@ -169,8 +173,8 @@ else()
 
     target_include_directories(manalyzer      PUBLIC ${ROOT_INCLUDE_DIRS})
     target_include_directories(manalyzer_main PUBLIC ${ROOT_INCLUDE_DIRS})
-    target_compile_definitions(manalyzer      PUBLIC ${ROOT_CCX_FLAGS} -DHAVE_ROOT -DHAVE_ROOT_HTTP -DHAVE_THTTP_SERVER)
-    target_compile_definitions(manalyzer_main PUBLIC ${ROOT_CCX_FLAGS} -DHAVE_ROOT -DHAVE_ROOT_HTTP -DHAVE_THTTP_SERVER)
+    target_compile_definitions(manalyzer      PUBLIC ${ROOT_CXX_FLAGS} -DHAVE_ROOT -DHAVE_ROOT_HTTP -DHAVE_THTTP_SERVER)
+    target_compile_definitions(manalyzer_main PUBLIC ${ROOT_CXX_FLAGS} -DHAVE_ROOT -DHAVE_ROOT_HTTP -DHAVE_THTTP_SERVER)
   endif()
 
    target_link_libraries(agana.exe ${ROOT_LIBRARIES} manalyzer_main manalyzer ${MIDAS_LIBRARIES})
