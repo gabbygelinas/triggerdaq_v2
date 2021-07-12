@@ -32,6 +32,16 @@ ALL     += agana.exe
 all:: $(MODULES)
 all:: $(ALL)
 
+CMAKE := cmake3
+
+cmake: $(GIT_SUBMODULES)
+	mkdir -p build
+	cd build; $(CMAKE) ..; $(MAKE)
+
+cclean:
+	-rm -rf build bin lib include
+
+
 %.exe: $(MODULES)
 	$(CXX) -o $@ $(MODULES) $(CXXFLAGS) $(LIBS) $(RLIBS) -lm -lz -lpthread -Wl,-rpath,$(ROOTSYS)/lib
 
