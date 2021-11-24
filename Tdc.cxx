@@ -188,7 +188,7 @@ TdcEvent* TdcAsm::UnpackBank(const void* bkptr, int bklen)
                } else if (xepoch != event_epoch) {
                   printf("TdcAsm::UnpackBank: Error: channel 0 epoch time mismatch fpga %d has 0x%06x should be 0x%06x\n", xfpga, xepoch, event_epoch);
                   e->error = true;
-               } else if ((coarse_time != event_coarse) && (coarse_time+1 != event_coarse) && (coarse_time != event_coarse+1)) {
+               } else if ((coarse_time != event_coarse) && (coarse_time+1 != event_coarse) && (coarse_time != event_coarse+1) && (coarse_time+2 != event_coarse) && (coarse_time != event_coarse+2)) {
                   printf("TdcAsm::UnpackBank: Error: channel 0 coarse time mismatch fpga %d has 0x%06x+%d should be 0x%06x+%d\n", xfpga, xepoch, coarse_time, event_epoch, event_coarse);
                   e->error = true;
                }
