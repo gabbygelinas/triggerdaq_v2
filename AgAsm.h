@@ -37,6 +37,16 @@ class AgAsm
    int fCountIncomplete = 0;
    int fCountIncompleteWithError = 0;
 
+   int fCountMissingTrg = 0;
+   int fCountMissingAdc = 0;
+   int fCountMissingPwb = 0;
+   int fCountMissingTdc = 0;
+
+   int fCountErrorTrg = 0;
+   int fCountErrorAdc = 0;
+   int fCountErrorPwb = 0;
+   int fCountErrorTdc = 0;
+
  public: // member functions
    AgAsm(); // ctor
    ~AgAsm(); // dtor

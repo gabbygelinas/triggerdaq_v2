@@ -50,7 +50,7 @@ AgAsm::~AgAsm()
       fTdcAsm = NULL;
    }
 
-   printf("AgAsm: Total events: %d, complete: %d, with error: %d, incomplete: %d, with error: %d, max timestamp difference trg/adc/pwb/tdc: %.0f/%.0f/%.0f/%.0f ns\n", fCounter, fCountComplete, fCountCompleteWithError, fCountIncomplete, fCountIncompleteWithError, fTrgMaxDt*1e9, fAdcMaxDt*1e9, fPwbMaxDt*1e9, fTdcMaxDt*1e9);
+   printf("AgAsm: Total events: %d; complete: %d, with error: %d; incomplete: %d (missing trg %d, adc %d, pwb %d, tdc %d), with error: %d; errors: trg %d, adc %d, pwb %d, tdc %d; max timestamp difference trg/adc/pwb/tdc: %.0f/%.0f/%.0f/%.0f ns\n", fCounter, fCountComplete, fCountCompleteWithError, fCountIncomplete, fCountMissingTrg, fCountMissingAdc, fCountMissingPwb, fCountMissingTdc, fCountIncompleteWithError, fCountErrorTrg, fCountErrorAdc, fCountErrorPwb, fCountErrorTdc, fTrgMaxDt*1e9, fAdcMaxDt*1e9, fPwbMaxDt*1e9, fTdcMaxDt*1e9);
 }
 
 void AgAsm::Reset()
@@ -359,8 +359,11 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
             time = trg_time;
             have_time = true;
          }
+         if (e->trig->error)
+            fCountErrorTrg++;
       } else {
          e->complete = false;
+         fCountMissingTrg++;
       }
    }
 
@@ -372,8 +375,11 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
             time = adc_time;
             have_time = true;
          }
+         if (e->a16->error)
+            fCountErrorAdc++;
       } else {
          e->complete = false;
+         fCountMissingAdc++;
       }
    }
 
@@ -385,8 +391,11 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
             time = pwb_time;
             have_time = true;
          }
+         if (e->feam->error)
+            fCountErrorPwb++;
       } else {
          e->complete = false;
+         fCountMissingPwb++;
       }
    }
 
@@ -398,8 +407,11 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
             time = tdc_time;
             have_time = true;
          }
+         if (e->tdc->error)
+            fCountErrorTdc++;
       } else {
          e->complete = false;
+         fCountMissingTdc++;
       }
    }
 
