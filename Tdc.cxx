@@ -79,6 +79,7 @@ void TdcAsm::Reset()
    fFirstEventTime = 0;
    fLastEventTs = 0;
    fLastEventTime = 0;
+   fTsEpoch    = 0;
    fEventCount = 0;
 }
 
@@ -224,7 +225,12 @@ TdcEvent* TdcAsm::UnpackBank(const void* bkptr, int bklen)
    double epoch_freq = 97656.25; // 200MHz/(2<<11);
    double coarse_freq = 200.0e6; // 200MHz
 
-   double event_time = event_epoch/epoch_freq + event_coarse/coarse_freq;
+   if (event_epoch < fLastEventTs) {
+      //printf("event_epoch wrap around: 0x%08x -> 0x%08x\n", fLastEventTs, event_epoch);
+      fTsEpoch++;
+   }
+
+   double event_time = fTsEpoch*1.0*0x10000000/epoch_freq + event_epoch/epoch_freq + event_coarse/coarse_freq;
 
    if (fFirstEventTime == 0) {
       fFirstEventTime = event_time;
