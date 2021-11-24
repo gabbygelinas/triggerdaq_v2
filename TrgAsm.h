@@ -14,6 +14,7 @@ class TrgAsm
 public: // state
    int      fCounter        = 0; // our packet counter
    uint32_t fFirstUdpPacket = 0; // seqno of first udp packet
+   uint32_t fFirstTrgPacket = 0; // seqno of first trg packet
    double   fFirstTime = 0;
    double   fPrevTime  = 0;
    uint32_t fLastTs    = 0;

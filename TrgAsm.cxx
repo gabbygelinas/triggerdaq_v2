@@ -52,15 +52,41 @@ TrigEvent* TrgAsm::UnpackBank(const char* ptr, int size)
    e->complete = true;
    e->error = false;
 
+   uint32_t udp_counter = e->udpData[0] & 0x7FFFFFFF; // 31 bits
+
+   uint32_t header = e->udpData[1];
+   uint32_t footer = e->udpData.back();
+
+   if ((header & 0xF0000000) != 0x80000000) {
+      fprintf(stderr, "TrgAsm::UnpackBank: bad header 0x%08x\n", header);
+      e->error = true;
+   }
+
+   if ((footer & 0xF0000000) != 0xE0000000) {
+      fprintf(stderr, "TrgAsm::UnpackBank: bad footer 0x%08x\n", footer);
+      e->error = true;
+   }
+
+   //printf("udp_counter 0x%08x, header 0x%08x, footer 0x%08x, error %d\n", udp_counter, header, footer, e->error);
+
+   uint32_t trg_counter = e->udpData[1] & 0x0FFFFFFF; // 28 bits
+   uint32_t ts          = e->udpData[2];
+   uint32_t trg_counter_footer = footer & 0x0FFFFFFF; // 28 bits
+
+   if (trg_counter != trg_counter_footer) {
+      fprintf(stderr, "TrgAsm::UnpackBank: trg counter mismatch between header 0x%08x and footer 0x%08x\n", header, footer);
+      e->error = true;
+   }
+
    if (fCounter == 0) {
-      fFirstUdpPacket = e->udpData[0];
+      fFirstUdpPacket = udp_counter;
+      fFirstTrgPacket = trg_counter;
    }
    
-   e->counter = e->udpData[0] + 1 - fFirstUdpPacket; // udp packet counter counts from 0, we want our counter to count from 1
+   //e->counter = e->udpData[0] + 1 - fFirstUdpPacket; // udp packet counter counts from 0, we want our counter to count from 1
+   e->counter = trg_counter + 1 - fFirstTrgPacket; // trg packet counter counts from 0, we want our counter to count from 1
 
    double ts_freq = 62.5*1e6; // timestamp is 62.5 MHz
-
-   uint32_t ts = e->udpData[2];
 
    if (ts < fLastTs) {
       fEpoch++;
