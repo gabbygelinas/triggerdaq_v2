@@ -188,6 +188,8 @@ TdcEvent* TdcAsm::UnpackBank(const void* bkptr, int bklen)
                if (event_epoch == 0) {
                   event_epoch = xepoch;
                   event_coarse = coarse_time;
+               } else if ((xepoch+1 == event_epoch) && (coarse_time==0x7ff && event_coarse==0)) {
+               } else if ((xepoch == event_epoch+1) && (coarse_time==0 && event_coarse==0x7FF)) {
                } else if ((xepoch == event_epoch+1) && (coarse_time==0 && event_coarse==0x7FE)) {
                   // NB: update of epoch is off by one coarse clock, this is ok. K.O. Nov2021.
                   //printf("TdcAsm::UnpackBank: channel 0 epoch time mismatch fpga %d has 0x%06x should be 0x%06x. coarse time 0x%x should be 0x%x\n", xfpga, xepoch, event_epoch, coarse_time, event_coarse);
