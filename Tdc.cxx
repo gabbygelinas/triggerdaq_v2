@@ -172,6 +172,9 @@ TdcEvent* TdcAsm::UnpackBank(const void* bkptr, int bklen)
             unsigned coarse_time = (v>>0)&0x7FF; // 11 bits
             if (print)
                printf(" time data: chan %2d, fine %3d, re %1d, coarse %4d", chan, fine_time, rising_edge, coarse_time);
+            //if (coarse_time == 0) {
+            //   printf("fpga %d, time data: chan %2d, fine %3d, re %1d, coarse %4d\n", xfpga, chan, fine_time, rising_edge, coarse_time);
+            //}
             TdcHit* h = new TdcHit();
             h->fpga = xfpga;
             h->epoch = xepoch;
@@ -185,8 +188,11 @@ TdcEvent* TdcAsm::UnpackBank(const void* bkptr, int bklen)
                if (event_epoch == 0) {
                   event_epoch = xepoch;
                   event_coarse = coarse_time;
+               } else if ((xepoch == event_epoch+1) && (coarse_time==0 && event_coarse==0x7FE)) {
+                  // NB: update of epoch is off by one coarse clock, this is ok. K.O. Nov2021.
+                  //printf("TdcAsm::UnpackBank: channel 0 epoch time mismatch fpga %d has 0x%06x should be 0x%06x. coarse time 0x%x should be 0x%x\n", xfpga, xepoch, event_epoch, coarse_time, event_coarse);
                } else if (xepoch != event_epoch) {
-                  printf("TdcAsm::UnpackBank: Error: channel 0 epoch time mismatch fpga %d has 0x%06x should be 0x%06x\n", xfpga, xepoch, event_epoch);
+                  printf("TdcAsm::UnpackBank: Error: channel 0 epoch time mismatch fpga %d has 0x%06x should be 0x%06x. coarse time 0x%x should be 0x%x\n", xfpga, xepoch, event_epoch, coarse_time, event_coarse);
                   e->error = true;
                } else if ((coarse_time != event_coarse) && (coarse_time+1 != event_coarse) && (coarse_time != event_coarse+1) && (coarse_time+2 != event_coarse) && (coarse_time != event_coarse+2)) {
                   printf("TdcAsm::UnpackBank: Error: channel 0 coarse time mismatch fpga %d has 0x%06x+%d should be 0x%06x+%d\n", xfpga, xepoch, coarse_time, event_epoch, event_coarse);
