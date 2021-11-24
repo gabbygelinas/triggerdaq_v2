@@ -64,6 +64,8 @@ class TdcAsm
  public: // internal state
    int fEventCount = 0; // event counter
 
+   uint32_t fFirstTriggerNumber = 0;
+
    double   fFirstEventTime = 0;
    uint32_t fLastEventTs = 0;
    double   fLastEventTime = 0;

@@ -75,6 +75,7 @@ void TdcAsm::Print() const
 
 void TdcAsm::Reset()
 {
+   fFirstTriggerNumber = 0;
    fFirstEventTime = 0;
    fLastEventTs = 0;
    fLastEventTime = 0;
@@ -91,7 +92,8 @@ TdcEvent* TdcAsm::UnpackBank(const void* bkptr, int bklen)
 {
    TdcEvent* e = new TdcEvent();
 
-   e->counter = ++fEventCount;
+   //e->counter = ++fEventCount;
+   ++fEventCount;
 
    unsigned n32 = bklen/4;
 
@@ -111,6 +113,14 @@ TdcEvent* TdcAsm::UnpackBank(const void* bkptr, int bklen)
    uint32_t event_coarse = 0;
 
    bool crash_at_end = false;
+
+   uint32_t trigger_number = 0;
+
+   if (n32 > 5) { // code from fetrb3.cxx
+      uint32_t trigger_word = getUint32(bkptr, 5*4);
+      trigger_number = (trigger_word>>8) & 0x0FFFFFFF;
+      //printf("trigger word 0x%08x, number %d\n", trigger_word, trigger_number);
+   }
    
    for (unsigned i=0; i<n32; i++) {
       uint32_t v = getUint32(bkptr, i*4);
@@ -220,7 +230,10 @@ TdcEvent* TdcAsm::UnpackBank(const void* bkptr, int bklen)
       fFirstEventTime = event_time;
       fLastEventTs = 0;
       fLastEventTime = 0;
+      fFirstTriggerNumber = trigger_number;
    }
+
+   e->counter = trigger_number - fFirstTriggerNumber + 1;
 
    e->time = event_time - fFirstEventTime;
    e->timeIncr = e->time - fLastEventTime;
