@@ -47,6 +47,14 @@ class AgAsm
    int fCountErrorPwb = 0;
    int fCountErrorTdc = 0;
 
+   int fCountLoneTdc = 0;
+
+ public: // count missing triggers
+   int fCountMissingTrgTrig = 0;
+   int fCountMissingAdcTrig = 0;
+   int fCountMissingPwbTrig = 0;
+   int fCountMissingTdcTrig = 0;
+
  public: // member functions
    AgAsm(); // ctor
    ~AgAsm(); // dtor

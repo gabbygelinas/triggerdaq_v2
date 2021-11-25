@@ -50,12 +50,18 @@ AgAsm::~AgAsm()
       fTdcAsm = NULL;
    }
 
-   printf("AgAsm: Total events: %d; complete: %d, with error: %d; incomplete: %d (missing trg %d, adc %d, pwb %d, tdc %d), with error: %d; errors: trg %d, adc %d, pwb %d, tdc %d; max timestamp difference trg/adc/pwb/tdc: %.0f/%.0f/%.0f/%.0f ns\n", fCounter, fCountComplete, fCountCompleteWithError, fCountIncomplete, fCountMissingTrg, fCountMissingAdc, fCountMissingPwb, fCountMissingTdc, fCountIncompleteWithError, fCountErrorTrg, fCountErrorAdc, fCountErrorPwb, fCountErrorTdc, fTrgMaxDt*1e9, fAdcMaxDt*1e9, fPwbMaxDt*1e9, fTdcMaxDt*1e9);
+   printf("AgAsm: Total events: %d; complete: %d, with error: %d; incomplete: %d (missing trg %d, adc %d, pwb %d, tdc %d), with error: %d; errors: trg %d, adc %d, pwb %d, tdc %d; lone tdc: %d; missing trigger: trg %d, adc %d, pwb %d, tdc: %d; max timestamp difference trg/adc/pwb/tdc: %.0f/%.0f/%.0f/%.0f ns\n", fCounter, fCountComplete, fCountCompleteWithError, fCountIncomplete, fCountMissingTrg, fCountMissingAdc, fCountMissingPwb, fCountMissingTdc, fCountIncompleteWithError, fCountErrorTrg, fCountErrorAdc, fCountErrorPwb, fCountErrorTdc, fCountLoneTdc, fCountMissingTrgTrig, fCountMissingAdcTrig, fCountMissingPwbTrig, fCountMissingTdcTrig, fTrgMaxDt*1e9, fAdcMaxDt*1e9, fPwbMaxDt*1e9, fTdcMaxDt*1e9);
 }
 
 void AgAsm::Reset()
 {
    fCounter = 0;
+
+   fCountMissingTrgTrig = 0;
+   fCountMissingAdcTrig = 0;
+   fCountMissingPwbTrig = 0;
+   fCountMissingTdcTrig = 0;
+
    if (fTrgAsm) {
       fTrgAsm->Reset();
    }
@@ -335,6 +341,20 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
       // nothing to do?
    }
 
+   // kludge, kill events that have only TDC data (normal events would always also have TRG data)
+
+   if (e->tdc && !e->trig && !e->a16 && !e->feam && e->counter < 10) {
+      fCounter--;
+      fCountLoneTdc++;
+      e->error = true;
+      e->complete = false;
+      e->counter = e->tdc->counter;
+      e->time = e->tdc->time;
+      e->timeIncr = e->time - fLastEventTime;
+      printf("AgAsm::UnpackEvent: event %d has only tdc data\n", e->counter);
+      return e;
+   }
+
    double time = 0;
 
    // extract timestamps and event counters
@@ -451,10 +471,17 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          if (absdt > fConfMaxDt) {
             printf("AgAsm::UnpackEvent: event %d adc timestamp mismatch: time %f should be %f, dt %.0f ns\n", e->counter, adc_time, e->time, dt*1e9);
             e->error = true;
-         }
-         if (adc_counter != e->counter) {
-            printf("AgAsm::UnpackEvent: event %d adc event counter mismatch: %d should be %d\n", e->counter, adc_counter, e->counter);
-            e->error = true;
+         } else {
+            if (adc_counter + fCountMissingAdcTrig != e->counter) {
+               if (adc_counter + fCountMissingAdcTrig + 1 == e->counter) {
+                  // missing trigger from previous event, this event is ok.
+                  fCountMissingAdcTrig++;
+                  printf("AgAsm::UnpackEvent: event %d adc event counter mismatch: %d adjusted %d should be %d, adc missed previous trigger\n", e->counter, adc_counter, adc_counter + fCountMissingAdcTrig, e->counter);
+               } else {
+                  printf("AgAsm::UnpackEvent: event %d adc event counter mismatch: %d adjusted %d should be %d\n", e->counter, adc_counter, adc_counter + fCountMissingAdcTrig, e->counter);
+                  e->error = true;
+               }
+            }
          }
       }
    }
@@ -487,10 +514,17 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          if (absdt > fConfMaxDt) {
             printf("AgAsm::UnpackEvent: event %d tdc timestamp mismatch: time %f should be %f, dt %.0f ns\n", e->counter, tdc_time, e->time, dt*1e9);
             e->error = true;
-         }
-         if (tdc_counter != e->counter) {
-            printf("AgAsm::UnpackEvent: event %d tdc event counter mismatch: %d should be %d\n", e->counter, tdc_counter, e->counter);
-            e->error = true;
+         } else {
+            if (tdc_counter + fCountMissingTdcTrig != e->counter) {
+               if (tdc_counter + fCountMissingTdcTrig + 1 == e->counter) {
+                  // missing trigger from previous event, this event is ok.
+                  fCountMissingTdcTrig++;
+                  printf("AgAsm::UnpackEvent: event %d tdc event counter mismatch: %d adjusted %d should be %d, tdc missed previous trigger\n", e->counter, tdc_counter, tdc_counter + fCountMissingTdcTrig, e->counter);
+               } else {
+                  printf("AgAsm::UnpackEvent: event %d tdc event counter mismatch: %d adjusted %d should be %d\n", e->counter, tdc_counter, tdc_counter + fCountMissingTdcTrig, e->counter);
+                  e->error = true;
+               }
+            }
          }
       }
    }
