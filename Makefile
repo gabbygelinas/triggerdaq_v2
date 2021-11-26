@@ -2,7 +2,7 @@
 # Makefile for the ALPHA-g online analyzer
 #
 
-CXXFLAGS += -g -O2 -Wall -Wuninitialized -I. -std=c++11
+CXXFLAGS += -g -O2 -Wall -Wuninitialized -I. -std=c++11 $(USERFLAGS)
 
 # build with MIDAS
 
@@ -24,7 +24,7 @@ CXXFLAGS += -DHAVE_ROOT -I$(ROOTSYS)/include
 RLIBS    += -L$(ROOTSYS)/lib -lCore -lHist -lRIO -lGraf -lGui -lGpad -lRHTTP -lMathCore -lImt -lMatrix -lThread -ltbb -lMultiProc -lNet
 endif
 
-MODULES += ncfm.o unpack_module.o adc_module.o bsc_module.o pwb_module.o Alpha16.o feam_module.o TsSync.o Feam.o Tdc.o FeamEVB.o FeamAsm.o PwbAsm.o AgEvent.o AgEVB.o TrgAsm.o Unpack.o AgAsm.o wfsuppress.o wfsuppress2.o wfsuppress_pwb.o wfsuppress_adc.o wfexport_module.o pulser_module.o final_module.o coinc_module.o display_module.o
+MODULES += ncfm.o unpack_module.o adc_module.o bsc_module.o pwb_module.o Alpha16.o feam_module.o TsSync.o Feam.o Tdc.o FeamEVB.o FeamAsm.o PwbAsm.o AgEvent.o AgEVB.o TrgAsm.o Trg.o AgAsm.o wfsuppress.o wfsuppress2.o wfsuppress_pwb.o wfsuppress_adc.o wfexport_module.o pulser_module.o final_module.o coinc_module.o display_module.o
 
 ALL     += agana.exe
 #ALL     += ncfm.exe
