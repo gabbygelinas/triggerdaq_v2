@@ -50,6 +50,11 @@ AgAsm::~AgAsm()
       fTdcAsm = NULL;
    }
 
+   if (fCfm) {
+      delete fCfm;
+      fCfm = NULL;
+   }
+
    printf("AgAsm: Total events: %d; complete: %d, with error: %d; incomplete: %d (missing trg %d, adc %d, pwb %d, tdc %d), with error: %d; errors: trg %d, adc %d, pwb %d, tdc %d; lone tdc: %d; missing trigger: trg %d, adc %d, pwb %d, tdc: %d; max timestamp difference trg/adc/pwb/tdc: %.0f/%.0f/%.0f/%.0f ns\n", fCounter, fCountComplete, fCountCompleteWithError, fCountIncomplete, fCountMissingTrg, fCountMissingAdc, fCountMissingPwb, fCountMissingTdc, fCountIncompleteWithError, fCountErrorTrg, fCountErrorAdc, fCountErrorPwb, fCountErrorTdc, fCountLoneTdc, fCountMissingTrgTrig, fCountMissingAdcTrig, fCountMissingPwbTrig, fCountMissingTdcTrig, fTrgMaxDt*1e9, fAdcMaxDt*1e9, fPwbMaxDt*1e9, fTdcMaxDt*1e9);
 }
 
@@ -97,6 +102,68 @@ void AgAsm::Print() const
    if (fTdcAsm) {
       //fTdcAsm->Print();
    }
+}
+
+static std::string join(const char* sep, const std::vector<std::string> &v)
+{
+   std::string s;
+   for (unsigned i=0; i<v.size(); i++) {
+      if (i>0)
+         s += sep;
+      s += v[i];
+   }
+   return s;
+}
+
+#if 0
+static std::vector<std::string> split(const std::string& s, char seperator)
+{
+   std::vector<std::string> output;
+   
+   std::string::size_type prev_pos = 0, pos = 0;
+
+   while((pos = s.find(seperator, pos)) != std::string::npos)
+      {
+         std::string substring( s.substr(prev_pos, pos-prev_pos) );
+         output.push_back(substring);
+         prev_pos = ++pos;
+      }
+
+   output.push_back(s.substr(prev_pos, pos-prev_pos)); // Last word
+   return output;
+}
+#endif
+
+void AgAsm::BeginRun(int runno)
+{
+   std::string agcfmdb_path = "agcfmdb";
+
+   if (getenv("AGRELEASE")) {
+      agcfmdb_path = getenv("AGRELEASE");
+      agcfmdb_path += "/agana/agcfmdb";
+   }
+
+   fCfm = new Ncfm(agcfmdb_path.c_str());
+
+   int adc32_rev = 0;
+   if (0) {
+   } else if (runno >= 902660) {
+      adc32_rev = 11;
+   } else if (runno >= 900000) {
+      adc32_rev = 1;
+   } else if (runno >= 2724) {
+      adc32_rev = 11;
+   } else if (runno >= 1694) {
+      adc32_rev = 1;
+   }
+   
+   fConfAdc32Rev = adc32_rev;
+   
+   fAdcMap = fCfm->ReadFile("adc", "map", runno);
+   printf("AgAsm::BeginRun: Loaded adc map: %s\n", join(", ", fAdcMap).c_str());
+   
+   fFeamBanks = fCfm->ReadFile("feam", "banks", runno);
+   printf("AgAsm::BeginRun: Loaded pwb banks: %s\n", join(", ", fFeamBanks).c_str());
 }
 
 AgEvent* AgAsm::UnpackEvent(TMEvent* me)

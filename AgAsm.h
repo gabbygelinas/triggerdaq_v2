@@ -14,6 +14,7 @@
 #include "PwbAsm.h"
 #include "FeamAsm.h"
 #include "Tdc.h"
+#include "ncfm.h"
 
 class AgAsm
 {
@@ -59,10 +60,12 @@ class AgAsm
    AgAsm(); // ctor
    ~AgAsm(); // dtor
    void Reset();
+   void BeginRun(int runno);
    AgEvent* UnpackEvent(TMEvent* me);
    void Print() const;
 
  public: // internal data
+   Ncfm* fCfm = NULL;
    TrgAsm* fTrgAsm = NULL;
    std::vector<std::string> fAdcMap;
    std::vector<std::string> fFeamBanks;
