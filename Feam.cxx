@@ -765,7 +765,7 @@ void PwbModuleMap::LoadFeamBanks(const std::vector<std::string> banks)
 const PwbModuleMapEntry* PwbModuleMap::FindPwb(int imodule)
 {
    assert(imodule >= 0);
-   if (imodule >= fMap.size() || !fMap[imodule]) {
+   if (imodule >= (int)fMap.size() || !fMap[imodule]) {
       static PwbModuleMapEntry* unmapped_pwb = NULL;
       if (!unmapped_pwb) {
          unmapped_pwb = new PwbModuleMapEntry();
