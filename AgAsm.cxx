@@ -145,9 +145,21 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          const char* bkptr = me->GetBankData(b);
          int bklen = b->data_size;
 
+         if (e->tdc) {
+            printf("AgAsm::UnpackEvent: dupe TRBA bank!\n");
+            //e->tdc->Print(1); printf("\n");
+            //xxx = true;
+            delete e->tdc;
+            e->tdc = NULL;
+         }
+
          if (!e->tdc) {
             e->tdc = fTdcAsm->UnpackBank(bkptr, bklen);
             //e->tdc->Print(1);
+            //if (xxx) {
+            //   e->tdc->Print(1); printf("\n");
+            //   e->Print(); printf("\n");
+            //}
          }
 
          have_tdc = true;
@@ -514,6 +526,8 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          if (absdt > fConfMaxDt) {
             printf("AgAsm::UnpackEvent: event %d tdc timestamp mismatch: time %f should be %f, dt %.0f ns\n", e->counter, tdc_time, e->time, dt*1e9);
             e->error = true;
+            //me->PrintHeader();
+            //me->PrintBanks();
          } else {
             if (tdc_counter + fCountMissingTdcTrig != e->counter) {
                if (tdc_counter + fCountMissingTdcTrig + 1 == e->counter) {
