@@ -40,10 +40,10 @@ AgAsm::~AgAsm()
       fPwbAsm = NULL;
    }
 
-   if (fFeamAsm) {
-      delete fFeamAsm;
-      fFeamAsm = NULL;
-   }
+   //if (fFeamAsm) {
+   //   delete fFeamAsm;
+   //   fFeamAsm = NULL;
+   //}
 
    if (fTdcAsm) {
       delete fTdcAsm;
@@ -73,9 +73,9 @@ void AgAsm::Reset()
    if (fAdcAsm) {
       fAdcAsm->Reset();
    }
-   if (fFeamAsm) {
-      fFeamAsm->Reset();
-   }
+   //if (fFeamAsm) {
+   //   fFeamAsm->Reset();
+   //}
    if (fPwbAsm) {
       fPwbAsm->Reset();
    }
@@ -93,9 +93,9 @@ void AgAsm::Print() const
    if (fAdcAsm) {
       //fAdcAsm->Print();
    }
-   if (fFeamAsm) {
-      //fFeamAsm->Print();
-   }
+   //if (fFeamAsm) {
+   //   //fFeamAsm->Print();
+   //}
    if (fPwbAsm) {
       //fPwbAsm->Print();
    }
@@ -162,15 +162,15 @@ void AgAsm::BeginRun(int runno)
    fAdcMap = fCfm->ReadFile("adc", "map", runno);
    printf("AgAsm::BeginRun: Loaded adc map: %s\n", join(", ", fAdcMap).c_str());
    
-   fFeamBanks = fCfm->ReadFile("feam", "banks", runno);
-   printf("AgAsm::BeginRun: Loaded pwb banks: %s\n", join(", ", fFeamBanks).c_str());
+   fPwbBanks = fCfm->ReadFile("feam", "banks", runno);
+   printf("AgAsm::BeginRun: Loaded pwb banks: %s\n", join(", ", fPwbBanks).c_str());
 }
 
 AgEvent* AgAsm::UnpackEvent(TMEvent* me)
 {
    bool have_trg  = false;
    bool have_adc  = false;
-   bool have_feam = false;
+   //bool have_feam = false;
    bool have_pwb  = false;
    bool have_tdc  = false;
 
@@ -261,6 +261,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
 
          fAdcAsm->AddBank(e->a16, module, b->name.c_str(), bkptr, bklen);
          have_adc = true;
+#if 0
       } else if (b->name[0] == 'P' && ((b->name[1] == 'A') || (b->name[1] == 'B'))) {
          // PWB bank
          int c1 = b->name[2]-'0';
@@ -275,7 +276,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
 
          if (!fPwbModuleMap) {
             fPwbModuleMap = new PwbModuleMap();
-            fPwbModuleMap->LoadFeamBanks(fFeamBanks);
+            fPwbModuleMap->LoadFeamBanks(fPwbBanks);
             fPwbModuleMap->Print();
          }
 
@@ -340,6 +341,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          
          fFeamAsm->AddPacket(imodule, map->fColumn, map->fRing, f, p, p8 + p->off, p->buf_len);
          have_feam = true;
+#endif
       } else if (b->name[0] == 'P' && (b->name[1] == 'C')) {
          // PWB bank
          int c1 = b->name[2]-'0';
@@ -354,7 +356,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
 
          if (!fPwbModuleMap) {
             fPwbModuleMap = new PwbModuleMap();
-            fPwbModuleMap->LoadFeamBanks(fFeamBanks);
+            fPwbModuleMap->LoadFeamBanks(fPwbBanks);
             fPwbModuleMap->Print();
          }
 
@@ -398,6 +400,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
       }
    }
 
+#if 0
    if (fFeamAsm && have_feam) {
       //printf("at end: FeamAsm status:\n");
       //fFeamAsm->Print();
@@ -415,6 +418,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
       //printf("\n");
       //PrintFeamChannels(e->feam->hits);
    }
+#endif
 
    if (e->tdc && have_tdc) {
       // nothing to do?
@@ -482,7 +486,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
       }
    }
 
-   if (fFeamAsm || fPwbAsm) {
+   if (/*fFeamAsm ||*/ fPwbAsm) {
       if (e->feam) {
          pwb_time = e->feam->time;
          pwb_counter = e->feam->counter;
@@ -565,7 +569,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
       }
    }
 
-   if (fFeamAsm || fPwbAsm) {
+   if (/*fFeamAsm ||*/ fPwbAsm) {
       if (e->feam) {
          double dt = pwb_time - e->time;
          double absdt = fabs(dt);

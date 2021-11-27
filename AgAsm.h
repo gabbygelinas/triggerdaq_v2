@@ -12,7 +12,8 @@
 #include "AgEvent.h"
 #include "TrgAsm.h"
 #include "PwbAsm.h"
-#include "FeamAsm.h"
+#include "Feam.h"
+//#include "FeamAsm.h"
 #include "Tdc.h"
 #include "ncfm.h"
 
@@ -68,11 +69,11 @@ class AgAsm
    Ncfm* fCfm = NULL;
    TrgAsm* fTrgAsm = NULL;
    std::vector<std::string> fAdcMap;
-   std::vector<std::string> fFeamBanks;
+   std::vector<std::string> fPwbBanks;
    Alpha16Asm* fAdcAsm = NULL;
    PwbModuleMap* fPwbModuleMap = NULL;
    PwbAsm* fPwbAsm = NULL;
-   FeamAsm* fFeamAsm = NULL;
+   //FeamAsm* fFeamAsm = NULL;
    TdcAsm* fTdcAsm = NULL;
 };
 
