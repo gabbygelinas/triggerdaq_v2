@@ -358,15 +358,17 @@ Alpha16Channel* UnpackVer1(const char* bankname, int module, const Alpha16Packet
 
    int nsamples = getUint16(bkptr, 28);
 
-   c->adc_samples.reserve(nsamples);
-   c->adc_samples.clear();
+   //c->adc_samples.reserve(nsamples);
+   //c->adc_samples.clear();
+   c->adc_samples.resize(nsamples);
    
    for (int i=0; i<nsamples; i++) {
       unsigned v = getUint16(bkptr, 30 + i*2);
       // manual sign extension
       if (v & 0x8000)
          v |= 0xffff0000;
-      c->adc_samples.push_back(v);
+      //c->adc_samples.push_back(v);
+      c->adc_samples[i] = v;
    }
 
    return c;
@@ -392,15 +394,17 @@ Alpha16Channel* UnpackVer2(const char* bankname, int module, const Alpha16Packet
    int nsamples = p->nsamples;
    int nactual  = p->nsamples_supp;
 
-   c->adc_samples.reserve(nsamples);
-   c->adc_samples.clear();
+   //c->adc_samples.reserve(nsamples);
+   //c->adc_samples.clear();
+   c->adc_samples.resize(nsamples);
    
    for (int i=0; i<nactual; i++) {
       unsigned v = getUint16(bkptr, 32 + i*2);
       // manual sign extension
       if (v & 0x8000)
          v |= 0xffff0000;
-      c->adc_samples.push_back(v);
+      //c->adc_samples.push_back(v);
+      c->adc_samples[i] = v;
    }
 
    for (int i=nactual; i<nsamples; i++) {
@@ -408,7 +412,8 @@ Alpha16Channel* UnpackVer2(const char* bankname, int module, const Alpha16Packet
       // manual sign extension
       if (v & 0x8000)
          v |= 0xffff0000;
-      c->adc_samples.push_back(v);
+      //c->adc_samples.push_back(v);
+      c->adc_samples[i] = v;
    }
 
    return c;
@@ -434,15 +439,17 @@ Alpha16Channel* UnpackVer3(const char* bankname, int module, const Alpha16Packet
    int nsamples = p->nsamples;
    int nactual  = p->nsamples_supp;
 
-   c->adc_samples.reserve(nsamples);
-   c->adc_samples.clear();
+   //c->adc_samples.reserve(nsamples);
+   //c->adc_samples.clear();
+   c->adc_samples.resize(nsamples);
    
    for (int i=0; i<nactual; i++) {
       unsigned v = getUint16(bkptr, 32 + i*2);
       // manual sign extension
       if (v & 0x8000)
          v |= 0xffff0000;
-      c->adc_samples.push_back(v);
+      //c->adc_samples.push_back(v);
+      c->adc_samples[i] = v;
    }
 
    for (int i=nactual; i<nsamples; i++) {
@@ -450,7 +457,8 @@ Alpha16Channel* UnpackVer3(const char* bankname, int module, const Alpha16Packet
       // manual sign extension
       if (v & 0x8000)
          v |= 0xffff0000;
-      c->adc_samples.push_back(v);
+      //c->adc_samples.push_back(v);
+      c->adc_samples[i] = v;
    }
 
    return c;
