@@ -384,9 +384,9 @@ uint32_t crc32c_hw(uint32_t crc, const void *buf, size_t len)
 uint32_t crc32c(uint32_t crc, const void *buf, size_t len)
 {
 #ifdef HAVE_HWCRC32C
-    int sse42;
-
-    SSE42(sse42);
+    static int sse42 = -1;
+    if (sse42 == (-1))
+       SSE42(sse42);
     return sse42 ? crc32c_hw(crc, buf, len) : crc32c_sw(crc, buf, len);
 #else
 #warning Hardware accelerated CRC32C is not available.
@@ -753,10 +753,13 @@ void PwbChannelAsm::AddSamples(int channel, const uint16_t* samples, int count)
    //   }
    //}
 
-   fCurrent->adc_samples.reserve(fCurrent->adc_samples.size() + count);
+   //fCurrent->adc_samples.reserve(fCurrent->adc_samples.size() + count);
+   size_t old_size = fCurrent->adc_samples.size();
+   fCurrent->adc_samples.resize(old_size + count);
 
    for (int i=0; i<count; i++) {
-      fCurrent->adc_samples.push_back(signed_samples[i]);
+      //fCurrent->adc_samples.push_back(signed_samples[i]);
+      fCurrent->adc_samples[old_size+i] = signed_samples[i];
    }
 
    // cannot convert int16 to int... fCurrent->adc_samples.insert(fCurrent->adc_samples.end(), signed_samples, count);
