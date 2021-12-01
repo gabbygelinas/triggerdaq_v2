@@ -439,9 +439,17 @@ Alpha16Channel* UnpackVer3(const char* bankname, int module, const Alpha16Packet
    int nsamples = p->nsamples;
    int nactual  = p->nsamples_supp;
 
+   // NOTE on performance optimization:
+   // c->adc_samples.push_back(v); is simplest code, but is very slow (high per-sample overhead)
+   // c->adc_samples.resize() and c->adc_samples[i] is faster, but resize() has to set the array elements to zero, so we touch memory twice.
+   // c->adc_samples.insert() is best, but it needs an array of int to work on. even with this temporary array, this code is the fastest.
+   // go figure. std::vector slow by design. google it up, lots of discussion about this. KO Nov2021.
+
    //c->adc_samples.reserve(nsamples);
-   //c->adc_samples.clear();
-   c->adc_samples.resize(nsamples);
+   c->adc_samples.clear();
+   //c->adc_samples.resize(nsamples);
+
+   int tmp[nsamples];
    
    for (int i=0; i<nactual; i++) {
       unsigned v = getUint16(bkptr, 32 + i*2);
@@ -449,17 +457,24 @@ Alpha16Channel* UnpackVer3(const char* bankname, int module, const Alpha16Packet
       if (v & 0x8000)
          v |= 0xffff0000;
       //c->adc_samples.push_back(v);
-      c->adc_samples[i] = v;
+      //c->adc_samples[i] = v;
+      tmp[i] = v;
    }
 
+   unsigned v = p->baseline;
+   // manual sign extension
+   if (v & 0x8000)
+      v |= 0xffff0000;
+
    for (int i=nactual; i<nsamples; i++) {
-      unsigned v = p->baseline;
-      // manual sign extension
-      if (v & 0x8000)
-         v |= 0xffff0000;
       //c->adc_samples.push_back(v);
-      c->adc_samples[i] = v;
+      //c->adc_samples[i] = v;
+      tmp[i] = v;
    }
+
+   c->adc_samples.insert(c->adc_samples.end(), tmp, tmp+nsamples);
+
+   //printf("AAA %d %d %d\n", nsamples, (int)c->adc_samples.size(), (int)c->adc_samples.capacity());
 
    return c;
 };
