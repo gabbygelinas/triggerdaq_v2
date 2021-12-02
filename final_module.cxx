@@ -191,9 +191,9 @@ public:
       h_time_between_events = new TH1D("h_time_between_events", "time between events; time, sec", 100, 0, 3.0);
       h_time_between_events_zoom_1sec = new TH1D("h_time_between_events_zoom_1sec", "time between events, zoom 1 sec; time, sec", 100, 0, 1.0);
       h_time_between_events_zoom_01sec = new TH1D("h_time_between_events_zoom_01sec", "time between events, zoom 0.1 sec; time, sec", 100, 0, 0.1);
-      h_time_between_events_zoom_001sec = new TH1D("h_time_between_events_zoom_001sec", "time between events, zoom 10 msec; time, sec", 500, 0, 0.01);
-      h_time_between_events_zoom_0001sec = new TH1D("h_time_between_events_zoom_0001sec", "time between events, zoom 1 msec; time, sec", 500, 0, 0.001);
-      h_time_between_events_zoom_00001sec = new TH1D("h_time_between_events_zoom_00001sec", "time between events, zoom 100 usec; time, sec", 500, 0, 0.0001);
+      h_time_between_events_zoom_001sec = new TH1D("h_time_between_events_zoom_001sec", "time between events, zoom 10 msec; time, sec", 100, 0, 0.01);
+      h_time_between_events_zoom_0001sec = new TH1D("h_time_between_events_zoom_0001sec", "time between events, zoom 1 msec; time, sec", 100, 0, 0.001);
+      h_time_between_events_zoom_00001sec = new TH1D("h_time_between_events_zoom_00001sec", "time between events, zoom 100 usec; time, sec", 100, 0, 0.0001);
 
       h_bsc_adc_num_hits = new TH1D("h_bsc_adc_num_hits", "BSC ADC number of hits", 20, 0-0.5, 20-0.5);
       h_bsc_adc_time = new TH1D("h_bsc_adc_time", "BSC ADC hit time; time, ns", 100, 0, MAX_TIME);
