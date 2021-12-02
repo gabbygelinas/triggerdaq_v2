@@ -38,7 +38,7 @@ CMAKE := cmake3
 
 cmake: $(GIT_SUBMODULES)
 	mkdir -p build
-	cd build; $(CMAKE) ..; $(MAKE)
+	cd build; $(CMAKE) ..; $(MAKE); $(MAKE) install
 
 cclean:
 	-rm -rf build bin lib include
