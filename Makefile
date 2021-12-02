@@ -47,8 +47,8 @@ cclean:
 %.exe: $(MODULES)
 	$(CXX) -o $@ $(MODULES) $(CXXFLAGS) $(LIBS) $(RLIBS) -lm -lz -lpthread -Wl,-rpath,$(ROOTSYS)/lib
 
-testunpack.exe: testunpack_module.o
-	$(CXX) -o $@ $^ $(UNPACK) $(CXXFLAGS) $(LIBS) $(RLIBS) -lm -lz -lpthread -Wl,-rpath,$(ROOTSYS)/lib
+testunpack.exe: testunpack_module.o $(UNPACK)
+	$(CXX) -o $@ $^ $(CXXFLAGS) $(LIBS) $(RLIBS) -lm -lz -lpthread -Wl,-rpath,$(ROOTSYS)/lib
 
 ncfm.exe: %.exe: %.o
 	$(CXX) -o $@ $< $(CXXFLAGS) $(LIBS) -lm -lz -lpthread
