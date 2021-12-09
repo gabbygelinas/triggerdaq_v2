@@ -405,11 +405,14 @@ public:
    //TProfile* h_all_fpn_rms_prof = NULL;
    TProfile* h_all_fpn_mean_bis_prof = NULL;
    TProfile* h_all_fpn_rms_bis_prof = NULL;
+   TProfile* h_all_fpn_wrange_bis_prof = NULL;
 
 #if 0
    std::vector<TProfile*> h_all_fpn_mean_per_col_prof;
    std::vector<TProfile*> h_all_fpn_rms_per_col_prof;
 #endif
+
+   std::vector<int> fCountWfSave;
 
    TH1D* h_all_pad_baseline_count = NULL;
    TH1D* h_all_pad_baseline_good_count = NULL;
@@ -430,6 +433,8 @@ public:
    //TH1D* h_adc_range_all = NULL;
    //TH1D* h_adc_range_baseline = NULL;
    //TH1D* h_adc_range_drift = NULL;
+
+   TH1D* h_fpn_wrange = NULL;
 
    TH1D* hpad_ph = NULL;
    TH1D* hpad_ph_zoom_pedestal = NULL;
@@ -494,6 +499,8 @@ public:
       if (fTrace)
          printf("PwbModule::ctor!\n");
 
+      fModuleName = "pwb_module";
+
       fFlags = f;
       std::string agcfmdb_path="agcfmdb";
       if (getenv("AGRELEASE"))
@@ -532,6 +539,8 @@ public:
          h_pulser_hit_time_seqpwbsca_prof->SetMinimum(fPulserStart);
          h_pulser_hit_time_seqpwbsca_prof->SetMaximum(fPulserEnd);
       }
+
+      fCountWfSave.resize(PWB_MODULE_LAST+1);
    }
 
    ~PwbModule()
@@ -595,6 +604,8 @@ public:
       h_all_fpn_mean_bis_prof  = new TProfile("all_fpn_mean_bis_prof", "mean of all fpn channels; sca+4*(ring+8*column)", max_pad, -0.5, max_pad-0.5);
       h_all_fpn_rms_bis_prof  = new TProfile("all_fpn_rms_bis_prof", "rms of all fpn channels; sca+4*(ring+8*column)", max_pad, -0.5, max_pad-0.5);
 
+      h_all_fpn_wrange_bis_prof  = new TProfile("all_fpn_wrange_bis_prof", "waveform range of all fpn channels; sca+4*(ring+8*column)", max_pad, -0.5, max_pad-0.5);
+
 #if 0
       for (unsigned i=0; i<8; i++) {
          char name[256];
@@ -633,6 +644,8 @@ public:
       //h_adc_range_all      = new TH1D("adc_range_all",      "waveform range (max-min)",  100, 0, ADC_RANGE_PED);
       //h_adc_range_baseline = new TH1D("adc_range_baseline", "waveform range (max-min), baseline region",  100, 0, ADC_RANGE_PED);
       //h_adc_range_drift    = new TH1D("adc_range_drift",    "waveform range (max-min), drift region",  100, 0, ADC_RANGE_PED);
+
+      h_fpn_wrange           = new TH1D("fpn_wrange",             "fpn waveform range (max-min); adc counts", 100, 0, ADC_RANGE);
 
       hpad_ph                = new TH1D("hpad_ph",                "pad waveform pulse height; adc counts", 100, 0, ADC_RANGE);
       hpad_ph_zoom_pedestal  = new TH1D("hpad_ph_zoom_pedestal",  "pad waveform pulse height, zoom on pedestal area; adc counts", 100, 0, ADC_RANGE_PED);
@@ -1684,7 +1697,16 @@ public:
 
             //h_all_fpn_rms_bis->Fill(seqpwbsca, brms);
 
-            if (brms > ADC_RMS_FPN_MIN && brms < ADC_RMS_FPN_MAX) {
+            double wrange = wmax - wmin;
+
+            h_fpn_wrange->Fill(wrange);
+            h_all_fpn_wrange_bis_prof->Fill(seqpwbsca, wrange);
+
+            if (wrange > 10) {
+               printf("XXX bad fpn, pwb%02d, sca %d, readout %d, scachan %d, col %d, row %d, wmin %f, wmax %f, wrange %f\n", imodule, isca, ichan, scachan, col, row, wmin, wmax, wrange);
+               fpn_is_ok = false;
+               bad_wf = true;
+            } else if (brms > ADC_RMS_FPN_MIN && brms < ADC_RMS_FPN_MAX) {
             } else {
                printf("XXX bad fpn, pwb%02d, sca %d, readout %d, scachan %d, col %d, row %d, bmin %f, bmax %f, in hex 0x%04x, brms %f\n", imodule, isca, ichan, scachan, col, row, bmin, bmax, (uint16_t)bmin, brms);
                fpn_is_ok = false;
@@ -1847,30 +1869,30 @@ public:
          // save bad waveform
 
          if (fFlags->fWfSaveBad && bad_wf) {
-            static int count = 0;
-            
-            if (count < 100) {
+            if (fCountWfSave[imodule] < 10) {
+               fCountWfSave[imodule]++;
+
                char name[256];
                char title[256];
                
                hdir_waveforms->cd();
                
                if (scachan_is_reset) {
-                  sprintf(name, "pwb_%02d_sca_%d_chan_%02d_bad_reset_wf_%d", imodule, isca, ichan, count);
+                  sprintf(name, "pwb_%02d_sca_%d_chan_%02d_bad_reset_event_%d", imodule, isca, ichan, ef->fEvent->counter);
                   sprintf(title, "bad reset waveform pwb %02d, sca %d, chan %2d, event %d", imodule, isca, ichan, ef->fEvent->counter);
                } else if (scachan_is_fpn) {
-                  sprintf(name, "pwb_%02d_sca_%d_chan_%02d_bad_fpn_wf_%d", imodule, isca, ichan, count);
+                  sprintf(name, "pwb_%02d_sca_%d_chan_%02d_bad_fpn_event_%d", imodule, isca, ichan, ef->fEvent->counter);
                   sprintf(title, "bad FPN waveform pwb %02d, sca %d, chan %2d, event %d", imodule, isca, ichan, ef->fEvent->counter);
                } else {
-                  sprintf(name, "pwb_%02d_sca_%d_chan_%02d_bad_pad_wf_%d", imodule, isca, ichan, count);
+                  sprintf(name, "pwb_%02d_sca_%d_chan_%02d_bad_pad_event_%d", imodule, isca, ichan, ef->fEvent->counter);
                   sprintf(title, "bad pad waveform pwb %02d, sca %d, chan %2d, event %d", imodule, isca, ichan, ef->fEvent->counter);
                }
 
                printf("XXX saving waveform %s %s\n", name, title);
 
                WfToTH1D(name, title, c->adc_samples);
-               
-               count++;
+            } else {
+               //printf("XXX pwb%02d waveform not saved, limit %d\n", imodule, fCountWfSave[imodule]);
             }
          }
          
