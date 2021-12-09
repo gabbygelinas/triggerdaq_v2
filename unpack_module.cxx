@@ -42,6 +42,7 @@ public:
       if (fTrace)
          printf("UnpackModule::ctor!\n");
 
+      fModuleName = "unpack_module";
       fFlags   = flags;
    }
 
