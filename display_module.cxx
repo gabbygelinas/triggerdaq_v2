@@ -224,12 +224,18 @@ public:
                std::vector<Double_t> preamp_radius;
                std::vector<Double_t> preamp_etheta;
                std::vector<Double_t> preamp_eradius;
+
+               std::vector<Double_t> bars_theta;
+               std::vector<Double_t> bars_radius;
+               std::vector<Double_t> bars_etheta;
+               std::vector<Double_t> bars_eradius;
                
                double rmin = 0.6;
                double rmax = 1.0;
                double r_aw = 1.1;
                double r_preamp = 1.15;
                double r_pads = 1.2;
+               double r_bars = 1.3;
                
                if (0) {
                   for (int i=0; i<8; i++) {
@@ -245,6 +251,9 @@ public:
                      int iwire = eawh->fAwHits[j].wire;
                      double time = eawh->fAwHits[j].time;
                      double amp = eawh->fAwHits[j].amp;
+
+                     if (iwire < 0)
+                        continue;
 
                      hh->SetBinContent(1+iwire, time);
                      ha->SetBinContent(1+iwire, amp);
@@ -352,6 +361,35 @@ public:
                   }
                }
                
+               if (eba) {
+                  for (unsigned j=0; j<eba->fBscAdcHits.size(); j++) {
+                     //int adc_module = eba->fBscAdcHits[j].adc_module;
+                     //int adc_chan = eba->fBscAdcHits[j].adc_chan;
+                     //int preamp = eawh->fAwHits[j].preamp_pos;
+                     int bar = eba->fBscAdcHits[j].bar;
+                     double time = eba->fBscAdcHits[j].time;
+                     double amp = eba->fBscAdcHits[j].amp;
+
+                     double t = ((bar%64)/(1.0*64))*(2.0*TMath::Pi());
+                     double r = r_bars;
+
+                     printf("bsc adc hit %3d, bar %3d, tb %d, bar %2d, time %f, amp %f, theta %f (%f), radius %f\n", j, bar, bar/64, bar%64, time, amp, t, t/TMath::Pi(), r);
+                     
+                     //if (bsc64_bus) {
+                     //   for (uint64_t i=0; i<64; i++) {
+                     //      if (bsc64_bus & (((uint64_t)1)<<i)) {
+                     //         h_bsc64_vs_bsc_adc_hits->Fill(i, bar);
+                     //      }
+                     //   }
+                     //}
+
+                     bars_theta.push_back(t+(0.5-0.1-1+1.0/8.0)*TMath::Pi());
+                     bars_radius.push_back(r);
+                     bars_etheta.push_back(2.0*TMath::Pi()/64/2.0);
+                     bars_eradius.push_back(0.05);
+                  }
+               }
+
                if (1) {
                   printf("preamp hits:");
                   for (unsigned ipreamp=0; ipreamp<16; ipreamp++) {
@@ -427,6 +465,16 @@ public:
                // Update, otherwise GetPolargram returns 0
                gPad->Update();
                grP1->GetPolargram()->SetToRadian();
+
+               if (bars_theta.size() > 0) {
+                  TGraphPolar* gbars = new TGraphPolar(bars_theta.size(), bars_theta.data(), bars_radius.data(), bars_etheta.data(), bars_eradius.data());
+                  gbars->SetMarkerStyle(20);
+                  gbars->SetMarkerSize(0.75);
+                  gbars->SetMarkerColor(7);
+                  gbars->SetLineColor(4);
+                  gbars->SetLineWidth(3);
+                  gbars->Draw("PE");
+               }
 
                if (pads_theta.size() > 0) {
                   TGraphPolar* gpads = new TGraphPolar(pads_theta.size(), pads_theta.data(), pads_radius.data(), pads_etheta.data(), pads_eradius.data());
