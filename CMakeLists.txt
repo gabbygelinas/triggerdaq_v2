@@ -82,6 +82,7 @@ file(GLOB AganaSources ${PROJECT_SOURCE_DIR}/*.cxx)
 list(FILTER AganaSources EXCLUDE REGEX ".*_module.cxx$")
 message(STATUS "from ${AganaSources}")
 add_library(agana STATIC ${AganaSources})
+target_include_directories(agana PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
   
 if( BUILD_MANALYZER )
   target_include_directories(agana PUBLIC ${CMAKE_SOURCE_DIR}/manalyzer)
