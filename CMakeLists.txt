@@ -4,7 +4,10 @@ project(agana)
 
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-##########################################
+add_compile_options("-O2")
+add_compile_options("-g")
+add_compile_options(-Wall -Wformat=2 -Wno-format-nonliteral -Wno-strict-aliasing -Wuninitialized -Wno-unused-function)
+
 find_package(Git REQUIRED)
 if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
    option(GIT_SUBMODULE "Check submodules during build" ON)
