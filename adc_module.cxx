@@ -611,6 +611,19 @@ public:
    int fWfKeepMoreAdc16  = 0;
    int fWfKeepMoreAdc32  = 0;
 
+   TH1D* fWfSuppressAdc16Amp = NULL;
+   TH1D* fWfSuppressAdc16AmpPos = NULL;
+   TH1D* fWfSuppressAdc16AmpNeg = NULL;
+   TH1D* fWfSuppressAdc16AmpCumulKeepAll = NULL;
+   TH1D* fWfSuppressAdc16AmpCumulDropAll = NULL;
+   TH2D* fWfSuppressAdc16AmpCumulKeepMap = NULL;
+   TH2D* fWfSuppressAdc16AmpCumulKeepXMap = NULL;
+   TH2D* fWfSuppressAdc16AmpCumulDropMap = NULL;
+   std::vector<TH1D*> fWfSuppressAdc16AmpCumulKeep;
+   std::vector<TH1D*> fWfSuppressAdc16AmpCumulDrop;
+
+   std::vector<TH1D*> fWfSuppressAdc16AmpCumulKeep16;
+
    TH1D* fWfSuppressAdc32Amp = NULL;
    TH1D* fWfSuppressAdc32AmpPos = NULL;
    TH1D* fWfSuppressAdc32AmpNeg = NULL;
@@ -784,6 +797,103 @@ public:
          //int adc_amp = 32000;
          double adc_amp = 4000;
          double adc_bin_size = 50;
+
+         // ADC16 plots
+
+         if (fWfSuppressAdc16Amp == NULL) {
+            int min = 0;
+            int max = adc_amp;
+            fWfSuppressAdc16Amp = new TH1D("adc16_suppress_adc_amp", "WfSuppress ADC amp; adc counts", (max-min)/adc_bin_size, min, max);
+         }
+         
+         if (fWfSuppressAdc16AmpPos == NULL) {
+            int min = 0;
+            int max = adc_amp;
+            fWfSuppressAdc16AmpPos = new TH1D("adc16_suppress_adc_amp_pos", "WfSuppress ADC amp pos; adc counts", (max-min)/adc_bin_size, min, max);
+         }
+         
+         if (fWfSuppressAdc16AmpNeg == NULL) {
+            int min = -adc_amp;
+            int max = 0;
+            fWfSuppressAdc16AmpNeg = new TH1D("adc16_suppress_adc_amp_neg", "WfSuppress ADC amp neg; adc counts", (max-min)/adc_bin_size, min, max);
+         }
+         
+         if (fWfSuppressAdc16AmpCumulKeepAll == NULL) {
+            int min = -1;
+            int max = adc_amp;
+            fWfSuppressAdc16AmpCumulKeepAll = new TH1D("adc16_suppress_cumul_keep", "WfSuppress cumulative kept channels; ch_threshold, adc counts", (max-min+1)/adc_bin_size, min-0.5, max+0.5);
+         }
+         
+         if (fWfSuppressAdc16AmpCumulDropAll == NULL) {
+            int min = -1;
+            int max = adc_amp;
+            fWfSuppressAdc16AmpCumulDropAll = new TH1D("adc16_suppress_cumul_drop", "WfSuppress cumulative dropped channels; ch_threshold, adc_counts", (max-min+1)/adc_bin_size, min-0.5, max+0.5);
+         }
+
+         if (fWfSuppressAdc16AmpCumulKeepMap == NULL) {
+            int min = -1;
+            int max = adc_amp;
+            fWfSuppressAdc16AmpCumulKeepMap = new TH2D("adc16_suppress_cumul_keep_map", "WfSuppress cumulative kept channels; adcNN; ch_threshold, adc counts", ADC_MODULE_LAST+1, 0-0.5, ADC_MODULE_LAST+1-0.5, (max-min+1)/adc_bin_size, min-0.5, max+0.5);
+         }
+         
+         if (fWfSuppressAdc16AmpCumulKeepXMap == NULL) {
+            int min = -1;
+            int max = adc_amp;
+            fWfSuppressAdc16AmpCumulKeepXMap = new TH2D("adc16_suppress_cumul_keep_xmap", "WfSuppress cumulative kept channels; xmodule; ch_threshold, adc counts", 2*ADC_MODULE_LAST+1, 0-0.5, 2*ADC_MODULE_LAST+1-0.5, (max-min+1)/adc_bin_size, min-0.5, max+0.5);
+         }
+         
+         if (fWfSuppressAdc16AmpCumulDropMap == NULL) {
+            int min = -1;
+            int max = adc_amp;
+            fWfSuppressAdc16AmpCumulDropMap = new TH2D("adc16_suppress_cumul_drop_map", "WfSuppress cumulative dropped channels; adcNN; ch_threshold, adc_counts", ADC_MODULE_LAST+1, 0-0.5, ADC_MODULE_LAST+1-0.5, (max-min+1)/adc_bin_size, min-0.5, max+0.5);
+         }
+
+         for (int i=0; i<=ADC_MODULE_LAST; i++) {
+            char name[100];
+            char title[100];
+
+            sprintf(name,  "adc16_adc%02d_keep", i);
+            sprintf(title, "adc%02d cumulative kept channels; ch_threshold, adc counts", i);
+
+            int min = -1;
+            int max = adc_amp;
+
+            TH1D* h = new TH1D(name, title, max-min+1, min-0.5, max+0.5);
+
+            fWfSuppressAdc16AmpCumulKeep.push_back(h);
+         }
+         
+         for (int i=0; i<16; i++) {
+            char name[100];
+            char title[100];
+
+            sprintf(name,  "adc16_adcxx_keep%02d", i);
+            sprintf(title, "adcxx_keep%02d cumulative kept channels; ch_threshold, adc counts", i);
+
+            int min = -1;
+            int max = adc_amp;
+
+            TH1D* h = new TH1D(name, title, max-min+1, min-0.5, max+0.5);
+
+            fWfSuppressAdc16AmpCumulKeep16.push_back(h);
+         }
+         
+         for (int i=0; i<=ADC_MODULE_LAST; i++) {
+            char name[100];
+            char title[100];
+
+            sprintf(name,  "adc16_adc%02d_drop", i);
+            sprintf(title, "adc%02d cumulative dropped channels; ch_threshold, adc counts", i);
+
+            int min = -1;
+            int max = adc_amp;
+
+            TH1D* h = new TH1D(name, title, max-min+1, min-0.5, max+0.5);
+
+            fWfSuppressAdc16AmpCumulDrop.push_back(h);
+         }
+
+         // ADC32 plots
 
          if (fWfSuppressAdc32Amp == NULL) {
             int min = 0;
@@ -1062,10 +1172,11 @@ public:
 
       // analyze data suppression
 
-      if (fFlags->fWfSuppress && is_adc32) {
+      if (fFlags->fWfSuppress && (is_adc16 || is_adc32)) {
          int imodule = hit->adc_module;
          int ichan = hit->adc_chan;
          int xmodule = -1;
+         int keep16 = -1;
          int keep32 = -1;
          
          //printf("imodule %d, size %d\n", imodule, (int)fWfSuppress.size());
@@ -1080,6 +1191,11 @@ public:
          if (is_adc16) {
             s->Config(fWfThresholdAdc16, fWfKeepMoreAdc16, p->nsamples);
             xmodule = imodule;
+
+            if (imodule == 12) {
+               keep16 = ichan;
+               assert(keep16>=0 && keep16<16);
+            }
          }
          
          if (is_adc32) {
@@ -1105,7 +1221,7 @@ public:
             //else // 16+8
             //   xmodule += 0;
 
-            if (imodule == 7) {
+            if (imodule == 12) {
                keep32 = ichan - 16;
                assert(keep32>=0 && keep32<32);
             }
@@ -1132,24 +1248,47 @@ public:
          double xamp = -s->fAdcMaxNeg;
          if (s->fAdcMaxPos > xamp)
             xamp = s->fAdcMaxPos;
+
+         if (is_adc16) {
+            fWfSuppressAdc16Amp->Fill(xamp);
+            fWfSuppressAdc16AmpPos->Fill(s->fAdcMaxPos);
+            fWfSuppressAdc16AmpNeg->Fill(s->fAdcMaxNeg);
+            
+            for (int i=0; i<xamp; i++) {
+               fWfSuppressAdc16AmpCumulKeepAll->Fill(i);
+               fWfSuppressAdc16AmpCumulKeep[xmodule]->Fill(i);
+               if (keep16>=0)
+                  fWfSuppressAdc16AmpCumulKeep16[keep16]->Fill(i);
+               fWfSuppressAdc16AmpCumulKeepMap->Fill(imodule, i);
+               fWfSuppressAdc16AmpCumulKeepXMap->Fill(xmodule, i);
+            }
          
-         fWfSuppressAdc32Amp->Fill(xamp);
-         fWfSuppressAdc32AmpPos->Fill(s->fAdcMaxPos);
-         fWfSuppressAdc32AmpNeg->Fill(s->fAdcMaxNeg);
-         
-         for (int i=0; i<xamp; i++) {
-            fWfSuppressAdc32AmpCumulKeepAll->Fill(i);
-            fWfSuppressAdc32AmpCumulKeep[xmodule]->Fill(i);
-            if (keep32>=0)
-               fWfSuppressAdc32AmpCumulKeep32[keep32]->Fill(i);
-            fWfSuppressAdc32AmpCumulKeepMap->Fill(imodule, i);
-            fWfSuppressAdc32AmpCumulKeepXMap->Fill(xmodule, i);
+            for (int i=xamp; i<32000; i++) {
+               fWfSuppressAdc16AmpCumulDropAll->Fill(i);
+               fWfSuppressAdc16AmpCumulDrop[xmodule]->Fill(i);
+               fWfSuppressAdc16AmpCumulDropMap->Fill(imodule, i);
+            }
          }
          
-         for (int i=xamp; i<32000; i++) {
-            fWfSuppressAdc32AmpCumulDropAll->Fill(i);
-            fWfSuppressAdc32AmpCumulDrop[xmodule]->Fill(i);
-            fWfSuppressAdc32AmpCumulDropMap->Fill(imodule, i);
+         if (is_adc32) {
+            fWfSuppressAdc32Amp->Fill(xamp);
+            fWfSuppressAdc32AmpPos->Fill(s->fAdcMaxPos);
+            fWfSuppressAdc32AmpNeg->Fill(s->fAdcMaxNeg);
+            
+            for (int i=0; i<xamp; i++) {
+               fWfSuppressAdc32AmpCumulKeepAll->Fill(i);
+               fWfSuppressAdc32AmpCumulKeep[xmodule]->Fill(i);
+               if (keep32>=0)
+                  fWfSuppressAdc32AmpCumulKeep32[keep32]->Fill(i);
+               fWfSuppressAdc32AmpCumulKeepMap->Fill(imodule, i);
+               fWfSuppressAdc32AmpCumulKeepXMap->Fill(xmodule, i);
+            }
+         
+            for (int i=xamp; i<32000; i++) {
+               fWfSuppressAdc32AmpCumulDropAll->Fill(i);
+               fWfSuppressAdc32AmpCumulDrop[xmodule]->Fill(i);
+               fWfSuppressAdc32AmpCumulDropMap->Fill(imodule, i);
+            }
          }
          
          //int range = ampmax - ampmin;
@@ -1161,8 +1300,14 @@ public:
          bool bad = false;
 
          if (s->fBaselineReady && p->baseline && (s->fBaseline != p->baseline)) {
-            bad_baseline = true;
-            bad = true;
+            if ((s->fBaseline&0xFFFF) != (p->baseline&0xFFFF) &&
+                ((s->fBaseline+1)&0xFFFF) != (p->baseline&0xFFFF) &&
+                (s->fBaseline&0xFFFF) != ((p->baseline+1)&0xFFFF)
+                ) {
+               printf("maybe bad baseline 0x%04x 0x%04x\n", s->fBaseline&0xFFFF, p->baseline&0xFFFF);
+               bad_baseline = true;
+               bad = true;
+            }
          }
          
          if (s->fBaselineReady && p->baseline && (s->fKeepBit != p->keep_bit)) {
