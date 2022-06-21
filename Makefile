@@ -20,12 +20,12 @@ endif
 # add ROOT
 
 ifdef ROOTSYS
-CXXFLAGS += -DHAVE_ROOT -I$(ROOTSYS)/include
+CXXFLAGS += -DHAVE_ROOT $(shell root-config --cflags)
 RLIBS    += -L$(ROOTSYS)/lib -lCore -lHist -lRIO -lGraf -lGui -lGpad -lRHTTP -lMathCore -lImt -lMatrix -lThread -ltbb -lMultiProc -lNet
 endif
 
 UNPACK  += AgAsm.o AgEvent.o TrgAsm.o Trg.o Alpha16.o PwbAsm.o Feam.o Tdc.o ncfm.o
-MODULES += unpack_module.o $(UNPACK) adc_module.o bsc_module.o pwb_module.o feam_module.o wfsuppress.o wfsuppress2.o wfsuppress_pwb.o wfsuppress_adc.o wfexport_module.o pulser_module.o final_module.o coinc_module.o display_module.o
+MODULES += unpack_module.o cbko_module.o unpack_cb.o $(UNPACK) adc_module.o bsc_module.o pwb_module.o feam_module.o wfsuppress.o wfsuppress2.o wfsuppress_pwb.o wfsuppress_adc.o wfexport_module.o pulser_module.o final_module.o coinc_module.o display_module.o
 
 ALL     += agana.exe
 ALL     += testunpack.exe
@@ -55,6 +55,9 @@ ncfm.exe: %.exe: %.o
 
 %.o: %.cxx
 	$(CXX) -o $@ $(CXXFLAGS) -c $<
+
+#%.o: ../chronobox_software/%.cxx
+#	$(CXX) -o $@ $(CXXFLAGS) -c $<
 
 html/index.html:
 	-mkdir html
