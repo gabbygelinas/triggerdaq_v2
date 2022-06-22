@@ -66,6 +66,58 @@ public:
       fRunEventCounter = 0;
    }
 
+   bool KillDupes(size_t ibank, size_t ichan)
+   {
+      bool all_ok = true;
+      size_t nhits = fCbHits[ibank][ichan].size();
+      if (nhits < 1)
+         return all_ok;
+      //printf("%s: chan %zu: %zu hits\n", fCbBanks[ibank].c_str(), ichan, fCbHits[ibank][ichan].size());
+      double time_prev = 0;
+      double min_dt = 99999;
+      size_t count = 0;
+      for (size_t ihit=0; ihit<nhits-1; ihit++) {
+         if (fCbHits[ibank][ichan][ihit].flags&CB_HIT_FLAG_TE)
+            continue;
+         double time = fCbHits[ibank][ichan][ihit].time;
+         double dt = time-time_prev;
+         //if (ibank==0 && ichan==0)
+            //   printf("dt %f\n", dt);
+         time_prev = time;
+         if (dt < 0) {
+            printf("time goes backwards!\n");
+            all_ok = false;
+            break;
+         }
+         
+         if (dt < 0.000001) {
+            //printf("%s: chan %zu: hit %zu: duplicate time %.6f\n", fCbBanks[ibank].c_str(), ichan, ihit, time);
+            fCbHits[ibank][ichan][ihit].flags = -1;
+            count++;
+            continue;
+         }
+         
+         if (dt < min_dt)
+            min_dt = dt;
+      }
+      printf("%s: chan %zu: %zu hits, min_dt %.6f, %zu duplicates\n", fCbBanks[ibank].c_str(), ichan, fCbHits[ibank][ichan].size(), min_dt, count);
+      return all_ok;
+   }
+
+   bool KillDupes()
+   {
+      bool all_ok = true;
+      printf("Check duplicates:\n");
+      for (size_t ibank=0; ibank<fCbBanks.size(); ibank++) {
+         size_t nchan = fCbHits[ibank].size();
+         for (size_t ichan=0; ichan<nchan; ichan++) {
+            all_ok |= KillDupes(ibank, ichan);
+         }
+      }
+      printf("Check duplicates: ok %d\n", all_ok);
+      return all_ok;
+   }
+
    bool Check(size_t itrgchan, size_t ichan)
    {
       bool all_ok = true;
@@ -130,6 +182,134 @@ public:
       return all_ok;
    }
 
+   bool Check4(size_t ichan)
+   {
+      bool all_ok = true;
+      size_t all_count = 0;
+      printf("Check chronobox channel %zu:\n", ichan);
+      assert(fCbBanks.size() == 5);
+      std::vector<size_t> ihit;
+      ihit.resize(fCbBanks.size());
+      for (size_t ibank=1; ibank<=4; ibank++) {
+         printf("%s: chan %zu: %zu hits\n", fCbBanks[ibank].c_str(), ichan, fCbHits[ibank][ichan].size());
+      }
+      while (1) {
+         std::vector<double> tv;
+         for (size_t ibank=1; ibank<=4; ibank++) {
+            if (ihit[ibank] >= fCbHits[ibank][ichan].size())
+               break;
+            while (fCbHits[ibank][ichan][ihit[ibank]].flags&CB_HIT_FLAG_TE) {
+               if (ihit[ibank] >= fCbHits[ibank][ichan].size())
+                  break;
+               ihit[ibank]++;
+            }
+            if (ihit[ibank] >= fCbHits[ibank][ichan].size())
+               break;
+            tv.push_back(fCbHits[ibank][ichan][ihit[ibank]].time);
+            ihit[ibank]++;
+         }
+         if (tv.size() != 4)
+            break;
+
+         bool ok = true;
+         for (size_t i=0; i<4; i++) {
+            if (fabs(tv[i]-tv[0]) > 0.000001)
+               ok = false;
+         }
+         all_ok &= ok;
+         all_count++;
+
+         if (!all_ok) {
+            for (size_t i=0; i<4; i++) {
+               printf(" %.6f", tv[i]);
+            }
+            printf(" ok %d\n", ok);
+         }
+      }
+
+      printf("Check chronobox channel %zu, %zu hits, ok %d\n", ichan, all_count, all_ok);
+      return all_ok;
+   }
+
+   bool Check2(size_t ibank1, size_t ichan1, size_t ibank2, size_t ichan2)
+   {
+      bool all_ok = true;
+      size_t all_count = 0;
+      //printf("Check bank %zu channel %zu against bank %zu channel %zu:\n", ibank1, ichan1, ibank2, ichan2);
+      //printf("%s: chan %zu: %zu hits, first time %.6f\n", fCbBanks[ibank1].c_str(), ichan1, fCbHits[ibank1][ichan1].size(), fCbHits[ibank1][ichan1][0].time);
+      //printf("%s: chan %zu: %zu hits, first time %.6f\n", fCbBanks[ibank2].c_str(), ichan2, fCbHits[ibank2][ichan2].size(), fCbHits[ibank2][ichan2][0].time);
+      size_t n1 = fCbHits[ibank1][ichan1].size();
+      size_t n2 = fCbHits[ibank2][ichan2].size();
+
+      size_t i1 = 0;
+      size_t i2 = 0;
+
+      double drift = 0;
+
+      size_t missing1 = 0;
+      size_t missing2 = 0;
+      
+      while (1) {
+         if (i1 >= n1)
+            break;
+         if (i2 >= n2)
+            break;
+
+         while (fCbHits[ibank1][ichan1][i1].flags&CB_HIT_FLAG_TE) {
+            i1++;
+            if (i1 >= n1)
+               break;
+         }
+
+         while (fCbHits[ibank2][ichan2][i2].flags&CB_HIT_FLAG_TE) {
+            i2++;
+            if (i2 >= n2)
+               break;
+         }
+
+         if (i1 >= n1)
+            break;
+         if (i2 >= n2)
+            break;
+
+         double t1 = fCbHits[ibank1][ichan1][i1].time;
+         double t2 = fCbHits[ibank2][ichan2][i2].time;
+
+         if (fabs(t1-t2-drift) < 0.000001) {
+            //printf("hit %zu %zu time %.6f %.6f match (drift %.6f)\n", i1, i2, t1, t2, drift);
+            drift = t1-t2;
+            all_count++;
+            i1++;
+            i2++;
+         } else if (t1 > t2) {
+            //printf("hit %zu %zu time %.6f %.6f mismatch\n", i1, i2, t1, t2);
+            // bank1 ahead of bank2, missing a hit? check next hits in bank2
+            missing1++;
+            all_ok = false;
+            i2++;
+            all_count++;
+         } else if (t1 < t2) {
+            //printf("hit %zu %zu time %.6f %.6f mismatch\n", i1, i2, t1, t2);
+            // bank2 ahead of bank1, missing a hit? check next hits in bank1
+            missing2++;
+            all_ok = false;
+            i1++;
+            all_count++;
+         } else {
+            printf("hit %zu %zu time %.6f %.6f mismatch, stopping\n", i1, i2, t1, t2);
+            all_ok = false;
+            break;
+         }
+      }
+
+      if (fabs(drift) > 0.000001)
+         all_ok = false;
+
+      printf("Check bank %s channel %2zu against bank %s channel %2zu: matching %zu, missing in bank %s: %zu, missing in bank %s: %zu, drift %.6f. ok %d\n", fCbBanks[ibank1].c_str(), ichan1, fCbBanks[ibank2].c_str(), ichan2, all_count, fCbBanks[ibank1].c_str(), missing1, fCbBanks[ibank2].c_str(), missing2, drift, all_ok);
+
+      return all_ok;
+   }
+
    void EndRun(TARunInfo* runinfo)
    {
       printf("EndRun, run %d\n", runinfo->fRunNo);
@@ -153,6 +333,7 @@ public:
          }
       }
 
+      if (0) {
       for (size_t ibank=0; ibank<fCbBanks.size(); ibank++) {
          for (size_t ichan=0; ichan<fCbHits[ibank].size(); ichan++) {
             if (ibank==0 && ichan!=0 && ichan!=3 && ichan!=4)
@@ -170,12 +351,30 @@ public:
             }
          }
       }
+      }
 
-      Check(0, 33);
-      Check(1, 33);
-      Check(2, 33);
-      Check(3, 33);
-      Check(3, 36);
+      //KillDupes();
+
+      //KillDupes(0, 0);
+      //KillDupes(0, 1);
+      //KillDupes(0, 2);
+      //KillDupes(0, 3);
+
+      Check4(33);
+      Check4(36);
+
+      //Check(0, 33);
+      //Check(1, 33);
+      //Check(2, 33);
+      //Check(3, 33);
+      //Check(3, 36);
+
+      Check2(1, 33, 1, 36);
+      Check2(1, 33, 2, 33);
+      Check2(0, 0, 1, 33);
+      Check2(0, 1, 1, 33);
+      Check2(0, 2, 1, 33);
+      Check2(0, 3, 1, 33);
    }
 
    void AnalyzeCbFifo(int ibank, CbUnpack* cb, TMEvent* event, TMBank* cbbank)
@@ -185,6 +384,14 @@ public:
 
       CbHits hits;
       CbScalers scalers;
+
+      if (ibank==0)
+         cb->fKludge = 1;
+
+      //if (ibank==0)
+      //   cb->fVerbose = true;
+      //else
+      //   cb->fVerbose = false;
 
       cb->Unpack(cbdata, nwords, &hits, &scalers);
 
