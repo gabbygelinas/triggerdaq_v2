@@ -233,11 +233,15 @@ public:
 
    bool Check2(size_t ibank1, size_t ichan1, size_t ibank2, size_t ichan2)
    {
+      //bool print = true;
+      bool print = false;
       bool all_ok = true;
       size_t all_count = 0;
-      //printf("Check bank %zu channel %zu against bank %zu channel %zu:\n", ibank1, ichan1, ibank2, ichan2);
-      //printf("%s: chan %zu: %zu hits, first time %.6f\n", fCbBanks[ibank1].c_str(), ichan1, fCbHits[ibank1][ichan1].size(), fCbHits[ibank1][ichan1][0].time);
-      //printf("%s: chan %zu: %zu hits, first time %.6f\n", fCbBanks[ibank2].c_str(), ichan2, fCbHits[ibank2][ichan2].size(), fCbHits[ibank2][ichan2][0].time);
+      if (print) {
+         printf("Check bank %zu channel %zu against bank %zu channel %zu:\n", ibank1, ichan1, ibank2, ichan2);
+         printf("%s: chan %zu: %zu hits, first time %.6f\n", fCbBanks[ibank1].c_str(), ichan1, fCbHits[ibank1][ichan1].size(), fCbHits[ibank1][ichan1][0].time);
+         printf("%s: chan %zu: %zu hits, first time %.6f\n", fCbBanks[ibank2].c_str(), ichan2, fCbHits[ibank2][ichan2].size(), fCbHits[ibank2][ichan2][0].time);
+      }
       size_t n1 = fCbHits[ibank1][ichan1].size();
       size_t n2 = fCbHits[ibank2][ichan2].size();
 
@@ -248,6 +252,11 @@ public:
 
       size_t missing1 = 0;
       size_t missing2 = 0;
+
+      size_t dupe1 = 0;
+
+      double t1prev = -1;
+      double t2prev = -1;
       
       while (1) {
          if (i1 >= n1)
@@ -275,21 +284,36 @@ public:
          double t1 = fCbHits[ibank1][ichan1][i1].time;
          double t2 = fCbHits[ibank2][ichan2][i2].time;
 
-         if (fabs(t1-t2-drift) < 0.000001) {
-            //printf("hit %zu %zu time %.6f %.6f match (drift %.6f)\n", i1, i2, t1, t2, drift);
+         if (fabs(t1 - t1prev) < 0.000001) {
+            if (print)
+               printf("hit %zu %zu time %.6f dupe\n", i1, i2, t1);
+            dupe1++;
+            all_ok = false;
+            i1++;
+            t1prev = t1;
+            continue;
+         }
+
+         if (fabs(t1-t2-drift) < 0.000002) {
+            if (print)
+               printf("hit %zu %zu time %.6f %.6f match (drift %.6f)\n", i1, i2, t1, t2, drift);
             drift = t1-t2;
             all_count++;
             i1++;
             i2++;
+            t1prev = t1;
+            t2prev = t2;
          } else if (t1 > t2) {
-            //printf("hit %zu %zu time %.6f %.6f mismatch\n", i1, i2, t1, t2);
+            if (print)
+               printf("hit %zu %zu time %.6f %.6f mismatch\n", i1, i2, t1, t2);
             // bank1 ahead of bank2, missing a hit? check next hits in bank2
             missing1++;
             all_ok = false;
             i2++;
             all_count++;
          } else if (t1 < t2) {
-            //printf("hit %zu %zu time %.6f %.6f mismatch\n", i1, i2, t1, t2);
+            if (print)
+               printf("hit %zu %zu time %.6f %.6f mismatch\n", i1, i2, t1, t2);
             // bank2 ahead of bank1, missing a hit? check next hits in bank1
             missing2++;
             all_ok = false;
@@ -305,7 +329,7 @@ public:
       if (fabs(drift) > 0.000001)
          all_ok = false;
 
-      printf("Check bank %s channel %2zu against bank %s channel %2zu: matching %zu, missing in bank %s: %zu, missing in bank %s: %zu, drift %.6f. ok %d\n", fCbBanks[ibank1].c_str(), ichan1, fCbBanks[ibank2].c_str(), ichan2, all_count, fCbBanks[ibank1].c_str(), missing1, fCbBanks[ibank2].c_str(), missing2, drift, all_ok);
+      printf("Check bank %s channel %2zu against bank %s channel %2zu: matching %zu, bank %s: missing %zu, dupe %zu, missing in bank %s: %zu, drift %.6f. ok %d\n", fCbBanks[ibank1].c_str(), ichan1, fCbBanks[ibank2].c_str(), ichan2, all_count, fCbBanks[ibank1].c_str(), missing1, dupe1, fCbBanks[ibank2].c_str(), missing2, drift, all_ok);
 
       return all_ok;
    }
