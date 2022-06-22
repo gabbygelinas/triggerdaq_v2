@@ -79,7 +79,7 @@ void CbUnpack::SaveScalers(CbScalers* scalers)
    fScalers.clear();
 }
 
-void CbUnpack::Unpack(const uint32_t* fifo_data, size_t nwords, CbHits* hits, CbScalers* scalers, int kluge_offset )
+void CbUnpack::Unpack(const uint32_t* fifo_data, size_t nwords, CbHits* hits, CbScalers* scalers)
 {
    if (fFailed)
       return;
@@ -130,7 +130,32 @@ void CbUnpack::Unpack(const uint32_t* fifo_data, size_t nwords, CbHits* hits, Cb
          }
          
       } else {
-         if (hits) {
+         bool ok = true;
+         if (fWaitingForSync && fKludge==1) {
+            CbHit hit;
+            hit.timestamp = (v & 0x00FFFFFF);
+            hit.channel   = (v & 0x7F000000)>>24;
+            hit.flags = 0;
+            if (v&1) {
+               hit.flags |= CB_HIT_FLAG_TE;
+            }
+            if (fVerbose) {
+               printf(" hit chan %2d, timestamp 0x%06x, epoch %d, time %.6f sec (waiting for sync, jump %d, cond %d %d %d %d)",  hit.channel, hit.timestamp, hit.epoch, hit.time, hit.timestamp - fLastTimestamp, i==0, (hit.timestamp<0xFFFF), (hit.timestamp-fLastTimestamp < 0), i==0 && (hit.timestamp<0xFFFF) && (int(hit.timestamp)-int(fLastTimestamp) < 0));
+            }
+            if (i==0 && (hit.timestamp<0xFFFF) && (int(hit.timestamp)-int(fLastTimestamp) < 0)) {
+               if (fVerbose) {
+                  printf(" looks like start of data after reset");
+               }
+               fWaitingForSync = false;
+            } else {
+               ok = false;
+            }
+            fLastTimestamp = hit.timestamp;
+         } else  if (v == 0 && fKludge==1) {
+            fprintf(stderr, "CbUnpack::Unpack:: unexpected hit data word 0x%08x!\n", v);
+            ok = false;
+         }
+         if (ok && hits) {
             CbHit hit;
             //if (fCbEpochFromReset) {
             //   hit.epoch = fEpoch;
@@ -150,6 +175,11 @@ void CbUnpack::Unpack(const uint32_t* fifo_data, size_t nwords, CbHits* hits, Cb
             hit.epoch = fChanEpoch[hit.channel];
             hit.time = hit.timestamp/fCbTsFreq + 1.0/fCbTsFreq*hit.epoch*0x01000000;
             hits->push_back(hit);
+            fLastTimestamp = hit.timestamp;
+
+            if (fVerbose) {
+               printf(" hit chan %2d, timestamp 0x%06x, epoch %d, time %.6f sec",  hit.channel, hit.timestamp, hit.epoch, hit.time);
+            }
          }
       }
 

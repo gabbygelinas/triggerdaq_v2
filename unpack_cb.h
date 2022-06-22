@@ -38,13 +38,15 @@ class CbUnpack
    bool fVerbose = false;
    double   fCbTsFreq = 10*1e6; // 10 MHz
    //bool     fCbEpochFromReset = true;
+   int fKludge = 0;
+   //  fKludge value 1 is cbtrg fw 0x618b790b
 
  public:
    CbUnpack(uint32_t num_inputs); // ctor
    ~CbUnpack(); // dtor
 
  public:
-   void Unpack(const uint32_t* data, size_t nwords, CbHits* hits, CbScalers* scalers, int kluge_offset = 0);
+   void Unpack(const uint32_t* data, size_t nwords, CbHits* hits, CbScalers* scalers);
 
  public: // public data
    bool     fFailed = false;
@@ -54,6 +56,8 @@ class CbUnpack
    std::vector<uint32_t> fChanEpoch;
    //uint32_t fEpoch = 0;
    //uint32_t fEpochCounter = 0;
+   bool fWaitingForSync = true;
+   uint32_t fLastTimestamp = 0;
    
  public: // internal state
    bool fInScalersPacket = false;
