@@ -235,6 +235,7 @@ public:
    {
       //bool print = true;
       bool print = false;
+      //if (ibank1 == 0) print = true;
       bool all_ok = true;
       size_t all_count = 0;
       if (print) {
@@ -296,7 +297,7 @@ public:
 
          if (fabs(t1-t2-drift) < 0.000002) {
             if (print)
-               printf("hit %zu %zu time %.6f %.6f match (drift %.6f)\n", i1, i2, t1, t2, drift);
+               printf("hit %zu %zu time %.6f %.6f match (diff %.6f, drift %.6f)\n", i1, i2, t1, t2, t1-t2, drift);
             drift = t1-t2;
             all_count++;
             i1++;
