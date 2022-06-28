@@ -37,8 +37,8 @@ class CbUnpack
  public:
    bool fVerbose = false;
    double   fCbTsFreq = 10*1e6; // 10 MHz
-   //bool     fCbEpochFromReset = true;
    int fKludge = 0;
+   //  fKludge value 0 is chronobox fw 0x62608957
    //  fKludge value 1 is cbtrg fw 0x618b790b
 
  public:
@@ -54,10 +54,11 @@ class CbUnpack
    uint32_t fNumInputs = 0;
    std::vector<uint32_t> fChanLastTimestamp;
    std::vector<uint32_t> fChanEpoch;
-   //uint32_t fEpoch = 0;
-   //uint32_t fEpochCounter = 0;
+   uint32_t fCurrentEpoch = 0;
+   uint32_t fCurrentTsRangeMin = 0;
+   uint32_t fCurrentTsRangeMax = 0;
    bool fWaitingForSync = true;
-   uint32_t fLastTimestamp = 0;
+   uint32_t fLastTimestamp = 0x80000000;
    
  public: // internal state
    bool fInScalersPacket = false;
