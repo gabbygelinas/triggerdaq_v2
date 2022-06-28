@@ -11,21 +11,21 @@
 
 struct CbHit
 {
-   double   time;
-   uint32_t epoch;
-   uint32_t timestamp;
-   uint32_t channel;
-   uint32_t flags;
+   double   time = 0;
+   uint32_t epoch = 0;
+   uint32_t timestamp = 0;
+   uint32_t channel = 0;
+   uint32_t flags = 0;
 };
 
 typedef std::vector<CbHit> CbHits;
 
 struct CbScaler
 {
-   uint32_t raw;
-   double   epoch;
-   double   rate;
-   double   sum;
+   uint32_t raw = 0;
+   double   epoch = 0;
+   double   rate = 0;
+   double   sum = 0;
 };
 
 typedef std::vector<CbScaler> CbLatchedScalers;
