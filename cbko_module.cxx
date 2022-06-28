@@ -30,6 +30,8 @@ public:
 
    int fRunEventCounter = 0;
 
+   bool fCheckHitsOk = true;
+
    bool fPrint = true;
 
    CbkoModule(TARunInfo* runinfo) : TARunObject(runinfo)
@@ -48,6 +50,8 @@ public:
       fCbUnpack.push_back(new CbUnpack(59));
       fCbUnpack.push_back(new CbUnpack(59));
       fCbUnpack.push_back(new CbUnpack(59));
+
+      fCbUnpack[0]->fKludge = 1;
 
       fCbHits.resize(fCbBanks.size());
       for (size_t i=0; i<fCbBanks.size(); i++) {
@@ -257,7 +261,7 @@ public:
       size_t dupe1 = 0;
 
       double t1prev = -1;
-      double t2prev = -1;
+      //double t2prev = -1;
       
       while (1) {
          if (i1 >= n1)
@@ -303,7 +307,7 @@ public:
             i1++;
             i2++;
             t1prev = t1;
-            t2prev = t2;
+            //t2prev = t2;
          } else if (t1 > t2) {
             if (print)
                printf("hit %zu %zu time %.6f %.6f mismatch\n", i1, i2, t1, t2);
@@ -378,6 +382,15 @@ public:
       }
       }
 
+      bool ok = true;
+
+      if (!fCheckHitsOk) {
+         ok = false;
+         printf("CBFx: Chronobox CheckHits has FAILED, see above messages!\n");
+      } else {
+         printf("CBFx: Chronobox CheckHits ok!\n");
+      }
+
       //KillDupes();
 
       //KillDupes(0, 0);
@@ -385,8 +398,8 @@ public:
       //KillDupes(0, 2);
       //KillDupes(0, 3);
 
-      Check4(33);
-      Check4(36);
+      ok &= Check4(33);
+      ok &= Check4(36);
 
       //Check(0, 33);
       //Check(1, 33);
@@ -394,12 +407,59 @@ public:
       //Check(3, 33);
       //Check(3, 36);
 
-      Check2(1, 33, 1, 36);
-      Check2(1, 33, 2, 33);
-      Check2(0, 0, 1, 33);
-      Check2(0, 1, 1, 33);
-      Check2(0, 2, 1, 33);
-      Check2(0, 3, 1, 33);
+      ok &= Check2(1, 33, 1, 36);
+      ok &= Check2(1, 33, 2, 33);
+      ok &= Check2(0, 0, 1, 33);
+      ok &= Check2(0, 1, 1, 33);
+      ok &= Check2(0, 2, 1, 33);
+      ok &= Check2(0, 3, 1, 33);
+
+      if (ok)
+         printf("CBFx: Chronobox checks ok!\n");
+      else
+         printf("CBFx: Chronobox checks FAILED!\n");
+   }
+
+   bool CheckHits(int ibank, const CbHits& hits)
+   {
+      if (hits.empty())
+         return true;
+
+      bool ok = true;
+
+      double min_time = hits[0].time;
+      double max_time = hits[0].time;
+      int min_epoch = hits[0].epoch;
+      int max_epoch = hits[0].epoch;
+      
+      for (size_t i=0; i<hits.size(); i++) {
+         double time = hits[i].time;
+         int epoch = hits[i].epoch;
+         if (time < min_time) min_time = time;
+         if (time > max_time) max_time = time;
+         if (epoch < min_epoch) min_epoch = epoch;
+         if (epoch > max_epoch) max_epoch = epoch;
+      }
+      
+      if (max_time - min_time > 1.01) {
+         ok = false;
+      }
+
+      if (!ok) {
+         printf("%s, hits: %6zu, time: %.6f..%.6f (diff %.6f) sec, epoch: %d..%d (diff %d)\n", fCbBanks[ibank].c_str(), hits.size(), min_time, max_time, max_time-min_time, min_epoch, max_epoch, max_epoch-min_epoch);
+      }
+      
+      if (!ok) {
+         for (size_t i=0; i<hits.size(); i++) {
+            //int channel = hits[i].channel;
+            //double time = hits[i].time;
+            //int epoch = hits[i].epoch;
+            
+            printf("%s: hit %zu, time %.6f sec, %d+%d, channel %2d (%d)\n", fCbBanks[ibank].c_str(), i, hits[i].time, hits[i].timestamp, hits[i].epoch, hits[i].channel, (hits[i].flags&CB_HIT_FLAG_TE));
+         }
+      }
+
+      return ok;
    }
 
    void AnalyzeCbFifo(int ibank, CbUnpack* cb, TMEvent* event, TMBank* cbbank)
@@ -410,13 +470,12 @@ public:
       CbHits hits;
       CbScalers scalers;
 
-      if (ibank==0)
-         cb->fKludge = 1;
-
       //if (ibank==0)
       //   cb->fVerbose = true;
       //else
       //   cb->fVerbose = false;
+      //
+      //printf("%s: %d words\n", fCbBanks[ibank].c_str(), nwords);
 
       cb->Unpack(cbdata, nwords, &hits, &scalers);
 
@@ -433,6 +492,8 @@ public:
       //}
       //}
 
+      fCheckHitsOk &= CheckHits(ibank, hits);
+
       for (size_t i=0; i<hits.size(); i++) {
          fCbHits[ibank][hits[i].channel].push_back(hits[i]);
       }
@@ -447,7 +508,7 @@ public:
 
    TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
    {
-      return flow;
+      //return flow;
 
       //      printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
       //event->FindAllBanks();
@@ -469,23 +530,6 @@ public:
          if (cbbank)
             AnalyzeCbFifo(ibank, fCbUnpack[ibank], event, cbbank);
       }
-
-      //cbbank = event->FindBank("CBF2");
-      //if (cbbank)
-      //   AnalyzeCbFifo("cb02", 2, &fUnpackCb02, event, cbbank);
-
-      //cbbank = event->FindBank("CBF3");
-      //if (cbbank)
-      //   AnalyzeCbFifo("cb03", 3, &fUnpackCb03, event, cbbank);
-
-      //cbbank = event->FindBank("CBF4");
-      //if (cbbank)
-      //   AnalyzeCbFifo("cb04", 4, &fUnpackCb04, event, cbbank);
-
-      // TRG chronobox data
-      //cbbank = event->FindBank("CBFT");
-      //if (cbbank)
-      //   AnalyzeCbFifo("cbtrg", 0, &fUnpackCbTRG, event, cbbank);
 
       return flow;
    }
