@@ -12,51 +12,29 @@
 #include "manalyzer.h"
 #include "midasio.h"
 
-#include "unpack_cb.h"
+#include "AgFlow.h"
+
+class Flags
+{
+public:
+   bool fPrint = false;
+   bool fCheck = false;
+};
 
 class CbkoModule: public TARunObject
 {
 public:
-   const double kTsFreq = 10.0e6; // 10 MHz
+   Flags* fFlags = NULL;
 
-   uint32_t fT0 = 0;
-   uint32_t fTE = 0;
-   int fCountWC = 0;
-   int fCountMissingWC = 0;
-
-   std::vector<CbUnpack*> fCbUnpack;
    std::vector<std::string> fCbBanks;
    std::vector<std::vector<std::vector<CbHit>>> fCbHits;
 
-   int fRunEventCounter = 0;
-
    bool fCheckHitsOk = true;
 
-   bool fPrint = true;
-
-   CbkoModule(TARunInfo* runinfo) : TARunObject(runinfo)
+   CbkoModule(TARunInfo* runinfo, Flags* flags) : TARunObject(runinfo)
    {
       fModuleName="cbko_module";
-      fRunEventCounter = 0;
-
-      fCbBanks.push_back("CBFT");
-      fCbBanks.push_back("CBF1");
-      fCbBanks.push_back("CBF2");
-      fCbBanks.push_back("CBF3");
-      fCbBanks.push_back("CBF4");
-
-      fCbUnpack.push_back(new CbUnpack(23));
-      fCbUnpack.push_back(new CbUnpack(59));
-      fCbUnpack.push_back(new CbUnpack(59));
-      fCbUnpack.push_back(new CbUnpack(59));
-      fCbUnpack.push_back(new CbUnpack(59));
-
-      fCbUnpack[0]->fKludge = 1;
-
-      fCbHits.resize(fCbBanks.size());
-      for (size_t i=0; i<fCbBanks.size(); i++) {
-         fCbHits[i].resize(fCbUnpack[i]->fNumInputs);
-      }
+      fFlags = flags;
    }
 
    ~CbkoModule()
@@ -66,8 +44,7 @@ public:
   
    void BeginRun(TARunInfo* runinfo)
    {
-      printf("BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
-      fRunEventCounter = 0;
+      //printf("BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
    }
 
    bool KillDupes(size_t ibank, size_t ichan)
@@ -341,19 +318,6 @@ public:
 
    void EndRun(TARunInfo* runinfo)
    {
-      printf("EndRun, run %d\n", runinfo->fRunNo);
-      printf("Counted %d events in run %d\n", fRunEventCounter, runinfo->fRunNo);
-      double elapsed = fTE - fT0;
-      double minutes = elapsed/60.0;
-      double hours = minutes/60.0;
-      printf("Elapsed time %d -> %d is %.0f sec or %f minutes or %f hours\n", fT0, fTE, elapsed, minutes, hours);
-      if (fCountMissingWC) {
-         printf("Wraparounds: %d, missing %d, cannot compute TS frequency\n", fCountWC, fCountMissingWC);
-      } else {
-         double tsbits = (1<<24);
-         printf("Wraparounds: %d, approx rate %f Hz, ts freq %.1f Hz\n", fCountWC, fCountWC/elapsed, 0.5*fCountWC/elapsed*tsbits);
-      }
-
       for (size_t ibank=0; ibank<fCbBanks.size(); ibank++) {
          for (size_t ichan=0; ichan<fCbHits[ibank].size(); ichan++) {
             if (fCbHits[ibank][ichan].size() > 0) {
@@ -391,36 +355,38 @@ public:
          printf("CBFx: Chronobox CheckHits ok!\n");
       }
 
-      //KillDupes();
+      if (fFlags->fCheck) {
+         //KillDupes();
 
-      //KillDupes(0, 0);
-      //KillDupes(0, 1);
-      //KillDupes(0, 2);
-      //KillDupes(0, 3);
+         //KillDupes(0, 0);
+         //KillDupes(0, 1);
+         //KillDupes(0, 2);
+         //KillDupes(0, 3);
+         
+         ok &= Check4(33);
+         ok &= Check4(36);
+         
+         //Check(0, 33);
+         //Check(1, 33);
+         //Check(2, 33);
+         //Check(3, 33);
+         //Check(3, 36);
 
-      ok &= Check4(33);
-      ok &= Check4(36);
-
-      //Check(0, 33);
-      //Check(1, 33);
-      //Check(2, 33);
-      //Check(3, 33);
-      //Check(3, 36);
-
-      ok &= Check2(1, 33, 1, 36);
-      ok &= Check2(1, 33, 2, 33);
-      ok &= Check2(0, 0, 1, 33);
-      ok &= Check2(0, 1, 1, 33);
-      ok &= Check2(0, 2, 1, 33);
-      ok &= Check2(0, 3, 1, 33);
-
-      if (ok)
-         printf("CBFx: Chronobox checks ok!\n");
-      else
-         printf("CBFx: Chronobox checks FAILED!\n");
+         ok &= Check2(1, 33, 1, 36);
+         ok &= Check2(1, 33, 2, 33);
+         ok &= Check2(0, 0, 1, 33);
+         ok &= Check2(0, 1, 1, 33);
+         ok &= Check2(0, 2, 1, 33);
+         ok &= Check2(0, 3, 1, 33);
+         
+         if (ok)
+            printf("CBFx: Chronobox checks ok!\n");
+         else
+            printf("CBFx: Chronobox checks FAILED!\n");
+      }
    }
 
-   bool CheckHitsRange(int ibank, const CbHits& hits, size_t first, size_t last)
+   bool CheckHitsRange(const char* bank_name, const CbHits& hits, size_t first, size_t last)
    {
       bool ok = true;
 
@@ -444,7 +410,7 @@ public:
 
       if (!ok) {
          //printf("range %zu..%zu: ", first, last);
-         printf("%s, hits: %6zu, time: %.6f..%.6f (diff %.6f) sec, epoch: %d..%d (diff %d)\n", fCbBanks[ibank].c_str(), last-first, min_time, max_time, max_time-min_time, min_epoch, max_epoch, max_epoch-min_epoch);
+         printf("%s, hits: %6zu, time: %.6f..%.6f (diff %.6f) sec, epoch: %d..%d (diff %d)\n", bank_name, last-first, min_time, max_time, max_time-min_time, min_epoch, max_epoch, max_epoch-min_epoch);
       }
       
       if (!ok) {
@@ -453,14 +419,14 @@ public:
             //double time = hits[i].time;
             //int epoch = hits[i].epoch;
             
-            printf("%s: hit %zu, time %.6f sec, %d+%d, channel %2d (%d)\n", fCbBanks[ibank].c_str(), i, hits[i].time, hits[i].timestamp, hits[i].epoch, hits[i].channel, (hits[i].flags&CB_HIT_FLAG_TE));
+            printf("%s: hit %zu, time %.6f sec, %d+%d, channel %2d (%d)\n", bank_name, i, hits[i].time, hits[i].timestamp, hits[i].epoch, hits[i].channel, (hits[i].flags&CB_HIT_FLAG_TE));
          }
       }
 
       return ok;
    }
 
-   bool CheckHits(int ibank, const CbHits& hits)
+   bool CheckHits(const char* bank_name, const CbHits& hits)
    {
       if (hits.empty())
          return true;
@@ -468,7 +434,7 @@ public:
       bool ok = true;
 
       if (hits.size() < 10000) {
-         ok &= CheckHitsRange(ibank, hits, 0, hits.size());
+         ok &= CheckHitsRange(bank_name, hits, 0, hits.size());
       } else {
          size_t first = 0;
          while (1) {
@@ -478,7 +444,7 @@ public:
                last = hits.size();
                done = true;
             }
-            ok &= CheckHitsRange(ibank, hits, first, last);
+            ok &= CheckHitsRange(bank_name, hits, first, last);
             if (done)
                break;
             first = last;
@@ -488,29 +454,14 @@ public:
       return ok;
    }
 
-   void AnalyzeCbFifo(int ibank, CbUnpack* cb, TMEvent* event, TMBank* cbbank)
+   void AnalyzeCbHits(CbHitsFlow* hf)
    {
-      int nwords = cbbank->data_size/4; // byte to uint32_t words
-      uint32_t* cbdata = (uint32_t*)event->GetBankData(cbbank);
+      int ibank = hf->fCbIndex;
 
-      CbHits hits;
-      CbScalers scalers;
-
-      //if (ibank==0)
-      //   cb->fVerbose = true;
-      //else
-      //   cb->fVerbose = false;
-      //
-      //printf("%s: %d words\n", fCbBanks[ibank].c_str(), nwords);
-
-      cb->Unpack(cbdata, nwords, &hits, &scalers);
-
-      //if (hits.size() > 0) {
-      //   if (0) {
-      //      printf("Data from %s: ", name);
-      //      PrintCbHits(hits);
-      //   }
-      //}
+      if (fFlags->fPrint) {
+         printf("%s: index %d, num_inputs %d, hits: %zu\n", hf->fCbBankName.c_str(), hf->fCbIndex, hf->fNumInputs, hf->fHits.size());
+         PrintCbHits(hf->fHits);
+      }
 
       //if (ibank == 0) {
       //for (size_t i=0; i<hits.size(); i++) {
@@ -518,50 +469,33 @@ public:
       //}
       //}
 
-      fCheckHitsOk &= CheckHits(ibank, hits);
+      fCheckHitsOk &= CheckHits(hf->fCbBankName.c_str(), hf->fHits);
 
-      for (size_t i=0; i<hits.size(); i++) {
-         fCbHits[ibank][hits[i].channel].push_back(hits[i]);
+      if (fFlags->fCheck) {
+         if (size_t(ibank) >= fCbHits.size())
+            fCbHits.resize(ibank+1);
+         if (size_t(ibank) >= fCbBanks.size())
+            fCbBanks.resize(ibank+1);
+         fCbBanks[ibank] = hf->fCbBankName;
+         for (size_t i=0; i<hf->fHits.size(); i++) {
+            CbHit* hit = &hf->fHits[i];
+            if (hit->channel >= fCbHits[ibank].size())
+               fCbHits[ibank].resize(hit->channel+1);
+            fCbHits[ibank][hit->channel].push_back(*hit);
+         }
       }
-
-      //if (scalers.size() > 0) {
-      //   if (print) {
-      //      printf("Data from %s: ", name);
-      //      PrintCbScalers(scalers);
-      //   }
-      //}
    }
 
-   TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
-   {
-      //return flow;
-
-      //      printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
-      //event->FindAllBanks();
-      //printf("Event: %s\n", event->HeaderToString().c_str());
-      //printf("Banks: %s\n", event->BankListToString().c_str());
-
-      //if (event->serial_number == 0) {
-      //   printf("AAA\n");
-      //   //fUnpackCb01.fEpochFromReset = true;
-      //   exit(1);
-      //}
-
-      fRunEventCounter++;
-
-      event->FindAllBanks();
-
-      for (size_t ibank=0; ibank<fCbBanks.size(); ibank++) {
-         TMBank* cbbank = event->FindBank(fCbBanks[ibank].c_str());
-         if (cbbank)
-            AnalyzeCbFifo(ibank, fCbUnpack[ibank], event, cbbank);
-      }
-
-      return flow;
-   }
+   //TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
+   //{
+   //   return flow;
+   //}
 
    TAFlowEvent* AnalyzeFlowEvent(TARunInfo* runinfo, TAFlags* flags, TAFlowEvent* flow)
    {
+      CbHitsFlow* hf = flow->Find<CbHitsFlow>();
+      if (hf)
+         AnalyzeCbHits(hf);
       return flow;
    }
 };
@@ -569,36 +503,28 @@ public:
 class CbkoModuleFactory: public TAFactory
 {
 public:
+   Flags fFlags;
+
    void Usage()
    {
-      //      printf("\tCbModuleFactory Usage:\n");
-      //printf("\t--print-cb-data : print chronobox raw data\n");
-      //#ifdef HAVE_ROOT
-      //printf("\t--dumpchronojson write out the chronobox channel list as json\n");
-      //printf("\t--loadchronojson filename.json override odb channel list with json\n");
-      //#endif
+      printf("CbkoModuleFactory Usage:\n");
+      printf("--print-cb-data : print chronobox data\n");
+      printf("--check-cb-data : check chronobox data\n");
    }
 
    void Init(const std::vector<std::string> &args)
    {
       //printf("Init!\n");
       //printf("Arguments:\n");
-      //for (unsigned i=0; i<args.size(); i++) {
-      //   printf("arg[%d]: [%s]\n", i, args[i].c_str());
-      //   if (args[i] == "--print-cb-data") {
-      //      fFlags.fPrint = true;
-      //   }
-      //#ifdef HAVE_ROOT
-      //   if (args[i] == "--dumpchronojson")
-      //      fFlags.fDumpJsonChannelNames = true;
-      //   if (args[i] == "--loadchronojson")
-      //   {
-      //      fFlags.fLoadJsonChannelNames = true;
-      //      i++;
-      //      fFlags.fLoadJsonFile=args[i];
-      //   }
-      //#endif
-      //}
+      for (unsigned i=0; i<args.size(); i++) {
+         //printf("arg[%d]: [%s]\n", i, args[i].c_str());
+         if (args[i] == "--print-cb-data") {
+            fFlags.fPrint = true;
+         }
+         if (args[i] == "--check-cb-data") {
+            fFlags.fCheck = true;
+         }
+      }
    }
    
    void Finish()
@@ -607,7 +533,7 @@ public:
    
    TARunObject* NewRunObject(TARunInfo* runinfo)
    {
-      return new CbkoModule(runinfo);
+      return new CbkoModule(runinfo, &fFlags);
    }
 };
 

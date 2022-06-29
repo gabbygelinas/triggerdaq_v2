@@ -9,6 +9,7 @@
 #define AgFlow_H
 
 #include "AgEvent.h"
+#include "unpack_cb.h"
 #include "manalyzer.h"
 
 class AgEventFlow: public TAFlowEvent
@@ -104,6 +105,36 @@ class AgTrigUdpFlow: public TAFlowEvent
  public:
  AgTrigUdpFlow(TAFlowEvent* flow) // ctor
     : TAFlowEvent(flow)
+   {
+   }
+};
+
+class CbHitsFlow: public TAFlowEvent
+{
+public:
+   std::string fCbBankName;
+   int fCbIndex = 0; // 0=cbtrg, 1=cb01, etc
+   int fNumInputs = 0;
+   CbHits fHits;
+   
+public:
+   CbHitsFlow(TAFlowEvent* flow) // ctor
+      : TAFlowEvent(flow)
+   {
+   }
+};
+
+class CbScalersFlow: public TAFlowEvent
+{
+public:
+   std::string fCbBankName;
+   int fCbIndex = 0; // 0=cbtrg, 1=cb01, etc
+   int fNumInputs = 0;
+   CbLatchedScalers fScalers;
+   
+public:
+   CbScalersFlow(TAFlowEvent* flow) // ctor
+      : TAFlowEvent(flow)
    {
    }
 };
