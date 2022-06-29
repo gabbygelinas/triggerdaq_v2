@@ -17,8 +17,9 @@
 class Flags
 {
 public:
-   bool fPrint = false;
-   bool fCheck = false;
+   bool fPrint = false;     // print something for every event
+   bool fPrintHits = false; // print all hits
+   bool fCheck = false;     // enable consistency checks
 };
 
 class CbkoModule: public TARunObject
@@ -339,37 +340,6 @@ public:
 
    void EndRun(TARunInfo* runinfo)
    {
-
-      printf("CbkoModule::EndRun: List of chronobox channels with hits:\n");
-      for (size_t ibank=0; ibank<fCbBanks.size(); ibank++) {
-         for (size_t ichan=0; ichan<fCbHits[ibank].size(); ichan++) {
-            if (fCbHits[ibank][ichan].size() > 0) {
-               printf("%s: chan %zu: %zu hits\n", fCbBanks[ibank].c_str(), ichan, fCbHits[ibank][ichan].size());
-            }
-         }
-      }
-
-      if (0) {
-      for (size_t ibank=0; ibank<fCbBanks.size(); ibank++) {
-         for (size_t ichan=0; ichan<fCbHits[ibank].size(); ichan++) {
-            if (ibank==0 && ichan!=0 && ichan!=3 && ichan!=4)
-               continue;
-            if (ibank>0 && ichan != 33)
-               continue;
-            printf("%s: chan %zu: %zu hits\n", fCbBanks[ibank].c_str(), ichan, fCbHits[ibank][ichan].size());
-            //if (ibank==0)
-            //   continue;
-            for (size_t ihit=0; ihit<fCbHits[ibank][ichan].size(); ihit++) {
-               const CbHit* phit = &fCbHits[ibank][ichan][ihit];
-               if (phit->flags & CB_HIT_FLAG_TE)
-                  continue;
-               printf("%s: hit %zu, time %.6f sec, %d+%d, channel %2d (%d)\n", fCbBanks[ibank].c_str(), ihit, phit->time, phit->timestamp, phit->epoch, phit->channel, (phit->flags&CB_HIT_FLAG_TE));
-            }
-         }
-      }
-      }
-
-
       bool ok = true;
 
       if (!fCheckHitsOk) {
@@ -380,6 +350,35 @@ public:
       }
 
       if (fFlags->fCheck) {
+         printf("CbkoModule::EndRun: List of chronobox channels with hits:\n");
+         for (size_t ibank=0; ibank<fCbBanks.size(); ibank++) {
+            for (size_t ichan=0; ichan<fCbHits[ibank].size(); ichan++) {
+               if (fCbHits[ibank][ichan].size() > 0) {
+                  printf("%s: chan %zu: %zu hits\n", fCbBanks[ibank].c_str(), ichan, fCbHits[ibank][ichan].size());
+               }
+            }
+         }
+         
+         if (0) {
+            for (size_t ibank=0; ibank<fCbBanks.size(); ibank++) {
+               for (size_t ichan=0; ichan<fCbHits[ibank].size(); ichan++) {
+                  if (ibank==0 && ichan!=0 && ichan!=3 && ichan!=4)
+                     continue;
+                  if (ibank>0 && ichan != 33)
+                     continue;
+                  printf("%s: chan %zu: %zu hits\n", fCbBanks[ibank].c_str(), ichan, fCbHits[ibank][ichan].size());
+                  //if (ibank==0)
+                  //   continue;
+                  for (size_t ihit=0; ihit<fCbHits[ibank][ichan].size(); ihit++) {
+                     const CbHit* phit = &fCbHits[ibank][ichan][ihit];
+                     if (phit->flags & CB_HIT_FLAG_TE)
+                        continue;
+                     printf("%s: hit %zu, time %.6f sec, %d+%d, channel %2d (%d)\n", fCbBanks[ibank].c_str(), ihit, phit->time, phit->timestamp, phit->epoch, phit->channel, (phit->flags&CB_HIT_FLAG_TE));
+                  }
+               }
+            }
+         }
+
          //KillDupes();
 
          //KillDupes(0, 0);
@@ -438,7 +437,7 @@ public:
 
       if (!ok) {
          //printf("range %zu..%zu: ", first, last);
-         printf("%s, hits: %6zu, time: %.6f..%.6f (diff %.6f) sec, epoch: %d..%d (diff %d)\n", bank_name, last-first, min_time, max_time, max_time-min_time, min_epoch, max_epoch, max_epoch-min_epoch);
+         printf("CbkoModule::CheckHitsRange: %s, hits: %6zu, time: %.6f..%.6f (diff %.6f) sec, epoch: %d..%d (diff %d), inconsistent time or epoch!\n", bank_name, last-first, min_time, max_time, max_time-min_time, min_epoch, max_epoch, max_epoch-min_epoch);
       }
       
       if (!ok) {
@@ -447,7 +446,7 @@ public:
             //double time = hits[i].time;
             //int epoch = hits[i].epoch;
             
-            printf("%s: hit %zu, time %.6f sec, %d+%d, channel %2d (%d)\n", bank_name, i, hits[i].time, hits[i].timestamp, hits[i].epoch, hits[i].channel, (hits[i].flags&CB_HIT_FLAG_TE));
+            //printf("%s: hit %zu, time %.6f sec, %d+%d, channel %2d (%d)\n", bank_name, i, hits[i].time, hits[i].timestamp, hits[i].epoch, hits[i].channel, (hits[i].flags&CB_HIT_FLAG_TE));
          }
       }
 
@@ -486,9 +485,10 @@ public:
    {
       int ibank = hf->fCbIndex;
 
-      if (fFlags->fPrint) {
+      if (fFlags->fPrint || fFlags->fPrintHits) {
          printf("%s: index %d, num_inputs %d, hits: %zu\n", hf->fCbBankName.c_str(), hf->fCbIndex, hf->fNumInputs, hf->fHits.size());
-         PrintCbHits(hf->fHits);
+         if (fFlags->fPrintHits)
+            PrintCbHits(hf->fHits);
       }
 
       //if (ibank == 0) {
@@ -548,6 +548,9 @@ public:
          //printf("arg[%d]: [%s]\n", i, args[i].c_str());
          if (args[i] == "--print-cb-data") {
             fFlags.fPrint = true;
+         }
+         if (args[i] == "--print-cb-hits") {
+            fFlags.fPrintHits = true;
          }
          if (args[i] == "--check-cb-data") {
             fFlags.fCheck = true;
