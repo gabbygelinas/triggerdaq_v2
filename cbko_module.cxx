@@ -420,19 +420,16 @@ public:
          printf("CBFx: Chronobox checks FAILED!\n");
    }
 
-   bool CheckHits(int ibank, const CbHits& hits)
+   bool CheckHitsRange(int ibank, const CbHits& hits, size_t first, size_t last)
    {
-      if (hits.empty())
-         return true;
-
       bool ok = true;
 
-      double min_time = hits[0].time;
-      double max_time = hits[0].time;
-      int min_epoch = hits[0].epoch;
-      int max_epoch = hits[0].epoch;
+      double min_time = hits[first].time;
+      double max_time = hits[first].time;
+      int min_epoch = hits[first].epoch;
+      int max_epoch = hits[first].epoch;
       
-      for (size_t i=0; i<hits.size(); i++) {
+      for (size_t i=first; i<last; i++) {
          double time = hits[i].time;
          int epoch = hits[i].epoch;
          if (time < min_time) min_time = time;
@@ -446,16 +443,45 @@ public:
       }
 
       if (!ok) {
-         printf("%s, hits: %6zu, time: %.6f..%.6f (diff %.6f) sec, epoch: %d..%d (diff %d)\n", fCbBanks[ibank].c_str(), hits.size(), min_time, max_time, max_time-min_time, min_epoch, max_epoch, max_epoch-min_epoch);
+         //printf("range %zu..%zu: ", first, last);
+         printf("%s, hits: %6zu, time: %.6f..%.6f (diff %.6f) sec, epoch: %d..%d (diff %d)\n", fCbBanks[ibank].c_str(), last-first, min_time, max_time, max_time-min_time, min_epoch, max_epoch, max_epoch-min_epoch);
       }
       
       if (!ok) {
-         for (size_t i=0; i<hits.size(); i++) {
+         for (size_t i=first; i<last; i++) {
             //int channel = hits[i].channel;
             //double time = hits[i].time;
             //int epoch = hits[i].epoch;
             
             printf("%s: hit %zu, time %.6f sec, %d+%d, channel %2d (%d)\n", fCbBanks[ibank].c_str(), i, hits[i].time, hits[i].timestamp, hits[i].epoch, hits[i].channel, (hits[i].flags&CB_HIT_FLAG_TE));
+         }
+      }
+
+      return ok;
+   }
+
+   bool CheckHits(int ibank, const CbHits& hits)
+   {
+      if (hits.empty())
+         return true;
+
+      bool ok = true;
+
+      if (hits.size() < 10000) {
+         ok &= CheckHitsRange(ibank, hits, 0, hits.size());
+      } else {
+         size_t first = 0;
+         while (1) {
+            bool done = false;
+            size_t last = first + 10000;
+            if (last > hits.size()) {
+               last = hits.size();
+               done = true;
+            }
+            ok &= CheckHitsRange(ibank, hits, first, last);
+            if (done)
+               break;
+            first = last;
          }
       }
 
