@@ -24,8 +24,11 @@ class UnpackFlags
 {
 public:
    bool fPrint = false;
-   //int  fAgeSec = 0;
-   //int  fSleepUSec = 0;
+   bool fVerboseCbtrg = false;
+   bool fVerboseCb01 = false;
+   bool fVerboseCb02 = false;
+   bool fVerboseCb03 = false;
+   bool fVerboseCb04 = false;
 };
 
 class UnpackCbModule: public TARunObject
@@ -126,6 +129,17 @@ public:
       //
       //printf("%s: %d words\n", fCbBanks[ibank].c_str(), nwords);
 
+      if (ibank==0 && fFlags->fVerboseCbtrg)
+         cb->fVerbose = true;
+      if (ibank==1 && fFlags->fVerboseCb01)
+         cb->fVerbose = true;
+      if (ibank==2 && fFlags->fVerboseCb02)
+         cb->fVerbose = true;
+      if (ibank==3 && fFlags->fVerboseCb03)
+         cb->fVerbose = true;
+      if (ibank==4 && fFlags->fVerboseCb04)
+         cb->fVerbose = true;
+
       cb->Unpack(cbdata, nwords, &hits_flow->fHits, &scalers);
 
       if (fFlags->fPrint) {
@@ -174,8 +188,17 @@ public:
    {
       //printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
 
+      if (event->event_id == 1) {
+         static bool once = false;
+         if (!once)
+            printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
+         once = true;
+      }
+
       if (event->event_id != 4)
          return flow;
+
+      printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
 
       for (size_t ibank=0; ibank<fCbBanks.size(); ibank++) {
          TMBank* cbbank = event->FindBank(fCbBanks[ibank].c_str());
@@ -203,9 +226,12 @@ public:
    void Usage()
    {
       printf("UnpackCbModuleFactory flags:\n");
-      printf("--print-cb -- print something about every event\n");
-      //printf("--skip-old SEC -- skip events older then given age in seconds (for online use)\n");
-      //printf("--sleep-usec USEC -- sleep after unpacking each event (for debug use)\n");
+      printf("--print-cb -- print chronobox unpacked data\n");
+      printf("--verbose-cbtrg -- print chronobox cbtrg raw data\n");
+      printf("--verbose-cb01  -- print chronobox cb01 raw data\n");
+      printf("--verbose-cb02  -- print chronobox cb02 raw data\n");
+      printf("--verbose-cb03  -- print chronobox cb03 raw data\n");
+      printf("--verbose-cb04  -- print chronobox cb04 raw data\n");
    }
 
    void Init(const std::vector<std::string> &args)
@@ -216,13 +242,21 @@ public:
          if (args[i] == "--print-cb") {
             fFlags.fPrint = true;
          }
-         //else if (args[i] == "--skip-old") {
-         //   i++;
-         //   fFlags.fAgeSec = atoi(args[i].c_str());
-         //} else if (args[i] == "--sleep-usec") {
-         //   i++;
-         //   fFlags.fSleepUSec = atoi(args[i].c_str());
-         //}
+         if (args[i] == "--verbose-cbtrg") {
+            fFlags.fVerboseCbtrg = true;
+         }
+         if (args[i] == "--verbose-cb01") {
+            fFlags.fVerboseCb01 = true;
+         }
+         if (args[i] == "--verbose-cb02") {
+            fFlags.fVerboseCb02 = true;
+         }
+         if (args[i] == "--verbose-cb03") {
+            fFlags.fVerboseCb03 = true;
+         }
+         if (args[i] == "--verbose-cb04") {
+            fFlags.fVerboseCb04 = true;
+         }
       }
    }
 

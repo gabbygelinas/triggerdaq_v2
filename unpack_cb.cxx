@@ -168,10 +168,14 @@ void CbUnpack::Unpack(const uint32_t* fifo_data, size_t nwords, CbHits* hits, Cb
             if (v&1) {
                hit.flags |= CB_HIT_FLAG_TE;
             }
+            bool check1 = (i==0);
+            bool check2 = (hit.timestamp<0x2FFFFF);
+            bool check3 = (int(hit.timestamp)-int(fLastTimestamp) < 0);
+            bool check = check1 && check2 && check3;
             if (fVerbose) {
-               printf(" hit chan %2d, timestamp 0x%06x, epoch %d, time %.6f sec (waiting for sync, jump %d, cond %d %d %d %d)",  hit.channel, hit.timestamp, hit.epoch, hit.time, hit.timestamp - fLastTimestamp, i==0, (hit.timestamp<0xFFFF), (hit.timestamp-fLastTimestamp < 0), i==0 && (hit.timestamp<0xFFFF) && (int(hit.timestamp)-int(fLastTimestamp) < 0));
+               printf(" hit chan %2d, timestamp 0x%06x, epoch %d, time %.6f sec (waiting for sync, jump %d, cond %d %d %d %d)",  hit.channel, hit.timestamp, hit.epoch, hit.time, hit.timestamp - fLastTimestamp, check1, check2, check3, check);
             }
-            if (i==0 && (hit.timestamp<0x2FFFFF) && (int(hit.timestamp)-int(fLastTimestamp) < 0)) {
+            if (check) {
                if (fVerbose) {
                   printf(" looks like start of data after reset");
                }
