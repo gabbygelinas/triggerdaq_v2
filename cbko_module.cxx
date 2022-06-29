@@ -104,7 +104,10 @@ public:
       bool all_ok = true;
       size_t all_count = 0;
       printf("Check cbtrg chan %zu and chronobox channel %zu:\n", itrgchan, ichan);
-      assert(fCbBanks.size() == 5);
+      if (fCbBanks.size() != 5) {
+         fprintf(stderr, "CbkoModule::Check: Error: Unexpected number of chronobox banks: %zu, expected %d\n", fCbBanks.size(), 5);
+         return false;
+      }
       std::vector<size_t> ihit;
       ihit.resize(fCbBanks.size());
       size_t itrgbank = 0;
@@ -168,7 +171,10 @@ public:
       bool all_ok = true;
       size_t all_count = 0;
       printf("Check chronobox channel %zu:\n", ichan);
-      assert(fCbBanks.size() == 5);
+      if (fCbBanks.size() != 5) {
+         fprintf(stderr, "CbkoModule::Check: Error: Unexpected number of chronobox banks: %zu, expected %d\n", fCbBanks.size(), 5);
+         return false;
+      }
       std::vector<size_t> ihit;
       ihit.resize(fCbBanks.size());
       for (size_t ibank=1; ibank<=4; ibank++) {
@@ -214,6 +220,21 @@ public:
 
    bool Check2(size_t ibank1, size_t ichan1, size_t ibank2, size_t ichan2)
    {
+      if (ibank1>=fCbBanks.size() || ibank2>=fCbBanks.size()) {
+         fprintf(stderr, "CbkoModule::Check2: No chronobox data for banks %zu and %zu\n", ibank1, ibank2);
+         return false;
+      }
+
+      if (ichan1>=fCbHits[ibank1].size()) {
+         fprintf(stderr, "CbkoModule::Check2: No chronobox hits in bank %zu channel %zu\n", ibank1, ichan1);
+         return false;
+      }
+
+      if (ichan2>=fCbHits[ibank2].size()) {
+         fprintf(stderr, "CbkoModule::Check2: No chronobox hits in bank %zu channel %zu\n", ibank2, ichan2);
+         return false;
+      }
+
       //bool print = true;
       bool print = false;
       //if (ibank1 == 0) print = true;
@@ -318,6 +339,8 @@ public:
 
    void EndRun(TARunInfo* runinfo)
    {
+
+      printf("CbkoModule::EndRun: List of chronobox channels with hits:\n");
       for (size_t ibank=0; ibank<fCbBanks.size(); ibank++) {
          for (size_t ichan=0; ichan<fCbHits[ibank].size(); ichan++) {
             if (fCbHits[ibank][ichan].size() > 0) {
@@ -346,13 +369,14 @@ public:
       }
       }
 
+
       bool ok = true;
 
       if (!fCheckHitsOk) {
          ok = false;
-         printf("CBFx: Chronobox CheckHits has FAILED, see above messages!\n");
+         printf("CbkoModule::EndRun: Chronobox data self-consistency check: CheckHits() FAILED\n");
       } else {
-         printf("CBFx: Chronobox CheckHits ok!\n");
+         printf("CbkoModule::EndRun: Chronobox data self-consistency check: CheckHits() ok!\n");
       }
 
       if (fFlags->fCheck) {
@@ -362,6 +386,8 @@ public:
          //KillDupes(0, 1);
          //KillDupes(0, 2);
          //KillDupes(0, 3);
+
+         printf("CbkoModule::EndRun: Chronobox cb01..04 synchronization cross check:\n");
          
          ok &= Check4(33);
          ok &= Check4(36);
@@ -372,6 +398,8 @@ public:
          //Check(3, 33);
          //Check(3, 36);
 
+         printf("CbkoModule::EndRun: Chronobox check:\n");
+
          ok &= Check2(1, 33, 1, 36);
          ok &= Check2(1, 33, 2, 33);
          ok &= Check2(0, 0, 1, 33);
@@ -380,9 +408,9 @@ public:
          ok &= Check2(0, 3, 1, 33);
          
          if (ok)
-            printf("CBFx: Chronobox checks ok!\n");
+            printf("CbkoModule::EndRun: Chronobox checks ok!\n");
          else
-            printf("CBFx: Chronobox checks FAILED!\n");
+            printf("CbkoModule::EndRun: Chronobox checks FAILED!\n");
       }
    }
 
