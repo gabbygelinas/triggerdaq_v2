@@ -108,7 +108,7 @@ else()
   message(STATUS "building agana.exe")
   set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
 
-  set(AganaModules unpack_module adc_module bsc_module pwb_module feam_module wfsuppress wfsuppress2 wfsuppress_pwb wfsuppress_adc wfexport_module pulser_module final_module coinc_module display_module)
+  set(AganaModules unpack_module unpack_cb_module cbko_module adc_module bsc_module pwb_module feam_module wfsuppress wfsuppress2 wfsuppress_pwb wfsuppress_adc wfexport_module pulser_module final_module coinc_module display_module)
   set(TestunpackModules testunpack_module)
 
   add_executable(agana.exe ${AganaModules})
