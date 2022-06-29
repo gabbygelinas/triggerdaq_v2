@@ -82,4 +82,6 @@ clean::
 clean::
 	-rm -rf html
 
+clean:: cclean
+
 # end
