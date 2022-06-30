@@ -300,7 +300,7 @@ public:
 
          if (fabs(t1-t2-drift) < 0.000002) {
             if (print)
-               printf("hit %zu %zu time %.6f %.6f match (diff %.6f, drift %.6f)\n", i1, i2, t1, t2, t1-t2, drift);
+               printf("hit %zu %zu time %.6f %.6f match (diff %.6f, timestamp drift %.6f)\n", i1, i2, t1, t2, t1-t2, drift);
             drift = t1-t2;
             all_count++;
             i1++;
@@ -333,7 +333,7 @@ public:
       if (fabs(drift) > 0.000001)
          all_ok = false;
 
-      printf("Check bank %s channel %2zu against bank %s channel %2zu: matching %zu, bank %s: missing %zu, dupe %zu, missing in bank %s: %zu, drift %.6f. ok %d\n", fCbBanks[ibank1].c_str(), ichan1, fCbBanks[ibank2].c_str(), ichan2, all_count, fCbBanks[ibank1].c_str(), missing1, dupe1, fCbBanks[ibank2].c_str(), missing2, drift, all_ok);
+      printf("Check bank %s channel %2zu against bank %s channel %2zu: matching %zu, bank %s: missing %zu, dupe %zu, missing in bank %s: %zu, timestamp drift %.6f. ok %d\n", fCbBanks[ibank1].c_str(), ichan1, fCbBanks[ibank2].c_str(), ichan2, all_count, fCbBanks[ibank1].c_str(), missing1, dupe1, fCbBanks[ibank2].c_str(), missing2, drift, all_ok);
 
       return all_ok;
    }
