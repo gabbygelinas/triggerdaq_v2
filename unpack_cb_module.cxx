@@ -23,6 +23,7 @@
 class UnpackFlags
 {
 public:
+   bool fSubrun = false;
    bool fPrint = false;
    bool fVerboseCbtrg = false;
    bool fVerboseCb01 = false;
@@ -84,6 +85,12 @@ public:
       fCbUnpack.push_back(new CbUnpack(59));
 
       fCbUnpack[0]->fKludge = 1;
+
+      if (fFlags->fSubrun || runinfo->fFileName.empty()) { // analyzing a subrun file or running online
+         for (size_t ibank=0; ibank<fCbBanks.size(); ibank++) {
+            fCbUnpack[ibank]->fWaitForEpoch0 = false;
+         }
+      }
    }
 
    void PreEndRun(TARunInfo* runinfo)
@@ -127,7 +134,6 @@ public:
       //else
       //   cb->fVerbose = false;
       //
-      //printf("%s: %d words\n", fCbBanks[ibank].c_str(), nwords);
 
       if (ibank==0 && fFlags->fVerboseCbtrg)
          cb->fVerbose = true;
@@ -139,6 +145,10 @@ public:
          cb->fVerbose = true;
       if (ibank==4 && fFlags->fVerboseCb04)
          cb->fVerbose = true;
+
+      if (cb->fVerbose) {
+         printf("%s: unpacking %d words\n", fCbBanks[ibank].c_str(), nwords);
+      }
 
       cb->Unpack(cbdata, nwords, &hits_flow->fHits, &scalers);
 
@@ -188,17 +198,8 @@ public:
    {
       //printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
 
-      if (event->event_id == 1) {
-         static bool once = false;
-         if (!once)
-            printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
-         once = true;
-      }
-
       if (event->event_id != 4)
          return flow;
-
-      printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
 
       for (size_t ibank=0; ibank<fCbBanks.size(); ibank++) {
          TMBank* cbbank = event->FindBank(fCbBanks[ibank].c_str());
@@ -226,7 +227,8 @@ public:
    void Usage()
    {
       printf("UnpackCbModuleFactory flags:\n");
-      printf("--print-cb -- print chronobox unpacked data\n");
+      printf("--subrun-cb     -- chronobox timestamps do nto start from zero in this subrun\n");
+      printf("--print-cb      -- print chronobox unpacked data\n");
       printf("--verbose-cbtrg -- print chronobox cbtrg raw data\n");
       printf("--verbose-cb01  -- print chronobox cb01 raw data\n");
       printf("--verbose-cb02  -- print chronobox cb02 raw data\n");
@@ -256,6 +258,9 @@ public:
          }
          if (args[i] == "--verbose-cb04") {
             fFlags.fVerboseCb04 = true;
+         }
+         if (args[i] == "--subrun-cb") {
+            fFlags.fSubrun = true;
          }
       }
    }
