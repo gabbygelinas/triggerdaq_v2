@@ -207,7 +207,7 @@ public:
          all_ok &= ok;
          all_count++;
 
-         if (!all_ok) {
+         if (0 && !all_ok) {
             for (size_t i=0; i<4; i++) {
                printf(" %.6f", tv[i]);
             }
@@ -215,7 +215,7 @@ public:
          }
       }
 
-      printf("Check chronobox channel %zu, %zu hits, ok %d\n", ichan, all_count, all_ok);
+      printf("Check chronobox channel %zu across cb01..04: %zu hits, ok %d\n", ichan, all_count, all_ok);
       return all_ok;
    }
 
@@ -387,9 +387,15 @@ public:
          //KillDupes(0, 3);
 
          printf("CbkoModule::EndRun: Chronobox cb01..04 synchronization cross check:\n");
-         
-         ok &= Check4(33);
-         ok &= Check4(36);
+
+         bool okc = true;
+         okc &= Check4(33);
+         okc &= Check4(36);
+
+         if (!okc)
+            printf("CbkoModule::EndRun: Chronobox cb01..04 synchronization cross check: FAILED!\n");
+
+         ok &= okc;
          
          //Check(0, 33);
          //Check(1, 33);
@@ -431,7 +437,7 @@ public:
          if (epoch > max_epoch) max_epoch = epoch;
       }
       
-      if (max_time - min_time > 1.01) {
+      if (max_time - min_time > 1.10) {
          ok = false;
       }
 
