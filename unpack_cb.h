@@ -52,20 +52,22 @@ class CbUnpack
    bool     fFailed = false;
    uint32_t fNumScalers = 0;
    uint32_t fNumInputs = 0;
-   std::vector<uint32_t> fChanLastTimestamp;
-   std::vector<uint32_t> fChanEpoch;
-   uint32_t fCurrentEpoch = 0;
-   uint32_t fCurrentTsRangeMin = 0;
-   uint32_t fCurrentTsRangeMax = 0;
-   bool fWaitingForSync = true;
-   uint32_t fLastTimestamp = 0x80000000;
+   bool     fWaitForEpoch0 = true;
    
- public: // internal state
+ public: // internal state: scalers
    bool fInScalersPacket = false;
    std::vector<uint32_t> fScalers;
    std::vector<uint32_t> fScalersPrev;
    std::vector<uint32_t> fScalersIncr;
    std::vector<double> fScalersEpoch;
+
+ public: // internal state: timestamps
+   std::vector<uint32_t> fChanLastTimestamp;
+   std::vector<uint32_t> fChanEpoch;
+   uint32_t fCurrentEpoch = 0;
+   uint32_t fCurrentTsRangeMin = 0;
+   uint32_t fCurrentTsRangeMax = 0;
+   bool fWaitingForData = true;
 
  public: // internal functions
    void SaveScalers(CbScalers* scalers);

@@ -113,7 +113,7 @@ void CbUnpack::Unpack(const uint32_t* fifo_data, size_t nwords, CbHits* hits, Cb
             }
             SaveScalers(scalers);
          }
-      } else if ((v & 0xFF000000) == 0xFF000000) {
+      } else if ((v & 0xFF000000) == 0xFF000000) { // overflow marker
          int ts_top_bit = (v >> 23) & 1;
          uint32_t ts_counter = v & 0x7FFFFF;
          uint32_t ts_epoch = ts_counter/2;
@@ -124,28 +124,49 @@ void CbUnpack::Unpack(const uint32_t* fifo_data, size_t nwords, CbHits* hits, Cb
          if (fVerbose) {
             printf(" overflow 0x%06x, ts top bit %d, this_epoch %d", (int)ts_counter, ts_top_bit, (int)ts_epoch);
          }
-         if (!fWaitingForSync) {
+         if (1) {
             if (ts_top_bit==0) {
                fCurrentEpoch = ts_epoch;
                fCurrentTsRangeMin = 0x800000;
                fCurrentTsRangeMax = 0xFFFFFF;
                for (size_t i=0; i<fChanEpoch.size(); i++) {
                   fChanEpoch[i] = fCurrentEpoch;
-                  if (fChanLastTimestamp[i] < 0x700000)
+                  if (fWaitingForData) {
                      fChanLastTimestamp[i] = 0x700000;
-                  if (fChanLastTimestamp[i] > 0x900000)
+                  } else if (fChanLastTimestamp[i] < 0x700000) {
                      fChanLastTimestamp[i] = 0x700000;
+                  } else if (fChanLastTimestamp[i] > 0x900000) {
+                     fChanLastTimestamp[i] = 0x700000;
+                  }
+               }
+               if (fWaitingForData) {
+                  if (fWaitForEpoch0 && ts_epoch != 0) {
+                     if (fVerbose) {
+                        printf(", waiting for epoch 0");
+                     }
+                  } else {
+                     fWaitingForData = false;
+                     if (fVerbose) {
+                        printf(", start of data!");
+                     }
+                  }
                }
             } else {
-               fCurrentTsRangeMin = 0x000000;
-               fCurrentTsRangeMax = 0x800000;
-               for (size_t i=0; i<fChanEpoch.size(); i++) {
-                  if (fChanLastTimestamp[i] < 0xE00000)
-                     fChanLastTimestamp[i] = 0xE00000;
+               if (fWaitingForData) {
+                  if (fVerbose) {
+                     printf(", waiting for start of data");
+                  }
+               } else {
+                  fCurrentTsRangeMin = 0x000000;
+                  fCurrentTsRangeMax = 0x800000;
+                  for (size_t i=0; i<fChanEpoch.size(); i++) {
+                     if (fChanLastTimestamp[i] < 0xE00000)
+                        fChanLastTimestamp[i] = 0xE00000;
+                  }
                }
             }
          }
-      } else if ((v & 0xFF000000) == 0xFE000000) {
+      } else if ((v & 0xFF000000) == 0xFE000000) { // start of scalers block
          fNumScalers = v & 0xFFFF;
          fInScalersPacket = true;
          if (fVerbose) {
@@ -158,55 +179,8 @@ void CbUnpack::Unpack(const uint32_t* fifo_data, size_t nwords, CbHits* hits, Cb
             return;
          }
          
-      } else {
-         bool ok = true;
-         if (fWaitingForSync && fKludge==0) {
-            CbHit hit;
-            hit.timestamp = (v & 0x00FFFFFF);
-            hit.channel   = (v & 0x7F000000)>>24;
-            hit.flags = 0;
-            if (v&1) {
-               hit.flags |= CB_HIT_FLAG_TE;
-            }
-            bool check1 = (i==0);
-            bool check2 = (hit.timestamp<0x2FFFFF);
-            bool check3 = (int(hit.timestamp)-int(fLastTimestamp) < 0);
-            bool check = check1 && check2 && check3;
-            if (fVerbose) {
-               printf(" hit chan %2d, timestamp 0x%06x, epoch %d, time %.6f sec (waiting for sync, jump %d, cond %d %d %d %d)",  hit.channel, hit.timestamp, hit.epoch, hit.time, hit.timestamp - fLastTimestamp, check1, check2, check3, check);
-            }
-            if (check) {
-               if (fVerbose) {
-                  printf(" looks like start of data after reset");
-               }
-               fWaitingForSync = false;
-            } else {
-               ok = false;
-            }
-            fLastTimestamp = hit.timestamp;
-         } else if (fWaitingForSync && fKludge==1) {
-            CbHit hit;
-            hit.timestamp = (v & 0x00FFFFFF);
-            hit.channel   = (v & 0x7F000000)>>24;
-            hit.flags = 0;
-            if (v&1) {
-               hit.flags |= CB_HIT_FLAG_TE;
-            }
-            if (fVerbose) {
-               printf(" hit chan %2d, timestamp 0x%06x, epoch %d, time %.6f sec (waiting for sync, jump %d, cond %d %d %d %d)",  hit.channel, hit.timestamp, hit.epoch, hit.time, hit.timestamp - fLastTimestamp, i==0, (hit.timestamp<0xFFFF), (hit.timestamp-fLastTimestamp < 0), i==0 && (hit.timestamp<0xFFFF) && (int(hit.timestamp)-int(fLastTimestamp) < 0));
-            }
-            if (i==0 && (hit.timestamp<0xFFFF) && (int(hit.timestamp)-int(fLastTimestamp) < 0)) {
-               if (fVerbose) {
-                  printf(" looks like start of data after reset");
-               }
-               fWaitingForSync = false;
-            } else {
-               ok = false;
-            }
-            fLastTimestamp = hit.timestamp;
-         }
-
-         if (ok && hits) {
+      } else { // regular hit
+         if (hits) {
             CbHit hit;
             //if (fCbEpochFromReset) {
             //   hit.epoch = fEpoch;
@@ -225,23 +199,31 @@ void CbUnpack::Unpack(const uint32_t* fifo_data, size_t nwords, CbHits* hits, Cb
             }
 
             if (hit.channel < fNumInputs) {
-               bool wrap = false;
-               if (hit.timestamp < fChanLastTimestamp[hit.channel]) {
-                  fChanEpoch[hit.channel]++;
-                  wrap = true;
-               }
-               hit.epoch = fChanEpoch[hit.channel];
-               hit.time = hit.timestamp/fCbTsFreq + 1.0/fCbTsFreq*hit.epoch*0x01000000;
 
-               if (fVerbose) {
-                  printf(" epoch %d, time %.6f sec", hit.epoch, hit.time);
-                  if (wrap) {
-                     printf(", wrap from timestamp 0x%06x", fChanLastTimestamp[hit.channel]);
+               if (fWaitingForData) {
+                  if (fVerbose) {
+                     printf(" waiting for start of data");
                   }
-               }
+               } else {
+                  bool wrap = false;
+                  if (hit.timestamp < fChanLastTimestamp[hit.channel]) {
+                     fChanEpoch[hit.channel]++;
+                     wrap = true;
+                  }
+                  hit.epoch = fChanEpoch[hit.channel];
+                  hit.time = hit.timestamp/fCbTsFreq + 1.0/fCbTsFreq*hit.epoch*0x01000000;
+                  
+                  if (fVerbose) {
+                     printf(" epoch %d, time %.6f sec", hit.epoch, hit.time);
+                     if (wrap) {
+                        printf(", wrap from timestamp 0x%06x", fChanLastTimestamp[hit.channel]);
+                     }
+                  }
 
-               fChanLastTimestamp[hit.channel] = hit.timestamp;
-               
+                  hits->push_back(hit);
+
+                  fChanLastTimestamp[hit.channel] = hit.timestamp;
+               }
             } else {
                hit.epoch = 0;
                hit.time = 0;
@@ -250,8 +232,7 @@ void CbUnpack::Unpack(const uint32_t* fifo_data, size_t nwords, CbHits* hits, Cb
                }
             }
 
-            hits->push_back(hit);
-            fLastTimestamp = hit.timestamp;
+            //fLastTimestamp = hit.timestamp;
 
             //if (hit.timestamp < fCurrentTsRangeMin || hit.timestamp > fCurrentTsRangeMax) {
             //   printf("BAD hit chan %2d, timestamp 0x%06x, epoch %d, time %.6f sec, 0x%08x, 0x%08x\n",  hit.channel, hit.timestamp, hit.epoch, hit.time, fCurrentTsRangeMin, fCurrentTsRangeMax);
