@@ -25,6 +25,7 @@ class UnpackFlags
 public:
    bool fSubrun = false;
    bool fPrint = false;
+   bool fPrintHits = false;
    bool fVerboseCbtrg = false;
    bool fVerboseCb01 = false;
    bool fVerboseCb02 = false;
@@ -86,7 +87,8 @@ public:
 
       fCbUnpack[0]->fKludge = 1;
 
-      if (fFlags->fSubrun || runinfo->fFileName.empty()) { // analyzing a subrun file or running online
+      //if (fFlags->fSubrun || runinfo->fFileName.empty()) { // analyzing a subrun file or running online
+      if (fFlags->fSubrun) { // analyzing a subrun file
          for (size_t ibank=0; ibank<fCbBanks.size(); ibank++) {
             fCbUnpack[ibank]->fWaitForEpoch0 = false;
          }
@@ -152,8 +154,15 @@ public:
 
       cb->Unpack(cbdata, nwords, &hits_flow->fHits, &scalers);
 
-      if (fFlags->fPrint) {
+      if (fFlags->fPrint || fFlags->fPrintHits) {
          printf("%s: %5d words, %5zu hits, %1zu scalers\n", fCbBanks[ibank].c_str(), nwords, hits_flow->fHits.size(), scalers.size());
+      }
+
+      if (fFlags->fPrintHits) {
+         for (size_t i=0; i<hits_flow->fHits.size(); i++) {
+            const CbHit* h = &hits_flow->fHits[i];
+            printf("%s: hit %zu, time %.6f sec, %d+%d, channel %2d (%d)\n", cbbank->name.c_str(), i, h->time, h->timestamp, h->epoch, h->channel, (h->flags&CB_HIT_FLAG_TE));
+         }
       }
       
       //if (hits.size() > 0) {
@@ -228,7 +237,8 @@ public:
    {
       printf("UnpackCbModuleFactory flags:\n");
       printf("--subrun-cb     -- chronobox timestamps do nto start from zero in this subrun\n");
-      printf("--print-cb      -- print chronobox unpacked data\n");
+      printf("--print-cb      -- print chronobox unpacked data summary\n");
+      printf("--print-cb-hits -- print chronobox unpacked hits\n");
       printf("--verbose-cbtrg -- print chronobox cbtrg raw data\n");
       printf("--verbose-cb01  -- print chronobox cb01 raw data\n");
       printf("--verbose-cb02  -- print chronobox cb02 raw data\n");
@@ -243,6 +253,9 @@ public:
       for (unsigned i=0; i<args.size(); i++) {
          if (args[i] == "--print-cb") {
             fFlags.fPrint = true;
+         }
+         if (args[i] == "--print-cb-hits") {
+            fFlags.fPrintHits = true;
          }
          if (args[i] == "--verbose-cbtrg") {
             fFlags.fVerboseCbtrg = true;
