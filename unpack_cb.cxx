@@ -113,6 +113,22 @@ void CbUnpack::Unpack(const uint32_t* fifo_data, size_t nwords, CbHits* hits, Cb
             }
             SaveScalers(scalers);
          }
+      } else if ((v & 0xFF000000) == 0xFD000000) { // reset marker
+         if (fVerbose) {
+            printf(" fifo reset");
+         }
+
+         printf("CbUnpack::Unpack: Data starts at reset marker\n");
+
+         fKludge = 0;
+         fWaitingForData = false;
+         fCurrentEpoch = 0;
+         fCurrentTsRangeMin = 0x000000;
+         fCurrentTsRangeMax = 0x800000;
+         for (size_t i=0; i<fChanEpoch.size(); i++) {
+            fChanEpoch[i] = 0;
+            fChanLastTimestamp[i] = 0;
+         }
       } else if ((v & 0xFF000000) == 0xFF000000) { // overflow marker
          int ts_top_bit = (v >> 23) & 1;
          uint32_t ts_counter = v & 0x7FFFFF;
@@ -145,6 +161,7 @@ void CbUnpack::Unpack(const uint32_t* fifo_data, size_t nwords, CbHits* hits, Cb
                         printf(", waiting for epoch 0");
                      }
                   } else {
+                     printf("CbUnpack::Unpack: Data starts at epoch %d\n", ts_epoch);
                      fWaitingForData = false;
                      if (fVerbose) {
                         printf(", start of data!");
@@ -187,7 +204,7 @@ void CbUnpack::Unpack(const uint32_t* fifo_data, size_t nwords, CbHits* hits, Cb
             //} else {
             //   hit.epoch = fEpochCounter;
             //}
-            hit.timestamp = (v & 0x00FFFFFF);
+            hit.timestamp = (v & 0x00FFFFFE);
             hit.channel   = (v & 0x7F000000)>>24;
             hit.flags = 0;
             if (v&1) {
