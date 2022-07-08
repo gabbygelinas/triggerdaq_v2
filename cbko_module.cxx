@@ -20,6 +20,7 @@ public:
    bool fPrint = false;     // print something for every event
    bool fPrintHits = false; // print all hits
    bool fCheck = false;     // enable consistency checks
+   bool fCheckAgMini = false; // enable agmini consistency checks
 };
 
 class CbkoModule: public TARunObject
@@ -254,8 +255,11 @@ public:
 
       double drift = 0;
 
+      size_t matching = 0;
       size_t missing1 = 0;
       size_t missing2 = 0;
+      size_t missing1_early = 0;
+      size_t missing2_early = 0;
 
       size_t dupe1 = 0;
 
@@ -303,6 +307,7 @@ public:
                printf("hit %zu %zu time %.6f %.6f match (diff %.6f, timestamp drift %.6f)\n", i1, i2, t1, t2, t1-t2, drift);
             drift = t1-t2;
             all_count++;
+            matching++;
             i1++;
             i2++;
             t1prev = t1;
@@ -311,16 +316,24 @@ public:
             if (print)
                printf("hit %zu %zu time %.6f %.6f mismatch\n", i1, i2, t1, t2);
             // bank1 ahead of bank2, missing a hit? check next hits in bank2
-            missing1++;
-            all_ok = false;
+            if (matching==0) {
+               missing1_early++;
+            } else {
+               missing1++;
+               all_ok = false;
+            }
             i2++;
             all_count++;
          } else if (t1 < t2) {
             if (print)
                printf("hit %zu %zu time %.6f %.6f mismatch\n", i1, i2, t1, t2);
             // bank2 ahead of bank1, missing a hit? check next hits in bank1
-            missing2++;
-            all_ok = false;
+            if (matching==0) {
+               missing2_early++;
+            } else {
+               missing2++;
+               all_ok = false;
+            }
             i1++;
             all_count++;
          } else {
@@ -333,7 +346,7 @@ public:
       if (fabs(drift) > 0.000001)
          all_ok = false;
 
-      printf("Check bank %s channel %2zu against bank %s channel %2zu: matching %zu, bank %s: missing %zu, dupe %zu, missing in bank %s: %zu, timestamp drift %.6f. ok %d\n", fCbBanks[ibank1].c_str(), ichan1, fCbBanks[ibank2].c_str(), ichan2, all_count, fCbBanks[ibank1].c_str(), missing1, dupe1, fCbBanks[ibank2].c_str(), missing2, drift, all_ok);
+      printf("Check bank %s channel %2zu against bank %s channel %2zu: matching %zu, bank %s: missing %zu/%zu, dupe %zu, bank %s: missing %zu/%zu, timestamp drift %.6f. ok %d\n", fCbBanks[ibank1].c_str(), ichan1, fCbBanks[ibank2].c_str(), ichan2, matching, fCbBanks[ibank1].c_str(), missing1_early, missing1, dupe1, fCbBanks[ibank2].c_str(), missing2_early, missing2, drift, all_ok);
 
       return all_ok;
    }
@@ -386,31 +399,41 @@ public:
          //KillDupes(0, 2);
          //KillDupes(0, 3);
 
-         printf("CbkoModule::EndRun: Chronobox cb01..04 synchronization cross check:\n");
+         if (fFlags->fCheckAgMini) {
+            printf("CbkoModule::EndRun: Chronobox check agmini:\n");
+            
+            ok &= Check2(2, 33, 2, 36);
+            ok &= Check2(0, 0, 2, 33);
+            Check2(0, 1, 2, 33);
+            Check2(0, 2, 2, 33);
+            Check2(0, 3, 2, 33);
+         } else {
+            printf("CbkoModule::EndRun: Chronobox cb01..04 synchronization cross check:\n");
 
-         bool okc = true;
-         okc &= Check4(33);
-         okc &= Check4(36);
+            bool okc = true;
+            okc &= Check4(33);
+            okc &= Check4(36);
+            
+            if (!okc)
+               printf("CbkoModule::EndRun: Chronobox cb01..04 synchronization cross check: FAILED!\n");
+            
+            ok &= okc;
+            
+            //Check(0, 33);
+            //Check(1, 33);
+            //Check(2, 33);
+            //Check(3, 33);
+            //Check(3, 36);
 
-         if (!okc)
-            printf("CbkoModule::EndRun: Chronobox cb01..04 synchronization cross check: FAILED!\n");
-
-         ok &= okc;
-         
-         //Check(0, 33);
-         //Check(1, 33);
-         //Check(2, 33);
-         //Check(3, 33);
-         //Check(3, 36);
-
-         printf("CbkoModule::EndRun: Chronobox check:\n");
-
-         ok &= Check2(1, 33, 1, 36);
-         ok &= Check2(1, 33, 2, 33);
-         ok &= Check2(0, 0, 1, 33);
-         ok &= Check2(0, 1, 1, 33);
-         ok &= Check2(0, 2, 1, 33);
-         ok &= Check2(0, 3, 1, 33);
+            printf("CbkoModule::EndRun: Chronobox check:\n");
+            
+            ok &= Check2(1, 33, 1, 36);
+            ok &= Check2(1, 33, 2, 33);
+            ok &= Check2(0, 0, 1, 33);
+            ok &= Check2(0, 1, 1, 33);
+            ok &= Check2(0, 2, 1, 33);
+            ok &= Check2(0, 3, 1, 33);
+         }
          
          if (ok)
             printf("CbkoModule::EndRun: Chronobox checks ok!\n");
@@ -544,6 +567,7 @@ public:
       printf("CbkoModuleFactory Usage:\n");
       printf("--print-cb-data : print chronobox data\n");
       printf("--check-cb-data : check chronobox data\n");
+      printf("--check-cb-agmini : check chronobox data for agmini\n");
    }
 
    void Init(const std::vector<std::string> &args)
@@ -555,11 +579,15 @@ public:
          if (args[i] == "--print-cb-data") {
             fFlags.fPrint = true;
          }
-         if (args[i] == "--print-cb-hits") {
-            fFlags.fPrintHits = true;
-         }
+         //if (args[i] == "--print-cb-hits") {
+         //   fFlags.fPrintHits = true;
+         //}
          if (args[i] == "--check-cb-data") {
             fFlags.fCheck = true;
+         }
+         if (args[i] == "--check-cb-agmini") {
+            fFlags.fCheck = true;
+            fFlags.fCheckAgMini = true;
          }
       }
    }
