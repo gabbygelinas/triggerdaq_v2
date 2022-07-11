@@ -78,6 +78,7 @@ public:
       if (fTrace)
          printf("WfExportModule::ctor!\n");
 
+      fModuleName = "wfexport_module";
       fFlags = f;
    }
 

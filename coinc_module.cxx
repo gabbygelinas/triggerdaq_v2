@@ -46,6 +46,7 @@ public:
    {
       if(fTrace)
          printf("CoincModule::ctor!\n");
+      fModuleName = "coinc_module";
    }
   
    ~CoincModule()

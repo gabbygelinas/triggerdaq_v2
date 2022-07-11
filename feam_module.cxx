@@ -519,6 +519,7 @@ public:
       if (fTrace)
          printf("FeamModule::ctor!\n");
 
+      fModuleName = "feam_module";
       fFlags = f;
 
       hbmean_all = NULL;

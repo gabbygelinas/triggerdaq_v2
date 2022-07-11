@@ -55,6 +55,7 @@ public:
       if (fTrace)
          printf("DisplayModule::ctor!\n");
 
+      fModuleName = "display_module";
       fPrint = do_print;
       fDoEventDisplay = do_event_display;
 

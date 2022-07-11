@@ -162,6 +162,7 @@ public:
       if (fTrace)
          printf("PulserModule::ctor!\n");
 
+      fModuleName = "pulser_module";
       fPrint = do_print;
       fPulser = pulser;
 

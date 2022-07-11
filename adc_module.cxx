@@ -643,6 +643,8 @@ public:
    {
       if (fTrace)
          printf("AdcModule::ctor!\n");
+
+      fModuleName = "adc_module";
       fFlags = f;
 
       std::string agcfmdb_path="agcfmdb";
