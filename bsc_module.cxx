@@ -302,6 +302,8 @@ public:
    {
       if (fTrace)
          printf("BscModule::ctor!\n");
+
+      fModuleName = "bsc_module";
       fFlags = f;
 
       runinfo->fRoot->fOutputFile->cd();
