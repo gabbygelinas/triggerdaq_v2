@@ -21,6 +21,7 @@ public:
    bool fPrintHits = false; // print all hits
    bool fCheck = false;     // enable consistency checks
    bool fCheckAgMini = false; // enable agmini consistency checks
+   bool fPrintCbtrg1 = false; // print cbtrg data set 1
 };
 
 class CbkoModule: public TARunObject
@@ -510,6 +511,17 @@ public:
       return ok;
    }
 
+   // oh, crap! these have to persist across blocks of cbtrg data. K.O.
+   double aw16_grand_or_le = 0;
+   double aw16_grand_or_le0 = 0;
+   double aw16_grand_or_gap = 0;
+   double aw16_grand_or_te = 0;
+   double bsc64_grand_or_le = 0;
+   double bsc64_grand_or_le0 = 0;
+   double bsc64_grand_or_gap = 0;
+   double bsc64_grand_or_te = 0;
+   double coinc_le = 0;
+
    void AnalyzeCbHits(CbHitsFlow* hf)
    {
       int ibank = hf->fCbIndex;
@@ -541,6 +553,77 @@ public:
             fCbHits[ibank][hit->channel].push_back(*hit);
          }
       }
+
+      if (fFlags->fPrintCbtrg1) {
+         if (hf->fCbIndex == 0) { // this is cbtrg data
+            for (size_t i=0; i<hf->fHits.size(); i++) {
+               bool updated = false;
+               const CbHit* hit = &hf->fHits[i];
+               if (hit->channel == 15) {
+                  // aw16_grand_or and bsc64_grand_or
+                  //printf("%s: hit %zu, time %.6f sec, channel %2d (%d)\n", hf->fCbBankName.c_str(), i, hit->time, hit->channel, (hit->flags&CB_HIT_FLAG_TE));
+               }
+               if (hit->channel == 9) {
+                  if (hit->flags&CB_HIT_FLAG_TE) {
+                     //printf(" -%.0f", (hit->time - aw16_grand_or_le)*1e9);
+                     aw16_grand_or_te = hit->time;
+                  } else {
+                     double gap = hit->time - aw16_grand_or_te;
+                     if (gap > 0.000010) {
+                        printf(" aw16  total %4.0f (%4.1f clocks), gaps %4.0f\naw16:  %.6f +%.6f", (aw16_grand_or_te - aw16_grand_or_le0)*1e9, (aw16_grand_or_te - aw16_grand_or_le0)/8e-9, aw16_grand_or_gap*1e9, hit->time, (hit->time - aw16_grand_or_te));
+                        aw16_grand_or_le0 = hit->time;
+                        aw16_grand_or_gap = 0;
+                        updated = true;
+                     } else {
+                        double gap = hit->time - aw16_grand_or_te;
+                        if (gap > 0)
+                           aw16_grand_or_gap += gap;
+                        //printf("aw16: %.6f +%.6f ", hit->time, (hit->time - aw16_grand_or_te));
+                        //printf(" gap %.0f", gap*1e9);
+                     }
+                     aw16_grand_or_le = hit->time;
+                  }
+               }
+               if (1 && hit->channel == 15) {
+                  if (hit->flags&CB_HIT_FLAG_TE) {
+                     //printf(" bsc64 -%.0f", (hit->time - bsc64_grand_or_le)*1e9);
+                     bsc64_grand_or_te = hit->time;
+                  } else {
+                     double gap = hit->time - bsc64_grand_or_te;
+                     if (gap > 0.000010) {
+                        printf(" bsc64 total %4.0f (%4.1f clocks), gaps %4.0f\nbsc64: %.6f +%.6f", (bsc64_grand_or_te - bsc64_grand_or_le0)*1e9, (bsc64_grand_or_te - bsc64_grand_or_le0)/8e-9, bsc64_grand_or_gap*1e9, hit->time, (hit->time - bsc64_grand_or_te));
+                        bsc64_grand_or_le0 = hit->time;
+                        bsc64_grand_or_gap = 0;
+                        updated = true;
+                     } else {
+                        double gap = hit->time - bsc64_grand_or_te;
+                        if (gap > 0)
+                           bsc64_grand_or_gap += gap;
+                        //printf("aw16: %.6f +%.6f ", hit->time, (hit->time - aw16_grand_or_te));
+                        //printf(" gap %.0f", gap*1e9);
+                     }
+                     bsc64_grand_or_le = hit->time;
+                     //printf("\nbsc64: %.6f ", hit->time);
+                     //bsc64_grand_or_le = hit->time;
+                  }
+               }
+               if (hit->channel == 21) {
+                  if (hit->flags&CB_HIT_FLAG_TE) {
+                     //printf(" coinc -%.0f", (hit->time - coinc_le)*1e9);
+                  } else {
+                     printf("\ncoinc: %.6f", hit->time);
+                     coinc_le = hit->time;
+                  }
+               }
+               if (updated) {
+                  double diff = aw16_grand_or_le - bsc64_grand_or_le;
+                  if (fabs(diff) < 0.000010) {
+                     printf("\nCOINC: aw16 %.6f, bsc64 %.6f, diff %.0f (%.1f clocks)", aw16_grand_or_le, bsc64_grand_or_le, diff*1e9, diff/8e-9);
+                  }
+               }
+            }
+         }
+      }
    }
 
    //TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
@@ -568,6 +651,7 @@ public:
       printf("--print-cb-data : print chronobox data\n");
       printf("--check-cb-data : check chronobox data\n");
       printf("--check-cb-agmini : check chronobox data for agmini\n");
+      printf("--print-cbtrg-1 : print cbtrg data set 1\n");
    }
 
    void Init(const std::vector<std::string> &args)
@@ -588,6 +672,9 @@ public:
          if (args[i] == "--check-cb-agmini") {
             fFlags.fCheck = true;
             fFlags.fCheckAgMini = true;
+         }
+         if (args[i] == "--print-cbtrg-1") {
+            fFlags.fPrintCbtrg1 = true;
          }
       }
    }
