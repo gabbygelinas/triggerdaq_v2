@@ -14,6 +14,7 @@ struct CbHit
    double   time = 0;
    uint32_t epoch = 0;
    uint32_t timestamp = 0;
+   uint32_t midastime = 0;
    uint32_t channel = 0;
    uint32_t flags = 0;
 };
