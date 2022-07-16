@@ -295,6 +295,7 @@ public:
    bool fWfSuppress = false;
    int  fWfThreshold = 0;
    bool fWfSaveBad = false;
+   bool fPrintPwbFifo = false;
 
 public:
    PwbFlags() // ctor
@@ -1130,6 +1131,38 @@ public:
          //delete e;
          return flow;
       }
+
+      //double time;     // event time, sec
+      //double timeIncr; // time from previous event, sec
+
+      if (fFlags->fPrintPwbFifo) {
+         printf("PWB event %d, time %.6f, incr %.6f, pwb error %d, event error %d, complete %d, event fifo: %2d %2d, pwb hits: %3zu\n", e->counter, e->time, e->timeIncr, e->error, ef->fEvent->error, ef->fEvent->complete, e->max_event_fifo_used_write, e->max_event_fifo_used_read, e->hits.size());
+      }
+
+#if 0
+      size_t nadcchan = 0;
+      size_t nadcsamples = 0;
+      for (size_t i=0; i<ef->fEvent->a16->udp.size(); i++) {
+         //printf("nsamples %d\n", ef->fEvent->a16->udp[i]->nsamples_supp);
+         if (ef->fEvent->a16->udp[i]->nsamples_supp > 0)
+            nadcchan += 1;
+         nadcsamples += ef->fEvent->a16->udp[i]->nsamples_supp;
+      }
+
+      size_t bytes = 2*512*e->hits.size() + 2*nadcsamples;
+
+      printf("PWB event %d, time %.6f, incr %.6f, pwb error %d, event error %d, complete %d, event fifo: %2d %2d, pwb hits: %3zu, adc hits: %3zu %3zu %5zu, bytes: %6zu\n", e->counter, e->time, e->timeIncr, e->error, ef->fEvent->error, ef->fEvent->complete, e->max_event_fifo_used_write, e->max_event_fifo_used_read, e->hits.size(), ef->fEvent->a16->hits.size(), nadcchan, nadcsamples, bytes);
+
+      if (e->hits.size() > 1000) printf("TOO MANY PWB!\n");
+      if (nadcchan > 200) printf("TOO MANY ADC!\n");
+
+      //if (e->counter < 10337) {
+      //   *flags |= TAFlag_SKIP;
+      //   return flow;
+      //}
+
+      return flow;
+#endif
       
       //
 
@@ -2110,6 +2143,7 @@ public:
       printf("--pwb-wf-suppress -- enable waveform suppression code\n");
       printf("--pwb-wf-threshold -- set the waveform suppression threshold\n");
       printf("--pwb-wf-save-bad  -- write bad waveforms to the root output file\n");
+      printf("--pwb-print-fifo   -- print per-event pwb fifo use\n");
    }
 
    void Init(const std::vector<std::string> &args)
@@ -2125,6 +2159,8 @@ public:
             fFlags.fWfThreshold = atoi(args[i+1].c_str());
          if (args[i] == "--pwb-wf-save-bad")
             fFlags.fWfSaveBad = true;
+         if (args[i] == "--pwb-print-fifo")
+            fFlags.fPrintPwbFifo = true;
       }
    }
 
