@@ -63,9 +63,9 @@ public:
    uint32_t Reserved2    = 0;
    // added in rev2
    uint32_t EventCounter = 0;
-   uint16_t ScaFifoMax   = 0;
-   uint8_t EventDescriptorWrite = 0;
-   uint8_t EventDescriptorRead  = 0;
+   uint16_t ScaFifoMaxDepth     = 0;
+   uint8_t EventDescriptorWriteDepth = 0;
+   uint8_t EventDescriptorReadDepth  = 0;
 
    int start_of_data;
 
@@ -95,6 +95,8 @@ public: // state
    uint32_t fScaChannelsThreshold1 = 0;
    uint32_t fScaChannelsThreshold2 = 0;
    uint32_t fScaChannelsThreshold3 = 0;
+   uint32_t fEventDescriptorWriteDepth = 0;
+   uint32_t fEventDescriptorReadDepth  = 0;
 
 public: // configuration
    bool fTrace = false;

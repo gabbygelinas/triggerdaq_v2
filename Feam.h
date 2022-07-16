@@ -213,35 +213,38 @@ class PwbModuleMap
 
 struct FeamAdcData
 {
-   int nsca;
-   int nchan;
-   int nbins;
+   int nsca  = 0;
+   int nchan = 0;
+   int nbins = 0;
 
    int adc[MAX_FEAM_SCA][MAX_FEAM_READOUT][MAX_FEAM_BINS];
 };
 
 struct FeamChannel
 {
-   int imodule;     /* pwb serial number NN from pwbNN, 0..80 or so */
-   int pwb_column;  /* pwb column position, 0..7 */
-   int pwb_ring;    /* pwb ring position, 0..7 */
-   int sca;         /* 0..3 */
-   int sca_readout; /* 1..79, includes 72 pad channels, 3 reset channels and 4 FPN channels */
-   int sca_chan;    /* 1..72 */
-   int threshold_bit; /* pwb firmware ScaChannelsThreshold bit */
-   int pad_col;     /* local pad column position, 0..3 */
-   int pad_row;     /* local pad row position, 0..71 */
-   int first_bin;   /* usually 0 */
+   int imodule = 0;     /* pwb serial number NN from pwbNN, 0..80 or so */
+   int pwb_column = 0;  /* pwb column position, 0..7 */
+   int pwb_ring = 0;    /* pwb ring position, 0..7 */
+   int sca = 0;         /* 0..3 */
+   int sca_readout = 0; /* 1..79, includes 72 pad channels, 3 reset channels and 4 FPN channels */
+   int sca_chan = 0;    /* 1..72 */
+   int threshold_bit = 0; /* pwb firmware ScaChannelsThreshold bit */
+   int pad_col = 0;     /* local pad column position, 0..3 */
+   int pad_row = 0;     /* local pad row position, 0..71 */
+   int first_bin = 0;   /* usually 0 */
    std::vector<int> adc_samples;
 };
 
 struct FeamEvent
 {
-   bool   complete; // event is complete
-   bool   error;    // event has an error
-   int    counter;  // event sequential counter
-   double time;     // event time, sec
-   double timeIncr; // time from previous event, sec
+   bool   complete = false; // event is complete
+   bool   error    = false; // event has an error
+   int    counter  = 0;     // event sequential counter
+   double time     = 0;     // event time, sec
+   double timeIncr = 0;     // time from previous event, sec
+
+   int    max_event_fifo_used_write = 0; /* pwb event fifo maximum used for all PWBs (fifo write side) */
+   int    max_event_fifo_used_read  = 0; /* pwb event fifo maximum used for all PWBs (fifo read side)  */
 
    std::vector<FeamModuleData*> modules;
    std::vector<FeamAdcData*> adcs;

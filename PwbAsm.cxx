@@ -435,6 +435,16 @@ int main(int argc, char **argv)
 
 #endif /* TEST */
 
+static int count_bits(uint32_t v32)
+{
+   int count = 0;
+   uint32_t mask = 1;
+   while (mask != 0) {
+      if (v32 & mask) count++;
+      mask = mask<<1;
+   }
+   return count;
+}
 
 PwbUdpPacket::PwbUdpPacket(const char* ptr, int size) // ctor
 {
@@ -611,10 +621,12 @@ PwbEventHeader::PwbEventHeader(const char* ptr, int size)
 
       EventCounter = w32[12];
 
-      ScaFifoMax = (w32[13]>> 0)&0xFFFF;
-      EventDescriptorWrite = (w32[13]>>16)&0xFF;
-      EventDescriptorRead  = (w32[13]>>24)&0xFF;
-      
+      ScaFifoMaxDepth = (w32[13]>> 0)&0xFFFF;
+      EventDescriptorWriteDepth = (w32[13]>>16)&0xFF;
+      EventDescriptorReadDepth  = (w32[13]>>24)&0xFF;
+
+      //printf("PwbEventHeader: EventCounter %d, HwId 0x%08x 0x%08x, ScaFifo %d, event fifo %d %d\n", EventCounter, HardwareId1, HardwareId1, ScaFifoMaxDepth, EventDescriptorWriteDepth, EventDescriptorReadDepth);
+
       start_of_data = 18*4;
    } else {
       printf("PwbEventHeader::ctor: Error: invalid FormatRevision %d, expected 0 or 1\n", FormatRevision);
@@ -644,9 +656,9 @@ void PwbEventHeader::Print() const
              ScaChannelsThreshold3,
              Reserved2,
              EventCounter,
-             ScaFifoMax,
-             EventDescriptorWrite,
-             EventDescriptorRead
+             ScaFifoMaxDepth,
+             EventDescriptorWriteDepth,
+             EventDescriptorReadDepth
              );
    }
 
@@ -691,6 +703,9 @@ void PwbChannelAsm::Reset()
    fSaveSamples = 0;
    fSaveNw = 0;
    fSavePos = 0;
+   fEventDescriptorWriteDepth = 0;
+   fEventDescriptorReadDepth = 0;
+
    if (fCurrent) {
       delete fCurrent;
       fCurrent = NULL;
@@ -962,6 +977,21 @@ void PwbChannelAsm::BuildEvent(FeamEvent* e)
       present[i] = false;
    }
 
+   if (fEventDescriptorWriteDepth > (uint32_t)e->max_event_fifo_used_write)
+      e->max_event_fifo_used_write = fEventDescriptorWriteDepth;
+
+   if (fEventDescriptorReadDepth > (uint32_t)e->max_event_fifo_used_read)
+      e->max_event_fifo_used_read = fEventDescriptorReadDepth;
+
+   //if (fEventDescriptorReadDepth > 0 || fEventDescriptorWriteDepth > 0) {
+   if (0 && fModule == 19) {
+      int count = count_bits(fScaChannelsSent1) + count_bits(fScaChannelsSent2) + count_bits(fScaChannelsSent3);
+      int bytes = 2*512*count;
+      double msec = bytes/(100.0*1000.8);
+      if (count > 10)
+         printf("pwb%02dsca%d: fifo: %2d %2d, sent channels: %2d, bytes %6d, msec %.6f\n", fModule, fSca,  fEventDescriptorWriteDepth, fEventDescriptorReadDepth, count, bytes, msec);
+   }
+
    for (unsigned i=0; i<fOutput.size(); i++) {
       if (fOutput[i]) {
          FeamChannel* c = fOutput[i];
@@ -1086,6 +1116,8 @@ void PwbChannelAsm::AddPacket(PwbUdpPacket* udp, const char* ptr, int size)
          fScaChannelsThreshold1 = eh->ScaChannelsThreshold1;
          fScaChannelsThreshold2 = eh->ScaChannelsThreshold2;
          fScaChannelsThreshold3 = eh->ScaChannelsThreshold3;
+         fEventDescriptorWriteDepth = eh->EventDescriptorWriteDepth;
+         fEventDescriptorReadDepth = eh->EventDescriptorReadDepth;
          if (fTrace) {
             eh->Print();
          }
