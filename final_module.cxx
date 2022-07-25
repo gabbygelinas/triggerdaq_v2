@@ -379,9 +379,11 @@ public:
       int aw16_mlu_out = 0;
       uint32_t trig_bitmap  = 0;
       uint32_t aw16_bus = 0;
+      int aw16_mult = 0;
       uint64_t bsc64_bus = 0;
       int bsc64_mult = 0;
       uint32_t coinc_latch = 0;
+      uint32_t fw_rev = 0;
 
       //if (age->trig && age->trig->udpData.size() > 7) {
       //   adc16_coinc_dff = (age->trig->udpData[6]>>8)&0xFFFF;
@@ -397,7 +399,8 @@ public:
       }
 
       if (age->trig && age->trig->udpData.size() > 13) {
-         aw16_bus = age->trig->udpData[13] & 0xFFFF;
+         aw16_mult = (age->trig->udpData[13] & 0xFF0000)>>16;
+         aw16_bus  = age->trig->udpData[13] & 0xFFFF;
       }
 
       if (age->trig && age->trig->udpData.size() > 17) {
@@ -411,7 +414,11 @@ public:
          coinc_latch = age->trig->udpData[17] & 0xFF;
       }
 
-      //printf("trig_bitmap 0x%08x, aw16_prompt 0x%04x, aw16_mlu_out %d, aw16_bus 0x%04x, bsc64_bus 0x%016lx, bsc64_mult %2d, coinc_latch 0x%02x\n", trig_bitmap, aw16_prompt, aw16_mlu_out, aw16_bus, bsc64_bus, bsc64_mult, coinc_latch);
+      if (age->trig && age->trig->udpData.size() > 18) {
+         fw_rev = age->trig->udpData[age->trig->udpData.size()-2];
+      }
+
+      //printf("trig_bitmap 0x%08x, aw16_prompt 0x%04x, aw16_mlu_out %d, aw16_bus 0x%04x, mult 0x%02x, bsc64_bus 0x%016lx, mult 0x%02x, coinc_latch 0x%02x, fw_rev 0x%08x\n", trig_bitmap, aw16_prompt, aw16_mlu_out, aw16_bus, aw16_mult, bsc64_bus, bsc64_mult, coinc_latch, fw_rev);
 
       int trig_counter = -1;
       int adc_counter = -1;
