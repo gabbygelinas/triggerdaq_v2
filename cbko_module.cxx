@@ -431,9 +431,9 @@ public:
             ok &= Check2(1, 33, 1, 36);
             ok &= Check2(1, 33, 2, 33);
             ok &= Check2(0, 0, 1, 33);
-            ok &= Check2(0, 1, 1, 33);
-            ok &= Check2(0, 2, 1, 33);
-            ok &= Check2(0, 3, 1, 33);
+                  Check2(0, 1, 1, 33);
+                  Check2(0, 2, 1, 33);
+                  Check2(0, 3, 1, 33);
          }
          
          if (ok)
