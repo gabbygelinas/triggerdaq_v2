@@ -97,10 +97,14 @@ public:
 
    TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
    {
-      //printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
+      if (fTrace)
+         printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
 
       if (event->event_id != 1)
+      {
+         *flags|=TAFlag_SKIP_PROFILE;
          return flow;
+      }
 
       if (fFlags->fAgeSec > 0) {
          const time_t now = time(NULL);

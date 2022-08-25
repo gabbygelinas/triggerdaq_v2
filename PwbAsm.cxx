@@ -500,7 +500,7 @@ void PwbUdpPacket::Print() const
           fPacketSize,
           end_of_payload,
           payload_crc);
-};
+}
 
 PwbEventHeader::PwbEventHeader(const char* ptr, int size)
 {
@@ -860,7 +860,7 @@ void PwbChannelAsm::CopyData(const uint16_t* s, const uint16_t* e, bool last)
    }
 }
 
-void PwbChannelAsm::BeginData(const char* ptr, int size, int start_of_data, int end_of_data, uint32_t ts, bool last)
+void PwbChannelAsm::BeginData(const char* ptr, int /*size*/, int start_of_data, int end_of_data, uint32_t ts, bool last)
 {
    fTs = ts;
    const uint16_t* s = (const uint16_t*)(ptr+start_of_data);
@@ -868,7 +868,7 @@ void PwbChannelAsm::BeginData(const char* ptr, int size, int start_of_data, int 
    CopyData(s, e, last);
 }
 
-void PwbChannelAsm::AddData(const char* ptr, int size, int start_of_data, int end_of_data, bool last)
+void PwbChannelAsm::AddData(const char* ptr, int /*size*/, int start_of_data, int end_of_data, bool last)
 {
    const uint16_t* s = (const uint16_t*)(ptr+start_of_data);
    const uint16_t* e = (const uint16_t*)(ptr+end_of_data);
