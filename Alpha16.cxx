@@ -284,12 +284,12 @@ Alpha16Packet* Alpha16Packet::UnpackVer3(const void*ptr, int bklen8)
    return p;
 }
 
-int Alpha16Packet::PacketType(const void*ptr, int bklen8)
+int Alpha16Packet::PacketType(const void*ptr, int /*bklen8*/)
 {
    return getUint8(ptr, 0);
 }
 
-int Alpha16Packet::PacketVersion(const void*ptr, int bklen8)
+int Alpha16Packet::PacketVersion(const void*ptr, int /*bklen8*/)
 {
    return getUint8(ptr, 1);
 }
@@ -324,7 +324,7 @@ void Alpha16Packet::Print() const
    //printf("length: %d, bank length %d\n", length, bankLength);
    printf("  baseline %d, keep_bit %d, keep_last %d, suppression enabled %d\n", baseline, keep_bit, keep_last, supp_enabled);
    printf("bank length %d\n", bankLength);
-};
+}
 
 void Alpha16Channel::Print(bool printSamples) const
 {
@@ -339,7 +339,7 @@ void Alpha16Channel::Print(bool printSamples) const
    }
 }
 
-Alpha16Channel* UnpackVer1(const char* bankname, int module, const Alpha16Packet* p, const void* bkptr, int bklen8)
+Alpha16Channel* UnpackVer1(const char* bankname, int module, const Alpha16Packet* p, const void* bkptr, int /*bklen8*/)
 {
    assert(p->packetVersion == 1);
    Alpha16Channel* c = new Alpha16Channel;
@@ -372,9 +372,9 @@ Alpha16Channel* UnpackVer1(const char* bankname, int module, const Alpha16Packet
    }
 
    return c;
-};
+}
 
-Alpha16Channel* UnpackVer2(const char* bankname, int module, const Alpha16Packet* p, const void* bkptr, int bklen8)
+Alpha16Channel* UnpackVer2(const char* bankname, int module, const Alpha16Packet* p, const void* bkptr, int /*bklen8*/)
 {
    assert(p->packetVersion == 2);
    Alpha16Channel* c = new Alpha16Channel;
@@ -417,9 +417,9 @@ Alpha16Channel* UnpackVer2(const char* bankname, int module, const Alpha16Packet
    }
 
    return c;
-};
+}
 
-Alpha16Channel* UnpackVer3(const char* bankname, int module, const Alpha16Packet* p, const void* bkptr, int bklen8)
+Alpha16Channel* UnpackVer3(const char* bankname, int module, const Alpha16Packet* p, const void* bkptr, int /*bklen8*/)
 {
    assert(p->packetVersion == 3);
    Alpha16Channel* c = new Alpha16Channel;
@@ -449,7 +449,7 @@ Alpha16Channel* UnpackVer3(const char* bankname, int module, const Alpha16Packet
    c->adc_samples.clear();
    //c->adc_samples.resize(nsamples);
 
-   int tmp[nsamples];
+   std::vector<int> tmp(nsamples);
    
    for (int i=0; i<nactual; i++) {
       unsigned v = getUint16(bkptr, 32 + i*2);
@@ -472,12 +472,12 @@ Alpha16Channel* UnpackVer3(const char* bankname, int module, const Alpha16Packet
       tmp[i] = v;
    }
 
-   c->adc_samples.insert(c->adc_samples.end(), tmp, tmp+nsamples);
+   c->adc_samples.insert(c->adc_samples.end(), tmp.begin(), tmp.end());
 
    //printf("AAA %d %d %d\n", nsamples, (int)c->adc_samples.size(), (int)c->adc_samples.capacity());
 
    return c;
-};
+}
 
 Alpha16Event::Alpha16Event() // ctor
 {
@@ -709,7 +709,9 @@ void Alpha16Asm::Init(int adc32_rev)
    printf("Alpha16Asm::Init: using ADC32 channel map revision %d\n", adc32_rev);
 
    // construct or check the inverted adc16 map
+
    
+#ifndef NDEBUG // assert is only available if NDEBUG is not defined https://en.cppreference.com/w/cpp/error/assert
    for (int xchan=0; xchan<16; xchan++) {
       int ychan = -1;
       for (int i=0; i<16; i++)
@@ -727,6 +729,7 @@ void Alpha16Asm::Init(int adc32_rev)
          }
       assert(inv_chanmap_top[xchan] == ychan);
    }
+#endif
 
 #if 0
    // construct the inverted adc32 map
