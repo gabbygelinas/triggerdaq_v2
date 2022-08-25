@@ -710,7 +710,9 @@ public:
       }
 
       if (t) {
+#ifndef NDEBUG // assert is only available if NDEBUG is not defined https://en.cppreference.com/w/cpp/error/assert
          bool invalid = false;
+#endif
          for (unsigned i=0; i<t->hits.size(); i++) {
             int ifpga  = t->hits[i]->fpga;
             int ichan  = t->hits[i]->chan;
@@ -718,7 +720,6 @@ public:
             int coarse_time = t->hits[i]->coarse_time;
             int fine_time =   t->hits[i]->fine_time;
             double time_ns = coarse_time/200e6*1e+9;
-
             double fine_time_ns = 0;
             if (ichan==0) {
                fine_time_ns = (fine_time-409.0)/(435.0-409.0) * 0.0;
@@ -727,14 +728,18 @@ public:
             }
 
             if (ichan == 0) {
-               //printf("tdc[%3d] fpga %d, chan %d, re %d, time %f %f\n", i, ifpga, ichan, re, time_ns, fine_time_ns);
+               if (fTrace)
+                  printf("tdc[%3d] fpga %d, chan %d, re %d, time %f %f\n", i, ifpga, ichan, re, time_ns, fine_time_ns);
             } else {
-               //printf("tdc[%3d] fpga %d, chan %d, re %d, time %f %f\n", i, ifpga, ichan, re, time_ns, fine_time_ns);
+               if (fTrace)
+                  printf("tdc[%3d] fpga %d, chan %d, re %d, time %f %f\n", i, ifpga, ichan, re, time_ns, fine_time_ns);
                if (ichan>=1 && ichan<=48) {
                   int seqtdc = ifpga*64 + (ichan-1);
                   fHtdcSeqtdc->Fill(seqtdc);
                } else {
+#ifndef NDEBUG // assert is only available if NDEBUG is not defined https://en.cppreference.com/w/cpp/error/assert
                   invalid = true;
+#endif
                }
             }
          }

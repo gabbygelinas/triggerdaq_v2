@@ -863,7 +863,7 @@ public:
 
          int imodule = e->modules[ifeam]->fModule;
 
-         while (imodule >= fHF.size()) {
+         while (imodule >= (int)fHF.size()) {
             fHF.push_back(NULL);
          }
 
@@ -967,7 +967,8 @@ public:
       int ibaseline_start = 10;
       int ibaseline_end = 100;
 
-      int iwire_start = 130;
+      // unused
+      //int iwire_start = 130;
       int iwire_end = 160;
 
       int idrift_start = iwire_end;
