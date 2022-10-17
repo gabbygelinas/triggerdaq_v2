@@ -4,6 +4,8 @@
 // K.Olchanski
 //
 
+#undef NDEBUG // this program requires working assert()
+
 #include "manalyzer.h"
 #include "midasio.h"
 
@@ -710,9 +712,7 @@ public:
       }
 
       if (t) {
-#ifndef NDEBUG // assert is only available if NDEBUG is not defined https://en.cppreference.com/w/cpp/error/assert
          bool invalid = false;
-#endif
          for (unsigned i=0; i<t->hits.size(); i++) {
             int ifpga  = t->hits[i]->fpga;
             int ichan  = t->hits[i]->chan;
@@ -737,9 +737,7 @@ public:
                   int seqtdc = ifpga*64 + (ichan-1);
                   fHtdcSeqtdc->Fill(seqtdc);
                } else {
-#ifndef NDEBUG // assert is only available if NDEBUG is not defined https://en.cppreference.com/w/cpp/error/assert
                   invalid = true;
-#endif
                }
             }
          }

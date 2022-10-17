@@ -6,6 +6,8 @@
 // Class functions for Alpha16.h
 //
 
+#undef NDEBUG // this program requires working assert()
+
 #include "Alpha16.h"
 
 #include <stdio.h>
@@ -709,9 +711,7 @@ void Alpha16Asm::Init(int adc32_rev)
    printf("Alpha16Asm::Init: using ADC32 channel map revision %d\n", adc32_rev);
 
    // construct or check the inverted adc16 map
-
    
-#ifndef NDEBUG // assert is only available if NDEBUG is not defined https://en.cppreference.com/w/cpp/error/assert
    for (int xchan=0; xchan<16; xchan++) {
       int ychan = -1;
       for (int i=0; i<16; i++)
@@ -729,7 +729,6 @@ void Alpha16Asm::Init(int adc32_rev)
          }
       assert(inv_chanmap_top[xchan] == ychan);
    }
-#endif
 
 #if 0
    // construct the inverted adc32 map

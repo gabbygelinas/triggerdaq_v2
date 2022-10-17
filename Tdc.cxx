@@ -6,6 +6,8 @@
 // Class functions for Tdc.h
 //
 
+#undef NDEBUG // this program requires working assert()
+
 #include "Tdc.h"
 
 #include <stdio.h>
@@ -114,9 +116,7 @@ TdcEvent* TdcAsm::UnpackBank(const void* bkptr, int bklen)
    uint32_t event_coarse = 0;
    
    // Only used in a debug build!
-#ifndef NDEBUG // assert is only available if NDEBUG is not defined https://en.cppreference.com/w/cpp/error/assert
    bool crash_at_end = false;
-#endif
    uint32_t trigger_number = 0;
 
    if (n32 > 5) { // code from fetrb3.cxx
@@ -212,9 +212,7 @@ TdcEvent* TdcAsm::UnpackBank(const void* bkptr, int bklen)
             if (print) {
                printf("\n***XXX***\n");
                // Only used in debug build!
-#ifndef NDEBUG // assert is only available if NDEBUG is not defined https://en.cppreference.com/w/cpp/error/assert
                crash_at_end = true;
-#endif
             }
             state = 0;
          } else {

@@ -3,6 +3,8 @@
 // K.Olchanski
 //
 
+#undef NDEBUG // this program requires working assert()
+
 #include "Feam.h"
 
 #include <stdio.h> // NULL
@@ -165,10 +167,8 @@ const PwbPadMap* PwbPadMap::Map()
 {
    if (!gMap) {
       gMap = new PwbPadMap();
-#ifndef NDEBUG // assert is only available if NDEBUG is not defined https://en.cppreference.com/w/cpp/error/assert
       bool pwb_map_is_ok = gMap->CheckMap();
       assert(pwb_map_is_ok);
-#endif
    }
 
    return gMap;
