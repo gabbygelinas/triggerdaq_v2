@@ -438,8 +438,8 @@ Alpha16Channel* UnpackVer3(const char* bankname, int module, const Alpha16Packet
    c->tpc_wire    = -1;
    c->first_bin   = 0;
 
-   int nsamples = p->nsamples;
-   int nactual  = p->nsamples_supp;
+   const int nsamples = p->nsamples;
+   const int nactual  = p->nsamples_supp;
 
    // NOTE on performance optimization:
    // c->adc_samples.push_back(v); is simplest code, but is very slow (high per-sample overhead)
@@ -447,35 +447,59 @@ Alpha16Channel* UnpackVer3(const char* bankname, int module, const Alpha16Packet
    // c->adc_samples.insert() is best, but it needs an array of int to work on. even with this temporary array, this code is the fastest.
    // go figure. std::vector slow by design. google it up, lots of discussion about this. KO Nov2021.
 
-   //c->adc_samples.reserve(nsamples);
-   c->adc_samples.clear();
-   //c->adc_samples.resize(nsamples);
+   // Further notes on performance optimization:
+   // c->adc_samples.emplace_back(v); is slow like push_back (high per-sample overhead)
+   // int tmp[nsamples] isn't ISO C++, its C99. Its only a warning that appears with -Wpedantic, but some compilers don't support it
+   // gcc generates this warning:
+   //    warning: ISO C++ forbids variable length array 'nsamples' [-Wvla]
+   // clang generates this warning:
+   //    warning: variable length arrays are a C99 feature [-Wvla-extension]
+   //
+   //
+   // Tests using  ./testunpack.exe run09016sub000.mid.lz4 (with per event print statements turned off)
+   // variable length array per a97b17da:                        5.594 +/- 0.038s
+   // malloc for temporary array:                                5.800 +/- 0.053s
+   // temporary vector (Joseph's performance bug) in 892fe368:   6.664 +/- 0.125s
+   // resize (as described above):                               6.144 +/- 0.036s
+   // resize and initialise (this commit):                       5.518 +/- 0.053s
+   //
+   // Further testing with external repository (alphasoft on 4c5da16d)
+   // jagana.exe --mt run09016sub000.mid.lz4 yields identical reconstruction and CPU time reduces
+   // temporary vector (Joseph's performance bug) in 892fe368:   216.21s
+   // variable length array per a97b17da:                        212.56s
+   // resize and initialise (this commit):                       207.03s
+   //
+   // We can use .resize() to our advantage and initialise the memory with the baseline, out performing the version in a97b17da 
+   // using a temporary array and insert. JTKM Oct2022
 
-   std::vector<int> tmp(nsamples);
+   //c->adc_samples.reserve(nsamples);
+   //c->adc_samples.clear();
+
+   unsigned vv = p->baseline;
+   // manual sign extension
+   if (vv & 0x8000)
+      vv |= 0xffff0000;
+   c->adc_samples.resize(nsamples,vv);
+
+   //int* tmp = (int*)malloc(nsamples * sizeof(int));
    
    for (int i=0; i<nactual; i++) {
       unsigned v = getUint16(bkptr, 32 + i*2);
       // manual sign extension
       if (v & 0x8000)
          v |= 0xffff0000;
-      //c->adc_samples.push_back(v);
-      //c->adc_samples[i] = v;
-      tmp[i] = v;
+      //c->adc_samples.emplace_back(v);
+      c->adc_samples[i] = v;
+      //tmp[i] = v;
    }
 
-   unsigned v = p->baseline;
-   // manual sign extension
-   if (v & 0x8000)
-      v |= 0xffff0000;
+   //for (int i=nactual; i<nsamples; i++) {
+   //   c->adc_samples.emplace_back(v);
+   //   c->adc_samples[i] = v;
+   //   tmp[i] = v;
+   //}
 
-   for (int i=nactual; i<nsamples; i++) {
-      //c->adc_samples.push_back(v);
-      //c->adc_samples[i] = v;
-      tmp[i] = v;
-   }
-
-   c->adc_samples.insert(c->adc_samples.end(), tmp.begin(), tmp.end());
-
+   //c->adc_samples.insert(c->adc_samples.end(), tmp, tmp+ nsamples);
    //printf("AAA %d %d %d\n", nsamples, (int)c->adc_samples.size(), (int)c->adc_samples.capacity());
 
    return c;
