@@ -174,11 +174,9 @@ public:
          if(!fEventTracker->IsEventInRange(e->counter, e->time))
          {
             //Dont want this event, pass an empty event back into the flow.
-            std::cout << "PASSING THIS EVENT\n!";
             delete e;
             return flow;
          }
-            std::cout << "RECONSTRUCTING THIS EVENT \n!";
       }
 
       if (fFlags->fPrint) {
