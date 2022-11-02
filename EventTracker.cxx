@@ -90,9 +90,11 @@ EventTracker::~EventTracker() // dtor
 
 bool EventTracker::IsEventInRange(int eventID, double eventTime)
 {
+
     if(fRejectAll)
         return false;
 
+    bool passidcut = !fIDCut;
     if(fIDCut)
     {
         //Are we out of range of first pair?
@@ -107,10 +109,11 @@ bool EventTracker::IsEventInRange(int eventID, double eventTime)
         }
         if(eventID>=fEventIDs.at(0).first && eventID<=fEventIDs.at(0).second) //If we are in range reconstruct this event.
         {
-            return true;
+            passidcut = true;
         }
     }
 
+    bool passtimecut = !fTimeCut;
     if(fTimeCut)
     {
         //Are we out of range of first pair?
@@ -125,12 +128,16 @@ bool EventTracker::IsEventInRange(int eventID, double eventTime)
         }
         if(eventTime>=fEventTimes.at(0).first && eventTime<=fEventTimes.at(0).second) //If we are in range reconstruct this event.
         {
-            return true;
+            passtimecut = true;
         }
+
     }
 
     //It was in none of the event range or time ranges, so reject 
-    return false;
+    if(passidcut && passtimecut) //if you would rather it be a pass if its in EITHER range: change this to a || 
+        return true;
+    else
+        return false;
 }
 
 /* emacs
