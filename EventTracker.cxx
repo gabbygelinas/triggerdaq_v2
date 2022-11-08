@@ -49,9 +49,12 @@ void EventTracker::LoadEventIDs(std::string fileName)
             //The following is apparantly best method: https://quick-bench.com/q/CWCbHcvWTZBXydPA_mju2r75LX0
             if (3 == std::sscanf(line.c_str(), "%d:%d-%d", &runNumber, &firstEvent, &lastEvent))
             {
-                std::cout << "runNumber=" << runNumber << std::endl;
-                std::cout << "firstEvent=" << firstEvent << std::endl;
-                std::cout << "lastEvent=" << lastEvent << std::endl;
+                if(runNumber == fRunNumber)
+                {
+                    std::cout << "runNumber=" << runNumber << std::endl;
+                    std::cout << "firstEvent=" << firstEvent << std::endl;
+                    std::cout << "lastEvent=" << lastEvent << std::endl;
+                }
             }
             if(runNumber == fRunNumber)
                 fEventIDs.push_back( std::pair<int, int>(firstEvent, lastEvent) );
