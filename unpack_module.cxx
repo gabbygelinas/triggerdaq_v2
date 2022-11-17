@@ -39,7 +39,7 @@ public:
    int start_event;
    int stop_event;
 
-   bool fFileNameGiven;
+   bool fFileNameGiven = false;
    std::string fFileName;
 };
 
