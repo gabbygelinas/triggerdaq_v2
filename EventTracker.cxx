@@ -51,9 +51,9 @@ void EventTracker::LoadEventIDs(std::string fileName)
             {
                 if(runNumber == fRunNumber)
                 {
-                    std::cout << "runNumber=" << runNumber << std::endl;
-                    std::cout << "firstEvent=" << firstEvent << std::endl;
-                    std::cout << "lastEvent=" << lastEvent << std::endl;
+                    //std::cout << "runNumber=" << runNumber << std::endl;
+                    //std::cout << "firstEvent=" << firstEvent << std::endl;
+                    //std::cout << "lastEvent=" << lastEvent << std::endl;
                 }
             }
             if(runNumber == fRunNumber)
