@@ -40,6 +40,10 @@ void EventTracker::LoadEventIDs(std::string fileName)
 {
     std::ifstream myFile(fileName);
     std::string line;
+    if(myFile.fail()){
+        std::cout << "WARNING: Eventlist failed to open. Likely doesn't exist but could be a permission error.\n";
+        exit(-1);
+    }
     if (myFile.is_open())
     {
         while ( std::getline(myFile, line) )
@@ -100,6 +104,13 @@ bool EventTracker::IsEventInRange(int eventID, double eventTime)
     bool passidcut = !fIDCut;
     if(fIDCut)
     {
+        //If something happens and size is 0 when fIDCut is true- start rejecting all
+        if(fEventIDs.size() == 0)
+        {
+            std::cout << "WARNING: Not reconstructing events from now on. Did you name a file that doesn't exist on the --eventlist flag?\n";
+            fRejectAll = true; //Reject all from now on. 
+            return false;
+        }
         //Are we out of range of first pair?
         if(eventID>fEventIDs.at(0).second)
         {
