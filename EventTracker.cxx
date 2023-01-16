@@ -48,7 +48,7 @@ void EventTracker::LoadEventIDs(std::string fileName)
     {
         while ( std::getline(myFile, line) )
         {
-            std::cout << line << std::endl;
+            //std::cout << line << std::endl;
             int runNumber, firstEvent, lastEvent;
             //The following is apparantly best method: https://quick-bench.com/q/CWCbHcvWTZBXydPA_mju2r75LX0
             if (3 == std::sscanf(line.c_str(), "%d:%d-%d", &runNumber, &firstEvent, &lastEvent))
