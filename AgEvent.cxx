@@ -16,7 +16,7 @@ AgEvent::AgEvent() // ctor
    counter = 0;
    time = 0;
    timeIncr = 0;
-};
+}
 
 AgEvent::~AgEvent() // dtor
 {

@@ -4,6 +4,8 @@
 // K.Olchanski
 //
 
+#undef NDEBUG // this program requires working assert()
+
 #include "manalyzer.h"
 #include "midasio.h"
 
@@ -736,9 +738,12 @@ public:
             }
 
             if (ichan == 0) {
-               //printf("tdc[%3d] fpga %d, chan %2d, re %d, time %7.0f %4.1f\n", i, ifpga, ichan, re, time_ns, fine_time_ns);
+               if (fTrace)
+                  printf("tdc[%3d] fpga %d, chan %2d, re %d, time %7.0f %4.1f\n", i, ifpga, ichan, re, time_ns, fine_time_ns);
             } else {
-               //printf("tdc[%3d] fpga %d, chan %2d, re %d, time %7.0f %4.1f, rel %.0f\n", i, ifpga, ichan, re, time_ns, fine_time_ns, time_ns - fpga_trigger_time[ifpga]);
+               if (fTrace)
+                  printf("tdc[%3d] fpga %d, chan %2d, re %d, time %7.0f %4.1f, rel %.0f\n", i, ifpga, ichan, re, time_ns, fine_time_ns, time_ns - fpga_trigger_time[ifpga]);
+
                if (ichan>=1 && ichan<=48) {
                   int seqtdc = ifpga*64 + (ichan-1);
                   fHtdcSeqtdc->Fill(seqtdc);

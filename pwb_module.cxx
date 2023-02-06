@@ -588,7 +588,7 @@ public:
       printf("pulser mode: enabled: %d\n", fPulser);
    }
 
-   void CreateHistograms(TARunInfo* runinfo)
+   void CreateHistograms(TARunInfo* /*runinfo*/)
    {
       if (hbmean_all) // already created
          return;
@@ -890,14 +890,14 @@ public:
          if (!c)
             continue;
 
-         unsigned imodule    = c->imodule;
-         unsigned isca       = c->sca;
-         unsigned iri        = c->sca_readout;
+         int imodule    = c->imodule;
+         int isca       = c->sca;
+         int iri        = c->sca_readout;
 
          assert(isca>=0 && isca<4);
          assert(iri>=0 && iri<80);
 
-         while (imodule >= pwb_ptr.size()) {
+         while (imodule >= (int)pwb_ptr.size()) {
             pwb_ptr.push_back(PwbPtr());
          }
 
@@ -1113,13 +1113,19 @@ public:
       AgEventFlow *ef = flow->Find<AgEventFlow>();
 
       if (!ef || !ef->fEvent)
+      {
+         *flags|=TAFlag_SKIP_PROFILE;
          return flow;
+      }
 
       FeamEvent* e = ef->fEvent->feam;
 
-      if (!e) {
+      if (!e)
+      {
+         *flags|=TAFlag_SKIP_PROFILE;
          return flow;
       }
+
 
       if (0) {
          printf("Have PWB  event: ");
@@ -1197,12 +1203,14 @@ public:
       int ibaseline_start = fCfmCuts->GetInt("sca_bin_baseline_start", 10);
       int ibaseline_end   = fCfmCuts->GetInt("sca_bin_baseline_end",  100);
 
-      int iwire_start   = fCfmCuts->GetInt("sca_bin_pc_start",  130);
+      // unused
+      //int iwire_start   = fCfmCuts->GetInt("sca_bin_pc_start",  130);
       double iwire_middle = fCfmCuts->GetDouble("sca_bin_pc_middle", 145);
       int iwire_end     = fCfmCuts->GetInt("sca_bin_pc_end",    160);
 
       int idrift_start  = fCfmCuts->GetInt("sca_bin_drift_start", iwire_end);
-      int idrift_cut    = fCfmCuts->GetInt("sca_bin_drift_cut",   iwire_end);
+      // unused
+      //int idrift_cut    = fCfmCuts->GetInt("sca_bin_drift_cut",   iwire_end);
       int idrift_end    = fCfmCuts->GetInt("sca_bin_drift_end", 410);
 
       double wpos_min_ns = fCfmCuts->GetDouble("pad_hit_time_min_ns", 800.0);
@@ -2001,7 +2009,7 @@ public:
          } else if (scachan_is_fpn) {
             hbrms_all_fpn->Fill(brms);
          }
-         
+
          if (scachan_is_pad || scachan_is_fpn) {
             //h_adc_range_all->Fill(wmax-wmin);
             //h_adc_range_baseline->Fill(bmax-bmin);

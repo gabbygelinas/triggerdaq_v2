@@ -3,6 +3,8 @@
 // K.Olchanski
 //
 
+#undef NDEBUG // this program requires working assert()
+
 #include "Feam.h"
 
 #include <stdio.h> // NULL
@@ -95,7 +97,7 @@ PwbPadMap::PwbPadMap()
          sca_chan[col][row] = ch;
       }
    }
-};
+}
 
 bool PwbPadMap::CheckMap() const
 {
@@ -202,7 +204,7 @@ FeamPacket::~FeamPacket()
    //x1count--;
 }
 
-void FeamPacket::Unpack(const char* data, int size)
+void FeamPacket::Unpack(const char* data, int /*size*/)
 {
    error = true;
 
@@ -292,7 +294,7 @@ void FeamModuleData::Print(int level) const
 
 int FeamModuleData::fgMaxAlloc = 0;
 
-void FeamModuleData::AddData(const FeamPacket*p, const char* ptr, int size)
+void FeamModuleData::AddData(const FeamPacket* /*p*/, const char* ptr, int size)
 {
    //printf("add %d size %d\n", p->n, size);
 
@@ -386,7 +388,7 @@ void FeamModuleAsm::Print() const
       if (fBuffer[i]->error)
          countError++;
    }
-   printf("pwb%02d, state %d, cnt %d, nextn %d, ig %d, fi %d, do %d (sy %d, tr %d, sk %d, wcnt %d), cur %p, buf %d (com %d, err %d)", fModule, fState, fCnt, fNextN, fCountIgnoredBeforeFirst, fCountFirst, fCountDone, fCountLostSync, fCountTruncated, fCountSkip, fCountWrongCnt, fCurrent, (int)fBuffer.size(), countComplete, countError);
+   printf("pwb%02d, state %d, cnt %d, nextn %d, ig %d, fi %d, do %d (sy %d, tr %d, sk %d, wcnt %d), cur %p, buf %d (com %d, err %d)", fModule, fState, fCnt, fNextN, fCountIgnoredBeforeFirst, fCountFirst, fCountDone, fCountLostSync, fCountTruncated, fCountSkip, fCountWrongCnt, (void*) fCurrent, (int)fBuffer.size(), countComplete, countError);
 }
 
 void FeamModuleAsm::StFirstPacket(const FeamPacket* p, int position, int imodule, int icolumn, int iring, int format, const char* ptr, int size)
@@ -573,7 +575,7 @@ FeamEvent::~FeamEvent() // dtor
       }
 }
 
-void FeamEvent::Print(int level) const
+void FeamEvent::Print(int /*level*/) const
 {
    printf("PwbEvent %d, time %f, incr %f, complete %d, error %d", counter, time, timeIncr, complete, error);
    printf(", hits: %d", (int)hits.size());

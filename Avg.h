@@ -1,3 +1,6 @@
+#ifndef __AVERAGE__
+#define __AVERAGE__
+
 // Avg.h
 
 struct Avg
@@ -50,6 +53,8 @@ struct Avg
       return 0;
   }
 };
+
+#endif
 
 /* emacs
  * Local Variables:
