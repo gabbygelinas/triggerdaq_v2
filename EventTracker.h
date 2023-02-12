@@ -39,8 +39,9 @@ class EventTracker
     void AddEventRange(int start_event, int stop_event);
     void AddTimeRange(double start_event, double stop_event);
 
-    bool GetEventCut() { return fIDCut; }
-    bool GetTimeCut() { return fTimeCut; }
+    bool GetEventCut()      { return fIDCut; }
+    bool GetTimeCut()       { return fTimeCut; }
+    bool GetRunNumber()     { return fRunNumber; }
 
 
     EventTracker(); // ctor
