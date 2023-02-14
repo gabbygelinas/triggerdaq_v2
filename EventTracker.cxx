@@ -14,12 +14,15 @@ EventTracker::EventTracker() // ctor
 {
     fIDCut = false;
     fTimeCut = false;
+    fIsSorted = false;
+    fRunNumber = -999;
 }
 
 EventTracker::EventTracker(std::string fileName, int runNumber) // ctor
 {
     fIDCut = true;
     fRunNumber = runNumber;
+    fIsSorted = false;
 
     LoadEventIDs(fileName);
 }
@@ -97,6 +100,11 @@ EventTracker::~EventTracker() // dtor
 
 bool EventTracker::IsEventInRange(int eventID, double eventTime)
 {
+    if(!fIsSorted)
+    {
+        SortDeques();
+        fIsSorted = true;
+    }
 
     if(fRejectAll)
         return false;
