@@ -21,8 +21,9 @@ class EventTracker
     bool fIDCut = false;
     bool fTimeCut = false;
     bool fRejectAll = false;
+    bool fIsSorted = false;
 
-    int fRunNumber;
+    int fRunNumber = 0;
 
     //deque's to reflect the range of ID's or times.
     //Both in format <x1, y1, x2, y2, ..., xn, yn} (we use deque to pop front when we are done with range {x1, y1})
@@ -41,8 +42,9 @@ class EventTracker
 
     bool GetEventCut()      { return fIDCut; }
     bool GetTimeCut()       { return fTimeCut; }
-    bool GetRunNumber()     { return fRunNumber; }
+    int GetRunNumber()      { return fRunNumber; }
 
+    void SetRunNumber(int runNumber)     { fRunNumber = runNumber; }
 
     EventTracker(); // ctor
     EventTracker(std::string fileName, int runNumber); // ctor
