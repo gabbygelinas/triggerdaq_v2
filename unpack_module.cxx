@@ -13,8 +13,11 @@
 
 #include "AgAsm.h"
 #include "AgFlow.h"
+#include "EventTracker.h"
 
 #include "ncfm.h"
+
+#include <iostream>
 
 #ifdef _TIME_ANALYSIS_
 #include "AnalysisTimer.h"
@@ -26,13 +29,26 @@ public:
    bool fPrint = false;
    int  fAgeSec = 0;
    int  fSleepUSec = 0;
+
+
+
+   bool fEventCut = false;
+   bool fTimeCut = false;  
+   float start_time;
+   float stop_time;
+   int start_event;
+   int stop_event;
+
+   bool fFileNameGiven = false;
+   std::string fFileName;
 };
 
 class UnpackModule: public TARunObject
 {
 public:
-   UnpackFlags* fFlags = NULL;
-   AgAsm*       fAgAsm = NULL;
+   UnpackFlags*         fFlags = NULL;
+   AgAsm*               fAgAsm = NULL;
+   EventTracker*        fEventTracker = NULL;
 
    bool fTrace = false;
    
@@ -67,6 +83,22 @@ public:
       fAgAsm = new AgAsm();
 
       fAgAsm->BeginRun(runinfo->fRunNo);
+
+      if(fFlags->fFileNameGiven)
+         fEventTracker = new EventTracker(fFlags->fFileName, runinfo->fRunNo);
+      else
+         fEventTracker = new EventTracker();
+
+      if(fFlags->fEventCut)
+      {
+         fEventTracker->AddEventRange(fFlags->start_event, fFlags->stop_event);
+      }
+      if(fFlags->fTimeCut)
+      {
+         fEventTracker->AddTimeRange(fFlags->start_time, fFlags->stop_time);
+      }
+
+      
    }
 
    void PreEndRun(TARunInfo* runinfo)
@@ -99,6 +131,7 @@ public:
    {
       if (fTrace)
          printf("Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
+
 
       if (event->event_id != 1)
       {
@@ -134,6 +167,17 @@ public:
       }
 
       AgEvent* e = fAgAsm->UnpackEvent(event);
+
+      //Check this event matches with the event range if we use one.
+      if(fEventTracker->GetEventCut() || fEventTracker->GetTimeCut() )
+      {
+         if(!fEventTracker->IsEventInRange(e->counter, e->time))
+         {
+            //Dont want this event, pass an empty event back into the flow.
+            delete e;
+            return flow;
+         }
+      }
 
       if (fFlags->fPrint) {
          printf("Unpacked AgEvent:   ");
@@ -195,6 +239,31 @@ public:
          } else if (args[i] == "--sleep-usec") {
             i++;
             fFlags.fSleepUSec = atoi(args[i].c_str());
+         }
+         if( args[i] == "--eventlist")
+         {
+            fFlags.fFileName = args[i+1];
+            fFlags.fFileNameGiven = true;
+         }
+         if( args[i] == "--usetimerange" )
+         {
+            fFlags.fTimeCut=true;
+            i++;
+            fFlags.start_time=atof(args[i].c_str());
+            i++;
+            fFlags.stop_time=atof(args[i].c_str());
+            printf("Using time range for reconstruction: ");
+            printf("%f - %fs\n",fFlags.start_time,fFlags.stop_time);
+         }
+         if( args[i] == "--useeventrange" )
+         {
+            fFlags.fEventCut=true;
+            i++;
+            fFlags.start_event=atoi(args[i].c_str());
+            i++;
+            fFlags.stop_event=atoi(args[i].c_str());
+            printf("Using event range for reconstruction: ");
+            printf("Analyse from (and including) %d to %d\n",fFlags.start_event,fFlags.stop_event);
          }
       }
    }
