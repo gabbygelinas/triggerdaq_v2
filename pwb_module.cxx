@@ -1317,6 +1317,16 @@ public:
             sprintf(xname, "pwb%02d_%03d_sca%d_chan%02d", imodule, seqsca, isca, ichan);
             sprintf(xtitle, "pwb%02d, sca %d, readout chan %d", imodule, isca, ichan);
          }
+
+         // print waveform
+
+         if (0 && ((c->imodule == 9 && c->sca == 0) || (c->imodule == 30 && c->sca == 3)) && (c->sca_chan==10)) {
+            printf("imodule %02d, sca %d, ri %2d: ", c->imodule, c->sca, c->sca_readout);
+            for (size_t i=0; i<10; i++) {
+               printf(" %04x", 0xFFFF & c->adc_samples[i]);
+            }
+            printf("\n");
+         }
          
          // check for spikes
          
@@ -1694,11 +1704,13 @@ public:
 #endif
          
          // scan the whole waveform
+
+         int iw_start = 10;
          
-         double wmin = c->adc_samples[0]; // waveform minimum
-         double wmax = c->adc_samples[0]; // waveform maximum
+         double wmin = c->adc_samples[iw_start]; // waveform minimum
+         double wmax = c->adc_samples[iw_start]; // waveform maximum
          
-         for (int i=0; i<nbins; i++) {
+         for (int i=iw_start; i<nbins; i++) {
             double a = c->adc_samples[i];
             if (a < wmin)
                wmin = a;
@@ -1743,7 +1755,7 @@ public:
             h_fpn_wrange->Fill(wrange);
             h_all_fpn_wrange_bis_prof->Fill(seqpwbsca, wrange);
 
-            if (wrange > 10) {
+            if (wrange > 15) {
                printf("XXX bad fpn, pwb%02d, sca %d, readout %d, scachan %d, col %d, row %d, wmin %f, wmax %f, wrange %f\n", imodule, isca, ichan, scachan, col, row, wmin, wmax, wrange);
                fpn_is_ok = false;
                bad_wf = true;

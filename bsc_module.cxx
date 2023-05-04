@@ -862,6 +862,49 @@ public:
 
       if (t) {
          AnalyzeTdcHits(t);
+#if 0
+         double fpga_trigger_time[4];
+
+         for (unsigned i=0; i<4; i++) {
+            fpga_trigger_time[i] = 0;
+         }
+
+         bool invalid = false;
+         for (unsigned i=0; i<t->hits.size(); i++) {
+            int ifpga  = t->hits[i]->fpga;
+            int ichan  = t->hits[i]->chan;
+            int re     = t->hits[i]->rising_edge;
+            int coarse_time = t->hits[i]->coarse_time;
+            int fine_time =   t->hits[i]->fine_time;
+            double time_ns = coarse_time/200e6*1e+9;
+
+            assert(ifpga>=0 && ifpga<=3);
+
+            double fine_time_ns = 0;
+            if (ichan==0) {
+               fine_time_ns = (fine_time-409.0)/(435.0-409.0) * 0.0;
+               fpga_trigger_time[ifpga] = time_ns;
+            } else {
+               fine_time_ns =  - (fine_time-17.0)/(450.0-17.0) * 5.0;
+            }
+
+            if (ichan == 0) {
+               if (fTrace)
+                  printf("tdc[%3d] fpga %d, chan %2d, re %d, time %7.0f %4.1f\n", i, ifpga, ichan, re, time_ns, fine_time_ns);
+            } else {
+               if (fTrace)
+                  printf("tdc[%3d] fpga %d, chan %2d, re %d, time %7.0f %4.1f, rel %.0f\n", i, ifpga, ichan, re, time_ns, fine_time_ns, time_ns - fpga_trigger_time[ifpga]);
+
+               if (ichan>=1 && ichan<=48) {
+                  int seqtdc = ifpga*64 + (ichan-1);
+                  fHtdcSeqtdc->Fill(seqtdc);
+               } else {
+                  invalid = true;
+               }
+            }
+         }
+         assert(invalid == false);
+#endif
       }
 
 
