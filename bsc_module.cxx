@@ -255,13 +255,14 @@ public:
 
 };
 
-class A16Flags
+class BscFlags
 {
 public:
    bool fPrint = false;
    bool fFft = false;
    bool fFilterWaveform = false;
    bool fInvertWaveform = false;
+   bool fPrintTdc = false;
 };
 
 static double find_pulse_time(const int* adc, int nbins, double baseline, double gain, double threshold)
@@ -281,10 +282,27 @@ static double find_pulse_time(const int* adc, int nbins, double baseline, double
    return 0;
 }
 
+struct BscTdcHit
+{
+   int ifpga = 0;
+   int ichan = 0;
+
+   int le_coarse_time = 0;
+   int le_fine_time = 0;
+
+   int te_coarse_time = 0;
+   int te_fine_time = 0;
+
+   double le_time_ns = 0;
+   double te_time_ns = 0;
+
+   double width_ns = 0;
+};
+
 class BscModule: public TARunObject
 {
 public:
-   A16Flags* fFlags = NULL;
+   BscFlags* fFlags = NULL;
    int fCounter = 0;
    bool fTrace = false;
 
@@ -299,7 +317,7 @@ public:
    TH1D* fHtdcSeqtdc = NULL;
 
 public:
-   BscModule(TARunInfo* runinfo, A16Flags* f)
+   BscModule(TARunInfo* runinfo, BscFlags* f)
       : TARunObject(runinfo)
    {
       if (fTrace)
@@ -678,8 +696,133 @@ public:
       if (fFlags->fPrint) {
          printf("bar %3d: baseline mean %8.1f, rms %4.1f, range %8.1f %6.1f, pulse %6.1f, le %6.1f, time %5.0f, amp %6.1f, flags: baseline %d, pulse %d, hit %d\n", ibar, bmean, brms, wmin, wmax, ph, le, hit_time, hit_amp, have_baseline, have_pulse, have_hit);
       }
+
+      if (ibar == 64) {
+         //printf("bar %3d: pulse %6.1f, le %6.1f, time %5.0f, amp %6.1f, flags: baseline %d, pulse %d, hit %d\n", ibar, ph, le, hit_time, hit_amp, have_baseline, have_pulse, have_hit);
+         printf("pulse %8.1f\n", ph);
+      }
    }
-   
+
+   //struct BscTdcHit
+   //{
+   //   int ifpga = 0;
+   //   int ichan = 0;
+   //   
+   //   int le_coarse_time = 0;
+   //   int le_fine_time = 0;
+   //   double le_time = 0;
+   //   double te_time = 0;
+   //};
+
+   void AnalyzeTdcHits(const TdcEvent* t)
+   {
+      std::vector<BscTdcHit> *tdchits = NULL;
+
+      tdchits = new std::vector<BscTdcHit>;
+
+      bool invalid = false;
+      for (unsigned i=0; i<t->hits.size(); i++) {
+         int ifpga  = t->hits[i]->fpga;
+         int ichan  = t->hits[i]->chan;
+         int re     = t->hits[i]->rising_edge;
+         int coarse_time = t->hits[i]->coarse_time;
+         int fine_time =   t->hits[i]->fine_time;
+         double time_ns = coarse_time/200e6*1e+9;
+         double fine_time_ns = 0;
+         if (ichan==0) {
+            fine_time_ns = (fine_time-409.0)/(435.0-409.0) * 0.0;
+         } else {
+            fine_time_ns =  - (fine_time-17.0)/(450.0-17.0) * 5.0;
+         }
+
+         if (re) {
+            BscTdcHit h;
+            h.ifpga = ifpga;
+            h.ichan = ichan;
+            h.le_coarse_time = coarse_time;
+            h.le_fine_time = fine_time;
+            h.le_time_ns = time_ns;
+            tdchits->push_back(h);
+         } else {
+            for (size_t j=0; j<tdchits->size(); j++) {
+               BscTdcHit* h = &(*tdchits)[j];
+               if (h->ifpga != ifpga)
+                  continue;
+               if (h->ichan != ichan)
+                  continue;
+               if (h->te_coarse_time != 0)
+                  continue;
+               h->te_coarse_time = coarse_time;
+               h->te_fine_time = fine_time;
+               h->te_time_ns = time_ns;
+               h->width_ns = h->te_time_ns - h->le_time_ns;
+               break;
+            }
+         }
+         
+         if (ichan == 0) {
+            if (fFlags->fPrintTdc)
+               printf("tdc[%3d] fpga %d, chan %d, re %d, time %f %f\n", i, ifpga, ichan, re, time_ns, fine_time_ns);
+         } else {
+            if (fFlags->fPrintTdc)
+               printf("tdc[%3d] fpga %d, chan %d, re %d, time %f %f\n", i, ifpga, ichan, re, time_ns, fine_time_ns);
+            if (ichan>=1 && ichan<=48) {
+               int seqtdc = ifpga*64 + (ichan-1);
+               fHtdcSeqtdc->Fill(seqtdc);
+            } else {
+               invalid = true;
+            }
+         }
+      }
+      assert(invalid == false);
+
+      // normalize time
+      for (size_t j=0; j<tdchits->size(); j++) {
+         BscTdcHit* h = &(*tdchits)[j];
+         if (h->ichan != 0)
+            continue;
+         int ifpga = h->ifpga;
+         double trig_time_ns = h->le_time_ns;
+         
+         for (size_t k=0; k<tdchits->size(); k++) {
+            BscTdcHit* h = &(*tdchits)[k];
+            if (h->ifpga != ifpga)
+               continue;
+            h->le_time_ns -= trig_time_ns;
+            if (h->te_time_ns)
+               h->te_time_ns -= trig_time_ns;
+         }
+      }
+
+      if (0) {
+         printf("TDC hits:\n");
+         
+         for (size_t j=0; j<tdchits->size(); j++) {
+            BscTdcHit* h = &(*tdchits)[j];
+            printf("tdchit[%3zu] fpga %d, chan %2d, time %8.3f %8.3f ns, width %8.3f ns\n", j, h->ifpga, h->ichan, h->le_time_ns, h->te_time_ns, h->width_ns);
+         }
+      }
+
+      if (1) {
+         for (size_t j=0; j<tdchits->size(); j++) {
+            BscTdcHit* h = &(*tdchits)[j];
+            if (h->ifpga != 2)
+               continue;
+            if (h->ichan != 24)
+               continue;
+            //if (h->le_time_ns < -2000)
+            //   continue;
+            //if (h->le_time_ns > -1000)
+            //   continue;
+            //if (h->width_ns > 60)
+            //   continue;
+            printf("tdchit[%3zu] fpga %d, chan %2d, time %8.3f width %8.3f ns, ", j, h->ifpga, h->ichan, h->le_time_ns, h->width_ns);
+         }
+      }
+
+      delete tdchits;
+   }
+
    TAFlowEvent* AnalyzeFlowEvent(TARunInfo* runinfo, TAFlags* flags, TAFlowEvent* flow)
    {
       //if (fTrace)
@@ -693,12 +836,18 @@ public:
       Alpha16Event* e = ef->fEvent->a16;
 
       if (!e) {
+         if (fFlags->fPrint) {
+            printf("No ADC!\n");
+         }
          return flow;
       }
 
       TdcEvent* t = ef->fEvent->tdc;
 
       if (!t) {
+         if (fFlags->fPrint) {
+            printf("No TDC!\n");
+         }
          return flow;
       }
 
@@ -712,36 +861,7 @@ public:
       }
 
       if (t) {
-         bool invalid = false;
-         for (unsigned i=0; i<t->hits.size(); i++) {
-            int ifpga  = t->hits[i]->fpga;
-            int ichan  = t->hits[i]->chan;
-            int re     = t->hits[i]->rising_edge;
-            int coarse_time = t->hits[i]->coarse_time;
-            int fine_time =   t->hits[i]->fine_time;
-            double time_ns = coarse_time/200e6*1e+9;
-            double fine_time_ns = 0;
-            if (ichan==0) {
-               fine_time_ns = (fine_time-409.0)/(435.0-409.0) * 0.0;
-            } else {
-               fine_time_ns =  - (fine_time-17.0)/(450.0-17.0) * 5.0;
-            }
-
-            if (ichan == 0) {
-               if (fTrace)
-                  printf("tdc[%3d] fpga %d, chan %d, re %d, time %f %f\n", i, ifpga, ichan, re, time_ns, fine_time_ns);
-            } else {
-               if (fTrace)
-                  printf("tdc[%3d] fpga %d, chan %d, re %d, time %f %f\n", i, ifpga, ichan, re, time_ns, fine_time_ns);
-               if (ichan>=1 && ichan<=48) {
-                  int seqtdc = ifpga*64 + (ichan-1);
-                  fHtdcSeqtdc->Fill(seqtdc);
-               } else {
-                  invalid = true;
-               }
-            }
-         }
-         assert(invalid == false);
+         AnalyzeTdcHits(t);
       }
 
 
@@ -778,9 +898,19 @@ public:
 class BscModuleFactory: public TAFactory
 {
 public:
-   A16Flags fFlags;
+   BscFlags fFlags;
    
 public:
+   void Usage()
+   {
+      printf("BscModuleFactory flags:\n");
+      printf("--bscprint -- print stuff\n");
+      printf("--bscprinttdc -- print tdc hits\n");
+      printf("--bscfft -- ???\n");
+      printf("--bscfwf -- ???\n");
+      printf("--bscinv -- ???\n");
+   }
+
    void Init(const std::vector<std::string> &args)
    {
       printf("BscModuleFactory::Init!\n");
@@ -788,6 +918,8 @@ public:
       for (unsigned i=0; i<args.size(); i++) {
          if (args[i] == "--bscprint")
             fFlags.fPrint = true;
+         if (args[i] == "--bscprinttdc")
+            fFlags.fPrintTdc = true;
          if (args[i] == "--bscfft")
             fFlags.fFft = true;
          if (args[i] == "--bscfwf") {
