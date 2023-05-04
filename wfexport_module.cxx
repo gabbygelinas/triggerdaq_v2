@@ -208,7 +208,7 @@ public:
          if (!hwf) {
             //printf("%s: ", wname.c_str()); gDirectory->pwd();
             hwf = new TH1D(wname.c_str(), wtitle.c_str(), nbins, 0, nbins); 
-            hwf->SetMinimum(-2050.);
+            hwf->SetMinimum(-2100.);
             hwf->SetMaximum(2100.);
          }
          
