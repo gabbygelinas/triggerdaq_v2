@@ -50,10 +50,10 @@ public:
     void SetVertexX(double x) { vertex[0] = x;}
     void SetVertexY(double y) { vertex[1] = y;}
     void SetVertexZ(double z) { vertex[2] = z;}
-    std::array<double, 3> GetVertex() { return vertex;}
-    double GetVertexX() { return vertex[0]; }
-    double GetVertexY() { return vertex[1]; }
-    double GetVertexZ() { return vertex[2]; }
+    std::array<double, 3> GetVertex() const { return vertex;}
+    double GetVertexX() const { return vertex[0]; }
+    double GetVertexY() const { return vertex[1]; }
+    double GetVertexZ() const { return vertex[2]; }
 
 };
 

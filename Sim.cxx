@@ -97,8 +97,8 @@ SimEvent* SimAsm::UnpackBank(const void* bkptr, int bklen)
 
    std::array<double, 3> vertex = read_mcvx((const char *)bkptr);
    e->SetVertex(vertex);
-
    e->complete = true;
+   
    return e;
 }
 
