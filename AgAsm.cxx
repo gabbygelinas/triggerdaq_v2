@@ -173,6 +173,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
    //bool have_feam = false;
    bool have_pwb  = false;
    bool have_tdc  = false;
+   bool have_sim  = false;
 
    AgEvent* e = new AgEvent();
 
@@ -230,6 +231,26 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
          }
 
          have_tdc = true;
+      }else if (b->name == "MCVX") {
+
+         if (!fSimAsm) {
+            fSimAsm = new SimAsm();
+         }
+
+         const char* bkptr = me->GetBankData(b);
+         int bklen = b->data_size;
+
+         if (e->sim) {
+            printf("AgAsm::UnpackEvent: dupe simulation bank!\n");
+            delete e->sim;
+            e->sim = NULL;
+         }
+
+         if (!e->sim) {
+            e->sim = fSimAsm->UnpackBank(bkptr, bklen);
+         }
+
+         have_sim = true;
       } else if (b->name[0] == 'A') {
          // ADC UDP packet bank from feudp
       } else if (b->name[0] == 'B' && b->name[1] == 'B') {

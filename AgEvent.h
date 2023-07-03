@@ -12,6 +12,7 @@
 #include "Alpha16.h"
 #include "Feam.h"
 #include "Tdc.h"
+#include "Sim.h"
 
 struct AgEvent
 {
@@ -25,6 +26,8 @@ struct AgEvent
    Alpha16Event* a16  = NULL;
    FeamEvent*    feam = NULL;
    TdcEvent*     tdc  = NULL;
+   SimEvent*     sim  = NULL;
+
 
    AgEvent(); // ctor
    ~AgEvent(); // dtor
