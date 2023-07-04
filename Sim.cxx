@@ -15,13 +15,6 @@
 #include <assert.h> // assert()
 
 
-static std::string toString(int v)
-{
-   char buf[256];
-   sprintf(buf, "%d", v);
-   return buf;
-}
-
 SimEvent::SimEvent() // ctor
 {
 }
@@ -93,12 +86,12 @@ SimEvent* SimAsm::UnpackBank(const void* bkptr, int bklen)
 {
    SimEvent* e = new SimEvent();
 
-   e->counter = ++fEventCount;
+   e->fCounter = fEventCount++;
 
    std::array<double, 3> vertex = read_mcvx((const char *)bkptr);
    e->SetVertex(vertex);
-   e->complete = true;
-   
+   e->fComplete = true;
+
    return e;
 }
 
