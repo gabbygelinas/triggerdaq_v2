@@ -234,7 +234,7 @@ AgEvent* AgAsm::UnpackEvent(TMEvent* me)
       }else if (b->name == "MCVX") {
 
          if (!fSimAsm) {
-            fSimAsm = new SimAsm();
+            fSimAsm = new TPCSimAsm();
          }
 
          const char* bkptr = me->GetBankData(b);

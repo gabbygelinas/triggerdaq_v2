@@ -17,7 +17,7 @@
 #include<map>
 
 
-class SimEvent
+class TPCSimEvent
 {
  public:
    bool fComplete = false; // event is complete
@@ -27,8 +27,8 @@ class SimEvent
    std::array<double, 3> fVertex;  // simulated verex position
 
  public:
-   SimEvent(); // ctor
-   ~SimEvent(); // dtor
+   TPCSimEvent(); // ctor
+   ~TPCSimEvent(); // dtor
 
  public:
    void Print(int level=0) const;
@@ -43,23 +43,6 @@ public:
     double GetVertexY() const { return fVertex[1]; }
     double GetVertexZ() const { return fVertex[2]; }
 
-};
-
-class SimAsm
-{
- public: // configuration
-
- public:
-   SimAsm(); // ctor
-   ~SimAsm(); // dtor
-
- public: // member functions
-   void Print() const;
-   void Reset();
-   SimEvent* UnpackBank(const void* bkptr, int bklen8);
-
- public: // internal state
-   int fEventCount = 0; // event counter
 };
 
 #endif

@@ -58,7 +58,7 @@ void AgEvent::Print() const
    if (tdc)
       printf(", tdc: %d", tdc->counter);
    if (sim)
-      printf(", sim: %d", sim->counter);
+      printf(", sim: %d", sim->fCounter);
    printf("\n");
    printf("  ");
    if (trig) {

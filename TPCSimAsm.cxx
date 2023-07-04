@@ -8,41 +8,28 @@
 
 #undef NDEBUG // this program requires working assert()
 
-#include "Sim.h"
+#include "TPCSimAsm.h"
 
 #include <stdio.h>
 //#include <string.h>
 #include <assert.h> // assert()
 
 
-SimEvent::SimEvent() // ctor
+TPCSimAsm::TPCSimAsm() // ctor
 {
 }
 
-SimEvent::~SimEvent() // dtor
+TPCSimAsm::~TPCSimAsm() // dtor
 {
+   printf("TPCSimAsm: %d events\n", fEventCount);
 }
 
-void SimEvent::Print(int level) const
+void TPCSimAsm::Print() const
 {
-
+   printf("TPCSimAsm::Print!\n");
 }
 
-SimAsm::SimAsm() // ctor
-{
-}
-
-SimAsm::~SimAsm() // dtor
-{
-   printf("SimAsm: %d events\n", fEventCount);
-}
-
-void SimAsm::Print() const
-{
-   printf("SimAsm::Print!\n");
-}
-
-void SimAsm::Reset()
+void TPCSimAsm::Reset()
 {
    fEventCount = 0;
 }
@@ -82,9 +69,9 @@ std::array<double, 3> read_mcvx(const char* bytes) {
 	return values;
 }
 
-SimEvent* SimAsm::UnpackBank(const void* bkptr, int bklen)
+TPCSimEvent* TPCSimAsm::UnpackBank(const void* bkptr, int bklen)
 {
-   SimEvent* e = new SimEvent();
+   TPCSimEvent* e = new TPCSimEvent();
 
    e->fCounter = fEventCount++;
 
