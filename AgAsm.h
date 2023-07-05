@@ -16,6 +16,7 @@
 //#include "FeamAsm.h"
 #include "Tdc.h"
 #include "ncfm.h"
+#include "TPCSimAsm.h"
 
 class AgAsm
 {
@@ -75,6 +76,7 @@ class AgAsm
    PwbAsm* fPwbAsm = NULL;
    //FeamAsm* fFeamAsm = NULL;
    TdcAsm* fTdcAsm = NULL;
+   TPCSimAsm* fSimAsm = NULL;
 };
 
 #endif
