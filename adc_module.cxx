@@ -537,7 +537,7 @@ static double find_pulse_width(int iwire, const int* adc, int nbins, double base
    int iend = -1;
    for (int i=1; i<nbins; i++) {
       double v1 = (adc[i]-baseline)*gain;
-      //if (iwire==262)
+      if (iwire==262) {}
       //   printf("wire %d, bin %d, adc %d, v1 %f, thr %f, pulse %d %d\n", iwire, i, adc[i], v1, threshold, istart, iend);
       if (v1 > threshold) {
          if (istart < 0) {
