@@ -626,7 +626,7 @@ void Unpack(FeamAdcData* a, FeamModuleData* m)
    memset(a->adc, 0, sizeof(a->adc));
 
    const unsigned char* ptr = (const unsigned char*)m->fPtr;
-   int count = 0;
+   //int count = 0;
 
    if (ptr == NULL) {
       printf("Feam.cxx::Unpack: Unexpected NULL ptr for module ");
@@ -660,7 +660,7 @@ void Unpack(FeamAdcData* a, FeamModuleData* m)
             else
                a->adc[isca][ichan][ibin] = 0xdead;
             ptr += 2;
-            count += 2;
+            //count += 2;
          }
       }
    }

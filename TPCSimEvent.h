@@ -31,7 +31,7 @@ class TPCSimEvent
    ~TPCSimEvent(); // dtor
 
  public:
-   void Print(int level=0) const;
+   void Print() const;
 
 public:
     void SetVertex(std::array<double, 3> a_vertex) { fVertex = a_vertex; }

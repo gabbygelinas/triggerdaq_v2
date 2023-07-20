@@ -23,7 +23,7 @@ TPCSimEvent::~TPCSimEvent() // dtor
 {
 }
 
-void TPCSimEvent::Print(int level) const
+void TPCSimEvent::Print() const
 {
 
 }

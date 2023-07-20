@@ -69,7 +69,7 @@ std::array<double, 3> read_mcvx(const char* bytes) {
 	return values;
 }
 
-TPCSimEvent* TPCSimAsm::UnpackBank(const void* bkptr, int bklen)
+TPCSimEvent* TPCSimAsm::UnpackBank(const void* bkptr)
 {
    TPCSimEvent* e = new TPCSimEvent();
 

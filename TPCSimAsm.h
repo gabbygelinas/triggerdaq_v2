@@ -28,7 +28,7 @@ class TPCSimAsm
  public: // member functions
    void Print() const;
    void Reset();
-   TPCSimEvent* UnpackBank(const void* bkptr, int bklen8);
+   TPCSimEvent* UnpackBank(const void* bkptr);
 
  public: // internal state
    int fEventCount = 0; // event counter
