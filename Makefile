@@ -7,7 +7,7 @@ CXXFLAGS += -g -O2 -Wall -Wuninitialized -I. -std=c++11 $(USERFLAGS)
 # build with MIDAS
 
 ifdef MIDASSYS
-CXXFLAGS += -I$(MIDASSYS)/include -I$(MIDASSYS)/manalyzer -I$(MIDASSYS)/midasio -I$(MIDASSYS)/mvodb
+CXXFLAGS += -I$(MIDASSYS)/include -I$(MIDASSYS)/manalyzer -I$(MIDASSYS)/midasio -I$(MIDASSYS)/mvodb -I$(MIDASSYS)/mjson
 LIBS += -L$(MIDASSYS)/lib -lmanalyzer_main -lmanalyzer -lmidas -lrt -lutil
 else ifdef ROOTANASYS
 CXXFLAGS += -I$(ROOTANASYS)/include

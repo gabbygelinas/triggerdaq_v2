@@ -40,14 +40,24 @@ class DlTdcFlags
 {
 public:
    bool fEnabled = false;
+   bool fCalib   = false;
+   bool fHaveAdc = false;
 };
 
 class DlTdcEvent
 {
-public:
+public: // matching with ADC data
    double time_sec = 0;
    double dt = 0;
 
+public: // time of first and last TDC hits
+   double first_time_sec = 0;
+   double last_time_sec = 0;
+
+   double min_time_sec = 0;
+   double max_time_sec = 0;
+
+public: // TDC hits
    DlTdcHit h0le;
    DlTdcHit h0te;
    
@@ -93,9 +103,39 @@ public:
    bool havexle = false;
    bool havexte = false;
 
+   DlTdcHit chan1le;
+   DlTdcHit chan1te;
+
+   DlTdcHit chan2le;
+   DlTdcHit chan2te;
+
+   DlTdcHit chan3le;
+   DlTdcHit chan3te;
+
+   DlTdcHit chan4le;
+   DlTdcHit chan4te;
+
+   bool havechan1le = false;
+   bool havechan1te = false;
+
+   bool havechan2le = false;
+   bool havechan2te = false;
+
+   bool havechan3le = false;
+   bool havechan3te = false;
+
+   bool havechan4le = false;
+   bool havechan4te = false;
+
 public:
    void Reset()
    {
+      first_time_sec = 0;
+      last_time_sec = 0;
+
+      min_time_sec = 0;
+      max_time_sec = 0;
+
       have0le = false;
       have1le = false;
       have0te = false;
@@ -113,10 +153,36 @@ public:
       
       havexle = false;
       havexte = false;
+
+      havechan1le = false;
+      havechan1te = false;
+
+      havechan2le = false;
+      havechan2te = false;
+
+      havechan3le = false;
+      havechan3te = false;
+
+      havechan4le = false;
+      havechan4te = false;
    }
 
    void AddHit(const DlTdcHit& h)
    {
+      if (first_time_sec == 0) {
+         first_time_sec = h.time_sec;
+         min_time_sec = h.time_sec;
+         max_time_sec = h.time_sec;
+      }
+
+      last_time_sec = h.time_sec;
+
+      if (h.time_sec < min_time_sec)
+         min_time_sec = h.time_sec;
+      
+      if (h.time_sec > max_time_sec)
+         max_time_sec = h.time_sec;
+      
       if (h.ch == 0 && h.le && !have0le) {
          h0le = h;
          have0le = true;
@@ -186,6 +252,46 @@ public:
          hxte = h;
          havexte = true;
       }
+
+      if (h.ch == 8 && h.le && !havechan1le) {
+         chan1le = h;
+         havechan1le = true;
+      }
+      
+      if (h.ch == 8 && h.te && !havechan1te) {
+         chan1te = h;
+         havechan1te = true;
+      }
+
+      if (h.ch == 9 && h.le && !havechan2le) {
+         chan2le = h;
+         havechan2le = true;
+      }
+      
+      if (h.ch == 9 && h.te && !havechan2te) {
+         chan2te = h;
+         havechan2te = true;
+      }
+
+      if (h.ch == 10 && h.le && !havechan3le) {
+         chan3le = h;
+         havechan3le = true;
+      }
+      
+      if (h.ch == 10 && h.te && !havechan3te) {
+         chan3te = h;
+         havechan3te = true;
+      }
+
+      if (h.ch == 11 && h.le && !havechan4le) {
+         chan4le = h;
+         havechan4le = true;
+      }
+      
+      if (h.ch == 11 && h.te && !havechan4te) {
+         chan4te = h;
+         havechan4te = true;
+      }
    }
 };
 
@@ -203,6 +309,26 @@ public:
    AgAwHit a11;
 };
 
+static double ns_to_mv(double x)
+{
+#if 0
+   if (x < 25)
+      return 250;
+
+   return 211 + 0.704*x + 0.0309*x*x;
+#endif
+
+   if (x < 0)
+      return 0;
+
+   if (x > 300)
+      return 9999;
+
+   return 191 + 1.45*x + 0.0259*x*x;
+}
+
+#define MAX_TDC_CHAN 11
+
 class DlTdcModule: public TARunObject
 {
 public:
@@ -210,6 +336,7 @@ public:
    DlTdcUnpack* fU = NULL;
    
 #ifdef HAVE_ROOT
+
    TCanvas* gWindow = NULL;
    TH1D* hphasele[2];
    TH1D* hphasete[2];
@@ -223,10 +350,23 @@ public:
    TH1D* hwid0_fine = NULL;
    int icd = 0;
 
-   TH1D* hcalle[31];
-   TH1D* hcalte[31];
-   TH1D* hcalle_fine[31];
-   TH1D* hcalte_fine[31];
+   TH1D* fHphaseLe[MAX_TDC_CHAN+1];
+   TH1D* fHphaseTe[MAX_TDC_CHAN+1];
+
+   TH1D* hcalle[MAX_TDC_CHAN+1];
+   TH1D* hcalte[MAX_TDC_CHAN+1];
+   TH1D* hcalle_fine[MAX_TDC_CHAN+1];
+   TH1D* hcalte_fine[MAX_TDC_CHAN+1];
+
+   TH1D* fHhitdt1ns = NULL;
+   TH1D* fHhitdt2ns = NULL;
+   TH1D* fHhitdt3ns = NULL;
+   TH1D* fHhitdt4ns = NULL;
+
+   TH1D* fHeventdt1ns = NULL;
+   TH1D* fHeventdt2ns = NULL;
+   TH1D* fHeventdt3ns = NULL;
+   TH1D* fHeventdt4ns = NULL;
 
    TCanvas* fDL1 = NULL;
    TH1D* fHt0;
@@ -294,9 +434,43 @@ public:
    //TH2D* fX3 = NULL;
    //TH2D* fX4 = NULL;
 
+   TH1D* fHt12ns = NULL;
+   TH1D* fHt34ns = NULL;
+
+   TH1D* fHt14ns = NULL;
+   TH1D* fHt23ns = NULL;
+
+   TH1D* fHw1ns = NULL;
+   TH1D* fHw2ns = NULL;
+   TH1D* fHw3ns = NULL;
+   TH1D* fHw4ns = NULL;
+
+   TH2D* fHw14ns = NULL;
+   TH2D* fHw23ns = NULL;
+
+   TH2D* fHt14w1ns = NULL;
+   TH2D* fHt14w4ns = NULL;
+
+   TH2D* fHt23w2ns = NULL;
+   TH2D* fHt23w3ns = NULL;
+
+   TH1D* fHa1mv = NULL;
+   TH1D* fHa2mv = NULL;
+   TH1D* fHa3mv = NULL;
+   TH1D* fHa4mv = NULL;
+
+   TH2D* fH_a1mv_t14ns = NULL;
+   TH2D* fH_a4mv_t14ns = NULL;
+
+   TH2D* fH_a2mv_t23ns = NULL;
+   TH2D* fH_a3mv_t23ns = NULL;
+
+   TH1D* fHt14ns_cut = NULL;
+   TH1D* fHt23ns_cut = NULL;
+
 #endif
 
-   double fLastEventTime = 0;
+   double fPrevEventTimeSec = 0;
 
    DlTdcEvent *fCt = NULL;
 
@@ -336,6 +510,14 @@ public:
    {
       if (fTrace)
          printf("DlTdcModule::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
+
+      if  (!fFlags->fCalib) {
+         bool load_ok = fU->Load(runinfo->fRunNo);
+         if (!load_ok) {
+            printf("Cannot load TDC calibration for run %d\n", runinfo->fRunNo);
+            exit(123);
+         }
+      }
 
 #ifdef HAVE_ROOT
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
@@ -423,7 +605,20 @@ public:
       gWindow->Modified();
       gWindow->Update();
 
-      for (int i=0; i<31; i++) {
+      for (int i=0; i<=MAX_TDC_CHAN; i++) {
+         char name[256];
+         char title[256];
+
+         sprintf(name,  "tdc%02d_phase_le", i);
+         sprintf(title, "tdc%02d_phase_le", i);
+         fHphaseLe[i] = new TH1D(name, title, 101, -50, 50);
+
+         sprintf(name,  "tdc%02d_phase_te", i);
+         sprintf(title, "tdc%02d_phase_te", i);
+         fHphaseTe[i] = new TH1D(name, title, 101, -50, 50);
+      }
+
+      for (int i=0; i<=MAX_TDC_CHAN; i++) {
          char name[256];
          char title[256];
          sprintf(name,  "hcalle%d", i+1);
@@ -440,95 +635,142 @@ public:
          hcalte_fine[i] = new TH1D(name, title, 101, -5, 5);
       }
 
-      fDL1 = new TCanvas("dl1", "dl1", 1600, 800);
-      fDL1->Clear();
-      fDL1->Divide(4, 2);
-      
-      fDL1icd = 1;
+      fHhitdt1ns = new TH1D("hitdt1ns", "hit dt 100 ns", 100, 0, 100); // 100 ns
+      fHhitdt2ns = new TH1D("hitdt2ns", "hit dt 1000 ns", 100, 100, 1000); // 1 usec
+      fHhitdt3ns = new TH1D("hitdt3ns", "hit dt 1000 us", 100, 1000, 1000000); // 1 msec
+      fHhitdt4ns = new TH1D("hitdt4ns", "hit dt 1000 ms", 100, 1000000, 1000000000); // 1 sec
 
-      fHt0 = new TH1D("t0", "t0", 100, 0, 20);
-      fDL1->cd(fDL1icd++);
-      fHt0->Draw();
-      fHt1 = new TH1D("t1", "t1", 100, 0, 20);
-      fDL1->cd(fDL1icd++);
-      fHt1->Draw();
-      fHt4 = new TH1D("t4", "t4", 100, 0, 20);
-      fDL1->cd(fDL1icd++);
-      fHt4->Draw();
-      fHt5 = new TH1D("t5", "t5", 100, 0, 20);
-      fDL1->cd(fDL1icd++);
-      fHt5->Draw();
-      
-      fHw0 = new TH1D("w0", "w0", 100, 0, 200);
-      fDL1->cd(fDL1icd++);
-      fHw0->Draw();
-      fHw1 = new TH1D("w1", "w1", 100, 0, 200);
-      fDL1->cd(fDL1icd++);
-      fHw1->Draw();
-      fHw4 = new TH1D("w4", "w4", 100, 0, 200);
-      fDL1->cd(fDL1icd++);
-      fHw4->Draw();
-      fHw5 = new TH1D("w5", "w5", 100, 0, 200);
-      fDL1->cd(fDL1icd++);
-      fHw5->Draw();
-      
-      fDL1->Modified();
-      fDL1->Update();
+      fHeventdt1ns = new TH1D("eventdt1ns", "event dt 100 ns", 100, 0, 100); // 100 ns
+      fHeventdt2ns = new TH1D("eventdt2ns", "event dt 1000 ns", 100, 100, 1000); // 1 usec
+      fHeventdt3ns = new TH1D("eventdt3ns", "event dt 1000 us", 100, 1000, 1000000); // 1 msec
+      fHeventdt4ns = new TH1D("eventdt4ns", "event dt 1000 ms", 100, 1000000, 1000000000); // 1 sec
 
-      fHw0w1 = new TH2D("w0w1", "w0w1", 50, 0, 200, 50, 0, 200);
-      fHw0w4 = new TH2D("w0w4", "w0w4", 50, 0, 200, 50, 0, 200);
-      fHw0w5 = new TH2D("w0w5", "w0w5", 50, 0, 200, 50, 0, 200);
-      fHw1w4 = new TH2D("w1w4", "w1w4", 50, 0, 200, 50, 0, 200);
-      fHw1w5 = new TH2D("w1w5", "w1w5", 50, 0, 200, 50, 0, 200);
-      fHw4w5 = new TH2D("w4w5", "w4w5", 50, 0, 200, 50, 0, 200);
+      if (fFlags->fHaveAdc) {
+         fDL1 = new TCanvas("dl1", "dl1", 1600, 800);
+         fDL1->Clear();
+         fDL1->Divide(4, 2);
+         
+         fDL1icd = 1;
+         
+         fHt0 = new TH1D("t0", "t0", 100, 0, 20);
+         fDL1->cd(fDL1icd++);
+         fHt0->Draw();
+         fHt1 = new TH1D("t1", "t1", 100, 0, 20);
+         fDL1->cd(fDL1icd++);
+         fHt1->Draw();
+         fHt4 = new TH1D("t4", "t4", 100, 0, 20);
+         fDL1->cd(fDL1icd++);
+         fHt4->Draw();
+         fHt5 = new TH1D("t5", "t5", 100, 0, 20);
+         fDL1->cd(fDL1icd++);
+         fHt5->Draw();
+         
+         fHw0 = new TH1D("w0", "w0", 100, 0, 200);
+         fDL1->cd(fDL1icd++);
+         fHw0->Draw();
+         fHw1 = new TH1D("w1", "w1", 100, 0, 200);
+         fDL1->cd(fDL1icd++);
+         fHw1->Draw();
+         fHw4 = new TH1D("w4", "w4", 100, 0, 200);
+         fDL1->cd(fDL1icd++);
+         fHw4->Draw();
+         fHw5 = new TH1D("w5", "w5", 100, 0, 200);
+         fDL1->cd(fDL1icd++);
+         fHw5->Draw();
+         
+         fDL1->Modified();
+         fDL1->Update();
+         
+         fHw0w1 = new TH2D("w0w1", "w0w1", 50, 0, 200, 50, 0, 200);
+         fHw0w4 = new TH2D("w0w4", "w0w4", 50, 0, 200, 50, 0, 200);
+         fHw0w5 = new TH2D("w0w5", "w0w5", 50, 0, 200, 50, 0, 200);
+         fHw1w4 = new TH2D("w1w4", "w1w4", 50, 0, 200, 50, 0, 200);
+         fHw1w5 = new TH2D("w1w5", "w1w5", 50, 0, 200, 50, 0, 200);
+         fHw4w5 = new TH2D("w4w5", "w4w5", 50, 0, 200, 50, 0, 200);
+         
+         fHtw0 = new TH2D("tw0", "tw0", 50, 0, 20, 50, 0, 200);
+         fHtw1 = new TH2D("tw1", "tw1", 50, 0, 20, 50, 0, 200);
+         fHtw4 = new TH2D("tw4", "tw4", 50, 0, 20, 50, 0, 200);
+         fHtw5 = new TH2D("tw5", "tw5", 50, 0, 20, 50, 0, 200);
+         
+         fHt0t1 = new TH2D("t0t1", "t0t1", 50, 0, 20, 50, 0, 20);
+         fHt0t4 = new TH2D("t0t4", "t0t4", 50, 0, 20, 50, 0, 20);
+         fHt0t5 = new TH2D("t0t5", "t0t5", 50, 0, 20, 50, 0, 20);
+         fHt1t4 = new TH2D("t1t4", "t1t4", 50, 0, 20, 50, 0, 20);
+         fHt1t5 = new TH2D("t1t5", "t1t5", 50, 0, 20, 50, 0, 20);
+         fHt4t5 = new TH2D("t4t5", "t4t5", 50, 0, 20, 50, 0, 20);
+         
+         fHt0m4 = new TH1D("t0m4", "t0m4", 100, -20, 20);
+         fHt1m5 = new TH1D("t1m5", "t1m5", 100, -20, 20);
+         
+         fHt0m4xt1m5 = new TH2D("t0m4xt1m5", "t0m4xt1m5", 100, -20, 20, 100, -20, 20);
+         
+         fHt0m4w0 = new TH2D("t0m4w0", "t0m4w0", 100, -20, 20, 50, 0, 200);
+         fHt0m4w4 = new TH2D("t0m4w4", "t0m4w4", 100, -20, 20, 50, 0, 200);
+         
+         fHt1m5w1 = new TH2D("t1m5w1", "t1m5w1", 100, -20, 20, 50, 0, 200);
+         fHt1m5w5 = new TH2D("t1m5w5", "t1m5w5", 100, -20, 20, 50, 0, 200);
+         
+         fHt8mt9 = new TH1D("t8mt9", "t8mt9", 100, -20, 20);
+         fHw8 = new TH1D("w8", "w8", 100, 0, 50);
+         fHw9 = new TH1D("w9", "w9", 100, 0, 50);
+         
+         fHa7  = new TH1D("a7",  "a7",  100, 0, 20000);
+         fHa15 = new TH1D("a15", "a15", 100, 0, 20000);
+         
+         fHw8a15 = new TH2D("w8a15", "w8a15", 50, 0, 50, 50, 0, 20000);
+         fHw9a7  = new TH2D("w9a7",  "w9a7",  50, 0, 50, 50, 0, 20000);
+         
+         fHa0  = new TH1D("a0",  "a0",  100, 0, 20000);
+         fHa1  = new TH1D("a1",  "a1",  100, 0, 20000);
+         fHa10 = new TH1D("a10", "a10", 100, 0, 20000);
+         fHa11 = new TH1D("a11", "a11", 100, 0, 20000);
+         
+         fHw0a11 = new TH2D("w0a11", "w0a11", 50, 0, 200, 50, 0, 20000);
+         fHw1a10 = new TH2D("w1a10", "w1a10", 50, 0, 200, 50, 0, 20000);
+         fHw4a0  = new TH2D("w4a0",  "w4a0",  50, 0, 200, 50, 0, 20000);
+         fHw5a1  = new TH2D("w5a1",  "w5a1",  50, 0, 200, 50, 0, 20000);
+         
+         //fX1 = new TH2D("x1", "x1", 50, 0, 200, 50, 0, 20000);
+         //fX2 = new TH2D("x2", "x2", 50, 0, 200, 50, 0, 20000);
+         //fX3 = new TH2D("x3", "x3", 50, 0, 200, 50, 0, 20000);
+         //fX4 = new TH2D("x4", "x4", 50, 0, 200, 50, 0, 20000);
+      }
+         
+      fHt12ns = new TH1D("t12ns", "sipm board 1, t2-t1, ns", 500, -10, 10);
+      fHt34ns = new TH1D("t34ns", "sipm board 2, t4-t3, ns", 500, -10, 10);
 
-      fHtw0 = new TH2D("tw0", "tw0", 50, 0, 20, 50, 0, 200);
-      fHtw1 = new TH2D("tw1", "tw1", 50, 0, 20, 50, 0, 200);
-      fHtw4 = new TH2D("tw4", "tw4", 50, 0, 20, 50, 0, 200);
-      fHtw5 = new TH2D("tw5", "tw5", 50, 0, 20, 50, 0, 200);
+      fHt14ns = new TH1D("t14ns", "paddle 1, t4-t1, ns", 500, -10, 10);
+      fHt23ns = new TH1D("t23ns", "paddle 2, t3-t2, ns", 500, -10, 10);
 
-      fHt0t1 = new TH2D("t0t1", "t0t1", 50, 0, 20, 50, 0, 20);
-      fHt0t4 = new TH2D("t0t4", "t0t4", 50, 0, 20, 50, 0, 20);
-      fHt0t5 = new TH2D("t0t5", "t0t5", 50, 0, 20, 50, 0, 20);
-      fHt1t4 = new TH2D("t1t4", "t1t4", 50, 0, 20, 50, 0, 20);
-      fHt1t5 = new TH2D("t1t5", "t1t5", 50, 0, 20, 50, 0, 20);
-      fHt4t5 = new TH2D("t4t5", "t4t5", 50, 0, 20, 50, 0, 20);
+      fHw1ns = new TH1D("w1ns", "w1ns", 100, 0, 400);
+      fHw2ns = new TH1D("w2ns", "w2ns", 100, 0, 400);
+      fHw3ns = new TH1D("w3ns", "w3ns", 100, 0, 400);
+      fHw4ns = new TH1D("w4ns", "w4ns", 100, 0, 400);
 
-      fHt0m4 = new TH1D("t0m4", "t0m4", 100, -20, 20);
-      fHt1m5 = new TH1D("t1m5", "t1m5", 100, -20, 20);
+      fHw14ns = new TH2D("w14ns", "w4ns vs w1ns", 100, 0, 400, 100, 0, 400);
+      fHw23ns = new TH2D("w23ns", "w3ns vs w2ns", 100, 0, 400, 100, 0, 400);
 
-      fHt0m4xt1m5 = new TH2D("t0m4xt1m5", "t0m4xt1m5", 100, -20, 20, 100, -20, 20);
+      fHt14w1ns = new TH2D("t14w1ns", "w1ns vs t14ns", 100, -5, 5, 100, 0, 400);
+      fHt14w4ns = new TH2D("t14w4ns", "w4ns vs t14ns", 100, -5, 5, 100, 0, 400);
 
-      fHt0m4w0 = new TH2D("t0m4w0", "t0m4w0", 100, -20, 20, 50, 0, 200);
-      fHt0m4w4 = new TH2D("t0m4w4", "t0m4w4", 100, -20, 20, 50, 0, 200);
+      fHt23w2ns = new TH2D("t23w2ns", "w2ns vs t23ns", 100, -5, 5, 100, 0, 400);
+      fHt23w3ns = new TH2D("t23w3ns", "w3ns vs t23ns", 100, -5, 5, 100, 0, 400);
 
-      fHt1m5w1 = new TH2D("t1m5w1", "t1m5w1", 100, -20, 20, 50, 0, 200);
-      fHt1m5w5 = new TH2D("t1m5w5", "t1m5w5", 100, -20, 20, 50, 0, 200);
+      fHa1mv = new TH1D("a1mv", "calculated amp 1, mV", 100, 0, 2000);
+      fHa2mv = new TH1D("a2mv", "calculated amp 2, mV", 100, 0, 2000);
+      fHa3mv = new TH1D("a3mv", "calculated amp 3, mV", 100, 0, 2000);
+      fHa4mv = new TH1D("a4mv", "calculated amp 4, mV", 100, 0, 2000);
 
-      fHt8mt9 = new TH1D("t8mt9", "t8mt9", 100, -20, 20);
-      fHw8 = new TH1D("w8", "w8", 100, 0, 50);
-      fHw9 = new TH1D("w9", "w9", 100, 0, 50);
+      fH_a1mv_t14ns = new TH2D("a1mv_t14ns", "t4-t1 (ns) vs a1 (mV)", 100, 0, 2000, 100, -5, 5);
+      fH_a4mv_t14ns = new TH2D("a4mv_t14ns", "t4-t1 (ns) vs a4 (mV)", 100, 0, 2000, 100, -5, 5);
 
-      fHa7  = new TH1D("a7",  "a7",  100, 0, 20000);
-      fHa15 = new TH1D("a15", "a15", 100, 0, 20000);
+      fH_a2mv_t23ns = new TH2D("a2mv_t23ns", "t3-t2 (ns) vs a2 (mV)", 100, 0, 2000, 100, -5, 5);
+      fH_a3mv_t23ns = new TH2D("a3mv_t23ns", "t3-t2 (ns) vs a3 (mV)", 100, 0, 2000, 100, -5, 5);
 
-      fHw8a15 = new TH2D("w8a15", "w8a15", 50, 0, 50, 50, 0, 20000);
-      fHw9a7  = new TH2D("w9a7",  "w9a7",  50, 0, 50, 50, 0, 20000);
+      fHt14ns_cut = new TH1D("t14ns_cut", "t14ns_cut", 500, -10, 10);
+      fHt23ns_cut = new TH1D("t23ns_cut", "t23ns_cut", 500, -10, 10);
 
-      fHa0  = new TH1D("a0",  "a0",  100, 0, 20000);
-      fHa1  = new TH1D("a1",  "a1",  100, 0, 20000);
-      fHa10 = new TH1D("a10", "a10", 100, 0, 20000);
-      fHa11 = new TH1D("a11", "a11", 100, 0, 20000);
-
-      fHw0a11 = new TH2D("w0a11", "w0a11", 50, 0, 200, 50, 0, 20000);
-      fHw1a10 = new TH2D("w1a10", "w1a10", 50, 0, 200, 50, 0, 20000);
-      fHw4a0  = new TH2D("w4a0",  "w4a0",  50, 0, 200, 50, 0, 20000);
-      fHw5a1  = new TH2D("w5a1",  "w5a1",  50, 0, 200, 50, 0, 20000);
-
-      //fX1 = new TH2D("x1", "x1", 50, 0, 200, 50, 0, 20000);
-      //fX2 = new TH2D("x2", "x2", 50, 0, 200, 50, 0, 20000);
-      //fX3 = new TH2D("x3", "x3", 50, 0, 200, 50, 0, 20000);
-      //fX4 = new TH2D("x4", "x4", 50, 0, 200, 50, 0, 20000);
 #endif
 
    }
@@ -543,6 +785,11 @@ public:
    {
       if (fTrace)
          printf("DlTdcModule::EndRun, run %d\n", runinfo->fRunNo);
+
+      if (fFlags->fCalib) {
+         printf("DlTdcModule::EndRun: Saving TDC calibrations for run %d\n", runinfo->fRunNo);
+         fU->Save(runinfo->fRunNo);
+      }
    }
    
    void PauseRun(TARunInfo* runinfo)
@@ -557,9 +804,86 @@ public:
          printf("DlTdcModule::ResumeRun, run %d\n", runinfo->fRunNo);
    }
 
+   void FinishEventT(double prev_event_time_sec, const DlTdcEvent& t)
+   {
+      double dt = t.min_time_sec - prev_event_time_sec;
+      
+      printf("dlsc %d %d %d %d, %.9f %.9f sec, dt %.9f sec\n", t.havechan1le, t.havechan2le, t.havechan3le, t.havechan4le, prev_event_time_sec, t.min_time_sec, dt);
+      
+      if (t.havechan1le && t.havechan2le) {
+         double t12_ns = sec_to_ns(t.chan2le.time_sec - t.chan1le.time_sec);
+         fHt12ns->Fill(t12_ns);
+      }
+      
+      if (t.havechan3le && t.havechan4le) {
+         double t34_ns = sec_to_ns(t.chan4le.time_sec - t.chan3le.time_sec);
+         fHt34ns->Fill(t34_ns);
+      }
+      
+      if (t.havechan1le && t.havechan4le) {
+         double t14_ns = sec_to_ns(t.chan4le.time_sec - t.chan1le.time_sec);
+         double w1_ns = sec_to_ns(t.chan1te.time_sec - t.chan1le.time_sec);
+         double w4_ns = sec_to_ns(t.chan4te.time_sec - t.chan4le.time_sec);
+
+         double a1_mv = ns_to_mv(w1_ns);
+         double a4_mv = ns_to_mv(w4_ns);
+         
+         printf("new dlsc event 1*4, le %.9f %.9f sec, diff14 %.0f ns, w1 %.0f, w4 %.0f ns, a1 %.0f, a4 %.0f mV!\n", t.chan1le.time_sec, t.chan4le.time_sec, t14_ns, w1_ns, w4_ns, a1_mv, a4_mv);
+         
+         fHt14ns->Fill(t14_ns);
+         fHw1ns->Fill(w1_ns);
+         fHw4ns->Fill(w4_ns);
+         fHw14ns->Fill(w1_ns, w4_ns);
+         fHt14w1ns->Fill(t14_ns, w1_ns);
+         fHt14w4ns->Fill(t14_ns, w4_ns);
+
+         fHa1mv->Fill(a1_mv);
+         fHa4mv->Fill(a4_mv);
+         fH_a1mv_t14ns->Fill(a1_mv, t14_ns);
+         fH_a4mv_t14ns->Fill(a4_mv, t14_ns);
+         
+         //if (w1_ns > 150 && w4_ns > 150) {
+         //   fHt14ns_cut->Fill(t14_ns);
+         //}
+         
+         if (w1_ns > 160 && w1_ns < 170) {
+            if (w4_ns > 175 && w4_ns < 185) {
+               fHt14ns_cut->Fill(t14_ns);
+            }
+         }
+      }
+      
+      if (t.havechan2le && t.havechan3le) {
+         double t23_ns = sec_to_ns(t.chan3le.time_sec - t.chan2le.time_sec);
+         double w2_ns = sec_to_ns(t.chan2te.time_sec - t.chan2le.time_sec);
+         double w3_ns = sec_to_ns(t.chan3te.time_sec - t.chan3le.time_sec);
+
+         double a2_mv = ns_to_mv(w2_ns);
+         double a3_mv = ns_to_mv(w3_ns);
+         
+         printf("new dlsc event 2*3, le %.9f %.9f sec, diff23 %.0f ns, w2 %.0f, w3 %.0f ns!\n", t.chan2le.time_sec, t.chan3le.time_sec, t23_ns, w2_ns, w3_ns);
+         
+         fHt23ns->Fill(t23_ns);
+         fHw2ns->Fill(w2_ns);
+         fHw3ns->Fill(w3_ns);
+         fHw23ns->Fill(w2_ns, w3_ns);
+         fHt23w2ns->Fill(t23_ns, w2_ns);
+         fHt23w3ns->Fill(t23_ns, w3_ns);
+         
+         fHa2mv->Fill(a2_mv);
+         fHa3mv->Fill(a3_mv);
+         fH_a2mv_t23ns->Fill(a2_mv, t23_ns);
+         fH_a3mv_t23ns->Fill(a3_mv, t23_ns);
+         
+         if (w2_ns > 150 && w3_ns > 150) {
+            fHt23ns_cut->Fill(t23_ns);
+         }
+      }
+   }
+
    double fPrevTdcTime = 0;
 
-   void FinishEvent(DlTdcEvent& t, AdcEvent& a)
+   void FinishEventTA(DlTdcEvent& t, AdcEvent& a)
    {
       double tdc_time = t.hxle.time_sec;
 
@@ -767,7 +1091,7 @@ public:
       if (fabs(fTq[0]->dt - fAq[0]->dt) < eps) {
          // good we are sycnhed
          printf("SYNC OK!\n");
-         FinishEvent(*fTq[0], *fAq[0]);
+         FinishEventTA(*fTq[0], *fAq[0]);
          fTq.pop_front();
          fAq.pop_front();
       } else if (fabs(fTq[1]->dt - fAq[0]->dt) < eps) {
@@ -825,6 +1149,8 @@ public:
 
       TMBank* tdcbank = event->FindBank("CBT2");
 
+      bool calib = fFlags->fCalib;
+
       if (tdcbank) {
          int tdc_nw64 = tdcbank->data_size/8;
          uint32_t* tdc_data = (uint32_t*)event->GetBankData(tdcbank);
@@ -844,31 +1170,53 @@ public:
             fU->Unpack(&h, wlo, whi);
             
             h.Print(); printf("\n");
-            
-            fU->fCalib[h.ch].AddHit(h);
 
-            double dt = h.time_sec - fLastEventTime;
+            if (calib) {
+               fU->fCalib[h.ch].AddHit(h);
+            }
 
-            if (dt > 0.000010) {
-               if (fCt->havexle && fCt->havexte) {
-                  if (fFirstTrig) {
-                     fU->Reset();
-                     fFirstTrig = false;
+            double hit_dt_ns = sec_to_ns(h.time_sec - fCt->max_time_sec);
+
+            fHhitdt1ns->Fill(hit_dt_ns);
+            fHhitdt2ns->Fill(hit_dt_ns);
+            fHhitdt3ns->Fill(hit_dt_ns);
+            fHhitdt4ns->Fill(hit_dt_ns);
+
+            //printf("TTX %.9f %.9f sec, first %.9f, last %.9f sec\n", fCt->min_time_sec, fCt->max_time_sec, fCt->first_time_sec, fCt->last_time_sec);
+
+            if (hit_dt_ns > 300.0) {
+               double event_dt_ns = sec_to_ns(h.time_sec - fCt->min_time_sec);
+
+               //printf("TTT %.9f -> %.9f sec, dt %.3f ns\n", fCt->min_time_sec, h.time_sec, event_dt_ns);
+
+               fHeventdt1ns->Fill(event_dt_ns);
+               fHeventdt2ns->Fill(event_dt_ns);
+               fHeventdt3ns->Fill(event_dt_ns);
+               fHeventdt4ns->Fill(event_dt_ns);
+
+               if (fFlags->fHaveAdc) {
+                  if (fCt->havexle && fCt->havexte) {
+                     if (fFirstTrig) {
+                        fU->Reset();
+                        fFirstTrig = false;
+                     } else {
+                        fCt->time_sec = fCt->hxle.time_sec;
+                        fCt->dt = fCt->hxle.time_sec - fLastXtime;
+                        fLastXtime = fCt->hxle.time_sec;
+                        fTq.push_back(fCt);
+                        fCt = new DlTdcEvent;
+                     }
                   } else {
-                     fCt->time_sec = fCt->hxle.time_sec;
-                     fCt->dt = fCt->hxle.time_sec - fLastXtime;
-                     fLastXtime = fCt->hxle.time_sec;
-                     fTq.push_back(fCt);
-                     fCt = new DlTdcEvent;
+                     fCt->Reset();
                   }
+               } else {
+                  FinishEventT(fPrevEventTimeSec, *fCt);
                }
-               //FinishEvent(fLastEventTime, fCt);
+
+               fPrevEventTimeSec = fCt->min_time_sec;
 
                fCt->Reset();
             }
-
-            fLastEventTime = h.time_sec;
-
 
 #ifdef HAVE_ROOT
             if (h.ch == 0 || h.ch == 1) {
@@ -886,6 +1234,15 @@ public:
                   hfinete[h.ch]->Fill(h.fine_ns);
                   //else
                   //hfinete[h.ch]->Fill(-h.fine_ns);
+               }
+            }
+
+            if (h.ch >= 0 && h.ch <= MAX_TDC_CHAN) {
+               if (h.le) {
+                  fHphaseLe[h.ch]->Fill(h.phase);
+               }
+               if (h.te) {
+                  fHphaseTe[h.ch]->Fill(h.phase);
                }
             }
 #endif
@@ -908,26 +1265,32 @@ public:
             gWindow->SaveAs("cal1a.root");
             gWindow->SaveAs("cal1a.pdf");
 
-            for (int i=1; i<=fDL1icd; i++)
-               fDL1->cd(i)->Modified();
-            
-            fDL1->Modified();
-            fDL1->Update();
-            fDL1->SaveAs("dl1a.root");
-            fDL1->SaveAs("dl1a.pdf");
+            if (fDL1) {
+               for (int i=1; i<=fDL1icd; i++)
+                  fDL1->cd(i)->Modified();
+               
+               fDL1->Modified();
+               fDL1->Update();
+               fDL1->SaveAs("dl1a.root");
+               fDL1->SaveAs("dl1a.pdf");
+            }
 #endif
 
-            for (auto& c: fU->fCalib) {
-               c.Update();
-               c.Print();
+            if (calib) {
+               for (auto& c: fU->fCalib) {
+                  c.Update();
+                  c.Print();
+               }
             }
-            
+
             last = time(NULL);
          }
          
       }
 
-      A();
+      if (fFlags->fHaveAdc) {
+         A();
+      }
       
       return flow;
    }
@@ -1009,6 +1372,8 @@ public:
    {
       printf("DlTdcModuleFactory flags:\n");
       printf("--dltdc -- enable dltdc code\n");
+      printf("--dltdc-calib -- calibrate dltdc");
+      printf("--dltdc-adc -- have ADC data");
    }
 
    void Init(const std::vector<std::string> &args)
@@ -1018,6 +1383,12 @@ public:
       for (unsigned i=0; i<args.size(); i++) {
          if (args[i] == "--dltdc") {
             fFlags.fEnabled = true;
+         }
+         if (args[i] == "--dltdc-calib") {
+            fFlags.fCalib = true;
+         }
+         if (args[i] == "--dltdc-adc") {
+            fFlags.fHaveAdc = true;
          }
       }
    }
