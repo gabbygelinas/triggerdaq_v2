@@ -28,6 +28,7 @@ void DlTdcFineCalib1::Resize(int nbins)
 void DlTdcFineCalib1::Reset()
 {
    fMaxPhase = 0;
+   fHits = 0;
    for (size_t i=0; i<fHistogram.size(); i++) {
       fHistogram[i] = 0;
       fBinWidthNs[i] = fTotalNs;
@@ -43,6 +44,7 @@ void DlTdcFineCalib1::AddHit(int phase)
    assert(phase > 0);
    assert(phase < (int)fHistogram.size());
    
+   fHits += 1;
    fHistogram[phase] += 1;
 
    if (phase > fMaxPhase) {
@@ -118,6 +120,61 @@ void DlTdcFineCalib1::Print() const
    printf("\n");
 }
 
+//std::vector<double> fBinWidthNs;
+//std::vector<double> fBinTimeNs;
+
+std::string DlTdcFineCalib1::toJson() const
+{
+  char buf[256];
+
+  std::string s;
+  s += "{\n";
+  sprintf(buf, "  \"TotalNs\":%.1f", fTotalNs);
+  s += buf;
+  s += ",\n";
+  sprintf(buf, "  \"Hits\":%zu", fHits);
+  s += buf;
+  s += ",\n";
+  sprintf(buf, "  \"MaxPhase\":%d", fMaxPhase);
+  s += buf;
+  s += ",\n";
+  sprintf(buf, "  \"BinMinNs\":%.3f", fBinMinNs);
+  s += buf;
+  s += ",\n";
+  sprintf(buf, "  \"BinMaxNs\":%.3f", fBinMaxNs);
+  s += buf;
+  s += ",\n";
+  sprintf(buf, "  \"Bins\":%zu", fHistogram.size());
+  s += buf;
+  s += ",\n";
+  s += "  \"Histogram\":[";
+  for (size_t i=0; i<fHistogram.size(); i++) {
+    if (i!=0)
+      s += ",";
+    sprintf(buf,"%.0f",fHistogram[i]);
+    s += buf;
+  }
+  s += "],\n";
+  s += "  \"BinWidthNs\":[";
+  for (size_t i=0; i<fBinWidthNs.size(); i++) {
+    if (i!=0)
+      s += ",";
+    sprintf(buf,"%.3f",fBinWidthNs[i]);
+    s += buf;
+  }
+  s += "],\n";
+  s += "  \"BinTimeNs\":[";
+  for (size_t i=0; i<fBinTimeNs.size(); i++) {
+    if (i!=0)
+      s += ",";
+    sprintf(buf,"%.3f",fBinTimeNs[i]);
+    s += buf;
+  }
+  s += "]\n";
+  s += "  }";
+  return s;
+}
+
 double DlTdcFineCalib1::GetTime(int phase)
 {
    if (phase == 0)
@@ -166,6 +223,7 @@ void DlTdcFineCalib::Print() const
           teneg.fMaxPhase);
 }
 
+#if 0
 static void SaveToFile1(FILE* fp, const DlTdcFineCalib1& c)
 {
    fprintf(fp, "total %.3f, max_phase %d, bins %zu\n", c.fTotalNs, c.fMaxPhase, c.fHistogram.size());
@@ -196,20 +254,121 @@ static void SaveToFile1(FILE* fp, const DlTdcFineCalib1& c)
 
    fprintf(fp, "\n");
 }
+#endif
+
+#include "mjson.h"
+
+static void LoadFromJson(const MJsonNode*j, DlTdcFineCalib1& c)
+{
+   if (!j)
+      return;
+
+   //printf("XXX: %s\n", j->Stringify().c_str());
+
+   size_t bins = j->FindObjectNode("Bins")->GetInt();
+   c.fTotalNs  = j->FindObjectNode("TotalNs")->GetDouble();
+   c.fHits     = j->FindObjectNode("Hits")->GetInt();
+   c.fMaxPhase = j->FindObjectNode("MaxPhase")->GetInt();
+   c.fBinMinNs = j->FindObjectNode("BinMinNs")->GetDouble();
+   c.fBinMaxNs = j->FindObjectNode("BinMaxNs")->GetDouble();
+
+   c.fHistogram.clear();
+   const MJsonNodeVector* v = j->FindObjectNode("Histogram")->GetArray();
+   for (size_t i=0; i<v->size(); i++) {
+      c.fHistogram.push_back((*v)[i]->GetDouble());
+   }
+   assert(c.fHistogram.size() == bins);
+
+   c.fBinWidthNs.clear();
+   v = j->FindObjectNode("BinWidthNs")->GetArray();
+   for (size_t i=0; i<v->size(); i++) {
+      c.fBinWidthNs.push_back((*v)[i]->GetDouble());
+   }
+   assert(c.fBinWidthNs.size() == bins);
+
+   c.fBinTimeNs.clear();
+   v = j->FindObjectNode("BinTimeNs")->GetArray();
+   for (size_t i=0; i<v->size(); i++) {
+      c.fBinTimeNs.push_back((*v)[i]->GetDouble());
+   }
+   assert(c.fBinTimeNs.size() == bins);
+
+   //c.Print();
+   //exit(123);
+}
+
+std::string DlTdcFineCalib::toJson() const
+{
+  std::string s;
+  s += "{\n";
+  s += " \"lepos\": ";
+  s += lepos.toJson();
+  s += ",\n";
+  s += " \"leneg\": ";
+  s += leneg.toJson();
+  s += ",\n";
+  s += " \"tepos\": ";
+  s += tepos.toJson();
+  s += ",\n";
+  s += " \"teneg\": ";
+  s += teneg.toJson();
+  s += "\n";
+  s += "}";
+  return s;
+}
+
 
 void DlTdcFineCalib::SaveToFile(const char* filename) const
 {
    FILE *fp = fopen(filename, "w");
    assert(fp);
-   fprintf(fp, "lepos ");
-   SaveToFile1(fp, lepos);
-   fprintf(fp, "leneg ");
-   SaveToFile1(fp, leneg);
-   fprintf(fp, "tepos ");
-   SaveToFile1(fp, tepos);
-   fprintf(fp, "teneg ");
-   SaveToFile1(fp, teneg);
+   //fprintf(fp, "lepos ");
+   //SaveToFile1(fp, lepos);
+   //fprintf(fp, "leneg ");
+   //SaveToFile1(fp, leneg);
+   //fprintf(fp, "tepos ");
+   //SaveToFile1(fp, tepos);
+   //fprintf(fp, "teneg ");
+   //SaveToFile1(fp, teneg);
+   fprintf(fp, "%s\n", toJson().c_str());
    fclose(fp);
+}
+
+bool DlTdcFineCalib::LoadFromFile(const char* filename)
+{
+   FILE *fp = fopen(filename, "r");
+   if (!fp)
+     return false;
+   assert(fp);
+
+   printf("Loading DL=TDC calibrations from \"%s\"\n", filename);
+
+   std::string json;
+   while (1) {
+      char buf[1024];
+      size_t rd = fread(buf, 1, sizeof(buf)-1, fp);
+      //printf("rd %zu\n", rd);
+      if (rd == 0)
+         break;
+      buf[rd] = 0;
+      json += buf;
+   }
+
+   fclose(fp);
+
+   //printf("json: %s\n", json.c_str());
+
+   MJsonNode* j = MJsonNode::Parse(json.c_str());
+   //printf("read: %s\n", j->Stringify().c_str());
+
+   LoadFromJson(j->FindObjectNode("lepos"), lepos);
+   LoadFromJson(j->FindObjectNode("leneg"), leneg);
+   LoadFromJson(j->FindObjectNode("tepos"), tepos);
+   LoadFromJson(j->FindObjectNode("teneg"), teneg);
+
+   delete j;
+
+   return true;
 }
 
 void DlTdcFineCalib::AddHit(const DlTdcHit& h)
@@ -674,4 +833,41 @@ bool DlTdcUnpack::Unpack(DlTdcHit*h, uint32_t lo, uint32_t hi)
    return true;
 };
 
-// end
+void DlTdcUnpack::Save(int runno) const
+{
+   for (size_t i = 0; i < fCalib.size(); i++) {
+      if (fCalib[i].lepos.fMaxPhase > 0) {
+         char fname[256];
+         sprintf(fname, "dltdc_run%d_chan%02d.json", runno, (int)i);
+         fCalib[i].SaveToFile(fname);
+      }
+   }
+}
+
+bool DlTdcUnpack::Load(int runno)
+{
+   for (int r=0; r<10; r++) {
+      bool load_ok = false;
+
+      for (size_t i = 0; i < fCalib.size(); i++) {
+         char fname[256];
+         sprintf(fname, "dltdc_run%d_chan%02d.json", runno, (int)i);
+         load_ok |= fCalib[i].LoadFromFile(fname);
+      }
+
+      if (load_ok)
+         return true;
+      
+      runno--;
+   }
+
+   return false;
+}
+
+/* emacs
+ * Local Variables:
+ * tab-width: 8
+ * c-basic-offset: 3
+ * indent-tabs-mode: nil
+ * End:
+ */

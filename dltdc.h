@@ -4,6 +4,7 @@
 #include <stdint.h> // uint32_t
 #include <stdio.h> // printf()
 #include <vector> // std::vector
+#include <string> // std::string
 
 struct DlTdcHit
 {
@@ -45,6 +46,7 @@ class DlTdcFineCalib1
 {
 public:
    double fTotalNs = 10.0;
+   size_t fHits = 0;
    std::vector<double> fHistogram;
    std::vector<double> fBinWidthNs;
    std::vector<double> fBinTimeNs;
@@ -63,6 +65,7 @@ public:
    void Update();
    void Print() const;
    double GetTime(int phase);
+   std::string toJson() const;
 };
 
 class DlTdcFineCalib
@@ -83,6 +86,8 @@ public:
    void Update();
    void Print() const;
    void SaveToFile(const char* filename) const;
+   bool LoadFromFile(const char* filename);
+   std::string toJson() const;
 };
 
 class DlTdcUnpack
@@ -100,6 +105,8 @@ private:
 public:
    void Reset();
    bool Unpack(DlTdcHit* h, uint32_t lo, uint32_t hi);
+   bool Load(int runno);
+   void Save(int runno) const;
 
 public: // internal state
    double fFirstTimeSec = 0;
@@ -115,3 +122,12 @@ public:
 };
 
 #endif
+
+/* emacs
+ * Local Variables:
+ * tab-width: 8
+ * c-basic-offset: 3
+ * indent-tabs-mode: nil
+ * End:
+ */
+
