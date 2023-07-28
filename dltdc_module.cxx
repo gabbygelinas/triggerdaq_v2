@@ -44,6 +44,53 @@ public:
    bool fHaveAdc = false;
 };
 
+class DlTdcHit2
+{
+public:
+   DlTdcHit fLe;
+   DlTdcHit fTe;
+   bool     fUp   = false;
+   bool     fDown = false;
+
+public:
+   double fTimeSec  = 0;
+   double fWidthSec = 0;
+
+public:
+   void Reset()
+   {
+      fUp   = false;
+      fDown = false;
+      fTimeSec  = 0;
+      fWidthSec = 0;
+   }
+
+   void AddHit(const DlTdcHit& h)
+   {
+      if (h.le) {
+         if (!fUp) {
+            fUp = true;
+            fDown = false;
+            fLe = h;
+            fTimeSec = h.time_sec;
+         } else {
+            printf("TTT: MISSING TE DlTdcHit, chan %d, time %.9f -> %.9f\n", h.ch, fTimeSec, h.time_sec);
+         }
+      } else if (h.te) {
+         if (fUp) {
+            fUp = false;
+            fDown = true;
+            fTe = h;
+            fWidthSec = fTe.time_sec - fTimeSec;
+         } else {
+            printf("TTT: MISSING LE DlTdcHit, chan %d\n", h.ch);
+         }
+      }
+   };
+};
+
+#define MAX_TDC_CHAN 11
+
 class DlTdcEvent
 {
 public: // matching with ADC data
@@ -56,6 +103,9 @@ public: // time of first and last TDC hits
 
    double min_time_sec = 0;
    double max_time_sec = 0;
+
+public: // TDC hits
+   DlTdcHit2 fHits[MAX_TDC_CHAN+1];
 
 public: // TDC hits
    DlTdcHit h0le;
@@ -136,6 +186,10 @@ public:
       min_time_sec = 0;
       max_time_sec = 0;
 
+      for (int i=0; i<=MAX_TDC_CHAN; i++) {
+         fHits[i].Reset();
+      }
+
       have0le = false;
       have1le = false;
       have0te = false;
@@ -182,6 +236,11 @@ public:
       
       if (h.time_sec > max_time_sec)
          max_time_sec = h.time_sec;
+
+      assert(h.ch >= 0);
+      assert(h.ch <= MAX_TDC_CHAN);
+
+      fHits[h.ch].AddHit(h);
       
       if (h.ch == 0 && h.le && !have0le) {
          h0le = h;
@@ -324,7 +383,31 @@ static double ns_to_mv(double x)
    if (x > 300)
       return 9999;
 
+   // for threshold 160 mV
    return 191 + 1.45*x + 0.0259*x*x;
+}
+
+static double time_walk_correction_ps(double amv)
+{
+   // for threshold 160 mV
+
+   if (amv < 290) {
+      return 320+(290-amv)*(570-320)/(290-216);
+   } else if (amv < 380) {
+      return 190+(380-amv)*(320-190)/(380-290);
+   } else if (amv < 465) {
+      return 110+(465-amv)*(190-110)/(465-380);
+   } else if (amv < 520) {
+      return  60+(520-amv)*(110-60)/(520-465);
+   } else if (amv < 620) {
+      return  40+(620-amv)*(60-40)/(620-520);
+   } else if (amv < 690) {
+      return  30+(690-amv)*(40-30)/(690-620);
+   } else if (amv < 780) {
+      return  0+(780-amv)*(30-0)/(780-690);
+   } else {
+      return 0;
+   }
 }
 
 #define MAX_TDC_CHAN 11
@@ -459,14 +542,29 @@ public:
    TH1D* fHa3mv = NULL;
    TH1D* fHa4mv = NULL;
 
+   TH2D* fHa14mv = NULL;
+   TH2D* fHa23mv = NULL;
+
    TH2D* fH_a1mv_t14ns = NULL;
    TH2D* fH_a4mv_t14ns = NULL;
+
+   TH2D* fH_a1mv_t14ns_twc = NULL;
+   TH2D* fH_a4mv_t14ns_twc = NULL;
+
+   TH1D* fHt14ns_twc = NULL;
+   TH1D* fHt23ns_twc = NULL;
 
    TH2D* fH_a2mv_t23ns = NULL;
    TH2D* fH_a3mv_t23ns = NULL;
 
    TH1D* fHt14ns_cut = NULL;
+   TH1D* fHt14ns_cut_twc = NULL;
+
    TH1D* fHt23ns_cut = NULL;
+   TH1D* fHt23ns_cut_twc = NULL;
+
+   TH1D* fHa1414mv = NULL;
+   TH1D* fHa2323mv = NULL;
 
 #endif
 
@@ -488,6 +586,12 @@ public:
       fModuleName = "dltdc_module";
       fFlags   = flags;
       fU = new DlTdcUnpack(35);
+
+      if (1) {
+         for (double amv = 0; amv <= 800; amv += 50) {
+            printf("time walk for %5.0f mV is %5.0f ps\n", amv, time_walk_correction_ps(amv));
+         }
+      }
    }
 
    ~DlTdcModule()
@@ -762,15 +866,28 @@ public:
       fHa3mv = new TH1D("a3mv", "calculated amp 3, mV", 100, 0, 2000);
       fHa4mv = new TH1D("a4mv", "calculated amp 4, mV", 100, 0, 2000);
 
+      fHa14mv = new TH2D("a14mv", "calculated amp 4 vs amp 1, mV", 100, 0, 2000, 100, 0, 2000);
+      fHa23mv = new TH2D("a23mv", "calculated amp 3 vs amp 2, mV", 100, 0, 2000, 100, 0, 2000);
+
       fH_a1mv_t14ns = new TH2D("a1mv_t14ns", "t4-t1 (ns) vs a1 (mV)", 100, 0, 2000, 100, -5, 5);
       fH_a4mv_t14ns = new TH2D("a4mv_t14ns", "t4-t1 (ns) vs a4 (mV)", 100, 0, 2000, 100, -5, 5);
+
+      fH_a1mv_t14ns_twc = new TH2D("a1mv_t14ns_twc", "t4-t1 (ns) vs a1 (mV) with time walk correction", 100, 0, 2000, 100, -5, 5);
+      fH_a4mv_t14ns_twc = new TH2D("a4mv_t14ns_twc", "t4-t1 (ns) vs a4 (mV) with time walk correction", 100, 0, 2000, 100, -5, 5);
+
+      fHt14ns_twc = new TH1D("t14ns_twc", "paddle 1, t4-t1, ns, with time walk correction", 500, -10, 10);
+      fHt23ns_twc = new TH1D("t23ns_twc", "paddle 2, t3-t2, ns, with time walk correction", 500, -10, 10);
 
       fH_a2mv_t23ns = new TH2D("a2mv_t23ns", "t3-t2 (ns) vs a2 (mV)", 100, 0, 2000, 100, -5, 5);
       fH_a3mv_t23ns = new TH2D("a3mv_t23ns", "t3-t2 (ns) vs a3 (mV)", 100, 0, 2000, 100, -5, 5);
 
-      fHt14ns_cut = new TH1D("t14ns_cut", "t14ns_cut", 500, -10, 10);
-      fHt23ns_cut = new TH1D("t23ns_cut", "t23ns_cut", 500, -10, 10);
+      fHt14ns_cut     = new TH1D("t14ns_cut",     "t14ns_cut", 500, -10, 10);
+      fHt14ns_cut_twc = new TH1D("t14ns_cut_twc", "t14ns_cut with time walk correction", 500, -10, 10);
+      fHt23ns_cut     = new TH1D("t23ns_cut",     "t23ns_cut", 500, -10, 10);
+      fHt23ns_cut_twc = new TH1D("t23ns_cut_twc", "t23ns_cut with time walk correction", 500, -10, 10);
 
+      fHa1414mv = new TH1D("a14vsa14mv", "(a1-a4)/(a1+a4)", 100, -1, 1);
+      fHa2323mv = new TH1D("a23vsa23mv", "(a2-a3)/(a2+a3)", 100, -1, 1);
 #endif
 
    }
@@ -821,9 +938,24 @@ public:
       }
       
       if (t.havechan1le && t.havechan4le) {
+         if (!t.havechan1te || !t.havechan4te) {
+            printf("TTT: MISSING TE chan 1 or 4!\n");
+            return;
+         }
+
          double t14_ns = sec_to_ns(t.chan4le.time_sec - t.chan1le.time_sec);
          double w1_ns = sec_to_ns(t.chan1te.time_sec - t.chan1le.time_sec);
          double w4_ns = sec_to_ns(t.chan4te.time_sec - t.chan4le.time_sec);
+
+         if (w1_ns < 1) {
+            printf("TTT: BAD WIDTH chan1!\n");
+            return;
+         }
+
+         if (w4_ns < 1) {
+            printf("TTT: BAD WIDTH chan4!\n");
+            return;
+         }
 
          double a1_mv = ns_to_mv(w1_ns);
          double a4_mv = ns_to_mv(w4_ns);
@@ -839,24 +971,62 @@ public:
 
          fHa1mv->Fill(a1_mv);
          fHa4mv->Fill(a4_mv);
+
+         fHa14mv->Fill(a1_mv, a4_mv);
+
          fH_a1mv_t14ns->Fill(a1_mv, t14_ns);
          fH_a4mv_t14ns->Fill(a4_mv, t14_ns);
+
+         double t14_ns_twc = t14_ns - 0.001*time_walk_correction_ps(a4_mv) + 0.001*time_walk_correction_ps(a1_mv);
+
+         fH_a1mv_t14ns_twc->Fill(a1_mv, t14_ns_twc);
+         fH_a4mv_t14ns_twc->Fill(a4_mv, t14_ns_twc);
+
+         fHt14ns_twc->Fill(t14_ns_twc);
+
+         fHa1414mv->Fill((a1_mv - a4_mv)/(a1_mv + a4_mv));
          
          //if (w1_ns > 150 && w4_ns > 150) {
          //   fHt14ns_cut->Fill(t14_ns);
          //}
          
-         if (w1_ns > 160 && w1_ns < 170) {
-            if (w4_ns > 175 && w4_ns < 185) {
-               fHt14ns_cut->Fill(t14_ns);
-            }
+         //if (w1_ns > 160 && w1_ns < 170) {
+         //   if (w4_ns > 175 && w4_ns < 185) {
+         //      fHt14ns_cut->Fill(t14_ns);
+         //   }
+         //}
+
+         //if (a1_mv > 900) {
+         //   if (a4_mv > 1100) {
+         //      fHt14ns_cut->Fill(t14_ns);
+         //   }
+         //}
+
+         if ((a1_mv > 300 && a1_mv < 600) || (a4_mv > 300 && a4_mv < 600)) {
+            fHt14ns_cut->Fill(t14_ns);
+            fHt14ns_cut_twc->Fill(t14_ns_twc);
          }
       }
       
       if (t.havechan2le && t.havechan3le) {
+         if (!t.havechan2te || !t.havechan3te) {
+            printf("TTT: MISSING TE chan 2 or 3!\n");
+            return;
+         }
+
          double t23_ns = sec_to_ns(t.chan3le.time_sec - t.chan2le.time_sec);
          double w2_ns = sec_to_ns(t.chan2te.time_sec - t.chan2le.time_sec);
          double w3_ns = sec_to_ns(t.chan3te.time_sec - t.chan3le.time_sec);
+
+         if (w2_ns < 1) {
+            printf("TTT: BAD WIDTH chan2!\n");
+            return;
+         }
+
+         if (w3_ns < 1) {
+            printf("TTT: BAD WIDTH chan3!\n");
+            return;
+         }
 
          double a2_mv = ns_to_mv(w2_ns);
          double a3_mv = ns_to_mv(w3_ns);
@@ -872,11 +1042,22 @@ public:
          
          fHa2mv->Fill(a2_mv);
          fHa3mv->Fill(a3_mv);
+
+         fHa23mv->Fill(a2_mv, a3_mv);
+
          fH_a2mv_t23ns->Fill(a2_mv, t23_ns);
          fH_a3mv_t23ns->Fill(a3_mv, t23_ns);
+
+         fHa2323mv->Fill((a2_mv - a3_mv)/(a2_mv + a3_mv));
          
-         if (w2_ns > 150 && w3_ns > 150) {
-            fHt23ns_cut->Fill(t23_ns);
+         //if (w2_ns > 150 && w3_ns > 150) {
+         //   fHt23ns_cut->Fill(t23_ns);
+         //}
+
+         if (a2_mv > 900) {
+            if (a3_mv > 1200) {
+               fHt23ns_cut->Fill(t23_ns);
+            }
          }
       }
    }
