@@ -2010,9 +2010,11 @@ public:
 
             DlTdcHit h;
             fU->Unpack(&h, wlo, whi);
+            static double prev_time_sec = 0;
             
-            if (fFlags->fDebug) {
-               h.Print(); printf("\n");
+            if (h.le) {
+               if (fFlags->fDebug) {h.Print(); printf(", dt %4.0f ns\n", sec_to_ns(h.time_sec - prev_time_sec));}
+               prev_time_sec = h.time_sec;
             }
 
             if (calib) {
