@@ -341,7 +341,7 @@ bool DlTdcFineCalib::LoadFromFile(const char* filename)
      return false;
    assert(fp);
 
-   printf("Loading DL=TDC calibrations from \"%s\"\n", filename);
+   printf("Loading DL-TDC calibrations from \"%s\"\n", filename);
 
    std::string json;
    while (1) {
