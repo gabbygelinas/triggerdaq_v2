@@ -389,7 +389,8 @@ static double ns_to_mv(double x)
       return 9999;
 
    // for threshold 160 mV
-   return 191 + 1.45*x + 0.0259*x*x;
+   // return 191 + 1.45*x + 0.0259*x*x;
+   return 129 + 5.64*x + 0.407*x*x; // updated relationship (09/14/23)
 }
 
 static double time_walk_correction_ps(double amv)
@@ -631,6 +632,8 @@ public:
 
    TH1D* fHt14ns_coinc = NULL;
    TH1D* fHt23ns_coinc = NULL;
+   TH1D* fHt14ns_coinc_twc = NULL;
+   TH1D* fHt23ns_coinc_twc = NULL;
 
    int counter_oldBar0_fullHit = 0;
    int counter_oldBar0_LEOnly = 0;
@@ -1047,6 +1050,8 @@ public:
 
       fHt14ns_coinc = new TH1D("t14ns_coinc", "t4 - t1 for old and new bar coinc in ns", 200, -8, 2);
       fHt23ns_coinc = new TH1D("t23ns_coinc", "t3 - t2 for old and new bar coinc in ns", 200, -8, 2);
+      fHt14ns_coinc_twc = new TH1D("t14ns_coinc_twc", "t4 - t1 w/ coinc & time walk correction in ns", 200, -8, 2);
+      fHt23ns_coinc_twc = new TH1D("t23ns_coinc_twc", "t3 - t2 w/ coinc & time walk correction in ns", 200, -8, 2);
 #endif
 
    }
@@ -1446,9 +1451,9 @@ public:
 
          double a1_mv = ns_to_mv(w1_ns);
          double a4_mv = ns_to_mv(w4_ns);
-         
-         printf("new dlsc event 1*4, le %.9f %.9f sec, diff14 %.0f ns, w1 %.0f, w4 %.0f ns, a1 %.0f, a4 %.0f mV!\n", t.chan1le.time_sec, t.chan4le.time_sec, t14_ns, w1_ns, w4_ns, a1_mv, a4_mv);
-         
+
+         printf("new dlsc event 1*4, le %.9f %.9f sec, diff14 %.0f ns, w1 %.0f, w4 %.0f ns, a1 %.0f, a4 %.0f mV!\n", t.chan1le.time_sec, t.chan4le.time_sec, t14_ns, w1_ns, w4_ns, a1_mv, a4_mv);         
+
          fHt14ns->Fill(t14_ns);
          fHw1ns->Fill(w1_ns);
          fHw4ns->Fill(w4_ns);
@@ -1462,8 +1467,13 @@ public:
          fH_a4mv_t14ns->Fill(a4_mv, t14_ns);
          
          // Time walk corrected versions
-         double t14_ns_twc = t14_ns - 0.001*time_walk_correction_ps(a4_mv) + 0.001*time_walk_correction_ps(a1_mv);
-         fH_a1mv_t14ns_twc->Fill(a1_mv, t14_ns_twc);
+         // double t14_ns_twc = t14_ns - 0.001*time_walk_correction_ps(a4_mv) + 0.001*time_walk_correction_ps(a1_mv);
+         double corr_W = 3.7*pow(10, -8);
+	 double t1_corr = sec_to_ns(t.chan1le.time_sec - corr_W / sqrt(a1_mv));
+         double t4_corr = sec_to_ns(t.chan4le.time_sec - corr_W / sqrt(a4_mv));
+         double t14_ns_twc = t4_corr - t1_corr;
+	
+	 fH_a1mv_t14ns_twc->Fill(a1_mv, t14_ns_twc);
          fH_a4mv_t14ns_twc->Fill(a4_mv, t14_ns_twc);
          fHt14ns_twc->Fill(t14_ns_twc);
 
@@ -1485,6 +1495,10 @@ public:
 
             double t14_coinc = sec_to_ns(t.chan4le.time_sec - t.chan1le.time_sec);
             fHt14ns_coinc->Fill(t14_coinc);
+	    double t1_coinc_corr = sec_to_ns(t.chan1le.time_sec - corr_W / sqrt(a1_mv));
+	    double t4_coinc_corr = sec_to_ns(t.chan4le.time_sec - corr_W / sqrt(a4_mv));
+	    double t14_coinc_twc = t4_coinc_corr - t1_coinc_corr;
+	    fHt14ns_coinc_twc->Fill(t14_coinc_twc);
 
             // Not sure the point of these
             double w1 = sec_to_ns(t.chan1te.time_sec - t.chan1le.time_sec);
@@ -1574,6 +1588,14 @@ public:
 
             double t23_coinc = sec_to_ns(t.chan3le.time_sec - t.chan2le.time_sec);
             fHt23ns_coinc->Fill(t23_coinc);
+
+            double corr_W = 3.7*pow(10, -8);
+            double t2_coinc_corr = sec_to_ns(t.chan2le.time_sec - corr_W / sqrt(a2_mv));
+	    double t3_coinc_corr = sec_to_ns(t.chan3le.time_sec - corr_W / sqrt(a3_mv));
+	    double t23_coinc_twc = t3_coinc_corr - t2_coinc_corr;
+	    fHt23ns_coinc_twc->Fill(t23_coinc_twc);
+
+
          }         
 
       }
@@ -2222,10 +2244,10 @@ public:
    {
       printf("DlTdcModuleFactory flags:\n");
       printf("--dltdc -- enable dltdc code\n");
-      printf("--dltdc-calib -- calibrate dltdc");
-      printf("--dltdc-adc -- have ADC data");
-      printf("--dltdc-debug -- print detailed information");
-      printf("--dltdc-coincidence -- require coincidence with lower bar for all histograms");
+      printf("--dltdc-calib -- calibrate dltdc\n");
+      printf("--dltdc-adc -- have ADC data\n");
+      printf("--dltdc-debug -- print detailed information\n");
+      printf("--dltdc-coincidence -- require coincidence with lower bar for all histograms\n");
    }
 
    void Init(const std::vector<std::string> &args)
