@@ -158,6 +158,15 @@ public: // TDC hits
    bool havexle = false;
    bool havexte = false;
 
+   DlTdcHit chanAle;
+   DlTdcHit chanAte;
+
+   DlTdcHit chanBle;
+   DlTdcHit chanBte;
+
+   DlTdcHit chanTle;
+   DlTdcHit chanTte;
+
    DlTdcHit chan1le;
    DlTdcHit chan1te;
 
@@ -170,6 +179,27 @@ public: // TDC hits
    DlTdcHit chan4le;
    DlTdcHit chan4te;
 
+   DlTdcHit chan5le;
+   DlTdcHit chan5te;
+
+   DlTdcHit chan6le;
+   DlTdcHit chan6te;
+
+   DlTdcHit chan7le;
+   DlTdcHit chan7te;
+
+   DlTdcHit chan8le;
+   DlTdcHit chan8te;
+
+   bool havechanAle = false;
+   bool havechanAte = false;
+
+   bool havechanBle = false;
+   bool havechanBte = false;
+
+   bool havechanTle = false;
+   bool havechanTte = false;
+
    bool havechan1le = false;
    bool havechan1te = false;
 
@@ -181,6 +211,18 @@ public: // TDC hits
 
    bool havechan4le = false;
    bool havechan4te = false;
+
+   bool havechan5le = false;
+   bool havechan5te = false;
+
+   bool havechan6le = false;
+   bool havechan6te = false;
+
+   bool havechan7le = false;
+   bool havechan7te = false;
+
+   bool havechan8le = false;
+   bool havechan8te = false;
 
 public:
    void Reset()
@@ -213,6 +255,15 @@ public:
       havexle = false;
       havexte = false;
 
+      havechanAle = false;
+      havechanAte = false;
+
+      havechanBle = false;
+      havechanBte = false;
+
+      havechanTle = false;
+      havechanTte = false;
+
       havechan1le = false;
       havechan1te = false;
 
@@ -224,9 +275,21 @@ public:
 
       havechan4le = false;
       havechan4te = false;
+
+      havechan5le = false;
+      havechan5te = false;
+
+      havechan6le = false;
+      havechan6te = false;
+
+      havechan7le = false;
+      havechan7te = false;
+
+      havechan8le = false;
+      havechan8te = false;
    }
 
-   void AddHit(const DlTdcHit& h, bool verbose)
+   void AddHit4A(const DlTdcHit& h, bool verbose)
    {
       if (first_time_sec == 0) {
          first_time_sec = h.time_sec;
@@ -355,6 +418,138 @@ public:
       if (h.ch == 11 && h.te && !havechan4te) {
          chan4te = h;
          havechan4te = true;
+      }
+   }
+
+   void AddHit8(const DlTdcHit& h, bool verbose)
+   {
+      if (first_time_sec == 0) {
+         first_time_sec = h.time_sec;
+         min_time_sec = h.time_sec;
+         max_time_sec = h.time_sec;
+      }
+
+      last_time_sec = h.time_sec;
+
+      if (h.time_sec < min_time_sec)
+         min_time_sec = h.time_sec;
+      
+      if (h.time_sec > max_time_sec)
+         max_time_sec = h.time_sec;
+
+      assert(h.ch >= 0);
+      assert(h.ch <= MAX_TDC_CHAN);
+
+      fHits[h.ch].AddHit(h, verbose);
+      
+      if (h.ch == 0 && h.le && !havechanAle) {
+         chanAle = h;
+         havechanAle = true;
+      }
+      
+      if (h.ch == 0 && h.te && !havechanAte) {
+         chanAte = h;
+         havechanAte = true;
+      }
+
+      if (h.ch == 1 && h.le && !havechanBle) {
+         chanBle = h;
+         havechanBle = true;
+      }
+      
+      if (h.ch == 1 && h.te && !havechanBte) {
+         chanBte = h;
+         havechanBte = true;
+      }
+
+      if (h.ch == 10 && h.le && !havechanTle) {
+         chanTle = h;
+         havechanTle = true;
+      }
+      
+      if (h.ch == 10 && h.te && !havechanTte) {
+         chanTte = h;
+         havechanTte = true;
+      }
+
+      if (h.ch == 2 && h.le && !havechan1le) {
+         chan1le = h;
+         havechan1le = true;
+      }
+      
+      if (h.ch == 2 && h.te && !havechan1te) {
+         chan1te = h;
+         havechan1te = true;
+      }
+
+      if (h.ch == 3 && h.le && !havechan2le) {
+         chan2le = h;
+         havechan2le = true;
+      }
+      
+      if (h.ch == 3 && h.te && !havechan2te) {
+         chan2te = h;
+         havechan2te = true;
+      }
+
+      if (h.ch == 4 && h.le && !havechan3le) {
+         chan3le = h;
+         havechan3le = true;
+      }
+      
+      if (h.ch == 4 && h.te && !havechan3te) {
+         chan3te = h;
+         havechan3te = true;
+      }
+
+      if (h.ch == 5 && h.le && !havechan4le) {
+         chan4le = h;
+         havechan4le = true;
+      }
+      
+      if (h.ch == 5 && h.te && !havechan4te) {
+         chan4te = h;
+         havechan4te = true;
+      }
+
+      if (h.ch == 6 && h.le && !havechan5le) {
+         chan5le = h;
+         havechan5le = true;
+      }
+      
+      if (h.ch == 6 && h.te && !havechan5te) {
+         chan5te = h;
+         havechan5te = true;
+      }
+
+      if (h.ch == 7 && h.le && !havechan6le) {
+         chan6le = h;
+         havechan6le = true;
+      }
+      
+      if (h.ch == 7 && h.te && !havechan6te) {
+         chan6te = h;
+         havechan6te = true;
+      }
+
+      if (h.ch == 8 && h.le && !havechan7le) {
+         chan7le = h;
+         havechan7le = true;
+      }
+      
+      if (h.ch == 8 && h.te && !havechan7te) {
+         chan7te = h;
+         havechan7te = true;
+      }
+
+      if (h.ch == 9 && h.le && !havechan8le) {
+         chan8le = h;
+         havechan8le = true;
+      }
+      
+      if (h.ch == 9 && h.te && !havechan8te) {
+         chan8te = h;
+         havechan8te = true;
       }
    }
 };
@@ -533,6 +728,14 @@ public:
    TH1D* fHw2ns = NULL;
    TH1D* fHw3ns = NULL;
    TH1D* fHw4ns = NULL;
+   TH1D* fHw5ns = NULL;
+   TH1D* fHw6ns = NULL;
+   TH1D* fHw7ns = NULL;
+   TH1D* fHw8ns = NULL;
+
+   TH1D* fHwAns = NULL;
+   TH1D* fHwBns = NULL;
+   TH1D* fHwTns = NULL;
 
    TH2D* fHw14ns = NULL;
    TH2D* fHw23ns = NULL;
@@ -549,6 +752,10 @@ public:
    TH1D* fHa2mv = NULL;
    TH1D* fHa3mv = NULL;
    TH1D* fHa4mv = NULL;
+   TH1D* fHa5mv = NULL;
+   TH1D* fHa6mv = NULL;
+   TH1D* fHa7mv = NULL;
+   TH1D* fHa8mv = NULL;
 
    TH2D* fHa14mv = NULL;
    TH2D* fHa23mv = NULL;
@@ -954,6 +1161,14 @@ public:
       fHw2ns = new TH1D("w2ns", "w2ns", 100, 0, 400);
       fHw3ns = new TH1D("w3ns", "w3ns", 100, 0, 400);
       fHw4ns = new TH1D("w4ns", "w4ns", 100, 0, 400);
+      fHw5ns = new TH1D("w5ns", "w5ns", 100, 0, 400);
+      fHw6ns = new TH1D("w6ns", "w6ns", 100, 0, 400);
+      fHw7ns = new TH1D("w7ns", "w7ns", 100, 0, 400);
+      fHw8ns = new TH1D("w8ns", "w8ns", 100, 0, 400);
+
+      fHwAns = new TH1D("wAns", "wAns", 100, 0, 400);
+      fHwBns = new TH1D("wBns", "wBns", 100, 0, 400);
+      fHwTns = new TH1D("wTns", "wTns", 100, 0, 400);
 
       fHw14ns = new TH2D("w14ns", "w4ns vs w1ns", 100, 0, 400, 100, 0, 400);
       fHw23ns = new TH2D("w23ns", "w3ns vs w2ns", 100, 0, 400, 100, 0, 400);
@@ -970,6 +1185,9 @@ public:
       fHa2mv = new TH1D("a2mv", "calculated amp 2, mV", 100, 0, 2000);
       fHa3mv = new TH1D("a3mv", "calculated amp 3, mV", 100, 0, 2000);
       fHa4mv = new TH1D("a4mv", "calculated amp 4, mV", 100, 0, 2000);
+      fHa5mv = new TH1D("a5mv", "calculated amp 5, mV", 100, 0, 2000);
+      fHa6mv = new TH1D("a6mv", "calculated amp 6, mV", 100, 0, 2000);
+      fHa7mv = new TH1D("a7mv", "calculated amp 7, mV", 100, 0, 2000);
 
       fHa14mv = new TH2D("a14mv", "calculated amp 4 vs amp 1, mV", 100, 0, 2000, 100, 0, 2000);
       fHa23mv = new TH2D("a23mv", "calculated amp 3 vs amp 2, mV", 100, 0, 2000, 100, 0, 2000);
@@ -1144,18 +1362,76 @@ public:
       //   fPrevTdcTime = tdc_time;
       //}
 
-#if 0
-      if (t.have0le && t.have0te) {
-         double wid_ns = (t.h0te.time_sec - t.h0le.time_sec)*1e9;
-         if (fFlags->fDebug) printf("xwidth 0: %.3f %.3f ns\n", (t.h0te.coarse_sec - t.h0le.coarse_sec)*1e9, wid_ns);
-         //printf("WWW: "); h0le.Print(); printf("\n");
-         //printf("WWW: "); h0te.Print(); printf("\n");
-#ifdef HAVE_ROOT
-         hwid0->Fill(wid_ns);
-         hwid0_fine->Fill(wid_ns);
-#endif
+      if (t.havechanAle && t.havechanAte) {
+         double wA_ns = sec_to_ns(t.chanAte.time_sec - t.chanAle.time_sec);
+
+         if (wA_ns < 1) {
+            printf("TTT: BAD WIDTH chanA!\n");
+            //return;
+         }
+
+         printf("new dlsc event A, le %.9f, w %.0f!\n", t.chanAle.time_sec, wA_ns);
+
+         fHwAns->Fill(wA_ns);
       }
-#endif
+
+      if (t.havechanBle && t.havechanBte) {
+         double wB_ns = sec_to_ns(t.chanBte.time_sec - t.chanBle.time_sec);
+
+         if (wB_ns < 1) {
+            printf("TTT: BAD WIDTH chanB!\n");
+            //return;
+         }
+
+         printf("new dlsc event B, le %.9f, w %.0f!\n", t.chanBle.time_sec, wB_ns);
+
+         fHwBns->Fill(wB_ns);
+      }
+
+      if (t.havechanTle && t.havechanTte) {
+         double wT_ns = sec_to_ns(t.chanTte.time_sec - t.chanTle.time_sec);
+
+         if (wT_ns < 1) {
+            printf("TTT: BAD WIDTH chanT!\n");
+            //return;
+         }
+
+         printf("new dlsc event T, le %.9f, w %.0f!\n", t.chanTle.time_sec, wT_ns);
+
+         fHwTns->Fill(wT_ns);
+      }
+
+      if (t.havechan5le && t.havechan5te) {
+         double w5_ns = sec_to_ns(t.chan5te.time_sec - t.chan5le.time_sec);
+
+         if (w5_ns < 1) {
+            printf("TTT: BAD WIDTH chan5!\n");
+            //return;
+         }
+
+         double a5_mv = ns_to_mv(w5_ns);
+
+         printf("new dlsc event 5*X, le %.9f %.9f sec, diff5X %.0f ns, w5 %.0f, wX %.0f ns, a5 %.0f, aX %.0f mV!\n", t.chan5le.time_sec, 0.0, 0.0, w5_ns, 0.0, a5_mv, 0.0);
+
+         fHw5ns->Fill(w5_ns);
+         fHa5mv->Fill(a5_mv);
+      }
+
+      if (t.havechan6le && t.havechan6te) {
+         double w6_ns = sec_to_ns(t.chan6te.time_sec - t.chan6le.time_sec);
+
+         if (w6_ns < 1) {
+            printf("TTT: BAD WIDTH chan6!\n");
+            //return;
+         }
+
+         double a6_mv = ns_to_mv(w6_ns);
+
+         printf("new dlsc event 6*X, le %.9f %.9f sec, diff6X %.0f ns, w6 %.0f, wX %.0f ns, a6 %.0f, aX %.0f mV!\n", t.chan6le.time_sec, 0.0, 0.0, w6_ns, 0.0, a6_mv, 0.0);
+
+         fHw6ns->Fill(w6_ns);
+         fHa6mv->Fill(a6_mv);
+      }
 
 // Studying channel 0 in old bar.
 #if 0
@@ -2032,12 +2308,17 @@ public:
 
             DlTdcHit h;
             fU->Unpack(&h, wlo, whi);
-            static double prev_time_sec = 0;
-            
-            if (h.le) {
-               if (fFlags->fDebug) {h.Print(); printf(", dt %4.0f ns\n", sec_to_ns(h.time_sec - prev_time_sec));}
-               prev_time_sec = h.time_sec;
+
+            if (fFlags->fDebug) {
+               h.Print(); printf("\n");
             }
+
+            //static double prev_time_sec = 0;
+            //
+            //if (h.le) {
+            //   if (fFlags->fDebug) {h.Print(); printf(", dt %4.0f ns\n", sec_to_ns(h.time_sec - prev_time_sec));}
+            //   prev_time_sec = h.time_sec;
+            //}
 
             if (calib) {
                fU->fCalib[h.ch].AddHit(h);
@@ -2115,7 +2396,10 @@ public:
             }
 #endif
 #endif
-            fCt->AddHit(h, fFlags->fDebug);
+            if (runinfo->fRunNo < 905994)
+               fCt->AddHit4A(h, fFlags->fDebug);
+            else
+               fCt->AddHit8(h, fFlags->fDebug);
 
          } // loop over data
 
