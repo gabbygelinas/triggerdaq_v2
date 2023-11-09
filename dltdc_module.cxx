@@ -39,6 +39,11 @@ static double sec_to_ns(double t)
    return t*1e9;
 }
 
+static double subtract_ns(const DlTdcHit& h1, const DlTdcHit& h2)
+{
+   return (h1.coarse_sec - h2.coarse_sec)*1e9 + (h1.fine_ns - h2.fine_ns);
+}
+
 class DlTdcFlags
 {
 public:
@@ -46,7 +51,8 @@ public:
    bool fCalib   = false;
    bool fHaveAdc = false;
    bool fDebug = false;
-   bool fEnforceCoincidence = false;
+   bool fPrint = false;
+   //bool fEnforceCoincidence = false;
 };
 
 class DlTdcHit2
@@ -585,7 +591,12 @@ static double ns_to_mv(double x)
 
    // for threshold 160 mV
    // return 191 + 1.45*x + 0.0259*x*x;
-   return 129 + 5.64*x + 0.407*x*x; // updated relationship (09/14/23)
+
+   // for threshold 160 mV, updated relationship (09/14/23)
+   // return 129 + 5.64*x + 0.407*x*x;
+
+   // for threshold 80 mV, updated relationship (13 sep 2023)
+   return 98 - 0.737*x + 0.301*x*x;
 }
 
 static double time_walk_correction_ps(double amv)
@@ -633,15 +644,21 @@ public:
    TH1D* hwid0 = NULL;
    TH1D* hwid0_fine = NULL;
    int icd = 0;
+#endif
 
    TH1D* fHphaseLe[MAX_TDC_CHAN+1];
    TH1D* fHphaseTe[MAX_TDC_CHAN+1];
 
+   TH1D* fHfineLe[MAX_TDC_CHAN+1];
+   TH1D* fHfineTe[MAX_TDC_CHAN+1];
+
+#if 0
    TH1D* hcalle[MAX_TDC_CHAN+1];
    TH1D* hcalte[MAX_TDC_CHAN+1];
    TH1D* hcalle_fine[MAX_TDC_CHAN+1];
    TH1D* hcalte_fine[MAX_TDC_CHAN+1];
 #endif
+
    TH1D* fHhitdt1ns = NULL;
    TH1D* fHhitdt2ns = NULL;
    TH1D* fHhitdt3ns = NULL;
@@ -693,9 +710,9 @@ public:
    //TH2D* fHt1m5w1 = NULL;
    //TH2D* fHt1m5w5 = NULL;
 
-   TH1D* fHt8mt9 = NULL;
-   TH1D* fHw8 = NULL;
-   TH1D* fHw9 = NULL;
+   //TH1D* fHt8mt9 = NULL;
+   //TH1D* fHw8 = NULL;
+   //TH1D* fHw9 = NULL;
 
    //TH1D* fHa7 = NULL;
    //TH1D* fHa15 = NULL;
@@ -720,9 +737,20 @@ public:
 
    TH1D* fHt12ns = NULL;
    TH1D* fHt34ns = NULL;
+   TH1D* fHt56ns = NULL;
+   TH1D* fHt78ns = NULL;
 
    TH1D* fHt14ns = NULL;
    TH1D* fHt23ns = NULL;
+
+   TH1D* fHt15ns = NULL;
+   TH1D* fHt16ns = NULL;
+   TH1D* fHt25ns = NULL;
+   TH1D* fHt26ns = NULL;
+   TH1D* fHt35ns = NULL;
+   TH1D* fHt36ns = NULL;
+   TH1D* fHt45ns = NULL;
+   TH1D* fHt46ns = NULL;
 
    TH1D* fHw1ns = NULL;
    TH1D* fHw2ns = NULL;
@@ -737,10 +765,32 @@ public:
    TH1D* fHwBns = NULL;
    TH1D* fHwTns = NULL;
 
+   TH1D* fHt14ns_with5 = NULL;
+   TH1D* fHw1ns_with5 = NULL;
+   TH1D* fHw4ns_with5 = NULL;
+   TH1D* fHa1mv_with5 = NULL;
+   TH1D* fHa4mv_with5 = NULL;
+
+   TH1D* fHt14ns_with6 = NULL;
+   TH1D* fHw1ns_with6 = NULL;
+   TH1D* fHw4ns_with6 = NULL;
+   TH1D* fHa1mv_with6 = NULL;
+   TH1D* fHa4mv_with6 = NULL;
+
+   TH1D* fHt23ns_with5 = NULL;
+   TH1D* fHw2ns_with5 = NULL;
+   TH1D* fHw3ns_with5 = NULL;
+   TH1D* fHa2mv_with5 = NULL;
+   TH1D* fHa3mv_with5 = NULL;
+
+   TH1D* fHt23ns_with6 = NULL;
+   TH1D* fHw2ns_with6 = NULL;
+   TH1D* fHw3ns_with6 = NULL;
+   TH1D* fHa2mv_with6 = NULL;
+   TH1D* fHa3mv_with6 = NULL;
+
    TH2D* fHw14ns = NULL;
    TH2D* fHw23ns = NULL;
-
-   TH2D* fHw1w2 = NULL;
 
    TH2D* fHt14w1ns = NULL;
    TH2D* fHt14w4ns = NULL;
@@ -759,6 +809,15 @@ public:
 
    TH2D* fHa14mv = NULL;
    TH2D* fHa23mv = NULL;
+
+   TH2D* fHa15mv = NULL;
+   TH2D* fHa16mv = NULL;
+   TH2D* fHa25mv = NULL;
+   TH2D* fHa26mv = NULL;
+   TH2D* fHa35mv = NULL;
+   TH2D* fHa36mv = NULL;
+   TH2D* fHa45mv = NULL;
+   TH2D* fHa46mv = NULL;
 
    TH2D* fH_a1mv_t14ns = NULL;
    TH2D* fH_a4mv_t14ns = NULL;
@@ -782,7 +841,7 @@ public:
    TH1D* fHa2323mv = NULL;
 
    
-
+#if 0
    TH1D* fHt01old = NULL;
    TH1D* fHt04old = NULL;
    TH1D* fHt05old = NULL;
@@ -803,8 +862,6 @@ public:
 
    TH2D* fHtTBwBfit = NULL;
    TH2D* fHtTBwTfit = NULL;
-
-   
    
    TH1D* fHt1tB = NULL;
    TH1D* fHt1tB_cut = NULL;
@@ -836,6 +893,7 @@ public:
    TH2D* fHa2t2corr_cut = NULL;
    TH2D* fHa3t3corr_cut = NULL;
    TH2D* fHa4t4corr_cut = NULL;
+#endif
 
    TH1D* fHt14ns_coinc = NULL;
    TH1D* fHt23ns_coinc = NULL;
@@ -1018,6 +1076,7 @@ public:
       
       gWindow->Modified();
       gWindow->Update();
+#endif
 
       for (int i=0; i<=MAX_TDC_CHAN; i++) {
          char name[256];
@@ -1030,8 +1089,17 @@ public:
          sprintf(name,  "tdc%02d_phase_te", i);
          sprintf(title, "tdc%02d_phase_te", i);
          fHphaseTe[i] = new TH1D(name, title, 101, -50, 50);
+
+         sprintf(name,  "tdc%02d_fine_le", i);
+         sprintf(title, "tdc%02d_fine_le, ns", i);
+         fHfineLe[i] = new TH1D(name, title, 200, -5, 15);
+
+         sprintf(name,  "tdc%02d_fine_te", i);
+         sprintf(title, "tdc%02d_fine_te, ns", i);
+         fHfineTe[i] = new TH1D(name, title, 200, -5, 15);
       }
 
+#if 0
       for (int i=0; i<=MAX_TDC_CHAN; i++) {
          char name[256];
          char title[256];
@@ -1049,6 +1117,7 @@ public:
          hcalte_fine[i] = new TH1D(name, title, 101, -5, 5);
       }
 #endif
+
       fHhitdt1ns = new TH1D("hitdt1ns", "hit dt 100 ns", 100, 0, 100); // 100 ns
       fHhitdt2ns = new TH1D("hitdt2ns", "hit dt 1000 ns", 100, 100, 1000); // 1 usec
       fHhitdt3ns = new TH1D("hitdt3ns", "hit dt 1000 us", 100, 1000, 1000000); // 1 msec
@@ -1125,9 +1194,9 @@ public:
          //fHt1m5w1 = new TH2D("t1m5w1", "t1m5w1", 100, -20, 20, 50, 0, 200);
          //fHt1m5w5 = new TH2D("t1m5w5", "t1m5w5", 100, -20, 20, 50, 0, 200);
          
-         fHt8mt9 = new TH1D("t8mt9", "t8mt9", 100, -20, 20);
-         fHw8 = new TH1D("w8", "w8", 100, 0, 50);
-         fHw9 = new TH1D("w9", "w9", 100, 0, 50);
+         //fHt8mt9 = new TH1D("t8mt9", "t8mt9", 100, -20, 20);
+         //fHw8 = new TH1D("w8", "w8", 100, 0, 50);
+         //fHw9 = new TH1D("w9", "w9", 100, 0, 50);
          
          //fHa7  = new TH1D("a7",  "a7",  100, 0, 20000);
          //fHa15 = new TH1D("a15", "a15", 100, 0, 20000);
@@ -1151,35 +1220,35 @@ public:
          //fX4 = new TH2D("x4", "x4", 50, 0, 200, 50, 0, 20000);
       }
       
-      fHt12ns = new TH1D("t12ns", "sipm board 1, t2-t1, ns", 200, -2, 2);
-      fHt34ns = new TH1D("t34ns", "sipm board 2, t4-t3, ns", 200, -2, 2);
+      fHt12ns = new TH1D("t12ns", "sipm board 1, t2-t1, ns", 200, -10, 10);
+      fHt34ns = new TH1D("t34ns", "sipm board 2, t4-t3, ns", 200, -10, 10);
+      fHt56ns = new TH1D("t56ns", "sipm board 3, t6-t5, ns", 200, -10, 10);
+      fHt78ns = new TH1D("t78ns", "sipm board 4, t8-t7, ns", 200, -10, 10);
 
-      fHt14ns = new TH1D("t14ns", "Paddle 1 time difference, t4-t1 (ns)", 200, -8, 2);
-      fHt23ns = new TH1D("t23ns", "Paddle 2 time difference, t3-t2 (ns)", 200, -8, 2);
+      fHt14ns = new TH1D("t14ns", "Paddle 1 time difference, t4-t1 (ns)", 200, -10, 10);
+      fHt23ns = new TH1D("t23ns", "Paddle 2 time difference, t3-t2 (ns)", 200, -10, 10);
 
-      fHw1ns = new TH1D("w1ns", "w1ns", 100, 0, 400);
-      fHw2ns = new TH1D("w2ns", "w2ns", 100, 0, 400);
-      fHw3ns = new TH1D("w3ns", "w3ns", 100, 0, 400);
-      fHw4ns = new TH1D("w4ns", "w4ns", 100, 0, 400);
-      fHw5ns = new TH1D("w5ns", "w5ns", 100, 0, 400);
-      fHw6ns = new TH1D("w6ns", "w6ns", 100, 0, 400);
-      fHw7ns = new TH1D("w7ns", "w7ns", 100, 0, 400);
-      fHw8ns = new TH1D("w8ns", "w8ns", 100, 0, 400);
+      fHt15ns = new TH1D("t15ns", "t5-t1 (ns)", 200, -10, 10);
+      fHt16ns = new TH1D("t16ns", "t6-t1 (ns)", 200, -10, 10);
+      fHt25ns = new TH1D("t25ns", "t5-t2 (ns)", 200, -10, 10);
+      fHt26ns = new TH1D("t26ns", "t6-t2 (ns)", 200, -10, 10);
+      fHt35ns = new TH1D("t35ns", "t5-t3 (ns)", 200, -10, 10);
+      fHt36ns = new TH1D("t36ns", "t6-t3 (ns)", 200, -10, 10);
+      fHt45ns = new TH1D("t45ns", "t5-t4 (ns)", 200, -10, 10);
+      fHt46ns = new TH1D("t46ns", "t6-t4 (ns)", 200, -10, 10);
 
-      fHwAns = new TH1D("wAns", "wAns", 100, 0, 400);
-      fHwBns = new TH1D("wBns", "wBns", 100, 0, 400);
-      fHwTns = new TH1D("wTns", "wTns", 100, 0, 400);
+      fHw1ns = new TH1D("w1ns", "w1ns", 100, 0, 100);
+      fHw2ns = new TH1D("w2ns", "w2ns", 100, 0, 100);
+      fHw3ns = new TH1D("w3ns", "w3ns", 100, 0, 100);
+      fHw4ns = new TH1D("w4ns", "w4ns", 100, 0, 100);
+      fHw5ns = new TH1D("w5ns", "w5ns", 100, 0, 100);
+      fHw6ns = new TH1D("w6ns", "w6ns", 100, 0, 100);
+      fHw7ns = new TH1D("w7ns", "w7ns", 100, 0, 100);
+      fHw8ns = new TH1D("w8ns", "w8ns", 100, 0, 100);
 
-      fHw14ns = new TH2D("w14ns", "w4ns vs w1ns", 100, 0, 400, 100, 0, 400);
-      fHw23ns = new TH2D("w23ns", "w3ns vs w2ns", 100, 0, 400, 100, 0, 400);
-
-      fHw1w2 = new TH2D("w1w2", "Width of 2 vs width of 1", 200, 0, 200, 200, 0, 200);
-	      
-      fHt14w1ns = new TH2D("t14w1ns", "w1ns vs t14ns", 100, -5, 1, 100, 0, 400);
-      fHt14w4ns = new TH2D("t14w4ns", "w4ns vs t14ns", 100, -5, 1, 100, 0, 400);
-
-      fHt23w2ns = new TH2D("t23w2ns", "w2ns vs t23ns", 100, -5, 1, 100, 0, 400);
-      fHt23w3ns = new TH2D("t23w3ns", "w3ns vs t23ns", 100, -5, 1, 100, 0, 400);
+      fHwAns = new TH1D("wAns", "wAns", 100, 0, 100);
+      fHwBns = new TH1D("wBns", "wBns", 100, 0, 100);
+      fHwTns = new TH1D("wTns", "wTns", 100, 0, 100);
 
       fHa1mv = new TH1D("a1mv", "calculated amp 1, mV", 100, 0, 2000);
       fHa2mv = new TH1D("a2mv", "calculated amp 2, mV", 100, 0, 2000);
@@ -1188,32 +1257,74 @@ public:
       fHa5mv = new TH1D("a5mv", "calculated amp 5, mV", 100, 0, 2000);
       fHa6mv = new TH1D("a6mv", "calculated amp 6, mV", 100, 0, 2000);
       fHa7mv = new TH1D("a7mv", "calculated amp 7, mV", 100, 0, 2000);
+      fHa8mv = new TH1D("a8mv", "calculated amp 8, mV", 100, 0, 2000);
+
+      fHt14ns_with5 = new TH1D("t14ns_with5", "Paddle 1 time difference, t4-t1 (ns), with hit in chan5", 200, -10, 10);
+      fHw1ns_with5 = new TH1D("w1ns_with5", "w1ns with hit in chan5", 100, 0, 100);
+      fHw4ns_with5 = new TH1D("w4ns_with5", "w4ns with hit in chan5", 100, 0, 100);
+      fHa1mv_with5 = new TH1D("a1mv_with5", "calculated amp 1, mV with hit in chan5", 100, 0, 2000);
+      fHa4mv_with5 = new TH1D("a4mv_with5", "calculated amp 4, mV with hit in chan5", 100, 0, 2000);
+
+      fHt14ns_with6 = new TH1D("t14ns_with6", "Paddle 1 time difference, t4-t1 (ns), with hit in chan6", 200, -10, 10);
+      fHw1ns_with6 = new TH1D("w1ns_with6", "w1ns with hit in chan6", 100, 0, 100);
+      fHw4ns_with6 = new TH1D("w4ns_with6", "w4ns with hit in chan6", 100, 0, 100);
+      fHa1mv_with6 = new TH1D("a1mv_with6", "calculated amp 1, mV with hit in chan6", 100, 0, 2000);
+      fHa4mv_with6 = new TH1D("a4mv_with6", "calculated amp 4, mV with hit in chan6", 100, 0, 2000);
+
+      fHt23ns_with5 = new TH1D("t23ns_with5", "Paddle 2 time difference, t3-t2 (ns), with hit in chan5", 200, -10, 10);
+      fHw2ns_with5 = new TH1D("w2ns_with5", "w2ns with hit in chan5", 100, 0, 100);
+      fHw3ns_with5 = new TH1D("w3ns_with5", "w3ns with hit in chan5", 100, 0, 100);
+      fHa2mv_with5 = new TH1D("a2mv_with5", "calculated amp 2, mV with hit in chan5", 100, 0, 2000);
+      fHa3mv_with5 = new TH1D("a3mv_with5", "calculated amp 3, mV with hit in chan5", 100, 0, 2000);
+
+      fHt23ns_with6 = new TH1D("t23ns_with6", "Paddle 2 time difference, t3-t2 (ns), with hit in chan6", 200, -10, 10);
+      fHw2ns_with6 = new TH1D("w2ns_with6", "w2ns with hit in chan6", 100, 0, 100);
+      fHw3ns_with6 = new TH1D("w3ns_with6", "w3ns with hit in chan6", 100, 0, 100);
+      fHa2mv_with6 = new TH1D("a2mv_with6", "calculated amp 2, mV with hit in chan6", 100, 0, 2000);
+      fHa3mv_with6 = new TH1D("a3mv_with6", "calculated amp 3, mV with hit in chan6", 100, 0, 2000);
+
+      fHw14ns = new TH2D("w14ns", "w4ns vs w1ns", 100, 0, 100, 100, 0, 100);
+      fHw23ns = new TH2D("w23ns", "w3ns vs w2ns", 100, 0, 100, 100, 0, 100);
+
+      fHt14w1ns = new TH2D("t14w1ns", "w1ns vs t14ns", 100, -10, 10, 100, 0, 400);
+      fHt14w4ns = new TH2D("t14w4ns", "w4ns vs t14ns", 100, -10, 10, 100, 0, 400);
+
+      fHt23w2ns = new TH2D("t23w2ns", "w2ns vs t23ns", 100, -10, 10, 100, 0, 400);
+      fHt23w3ns = new TH2D("t23w3ns", "w3ns vs t23ns", 100, -10, 10, 100, 0, 400);
 
       fHa14mv = new TH2D("a14mv", "calculated amp 4 vs amp 1, mV", 100, 0, 2000, 100, 0, 2000);
       fHa23mv = new TH2D("a23mv", "calculated amp 3 vs amp 2, mV", 100, 0, 2000, 100, 0, 2000);
 
-      fH_a1mv_t14ns = new TH2D("a1mv_t14ns", "t4-t1 (ns) vs a1 (mV)", 100, 0, 2000, 100, -5, 5);
-      fH_a4mv_t14ns = new TH2D("a4mv_t14ns", "t4-t1 (ns) vs a4 (mV)", 100, 0, 2000, 100, -5, 5);
+      fHa15mv = new TH2D("a15mv", "calculated amp 5 vs amp 1, mV", 100, 0, 2000, 100, 0, 2000);
+      fHa16mv = new TH2D("a16mv", "calculated amp 6 vs amp 1, mV", 100, 0, 2000, 100, 0, 2000);
+      fHa25mv = new TH2D("a25mv", "calculated amp 5 vs amp 2, mV", 100, 0, 2000, 100, 0, 2000);
+      fHa26mv = new TH2D("a26mv", "calculated amp 6 vs amp 2, mV", 100, 0, 2000, 100, 0, 2000);
+      fHa35mv = new TH2D("a35mv", "calculated amp 5 vs amp 3, mV", 100, 0, 2000, 100, 0, 2000);
+      fHa36mv = new TH2D("a36mv", "calculated amp 6 vs amp 3, mV", 100, 0, 2000, 100, 0, 2000);
+      fHa45mv = new TH2D("a45mv", "calculated amp 5 vs amp 4, mV", 100, 0, 2000, 100, 0, 2000);
+      fHa46mv = new TH2D("a46mv", "calculated amp 6 vs amp 4, mV", 100, 0, 2000, 100, 0, 2000);
 
-      fH_a1mv_t14ns_twc = new TH2D("a1mv_t14ns_twc", "t4-t1 (ns) vs a1 (mV) with time walk correction", 100, 0, 2000, 100, -5, 5);
-      fH_a4mv_t14ns_twc = new TH2D("a4mv_t14ns_twc", "t4-t1 (ns) vs a4 (mV) with time walk correction", 100, 0, 2000, 100, -5, 5);
+      fH_a1mv_t14ns = new TH2D("a1mv_t14ns", "t4-t1 (ns) vs a1 (mV)", 100, 0, 2000, 100, -10, 10);
+      fH_a4mv_t14ns = new TH2D("a4mv_t14ns", "t4-t1 (ns) vs a4 (mV)", 100, 0, 2000, 100, -10, 10);
 
-      fHt14ns_twc = new TH1D("t14ns_twc", "paddle 1, t4-t1, ns, with time walk correction", 200, -8, 2);
-      fHt23ns_twc = new TH1D("t23ns_twc", "paddle 2, t3-t2, ns, with time walk correction", 200, -8, 2);
+      fH_a1mv_t14ns_twc = new TH2D("a1mv_t14ns_twc", "t4-t1 (ns) vs a1 (mV) with time walk correction", 100, 0, 2000, 100, -10, 10);
+      fH_a4mv_t14ns_twc = new TH2D("a4mv_t14ns_twc", "t4-t1 (ns) vs a4 (mV) with time walk correction", 100, 0, 2000, 100, -10, 10);
 
-      fH_a2mv_t23ns = new TH2D("a2mv_t23ns", "t3-t2 (ns) vs a2 (mV)", 100, 0, 2000, 100, -5, 5);
-      fH_a3mv_t23ns = new TH2D("a3mv_t23ns", "t3-t2 (ns) vs a3 (mV)", 100, 0, 2000, 100, -5, 5);
+      fHt14ns_twc = new TH1D("t14ns_twc", "paddle 1, t4-t1, ns, with time walk correction", 200, -10, 10);
+      fHt23ns_twc = new TH1D("t23ns_twc", "paddle 2, t3-t2, ns, with time walk correction", 200, -10, 10);
 
-      fHt14ns_cut     = new TH1D("t14ns_cut", "Paddle 1 time difference, t4-t1 (ns)with 150mV cuts", 200, -8, 4);
+      fH_a2mv_t23ns = new TH2D("a2mv_t23ns", "t3-t2 (ns) vs a2 (mV)", 100, 0, 2000, 100, -10, 10);
+      fH_a3mv_t23ns = new TH2D("a3mv_t23ns", "t3-t2 (ns) vs a3 (mV)", 100, 0, 2000, 100, -10, 10);
+
+      fHt14ns_cut     = new TH1D("t14ns_cut", "Paddle 1 time difference, t4-t1 (ns)with 150mV cuts", 200, -10, 10);
       fHt14ns_cut_twc = new TH1D("t14ns_cut_twc", "t14ns_cut with time walk correction", 500, -10, 10);
-      fHt23ns_cut     = new TH1D("t23ns_cut", "Paddle 2 time difference, t3-t2 (ns) with 150mV cuts", 200, -8, 4);
+      fHt23ns_cut     = new TH1D("t23ns_cut", "Paddle 2 time difference, t3-t2 (ns) with 150mV cuts", 200, -10, 10);
       fHt23ns_cut_twc = new TH1D("t23ns_cut_twc", "t23ns_cut with time walk correction", 500, -10, 10);
 
       fHa1414mv = new TH1D("a14vsa14mv", "(a1-a4)/(a1+a4)", 100, -1, 1);
       fHa2323mv = new TH1D("a23vsa23mv", "(a2-a3)/(a2+a3)", 100, -1, 1);
 
-
-
+#if 0
       fHt01old = new TH1D("t01old", "t01old", 150, -500, 500);
       fHt04old = new TH1D("t04old", "t04old", 150, -500, 500);
       fHt05old = new TH1D("t05old", "t05old", 150, -500, 500);
@@ -1265,6 +1376,7 @@ public:
       fHa2t2corr_cut = new TH2D("a2t2corr_cut", "(t2le - avg of tTB) vs a2 cut", 100, 0, 2000, 100, -45, -15);
       fHa3t3corr_cut = new TH2D("a3t3corr_cut", "(t3le - avg of tTB) vs a3 cut", 100, 0, 2000, 100, -45, -15);
       fHa4t4corr_cut = new TH2D("a4t4corr_cut", "(t4le - avg of tTB) vs a4 cut", 100, 0, 2000, 100, -45, -15);
+#endif
 
       fHt14ns_coinc = new TH1D("t14ns_coinc", "t4 - t1 for old and new bar coinc in ns", 200, -8, 2);
       fHt23ns_coinc = new TH1D("t23ns_coinc", "t3 - t2 for old and new bar coinc in ns", 200, -8, 2);
@@ -1362,15 +1474,56 @@ public:
       //   fPrevTdcTime = tdc_time;
       //}
 
+      ////////////////////////////////////////////////////
+
+      double w1_ns = -9999;
+      double a1_mv = -9999;
+      if (t.havechan1le && t.havechan1te) {
+         w1_ns = subtract_ns(t.chan1te, t.chan1le);
+         if (w1_ns < 0.1) {
+            printf("TTT: BAD WIDTH chan1 %f!\n", w1_ns);
+            w1_ns = -9999;
+         } else {
+            a1_mv = ns_to_mv(w1_ns);
+         }
+      }
+
+      double w5_ns = -9999;
+      double a5_mv = -9999;
+      if (t.havechan5le && t.havechan5te) {
+         w5_ns = subtract_ns(t.chan5te, t.chan5le);
+         if (w5_ns < 0.1) {
+            printf("TTT: BAD WIDTH chan5 %f!\n", w5_ns);
+            w5_ns = -9999;
+         } else {
+            a5_mv = ns_to_mv(w5_ns);
+         }
+
+      }
+
+      double w6_ns = -9999;
+      double a6_mv = -9999;
+      if (t.havechan6le && t.havechan6te) {
+         w6_ns = subtract_ns(t.chan6te, t.chan6le);
+         if (w6_ns < 0.1) {
+            printf("TTT: BAD WIDTH chan6 %f!\n", w6_ns);
+            w6_ns = -9999;
+         } else {
+            a6_mv = ns_to_mv(w6_ns);
+         }
+      }
+
       if (t.havechanAle && t.havechanAte) {
          double wA_ns = sec_to_ns(t.chanAte.time_sec - t.chanAle.time_sec);
 
-         if (wA_ns < 1) {
-            printf("TTT: BAD WIDTH chanA!\n");
+         if (wA_ns < 0.1) {
+            printf("TTT: BAD WIDTH chanA %f!\n", wA_ns);
             //return;
          }
 
-         printf("new dlsc event A, le %.9f, w %.0f!\n", t.chanAle.time_sec, wA_ns);
+         if (fFlags->fPrint) {
+            printf("new dlsc event A, le %.9f, w %.0f!\n", t.chanAle.time_sec, wA_ns);
+         }
 
          fHwAns->Fill(wA_ns);
       }
@@ -1378,12 +1531,14 @@ public:
       if (t.havechanBle && t.havechanBte) {
          double wB_ns = sec_to_ns(t.chanBte.time_sec - t.chanBle.time_sec);
 
-         if (wB_ns < 1) {
-            printf("TTT: BAD WIDTH chanB!\n");
+         if (wB_ns < 0.1) {
+            printf("TTT: BAD WIDTH chanB %f!\n", wB_ns);
             //return;
          }
 
-         printf("new dlsc event B, le %.9f, w %.0f!\n", t.chanBle.time_sec, wB_ns);
+         if (fFlags->fPrint) {
+            printf("new dlsc event B, le %.9f, w %.0f!\n", t.chanBle.time_sec, wB_ns);
+         }
 
          fHwBns->Fill(wB_ns);
       }
@@ -1391,43 +1546,49 @@ public:
       if (t.havechanTle && t.havechanTte) {
          double wT_ns = sec_to_ns(t.chanTte.time_sec - t.chanTle.time_sec);
 
-         if (wT_ns < 1) {
-            printf("TTT: BAD WIDTH chanT!\n");
+         if (wT_ns < 0.1) {
+            printf("TTT: BAD WIDTH chanT %f!\n", wT_ns);
             //return;
          }
 
-         printf("new dlsc event T, le %.9f, w %.0f!\n", t.chanTle.time_sec, wT_ns);
+         if (fFlags->fPrint) {
+            printf("new dlsc event T, le %.9f, w %.0f!\n", t.chanTle.time_sec, wT_ns);
+         }
 
          fHwTns->Fill(wT_ns);
       }
 
       if (t.havechan5le && t.havechan5te) {
-         double w5_ns = sec_to_ns(t.chan5te.time_sec - t.chan5le.time_sec);
-
-         if (w5_ns < 1) {
-            printf("TTT: BAD WIDTH chan5!\n");
-            //return;
-         }
+         //double w5_ns = sec_to_ns(t.chan5te.time_sec - t.chan5le.time_sec);
+         //
+         //if (w5_ns < 0.1) {
+         //   printf("TTT: BAD WIDTH chan5 %f!\n", w5_ns);
+         //   //return;
+         //}
 
          double a5_mv = ns_to_mv(w5_ns);
 
-         printf("new dlsc event 5*X, le %.9f %.9f sec, diff5X %.0f ns, w5 %.0f, wX %.0f ns, a5 %.0f, aX %.0f mV!\n", t.chan5le.time_sec, 0.0, 0.0, w5_ns, 0.0, a5_mv, 0.0);
+         if (fFlags->fPrint) {
+            printf("new dlsc event 5*X, le %.9f %.9f sec, diff5X %.0f ns, w5 %.0f, wX %.0f ns, a5 %.0f, aX %.0f mV!\n", t.chan5le.time_sec, 0.0, 0.0, w5_ns, 0.0, a5_mv, 0.0);
+         }
 
          fHw5ns->Fill(w5_ns);
          fHa5mv->Fill(a5_mv);
       }
 
       if (t.havechan6le && t.havechan6te) {
-         double w6_ns = sec_to_ns(t.chan6te.time_sec - t.chan6le.time_sec);
-
-         if (w6_ns < 1) {
-            printf("TTT: BAD WIDTH chan6!\n");
-            //return;
-         }
+         //double w6_ns = sec_to_ns(t.chan6te.time_sec - t.chan6le.time_sec);
+         //
+         //if (w6_ns < 0.1) {
+         //   printf("TTT: BAD WIDTH chan6 %f!\n", w6_ns);
+         //   //return;
+         //}
 
          double a6_mv = ns_to_mv(w6_ns);
 
-         printf("new dlsc event 6*X, le %.9f %.9f sec, diff6X %.0f ns, w6 %.0f, wX %.0f ns, a6 %.0f, aX %.0f mV!\n", t.chan6le.time_sec, 0.0, 0.0, w6_ns, 0.0, a6_mv, 0.0);
+         if (fFlags->fPrint) {
+            printf("new dlsc event 6*X, le %.9f %.9f sec, diff6X %.0f ns, w6 %.0f, wX %.0f ns, a6 %.0f, aX %.0f mV!\n", t.chan6le.time_sec, 0.0, 0.0, w6_ns, 0.0, a6_mv, 0.0);
+         }
 
          fHw6ns->Fill(w6_ns);
          fHa6mv->Fill(a6_mv);
@@ -1492,6 +1653,7 @@ public:
       }
 #endif
 
+#if 0
       // AG bar
       if (t.have8le && t.have8te && t.have9le && t.have9te) {
          double t8mt9 = sec_to_ns(t.h8le.time_sec - t.h9le.time_sec);
@@ -1512,6 +1674,7 @@ public:
          //if (a.a7.amp > 0)
          //   fHw9a7->Fill(w9, a.a7.amp);
       }
+#endif
 
       // Old bar.
       if (t.have0le && t.have0te && t.have1le && t.have1te && t.have4le && t.have4te && t.have5le && t.have5te) {
@@ -1610,19 +1773,19 @@ public:
       ////////////////////////////////////////////////////
       // Define useful flags for analysing event (and help Kate keep track of what's what)
 
-      bool hasTOT_oldBar0 = (t.have0le && t.have0te);
-      bool hasTOT_oldBar1 = (t.have1le && t.have1te);
-      bool hasTOT_oldBar4 = (t.have4le && t.have4te);
-      bool hasTOT_oldBar5 = (t.have5le && t.have5te);
+      //bool hasTOT_oldBar0 = (t.have0le && t.have0te);
+      //bool hasTOT_oldBar1 = (t.have1le && t.have1te);
+      //bool hasTOT_oldBar4 = (t.have4le && t.have4te);
+      //bool hasTOT_oldBar5 = (t.have5le && t.have5te);
 
       // How are we defining top and bottom hits in old bar?
       // Currently: only looking at chan 0 and 5.
       // Require both LE and TE for cleanness.
-      bool hasHit_oldBarTop = hasTOT_oldBar5;
-      bool hasHit_oldBarBottom = hasTOT_oldBar0;
+      //bool hasHit_oldBarTop = hasTOT_oldBar5;
+      //bool hasHit_oldBarBottom = hasTOT_oldBar0;
 
       // Full hit in lower bar defined as both ends.
-      bool hasHit_oldBar = (hasHit_oldBarTop && hasHit_oldBarBottom);
+      //bool hasHit_oldBar = (hasHit_oldBarTop && hasHit_oldBarBottom);
 
       // New bars:
       bool hasTOT_newBars1 = (t.havechan1le && t.havechan1te);
@@ -1634,16 +1797,17 @@ public:
       // Time difference between ends on old bar is within 20 ns
       // TOT for old bar is more than 50 ns on both ends ...
       // Note this cut doesn't seem to remove much. Is it what we want?
-      bool passCut = false;
-      if (t.have0le && t.have0te && t.have5le &&t.have5te) {
-         passCut = (sec_to_ns(t.h0le.time_sec - t.h5le.time_sec) < 20 && sec_to_ns(t.h0le.time_sec - t.h5le.time_sec) > -20 && sec_to_ns(t.h0te.time_sec - t.h0le.time_sec) > 50 && sec_to_ns(t.h5te.time_sec - t.h5le.time_sec) > 50);
-      }
+      //bool passCut = false;
+      //if (t.have0le && t.have0te && t.have5le &&t.have5te) {
+      //   passCut = (sec_to_ns(t.h0le.time_sec - t.h5le.time_sec) < 20 && sec_to_ns(t.h0le.time_sec - t.h5le.time_sec) > -20 && sec_to_ns(t.h0te.time_sec - t.h0le.time_sec) > 50 && sec_to_ns(t.h5te.time_sec - t.h5le.time_sec) > 50);
+      //}
 
       // Define coincidence conditions.
       // Requiring both LE and TE only removes a handful of events: let's keep it clean.
-      bool bar14hit_withCoincidence = (hasHit_oldBar && (hasTOT_newBars1 && hasTOT_newBars4));
-      bool bar23hit_withCoincidence = (hasHit_oldBar && (hasTOT_newBars2 && hasTOT_newBars3));
+      //bool bar14hit_withCoincidence = (hasHit_oldBar && (hasTOT_newBars1 && hasTOT_newBars4));
+      //bool bar23hit_withCoincidence = (hasHit_oldBar && (hasTOT_newBars2 && hasTOT_newBars3));
 
+#if 0
       ////////////////////////////////////////////////////
       // Tally interesting cases for eventual summary
       if (hasTOT_oldBar0) counter_oldBar0_fullHit++;
@@ -1670,7 +1834,8 @@ public:
       else if (t.havechan3te) counter_newChan3_TEOnly++;
       if (hasTOT_newBars4) counter_newChan4_fullHit++;
       else if (t.havechan4le) counter_newChan4_LEOnly++;
-      else if (t.havechan4te) counter_newChan4_TEOnly++;      
+      else if (t.havechan4te) counter_newChan4_TEOnly++;
+#endif
 
       if (t.have0le && t.have0te && t.have1le && t.have1te) counter_01++;
       if (t.have4le && t.have4te && t.have5le && t.have5te) counter_45++;
@@ -1680,8 +1845,8 @@ public:
       // Values we will reuse 
 
       // Average time on bottom bar
-      double tTBavg = 0;
-      if (t.have0le && t.have5le) tTBavg = sec_to_ns((t.h0le.time_sec + t.h5le.time_sec)/2);
+      //double tTBavg = 0;
+      //if (t.have0le && t.have5le) tTBavg = sec_to_ns((t.h0le.time_sec + t.h5le.time_sec)/2);
 
       // Time between events.
       double dt = t.min_time_sec - prev_event_time_sec;
@@ -1703,32 +1868,39 @@ public:
          fHt34ns->Fill(t34_ns);
       }
       
+      if (w5_ns > 0 && w6_ns > 0) {
+         double t56_ns = subtract_ns(t.chan6le, t.chan5le);
+         fHt56ns->Fill(t56_ns);
+      }
+
       // Opposite ends of single bar.
       if (hasTOT_newBars1 && hasTOT_newBars4) {
 
          // Apply coincidence requirement to everything?
-         if (fFlags->fEnforceCoincidence) {
-            if (!bar14hit_withCoincidence) return;
-         }
+         //if (fFlags->fEnforceCoincidence) {
+         //   if (!bar14hit_withCoincidence) return;
+         //}
 
-         double t14_ns = sec_to_ns(t.chan4le.time_sec - t.chan1le.time_sec);
-         double w1_ns = sec_to_ns(t.chan1te.time_sec - t.chan1le.time_sec);
-         double w4_ns = sec_to_ns(t.chan4te.time_sec - t.chan4le.time_sec);
+         double t14_ns = subtract_ns(t.chan4le, t.chan1le);
+         //double w1_ns = subtract_ns(t.chan1te, t.chan1le);
+         double w4_ns = subtract_ns(t.chan4te, t.chan4le);
 
-         if (w1_ns < 1) {
-            printf("TTT: BAD WIDTH chan1!\n");
+         //if (w1_ns < 0.1) {
+         //   printf("TTT: BAD WIDTH chan1 %f!\n", w1_ns);
+         //   return;
+         //}
+
+         if (w4_ns < 0.1) {
+            printf("TTT: BAD WIDTH chan4 %f!\n", w4_ns);
             return;
          }
 
-         if (w4_ns < 1) {
-            printf("TTT: BAD WIDTH chan4!\n");
-            return;
-         }
-
-         double a1_mv = ns_to_mv(w1_ns);
+         //double a1_mv = ns_to_mv(w1_ns);
          double a4_mv = ns_to_mv(w4_ns);
 
-         printf("new dlsc event 1*4, le %.9f %.9f sec, diff14 %.0f ns, w1 %.0f, w4 %.0f ns, a1 %.0f, a4 %.0f mV!\n", t.chan1le.time_sec, t.chan4le.time_sec, t14_ns, w1_ns, w4_ns, a1_mv, a4_mv);         
+         if (fFlags->fPrint) {
+            printf("new dlsc event 1*4, le %.9f %.9f sec, diff14 %.0f ns, w1 %.0f, w4 %.0f ns, a1 %.0f, a4 %.0f mV!\n", t.chan1le.time_sec, t.chan4le.time_sec, t14_ns, w1_ns, w4_ns, a1_mv, a4_mv);
+         }
 
          fHt14ns->Fill(t14_ns);
          fHw1ns->Fill(w1_ns);
@@ -1741,6 +1913,11 @@ public:
          fHa14mv->Fill(a1_mv, a4_mv);
          fH_a1mv_t14ns->Fill(a1_mv, t14_ns);
          fH_a4mv_t14ns->Fill(a4_mv, t14_ns);
+
+         fHa15mv->Fill(a1_mv, a5_mv);
+         fHa16mv->Fill(a1_mv, a6_mv);
+         fHa45mv->Fill(a4_mv, a5_mv);
+         fHa46mv->Fill(a4_mv, a6_mv);
          
          // Time walk corrected versions
          // double t14_ns_twc = t14_ns - 0.001*time_walk_correction_ps(a4_mv) + 0.001*time_walk_correction_ps(a1_mv);
@@ -1761,6 +1938,33 @@ public:
             fHt14ns_cut_twc->Fill(t14_ns_twc);
          }
 
+         if (w5_ns > 0) {
+            double t15_ns = subtract_ns(t.chan5le, t.chan1le);
+            double t45_ns = subtract_ns(t.chan5le, t.chan4le);
+            fHt15ns->Fill(t15_ns);
+            fHt45ns->Fill(t45_ns);
+
+            fHt14ns_with5->Fill(t14_ns);
+            fHw1ns_with5->Fill(w1_ns);
+            fHw4ns_with5->Fill(w4_ns);
+            fHa1mv_with5->Fill(a1_mv);
+            fHa4mv_with5->Fill(a4_mv);
+         }
+
+         if (w6_ns > 0) {
+            double t16_ns = subtract_ns(t.chan6le, t.chan1le);
+            double t46_ns = subtract_ns(t.chan6le, t.chan4le);
+            fHt16ns->Fill(t16_ns);
+            fHt46ns->Fill(t46_ns);
+
+            fHt14ns_with6->Fill(t14_ns);
+            fHw1ns_with6->Fill(w1_ns);
+            fHw4ns_with6->Fill(w4_ns);
+            fHa1mv_with6->Fill(a1_mv);
+            fHa4mv_with6->Fill(a4_mv);
+         }
+
+#if 0
          // And now always enforcing coincidence
          if (hasHit_oldBar) {
             double t14avg = sec_to_ns((t.chan1le.time_sec + t.chan4le.time_sec)/2);
@@ -1780,8 +1984,8 @@ public:
             double w1 = sec_to_ns(t.chan1te.time_sec - t.chan1le.time_sec);
             double wB = sec_to_ns(t.h0te.time_sec - t.h0le.time_sec);
             fHwBw1->Fill(wB, w1);
-
-         }         
+         }
+#endif
          
          //if (w1_ns > 160 && w1_ns < 170) {
          //   if (w4_ns > 175 && w4_ns < 185) {
@@ -1806,28 +2010,30 @@ public:
       if (hasTOT_newBars2 && hasTOT_newBars3) {
 
          // Apply coincidence requirement to everything?
-         if (fFlags->fEnforceCoincidence) {
-            if (!bar23hit_withCoincidence) return;
-         }
+         //if (fFlags->fEnforceCoincidence) {
+         //   if (!bar23hit_withCoincidence) return;
+         //}
 
-         double t23_ns = sec_to_ns(t.chan3le.time_sec - t.chan2le.time_sec);
-         double w2_ns = sec_to_ns(t.chan2te.time_sec - t.chan2le.time_sec);
-         double w3_ns = sec_to_ns(t.chan3te.time_sec - t.chan3le.time_sec);
+         double t23_ns = subtract_ns(t.chan3le, t.chan2le);
+         double w2_ns = subtract_ns(t.chan2te, t.chan2le);
+         double w3_ns = subtract_ns(t.chan3te, t.chan3le);
 
-         if (w2_ns < 1) {
-            printf("TTT: BAD WIDTH chan2!\n");
+         if (w2_ns < 0.1) {
+            printf("TTT: BAD WIDTH chan2 %f!\n", w2_ns);
             return;
          }
 
-         if (w3_ns < 1) {
-            printf("TTT: BAD WIDTH chan3!\n");
+         if (w3_ns < 0.1) {
+            printf("TTT: BAD WIDTH chan3 %f!\n", w3_ns);
             return;
          }
 
          double a2_mv = ns_to_mv(w2_ns);
          double a3_mv = ns_to_mv(w3_ns);
          
-         printf("new dlsc event 2*3, le %.9f %.9f sec, diff23 %.0f ns, w2 %.0f, w3 %.0f ns!\n", t.chan2le.time_sec, t.chan3le.time_sec, t23_ns, w2_ns, w3_ns);
+         if (fFlags->fPrint) {
+            printf("new dlsc event 2*3, le %.9f %.9f sec, diff23 %.0f ns, w2 %.0f, w3 %.0f ns!\n", t.chan2le.time_sec, t.chan3le.time_sec, t23_ns, w2_ns, w3_ns);
+         }
          
          fHt23ns->Fill(t23_ns);
          fHw2ns->Fill(w2_ns);
@@ -1841,6 +2047,11 @@ public:
          fH_a2mv_t23ns->Fill(a2_mv, t23_ns);
          fH_a3mv_t23ns->Fill(a3_mv, t23_ns);
          fHa2323mv->Fill((a2_mv - a3_mv)/(a2_mv + a3_mv));
+
+         fHa25mv->Fill(a2_mv, a5_mv);
+         fHa26mv->Fill(a2_mv, a6_mv);
+         fHa35mv->Fill(a3_mv, a5_mv);
+         fHa36mv->Fill(a3_mv, a6_mv);
          
          if (w2_ns > 150 && w3_ns > 150) {
             fHt23ns_cut->Fill(t23_ns);
@@ -1852,6 +2063,33 @@ public:
          //   }
          //}
 
+         if (w5_ns > 0) {
+            double t25_ns = subtract_ns(t.chan5le, t.chan2le);
+            double t35_ns = subtract_ns(t.chan5le, t.chan3le);
+            fHt25ns->Fill(t25_ns);
+            fHt35ns->Fill(t35_ns);
+
+            fHt23ns_with5->Fill(t23_ns);
+            fHw2ns_with5->Fill(w2_ns);
+            fHw3ns_with5->Fill(w3_ns);
+            fHa2mv_with5->Fill(a2_mv);
+            fHa3mv_with5->Fill(a3_mv);
+         }
+
+         if (w6_ns > 0) {
+            double t26_ns = subtract_ns(t.chan6le, t.chan2le);
+            double t36_ns = subtract_ns(t.chan6le, t.chan3le);
+            fHt26ns->Fill(t26_ns);
+            fHt36ns->Fill(t36_ns);
+
+            fHt23ns_with6->Fill(t23_ns);
+            fHw2ns_with6->Fill(w2_ns);
+            fHw3ns_with6->Fill(w3_ns);
+            fHa2mv_with6->Fill(a2_mv);
+            fHa3mv_with6->Fill(a3_mv);
+         }
+
+#if 0
          // And now always enforcing coincidence
          if (hasHit_oldBar) {
             double t23avg = sec_to_ns((t.chan2le.time_sec + t.chan3le.time_sec)/2);
@@ -1870,19 +2108,11 @@ public:
 	    double t3_coinc_corr = sec_to_ns(t.chan3le.time_sec - corr_W / sqrt(a3_mv));
 	    double t23_coinc_twc = t3_coinc_corr - t2_coinc_corr;
 	    fHt23ns_coinc_twc->Fill(t23_coinc_twc);
-
-
          }         
-
+#endif
       }
 
-      // Kate: ?? why these selection conditions? Results in empty plot....
-      if (hasTOT_newBars1 && hasTOT_newBars2 && hasTOT_newBars3 && hasTOT_newBars4) {
-         double w1 = sec_to_ns(t.chan1te.time_sec - t.chan1le.time_sec);
-         double w2 = sec_to_ns(t.chan2te.time_sec - t.chan2le.time_sec);
-         fHw1w2->Fill(w1, w2);
-      }
-
+#if 0
       if (t.have0le && t.have0te && t.have1le && t.have1te) {
          double t01old = sec_to_ns(t.h0le.time_sec - t.h1le.time_sec);
          fHt01old->Fill(t01old);
@@ -1942,7 +2172,9 @@ public:
          fHtTBwBfit->Fill(tTB, wB);
          fHtTBwTfit->Fill(tTB, wT);
       }
+#endif
 
+#if 0
    // Why??
    if (hasHit_oldBarBottom && hasTOT_newBars1) {
         //double t0old = t.h0le.time_sec;
@@ -2016,8 +2248,8 @@ public:
          fHw4t4corr_cut->Fill(tTOT4, t4corr);
          fHa4t4corr_cut->Fill(a4, t4corr);
       }
-   }      
-
+   }
+#endif
    }
 
    double fPrevTdcTime = 0;
@@ -2385,16 +2617,17 @@ public:
                   //hfinete[h.ch]->Fill(-h.fine_ns);
                }
             }
-
+#endif
             if (h.ch >= 0 && h.ch <= MAX_TDC_CHAN) {
                if (h.le) {
                   fHphaseLe[h.ch]->Fill(h.phase);
+                  fHfineLe[h.ch]->Fill(h.fine_ns);
                }
                if (h.te) {
                   fHphaseTe[h.ch]->Fill(h.phase);
+                  fHfineTe[h.ch]->Fill(h.fine_ns);
                }
             }
-#endif
 #endif
             if (runinfo->fRunNo < 905994)
                fCt->AddHit4A(h, fFlags->fDebug);
@@ -2531,7 +2764,8 @@ public:
       printf("--dltdc-calib -- calibrate dltdc\n");
       printf("--dltdc-adc -- have ADC data\n");
       printf("--dltdc-debug -- print detailed information\n");
-      printf("--dltdc-coincidence -- require coincidence with lower bar for all histograms\n");
+      printf("--dltdc-print -- print events\n");
+      //printf("--dltdc-coincidence -- require coincidence with lower bar for all histograms\n");
    }
 
    void Init(const std::vector<std::string> &args)
@@ -2551,10 +2785,13 @@ public:
          if (args[i] == "--dltdc-debug") {
             fFlags.fDebug = true;
          }
-         if (args[i] == "--dltdc-coincidence") {
-            fFlags.fEnabled = true;
-            fFlags.fEnforceCoincidence = true;
+         if (args[i] == "--dltdc-print") {
+            fFlags.fPrint = true;
          }
+         //if (args[i] == "--dltdc-coincidence") {
+         //   fFlags.fEnabled = true;
+         //   fFlags.fEnforceCoincidence = true;
+         //}
       }
    }
 
