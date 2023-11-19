@@ -123,6 +123,7 @@ public: // internal state
    double fFirstTimeSec = 0;
    std::vector<uint32_t> fLastCoarse;
    std::vector<double>   fEpoch;
+   std::vector<double>   fEpochHits;
    std::vector<DlTdcFineCalib> fCalib;
 
 public:

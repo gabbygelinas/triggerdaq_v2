@@ -439,6 +439,7 @@ DlTdcUnpack::DlTdcUnpack(int nchan) // ctor
 {
    fLastCoarse.resize(nchan);
    fEpoch.resize(nchan);
+   fEpochHits.resize(nchan);
    fCalib.resize(nchan);
 };
 
@@ -453,6 +454,7 @@ void DlTdcUnpack::Reset()
    for (size_t i=0; i<n; i++) {
       fLastCoarse[i] = 0;
       fEpoch[i] = 0;
+      fEpochHits[i] = 0;
    }
    fFirstTimeSec = 0;
 
@@ -614,10 +616,31 @@ bool DlTdcUnpack::Unpack(DlTdcHit*h, uint32_t lo, uint32_t hi)
       ph = -(ph&~0x80);
 
    if (h->coarse < fLastCoarse[ch]) {
-      fEpoch[ch] += 1;
+      double max_epoch = 0;
+      for (size_t cc=0; cc<fEpoch.size(); cc++) {
+         if (fEpoch[cc] > max_epoch) {
+            max_epoch = fEpoch[cc];
+         }
+      }
+
+      //printf("ch %d epoch increment %6.0f with %4.0f hits, max epoch %6.0f: 0x%08x -> 0x%08x\n", ch, fEpoch[ch], fEpochHits[ch], max_epoch, fLastCoarse[ch], h->coarse);
+
+      if (fEpoch[ch] == max_epoch) {
+         // we are the first to see epoch increment
+         fEpoch[ch] += 1;
+      } else if (fEpoch[ch] + 1 == max_epoch) {
+         // we will increment epoch and it will be same as others
+         fEpoch[ch] += 1;
+      } else {
+         // we missed an epoch update!
+         printf("missed epoch: ch %d forced update from %.0f to %.0f, have %.0f hits\n", ch, fEpoch[ch], max_epoch, fEpochHits[ch]);
+         fEpoch[ch] = max_epoch;
+      }
+      fEpochHits[ch] = 0;
    }
 
    fLastCoarse[ch] = h->coarse;
+   fEpochHits[ch] += 1;
    h->coarse_epoch = fEpoch[ch];
 
    uint32_t sr1 = lo & 0xFFFF;
