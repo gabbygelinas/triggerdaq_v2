@@ -914,36 +914,36 @@ public:
    //TH1D* fHt14ns_coinc_twc = NULL;
    //TH1D* fHt23ns_coinc_twc = NULL;
 
-   int counter_oldBar0_fullHit = 0;
-   int counter_oldBar0_LEOnly = 0;
-   int counter_oldBar0_TEOnly = 0;
-   int counter_oldBar1_fullHit = 0;
-   int counter_oldBar1_LEOnly = 0;
-   int counter_oldBar1_TEOnly = 0;
-   int counter_oldBar4_fullHit = 0;
-   int counter_oldBar4_LEOnly = 0;
-   int counter_oldBar4_TEOnly = 0;
-   int counter_oldBar5_fullHit = 0;
-   int counter_oldBar5_LEOnly = 0;
-   int counter_oldBar5_TEOnly = 0;   
+   //int counter_oldBar0_fullHit = 0;
+   //int counter_oldBar0_LEOnly = 0;
+   //int counter_oldBar0_TEOnly = 0;
+   //int counter_oldBar1_fullHit = 0;
+   //int counter_oldBar1_LEOnly = 0;
+   //int counter_oldBar1_TEOnly = 0;
+   //int counter_oldBar4_fullHit = 0;
+   //int counter_oldBar4_LEOnly = 0;
+   //int counter_oldBar4_TEOnly = 0;
+   //int counter_oldBar5_fullHit = 0;
+   //int counter_oldBar5_LEOnly = 0;
+   //int counter_oldBar5_TEOnly = 0;   
 
-   int counter_newChan1_fullHit = 0;
-   int counter_newChan1_LEOnly = 0;
-   int counter_newChan1_TEOnly = 0;
-   int counter_newChan2_fullHit = 0;
-   int counter_newChan2_LEOnly = 0;
-   int counter_newChan2_TEOnly = 0;
-   int counter_newChan3_fullHit = 0;
-   int counter_newChan3_LEOnly = 0;
-   int counter_newChan3_TEOnly = 0;
-   int counter_newChan4_fullHit = 0;
-   int counter_newChan4_LEOnly = 0;
-   int counter_newChan4_TEOnly = 0;
+   //int counter_newChan1_fullHit = 0;
+   //int counter_newChan1_LEOnly = 0;
+   //int counter_newChan1_TEOnly = 0;
+   //int counter_newChan2_fullHit = 0;
+   //int counter_newChan2_LEOnly = 0;
+   //int counter_newChan2_TEOnly = 0;
+   //int counter_newChan3_fullHit = 0;
+   //int counter_newChan3_LEOnly = 0;
+   //int counter_newChan3_TEOnly = 0;
+   //int counter_newChan4_fullHit = 0;
+   //int counter_newChan4_LEOnly = 0;
+   //int counter_newChan4_TEOnly = 0;
 
    // Left over - maybe still interesting:
-   int counter_01 = 0;
-   int counter_45 = 0;
-   int counter_0145 = 0;
+   //int counter_01 = 0;
+   //int counter_45 = 0;
+   //int counter_0145 = 0;
 
    int i = 0;
    int j = 0;
@@ -1439,6 +1439,7 @@ public:
          fU->Save(runinfo->fRunNo);
       }
 
+#if 0
       // Counted cases.
       printf("Old bar, good hit in channel 0: %d\n", counter_oldBar0_fullHit);
       printf("Old bar, LE only in channel 0: %d\n", counter_oldBar0_LEOnly);
@@ -1468,7 +1469,7 @@ public:
       printf("COUNTER 01: %d\n", counter_01);
       printf("COUNTER 45: %d\n", counter_45);
       printf("COUNTER 0145: %d\n", counter_0145);   
-
+#endif
    }
    
    void PauseRun(TARunInfo* runinfo)
@@ -1506,7 +1507,7 @@ public:
       //}
 
       if (fFlags->fDebug) {
-         printf("XXX %d %d %d %d %d %d %d %d\n", t.havechan1le, t.havechan2le, t.havechan3le, t.havechan4le, t.havechan5le, t.havechan6le, t.havechan7le, t.havechan8le);
+         printf("EVENT %d %d %d %d %d %d %d %d, ABT %d%d%d\n", t.havechan1le, t.havechan2le, t.havechan3le, t.havechan4le, t.havechan5le, t.havechan6le, t.havechan7le, t.havechan8le, t.havechanAle, t.havechanBle, t.havechanTle);
       }
 
       //if (w > 500) {
@@ -1594,6 +1595,12 @@ public:
 
       if (t.havechan7le && t.havechan7te) {
          w7_ns = subtract_ns(t.chan7te, t.chan7le);
+
+         if (w7_ns > 1000 || w7_ns < -1000) {
+            printf("HERE %f\n", w7_ns);
+            fFlags->fDebug = true;
+         }
+
          if (w7_ns < 0.1) {
             printf("TTT: BAD WIDTH chan7 %f!\n", w7_ns);
             w7_ns = -9999;
@@ -1618,10 +1625,9 @@ public:
       if (t.havechanAle && t.havechanAte) {
          double wA_ns = sec_to_ns(t.chanAte.time_sec - t.chanAle.time_sec);
 
-         if (wA_ns < 0.1) {
-            printf("TTT: BAD WIDTH chanA %f!\n", wA_ns);
-            //return;
-         }
+         //if (wA_ns < 0.1) {
+         //   printf("TTT: BAD WIDTH chanA %f!\n", wA_ns);
+         //}
 
          if (fFlags->fPrint) {
             printf("new dlsc event A, le %.9f, w %.0f!\n", t.chanAle.time_sec, wA_ns);
@@ -1633,10 +1639,9 @@ public:
       if (t.havechanBle && t.havechanBte) {
          double wB_ns = sec_to_ns(t.chanBte.time_sec - t.chanBle.time_sec);
 
-         if (wB_ns < 0.1) {
-            printf("TTT: BAD WIDTH chanB %f!\n", wB_ns);
-            //return;
-         }
+         //if (wB_ns < 0.1) {
+         //   printf("TTT: BAD WIDTH chanB %f!\n", wB_ns);
+         //}
 
          if (fFlags->fPrint) {
             printf("new dlsc event B, le %.9f, w %.0f!\n", t.chanBle.time_sec, wB_ns);
@@ -1648,10 +1653,9 @@ public:
       if (t.havechanTle && t.havechanTte) {
          double wT_ns = sec_to_ns(t.chanTte.time_sec - t.chanTle.time_sec);
 
-         if (wT_ns < 0.1) {
-            printf("TTT: BAD WIDTH chanT %f!\n", wT_ns);
-            //return;
-         }
+         //if (wT_ns < 0.1) {
+         //   printf("TTT: BAD WIDTH chanT %f!\n", wT_ns);
+         //}
 
          if (fFlags->fPrint) {
             printf("new dlsc event T, le %.9f, w %.0f!\n", t.chanTle.time_sec, wT_ns);
@@ -1975,9 +1979,9 @@ public:
       else if (t.havechan4te) counter_newChan4_TEOnly++;
 #endif
 
-      if (t.have0le && t.have0te && t.have1le && t.have1te) counter_01++;
-      if (t.have4le && t.have4te && t.have5le && t.have5te) counter_45++;
-      if (t.have0le && t.have0te && t.have1le && t.have1te && t.have4le && t.have4te && t.have5le && t.have5te) counter_0145++;
+      //if (t.have0le && t.have0te && t.have1le && t.have1te) counter_01++;
+      //if (t.have4le && t.have4te && t.have5le && t.have5te) counter_45++;
+      //if (t.have0le && t.have0te && t.have1le && t.have1te && t.have4le && t.have4te && t.have5le && t.have5te) counter_0145++;
 
       ////////////////////////////////////////////////////
       // Values we will reuse 
@@ -1987,22 +1991,20 @@ public:
       //if (t.have0le && t.have5le) tTBavg = sec_to_ns((t.h0le.time_sec + t.h5le.time_sec)/2);
 
       // Time between events.
-      double dt = t.min_time_sec - prev_event_time_sec;
+      //double dt = t.min_time_sec - prev_event_time_sec;
 
       ////////////////////////////////////////////////////
       // On to histogram filling with specific conditions.      
       
-      if (fFlags->fDebug) printf("dlsc %d %d %d %d, %.9f %.9f sec, dt %.9f sec\n", t.havechan1le, t.havechan2le, t.havechan3le, t.havechan4le, prev_event_time_sec, t.min_time_sec, dt);
+      //if (fFlags->fDebug) printf("dlsc %d %d %d %d, %.9f %.9f sec, dt %.9f sec\n", t.havechan1le, t.havechan2le, t.havechan3le, t.havechan4le, prev_event_time_sec, t.min_time_sec, dt);
       
-      // Next to each other, separate new bars
-      if (t.havechan1le && t.havechan2le) {
-         double t12_ns = sec_to_ns(t.chan2le.time_sec - t.chan1le.time_sec);
+      if (w1_ns > 0 && w2_ns > 0) {
+         double t12_ns = subtract_ns(t.chan2le, t.chan1le);
          fHt12ns->Fill(t12_ns);
       }
       
-      // Next to each other, separate new bars
-      if (t.havechan3le && t.havechan4le) {
-         double t34_ns = sec_to_ns(t.chan4le.time_sec - t.chan3le.time_sec);
+      if (w3_ns > 0 && w4_ns > 0) {
+         double t34_ns = subtract_ns(t.chan4le, t.chan3le);
          fHt34ns->Fill(t34_ns);
       }
       
