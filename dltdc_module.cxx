@@ -767,40 +767,40 @@ public:
    TH1D* fHwBns = NULL;
    TH1D* fHwTns = NULL;
 
-   TH1D* fHt14ns_with5 = NULL;
-   TH1D* fHw1ns_with5 = NULL;
-   TH1D* fHw4ns_with5 = NULL;
-   TH1D* fHa1mv_with5 = NULL;
-   TH1D* fHa4mv_with5 = NULL;
+   //TH1D* fHt14ns_with5 = NULL;
+   //TH1D* fHw1ns_with5 = NULL;
+   //TH1D* fHw4ns_with5 = NULL;
+   //TH1D* fHa1mv_with5 = NULL;
+   //TH1D* fHa4mv_with5 = NULL;
 
-   TH1D* fHt14ns_with6 = NULL;
-   TH1D* fHw1ns_with6 = NULL;
-   TH1D* fHw4ns_with6 = NULL;
-   TH1D* fHa1mv_with6 = NULL;
-   TH1D* fHa4mv_with6 = NULL;
+   //TH1D* fHt14ns_with6 = NULL;
+   //TH1D* fHw1ns_with6 = NULL;
+   //TH1D* fHw4ns_with6 = NULL;
+   //TH1D* fHa1mv_with6 = NULL;
+   //TH1D* fHa4mv_with6 = NULL;
 
-   TH1D* fHt23ns_with5 = NULL;
-   TH1D* fHw2ns_with5 = NULL;
-   TH1D* fHw3ns_with5 = NULL;
-   TH1D* fHa2mv_with5 = NULL;
-   TH1D* fHa3mv_with5 = NULL;
+   //TH1D* fHt23ns_with5 = NULL;
+   //TH1D* fHw2ns_with5 = NULL;
+   //TH1D* fHw3ns_with5 = NULL;
+   //TH1D* fHa2mv_with5 = NULL;
+   //TH1D* fHa3mv_with5 = NULL;
 
-   TH1D* fHt23ns_with6 = NULL;
-   TH1D* fHw2ns_with6 = NULL;
-   TH1D* fHw3ns_with6 = NULL;
-   TH1D* fHa2mv_with6 = NULL;
-   TH1D* fHa3mv_with6 = NULL;
+   //TH1D* fHt23ns_with6 = NULL;
+   //TH1D* fHw2ns_with6 = NULL;
+   //TH1D* fHw3ns_with6 = NULL;
+   //TH1D* fHa2mv_with6 = NULL;
+   //TH1D* fHa3mv_with6 = NULL;
 
    TH2D* fHw14ns = NULL;
    TH2D* fHw23ns = NULL;
    TH2D* fHw58ns = NULL;
    TH2D* fHw67ns = NULL;
 
-   TH2D* fHt14w1ns = NULL;
-   TH2D* fHt14w4ns = NULL;
+   //TH2D* fHt14w1ns = NULL;
+   //TH2D* fHt14w4ns = NULL;
 
-   TH2D* fHt23w2ns = NULL;
-   TH2D* fHt23w3ns = NULL;
+   //TH2D* fHt23w2ns = NULL;
+   //TH2D* fHt23w3ns = NULL;
 
    TH1D* fHa1mv = NULL;
    TH1D* fHa2mv = NULL;
@@ -825,23 +825,23 @@ public:
    TH2D* fHa45mv = NULL;
    TH2D* fHa46mv = NULL;
 
-   TH2D* fH_a1mv_t14ns = NULL;
-   TH2D* fH_a4mv_t14ns = NULL;
+   //TH2D* fH_a1mv_t14ns = NULL;
+   //TH2D* fH_a4mv_t14ns = NULL;
 
-   TH2D* fH_a1mv_t14ns_twc = NULL;
-   TH2D* fH_a4mv_t14ns_twc = NULL;
+   //TH2D* fH_a1mv_t14ns_twc = NULL;
+   //TH2D* fH_a4mv_t14ns_twc = NULL;
 
-   TH1D* fHt14ns_twc = NULL;
-   TH1D* fHt23ns_twc = NULL;
+   //TH1D* fHt14ns_twc = NULL;
+   //TH1D* fHt23ns_twc = NULL;
 
-   TH2D* fH_a2mv_t23ns = NULL;
-   TH2D* fH_a3mv_t23ns = NULL;
+   //TH2D* fH_a2mv_t23ns = NULL;
+   //TH2D* fH_a3mv_t23ns = NULL;
 
-   TH1D* fHt14ns_cut = NULL;
-   TH1D* fHt14ns_cut_twc = NULL;
+   //TH1D* fHt14ns_cut = NULL;
+   //TH1D* fHt14ns_cut_twc = NULL;
 
-   TH1D* fHt23ns_cut = NULL;
-   TH1D* fHt23ns_cut_twc = NULL;
+   //TH1D* fHt23ns_cut = NULL;
+   //TH1D* fHt23ns_cut_twc = NULL;
 
    TH2D* fHt1458ns = NULL;
    TH1D* fHtof1458ns = NULL;
@@ -909,10 +909,10 @@ public:
    TH2D* fHa4t4corr_cut = NULL;
 #endif
 
-   TH1D* fHt14ns_coinc = NULL;
-   TH1D* fHt23ns_coinc = NULL;
-   TH1D* fHt14ns_coinc_twc = NULL;
-   TH1D* fHt23ns_coinc_twc = NULL;
+   //TH1D* fHt14ns_coinc = NULL;
+   //TH1D* fHt23ns_coinc = NULL;
+   //TH1D* fHt14ns_coinc_twc = NULL;
+   //TH1D* fHt23ns_coinc_twc = NULL;
 
    int counter_oldBar0_fullHit = 0;
    int counter_oldBar0_LEOnly = 0;
@@ -1275,6 +1275,7 @@ public:
       fHa7mv = new TH1D("a7mv", "calculated amp 7, mV", 100, 0, 2000);
       fHa8mv = new TH1D("a8mv", "calculated amp 8, mV", 100, 0, 2000);
 
+#if 0
       fHt14ns_with5 = new TH1D("t14ns_with5", "Paddle 1 time difference, t4-t1 (ns), with hit in chan5", 200, -10, 10);
       fHw1ns_with5 = new TH1D("w1ns_with5", "w1ns with hit in chan5", 100, 0, 100);
       fHw4ns_with5 = new TH1D("w4ns_with5", "w4ns with hit in chan5", 100, 0, 100);
@@ -1298,17 +1299,20 @@ public:
       fHw3ns_with6 = new TH1D("w3ns_with6", "w3ns with hit in chan6", 100, 0, 100);
       fHa2mv_with6 = new TH1D("a2mv_with6", "calculated amp 2, mV with hit in chan6", 100, 0, 2000);
       fHa3mv_with6 = new TH1D("a3mv_with6", "calculated amp 3, mV with hit in chan6", 100, 0, 2000);
+#endif
 
       fHw14ns = new TH2D("w14ns", "w4ns vs w1ns", 100, 0, 100, 100, 0, 100);
       fHw23ns = new TH2D("w23ns", "w3ns vs w2ns", 100, 0, 100, 100, 0, 100);
       fHw58ns = new TH2D("w58ns", "w8ns vs w5ns", 100, 0, 100, 100, 0, 100);
       fHw67ns = new TH2D("w67ns", "w7ns vs w6ns", 100, 0, 100, 100, 0, 100);
 
+#if 0
       fHt14w1ns = new TH2D("t14w1ns", "w1ns vs t14ns", 100, -10, 10, 100, 0, 400);
       fHt14w4ns = new TH2D("t14w4ns", "w4ns vs t14ns", 100, -10, 10, 100, 0, 400);
 
       fHt23w2ns = new TH2D("t23w2ns", "w2ns vs t23ns", 100, -10, 10, 100, 0, 400);
       fHt23w3ns = new TH2D("t23w3ns", "w3ns vs t23ns", 100, -10, 10, 100, 0, 400);
+#endif
 
       fHa14mv = new TH2D("a14mv", "calculated amp 4 vs amp 1, mV", 100, 0, 2000, 100, 0, 2000);
       fHa23mv = new TH2D("a23mv", "calculated amp 3 vs amp 2, mV", 100, 0, 2000, 100, 0, 2000);
@@ -1324,6 +1328,7 @@ public:
       fHa45mv = new TH2D("a45mv", "calculated amp 5 vs amp 4, mV", 100, 0, 2000, 100, 0, 2000);
       fHa46mv = new TH2D("a46mv", "calculated amp 6 vs amp 4, mV", 100, 0, 2000, 100, 0, 2000);
 
+#if 0
       fH_a1mv_t14ns = new TH2D("a1mv_t14ns", "t4-t1 (ns) vs a1 (mV)", 100, 0, 2000, 100, -10, 10);
       fH_a4mv_t14ns = new TH2D("a4mv_t14ns", "t4-t1 (ns) vs a4 (mV)", 100, 0, 2000, 100, -10, 10);
 
@@ -1340,6 +1345,7 @@ public:
       fHt14ns_cut_twc = new TH1D("t14ns_cut_twc", "t14ns_cut with time walk correction", 500, -10, 10);
       fHt23ns_cut     = new TH1D("t23ns_cut", "Paddle 2 time difference, t3-t2 (ns) with 150mV cuts", 200, -10, 10);
       fHt23ns_cut_twc = new TH1D("t23ns_cut_twc", "t23ns_cut with time walk correction", 500, -10, 10);
+#endif
 
       fHt1458ns = new TH2D("t1458ns", "TOF 14 vs 58 (ns)", 200, -10, 10, 200, -10, 10);
       fHtof1458ns = new TH1D("tof1458ns", "TOF 14 vs 58 (ns)", 200, -10, 10);
@@ -1407,10 +1413,12 @@ public:
       fHa4t4corr_cut = new TH2D("a4t4corr_cut", "(t4le - avg of tTB) vs a4 cut", 100, 0, 2000, 100, -45, -15);
 #endif
 
+#if 0
       fHt14ns_coinc = new TH1D("t14ns_coinc", "t4 - t1 for old and new bar coinc in ns", 200, -8, 2);
       fHt23ns_coinc = new TH1D("t23ns_coinc", "t3 - t2 for old and new bar coinc in ns", 200, -8, 2);
       fHt14ns_coinc_twc = new TH1D("t14ns_coinc_twc", "t4 - t1 w/ coinc & time walk correction in ns", 200, -8, 2);
       fHt23ns_coinc_twc = new TH1D("t23ns_coinc_twc", "t3 - t2 w/ coinc & time walk correction in ns", 200, -8, 2);
+#endif
 #endif
 
    }
@@ -1918,10 +1926,10 @@ public:
       //bool hasHit_oldBar = (hasHit_oldBarTop && hasHit_oldBarBottom);
 
       // New bars:
-      bool hasTOT_newBars1 = (t.havechan1le && t.havechan1te);
-      bool hasTOT_newBars2 = (t.havechan2le && t.havechan2te);
-      bool hasTOT_newBars3 = (t.havechan3le && t.havechan3te);
-      bool hasTOT_newBars4 = (t.havechan4le && t.havechan4te);
+      //bool hasTOT_newBars1 = (t.havechan1le && t.havechan1te);
+      //bool hasTOT_newBars2 = (t.havechan2le && t.havechan2te);
+      //bool hasTOT_newBars3 = (t.havechan3le && t.havechan3te);
+      //bool hasTOT_newBars4 = (t.havechan4le && t.havechan4te);
 
       // Cut condition we are interested in
       // Time difference between ends on old bar is within 20 ns
@@ -2008,8 +2016,7 @@ public:
          fHt78ns->Fill(t78_ns);
       }
 
-      // Opposite ends of single bar.
-      if (hasTOT_newBars1 && hasTOT_newBars4) {
+      if (w1_ns > 0 && w4_ns > 0) {
 
          // Apply coincidence requirement to everything?
          //if (fFlags->fEnforceCoincidence) {
@@ -2018,20 +2025,20 @@ public:
 
          double t14_ns = subtract_ns(t.chan4le, t.chan1le);
          //double w1_ns = subtract_ns(t.chan1te, t.chan1le);
-         double w4_ns = subtract_ns(t.chan4te, t.chan4le);
+         //double w4_ns = subtract_ns(t.chan4te, t.chan4le);
 
          //if (w1_ns < 0.1) {
          //   printf("TTT: BAD WIDTH chan1 %f!\n", w1_ns);
          //   return;
          //}
 
-         if (w4_ns < 0.1) {
-            printf("TTT: BAD WIDTH chan4 %f!\n", w4_ns);
-            return;
-         }
+         //if (w4_ns < 0.1) {
+         //   printf("TTT: BAD WIDTH chan4 %f!\n", w4_ns);
+         //   return;
+         //}
 
          //double a1_mv = ns_to_mv(w1_ns);
-         double a4_mv = ns_to_mv(w4_ns);
+         //double a4_mv = ns_to_mv(w4_ns);
 
          if (fFlags->fPrint) {
             printf("new dlsc event 1*4, le %.9f %.9f sec, diff14 %.0f ns, w1 %.0f, w4 %.0f ns, a1 %.0f, a4 %.0f mV!\n", t.chan1le.time_sec, t.chan4le.time_sec, t14_ns, w1_ns, w4_ns, a1_mv, a4_mv);
@@ -2039,11 +2046,11 @@ public:
 
          fHt14ns->Fill(t14_ns);
          fHw14ns->Fill(w1_ns, w4_ns);
-         fHt14w1ns->Fill(t14_ns, w1_ns);
-         fHt14w4ns->Fill(t14_ns, w4_ns);
+         //fHt14w1ns->Fill(t14_ns, w1_ns);
+         //fHt14w4ns->Fill(t14_ns, w4_ns);
          fHa14mv->Fill(a1_mv, a4_mv);
-         fH_a1mv_t14ns->Fill(a1_mv, t14_ns);
-         fH_a4mv_t14ns->Fill(a4_mv, t14_ns);
+         //fH_a1mv_t14ns->Fill(a1_mv, t14_ns);
+         //fH_a4mv_t14ns->Fill(a4_mv, t14_ns);
 
          fHa15mv->Fill(a1_mv, a5_mv);
          fHa16mv->Fill(a1_mv, a6_mv);
@@ -2052,21 +2059,22 @@ public:
          
          // Time walk corrected versions
          // double t14_ns_twc = t14_ns - 0.001*time_walk_correction_ps(a4_mv) + 0.001*time_walk_correction_ps(a1_mv);
-         double corr_W = 3.7*pow(10, -8);
-	 double t1_corr = sec_to_ns(t.chan1le.time_sec - corr_W / sqrt(a1_mv));
-         double t4_corr = sec_to_ns(t.chan4le.time_sec - corr_W / sqrt(a4_mv));
-         double t14_ns_twc = t4_corr - t1_corr;
+         //double corr_W = 3.7*pow(10, -8);
+	 //double t1_corr = sec_to_ns(t.chan1le.time_sec - corr_W / sqrt(a1_mv));
+         //double t4_corr = sec_to_ns(t.chan4le.time_sec - corr_W / sqrt(a4_mv));
+         //double t14_ns_twc = t4_corr - t1_corr;
 	
-	 fH_a1mv_t14ns_twc->Fill(a1_mv, t14_ns_twc);
-         fH_a4mv_t14ns_twc->Fill(a4_mv, t14_ns_twc);
-         fHt14ns_twc->Fill(t14_ns_twc);
+	 //fH_a1mv_t14ns_twc->Fill(a1_mv, t14_ns_twc);
+         //fH_a4mv_t14ns_twc->Fill(a4_mv, t14_ns_twc);
+         //fHt14ns_twc->Fill(t14_ns_twc);
 
-         // Why this cut? Did we mean 50?
-         if (w1_ns > 150 && w4_ns > 150) {
-            fHt14ns_cut->Fill(t14_ns);
-            fHt14ns_cut_twc->Fill(t14_ns_twc);
-         }
+         //// Why this cut? Did we mean 50?
+         //if (w1_ns > 150 && w4_ns > 150) {
+         //   fHt14ns_cut->Fill(t14_ns);
+         //   fHt14ns_cut_twc->Fill(t14_ns_twc);
+         //}
 
+#if 0
          if (w5_ns > 0) {
             double t15_ns = subtract_ns(t.chan5le, t.chan1le);
             double t45_ns = subtract_ns(t.chan5le, t.chan4le);
@@ -2092,6 +2100,7 @@ public:
             fHa1mv_with6->Fill(a1_mv);
             fHa4mv_with6->Fill(a4_mv);
          }
+#endif
 
 #if 0
          // And now always enforcing coincidence
@@ -2134,9 +2143,7 @@ public:
          //}
       }
 
-      // Opposite ends of single bar.
-      // Skipping if we are missing trailing edges: keep it clean.
-      if (hasTOT_newBars2 && hasTOT_newBars3) {
+      if (w2_ns > 0 && w3_ns > 0) {
 
          // Apply coincidence requirement to everything?
          //if (fFlags->fEnforceCoincidence) {
@@ -2144,21 +2151,21 @@ public:
          //}
 
          double t23_ns = subtract_ns(t.chan3le, t.chan2le);
-         double w2_ns = subtract_ns(t.chan2te, t.chan2le);
-         double w3_ns = subtract_ns(t.chan3te, t.chan3le);
+         //double w2_ns = subtract_ns(t.chan2te, t.chan2le);
+         //double w3_ns = subtract_ns(t.chan3te, t.chan3le);
 
-         if (w2_ns < 0.1) {
-            printf("TTT: BAD WIDTH chan2 %f!\n", w2_ns);
-            return;
-         }
+         //if (w2_ns < 0.1) {
+         //   printf("TTT: BAD WIDTH chan2 %f!\n", w2_ns);
+         //   return;
+         //}
 
-         if (w3_ns < 0.1) {
-            printf("TTT: BAD WIDTH chan3 %f!\n", w3_ns);
-            return;
-         }
+         //if (w3_ns < 0.1) {
+         //   printf("TTT: BAD WIDTH chan3 %f!\n", w3_ns);
+         //   return;
+         //}
 
-         double a2_mv = ns_to_mv(w2_ns);
-         double a3_mv = ns_to_mv(w3_ns);
+         //double a2_mv = ns_to_mv(w2_ns);
+         //double a3_mv = ns_to_mv(w3_ns);
          
          if (fFlags->fPrint) {
             printf("new dlsc event 2*3, le %.9f %.9f sec, diff23 %.0f ns, w2 %.0f, w3 %.0f ns!\n", t.chan2le.time_sec, t.chan3le.time_sec, t23_ns, w2_ns, w3_ns);
@@ -2166,20 +2173,20 @@ public:
          
          fHt23ns->Fill(t23_ns);
          fHw23ns->Fill(w2_ns, w3_ns);
-         fHt23w2ns->Fill(t23_ns, w2_ns);
-         fHt23w3ns->Fill(t23_ns, w3_ns);
+         //fHt23w2ns->Fill(t23_ns, w2_ns);
+         //fHt23w3ns->Fill(t23_ns, w3_ns);
          fHa23mv->Fill(a2_mv, a3_mv);
-         fH_a2mv_t23ns->Fill(a2_mv, t23_ns);
-         fH_a3mv_t23ns->Fill(a3_mv, t23_ns);
+         //fH_a2mv_t23ns->Fill(a2_mv, t23_ns);
+         //fH_a3mv_t23ns->Fill(a3_mv, t23_ns);
 
          fHa25mv->Fill(a2_mv, a5_mv);
          fHa26mv->Fill(a2_mv, a6_mv);
          fHa35mv->Fill(a3_mv, a5_mv);
          fHa36mv->Fill(a3_mv, a6_mv);
          
-         if (w2_ns > 150 && w3_ns > 150) {
-            fHt23ns_cut->Fill(t23_ns);
-         }
+         //if (w2_ns > 150 && w3_ns > 150) {
+         //   fHt23ns_cut->Fill(t23_ns);
+         //}
 
          //if (a2_mv > 900) {
          //   if (a3_mv > 1200) {
@@ -2187,6 +2194,7 @@ public:
          //   }
          //}
 
+#if 0
          if (w5_ns > 0) {
             double t25_ns = subtract_ns(t.chan5le, t.chan2le);
             double t35_ns = subtract_ns(t.chan5le, t.chan3le);
@@ -2212,6 +2220,7 @@ public:
             fHa2mv_with6->Fill(a2_mv);
             fHa3mv_with6->Fill(a3_mv);
          }
+#endif
 
 #if 0
          // And now always enforcing coincidence
