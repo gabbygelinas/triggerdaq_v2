@@ -54,6 +54,17 @@ public:
    double fBinMinNs = 0;
    double fBinMaxNs = 0;
 
+   double fFineSum0 = 0;
+   double fFineSum1 = 0;
+   double fFineSum2 = 0;
+
+   double fFineMean = 0;
+   double fFineVar  = 0;
+   double fFineRms  = 0;
+
+   double fFineOffset = 0; // offset we computed and will save to file
+   double fFineOffsetFromFile = 0; // offset applied to data, loaded from file
+
 public:
    DlTdcFineCalib1(); // ctor
    ~DlTdcFineCalib1(); // dtor
@@ -61,7 +72,7 @@ public:
 public:
    void Resize(int nbins);
    void Reset();
-   void AddHit(int phase);
+   void AddHit(int phase, double fine_ns);
    void Update();
    void Print() const;
    double GetTime(int phase);

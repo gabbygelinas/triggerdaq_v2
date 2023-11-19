@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h> // drand48()
 #include <assert.h> // assert()
+#include <math.h> // sqrt()
 
 DlTdcFineCalib1::DlTdcFineCalib1() // ctor
 {
@@ -36,7 +37,7 @@ void DlTdcFineCalib1::Reset()
    }
 }
 
-void DlTdcFineCalib1::AddHit(int phase)
+void DlTdcFineCalib1::AddHit(int phase, double fine_ns)
 {
    if (phase == 0)
       return;
@@ -53,6 +54,10 @@ void DlTdcFineCalib1::AddHit(int phase)
       Update();
       //Print();
    }
+
+   fFineSum0 += 1;
+   fFineSum1 += fine_ns;
+   fFineSum2 += fine_ns*fine_ns;
 }
 
 void DlTdcFineCalib1::Update()
@@ -84,6 +89,18 @@ void DlTdcFineCalib1::Update()
          if (fBinWidthNs[i] < fBinMinNs)
             fBinMinNs = fBinWidthNs[i];
       }
+   }
+
+   if (fFineSum0 > 10) {
+      fFineMean = fFineSum1/fFineSum0;
+      fFineVar  = fFineSum2/fFineSum0 - fFineMean*fFineMean;
+      if (fFineVar > 0) {
+         fFineRms  = sqrt(fFineVar);
+      }
+
+      fFineOffset = fTotalNs/2.0 - fFineMean;
+
+      //printf("Fine %f %f %f, %f\n", fFineMean, fFineVar, fFineRms, fFineOffset);
    }
 
    //Print();
@@ -120,9 +137,6 @@ void DlTdcFineCalib1::Print() const
    printf("\n");
 }
 
-//std::vector<double> fBinWidthNs;
-//std::vector<double> fBinTimeNs;
-
 std::string DlTdcFineCalib1::toJson() const
 {
   char buf[256];
@@ -142,6 +156,18 @@ std::string DlTdcFineCalib1::toJson() const
   s += buf;
   s += ",\n";
   sprintf(buf, "  \"BinMaxNs\":%.3f", fBinMaxNs);
+  s += buf;
+  s += ",\n";
+  sprintf(buf, "  \"FineMeanNs\":%.3f", fFineMean);
+  s += buf;
+  s += ",\n";
+  sprintf(buf, "  \"FineVarNs\":%.3f", fFineVar);
+  s += buf;
+  s += ",\n";
+  sprintf(buf, "  \"FineRmsNs\":%.3f", fFineRms);
+  s += buf;
+  s += ",\n";
+  sprintf(buf, "  \"FineOffsetNs\":%.3f", fFineOffset);
   s += buf;
   s += ",\n";
   sprintf(buf, "  \"Bins\":%zu", fHistogram.size());
@@ -185,7 +211,7 @@ double DlTdcFineCalib1::GetTime(int phase)
    double time  = fBinTimeNs[phase];
    double width = fBinWidthNs[phase];
    double random = drand48();
-   return time + width*random;
+   return time + width*random + fFineOffsetFromFile;
 }
 
 DlTdcFineCalib::DlTdcFineCalib() // ctor
@@ -208,7 +234,7 @@ void DlTdcFineCalib::Reset()
 
 void DlTdcFineCalib::Print() const
 {
-   printf("min bin: %.3f %.3f %.3f %.3f ns, max bin: %.3f %.3f %.3f %.3f ns, max phase %2d %2d %2d %2d\n",
+   printf("min bin: %.3f %.3f %.3f %.3f ns, max bin: %.3f %.3f %.3f %.3f ns, max phase %2d %2d %2d %2d, mean: %.3f %.3f %.3f %.3f, rms: %.3f %.3f %.3f %.3f, offset: %.3f %.3f %.3f %.3f\n",
           lepos.fBinMinNs,
           leneg.fBinMinNs,
           tepos.fBinMinNs,
@@ -220,7 +246,19 @@ void DlTdcFineCalib::Print() const
           lepos.fMaxPhase,
           leneg.fMaxPhase,
           tepos.fMaxPhase,
-          teneg.fMaxPhase);
+          teneg.fMaxPhase,
+          lepos.fFineMean,
+          leneg.fFineMean,
+          tepos.fFineMean,
+          teneg.fFineMean,
+          lepos.fFineRms,
+          leneg.fFineRms,
+          tepos.fFineRms,
+          teneg.fFineRms,
+          lepos.fFineOffset,
+          leneg.fFineOffset,
+          tepos.fFineOffset,
+          teneg.fFineOffset);
 }
 
 #if 0
@@ -271,6 +309,11 @@ static void LoadFromJson(const MJsonNode*j, DlTdcFineCalib1& c)
    c.fMaxPhase = j->FindObjectNode("MaxPhase")->GetInt();
    c.fBinMinNs = j->FindObjectNode("BinMinNs")->GetDouble();
    c.fBinMaxNs = j->FindObjectNode("BinMaxNs")->GetDouble();
+   c.fFineMean = j->FindObjectNode("FineMeanNs")->GetDouble();
+   c.fFineVar  = j->FindObjectNode("FineVarNs")->GetDouble();
+   c.fFineRms  = j->FindObjectNode("FineRmsNs")->GetDouble();
+   c.fFineOffset = 0;
+   c.fFineOffsetFromFile = j->FindObjectNode("FineOffsetNs")->GetDouble();
 
    c.fHistogram.clear();
    const MJsonNodeVector* v = j->FindObjectNode("Histogram")->GetArray();
@@ -320,16 +363,10 @@ std::string DlTdcFineCalib::toJson() const
 
 void DlTdcFineCalib::SaveToFile(const char* filename) const
 {
+   Print();
+
    FILE *fp = fopen(filename, "w");
    assert(fp);
-   //fprintf(fp, "lepos ");
-   //SaveToFile1(fp, lepos);
-   //fprintf(fp, "leneg ");
-   //SaveToFile1(fp, leneg);
-   //fprintf(fp, "tepos ");
-   //SaveToFile1(fp, tepos);
-   //fprintf(fp, "teneg ");
-   //SaveToFile1(fp, teneg);
    fprintf(fp, "%s\n", toJson().c_str());
    fclose(fp);
 }
@@ -375,16 +412,16 @@ void DlTdcFineCalib::AddHit(const DlTdcHit& h)
 {
    if (h.le) {
       if (h.phase > 0)
-         lepos.AddHit(h.phase);
+         lepos.AddHit(h.phase, h.fine_ns);
       else
-         leneg.AddHit(-h.phase);
+         leneg.AddHit(-h.phase, h.fine_ns);
    }
 
    if (h.te) {
       if (h.phase > 0)
-         tepos.AddHit(h.phase);
+         tepos.AddHit(h.phase, h.fine_ns);
       else
-         teneg.AddHit(-h.phase);
+         teneg.AddHit(-h.phase, h.fine_ns);
    }
 }
 
