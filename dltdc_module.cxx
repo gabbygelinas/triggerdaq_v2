@@ -745,14 +745,14 @@ public:
    TH1D* fHt58ns = NULL;
    TH1D* fHt67ns = NULL;
 
-   TH1D* fHt15ns = NULL;
-   TH1D* fHt16ns = NULL;
-   TH1D* fHt25ns = NULL;
-   TH1D* fHt26ns = NULL;
-   TH1D* fHt35ns = NULL;
-   TH1D* fHt36ns = NULL;
-   TH1D* fHt45ns = NULL;
-   TH1D* fHt46ns = NULL;
+   //TH1D* fHt15ns = NULL;
+   //TH1D* fHt16ns = NULL;
+   //TH1D* fHt25ns = NULL;
+   //TH1D* fHt26ns = NULL;
+   //TH1D* fHt35ns = NULL;
+   //TH1D* fHt36ns = NULL;
+   //TH1D* fHt45ns = NULL;
+   //TH1D* fHt46ns = NULL;
 
    TH1D* fHw1ns = NULL;
    TH1D* fHw2ns = NULL;
@@ -816,14 +816,14 @@ public:
    TH2D* fHa58mv = NULL;
    TH2D* fHa67mv = NULL;
 
-   TH2D* fHa15mv = NULL;
-   TH2D* fHa16mv = NULL;
-   TH2D* fHa25mv = NULL;
-   TH2D* fHa26mv = NULL;
-   TH2D* fHa35mv = NULL;
-   TH2D* fHa36mv = NULL;
-   TH2D* fHa45mv = NULL;
-   TH2D* fHa46mv = NULL;
+   //TH2D* fHa15mv = NULL;
+   //TH2D* fHa16mv = NULL;
+   //TH2D* fHa25mv = NULL;
+   //TH2D* fHa26mv = NULL;
+   //TH2D* fHa35mv = NULL;
+   //TH2D* fHa36mv = NULL;
+   //TH2D* fHa45mv = NULL;
+   //TH2D* fHa46mv = NULL;
 
    //TH2D* fH_a1mv_t14ns = NULL;
    //TH2D* fH_a4mv_t14ns = NULL;
@@ -845,15 +845,42 @@ public:
 
    TH2D* fHt1458ns = NULL;
    TH1D* fHtof1458ns = NULL;
+
+   TH2D* fHw14ns_1458 = NULL;
+   TH2D* fHw58ns_1458 = NULL;
+   
+   TH2D* fHa14mv_1458 = NULL;
+   TH2D* fHa58mv_1458 = NULL;
+
+   TH2D* fHtof_a1mv_1458 = NULL;
+   TH2D* fHtof_a4mv_1458 = NULL;
    
    TH2D* fHt2358ns = NULL;
    TH1D* fHtof2358ns = NULL;
    
+   TH2D* fHw23ns_2358 = NULL;
+   TH2D* fHw58ns_2358 = NULL;
+   
+   TH2D* fHa23mv_2358 = NULL;
+   TH2D* fHa58mv_2358 = NULL;
+   
    TH2D* fHt1467ns = NULL;
    TH1D* fHtof1467ns = NULL;
    
+   TH2D* fHw14ns_1467 = NULL;
+   TH2D* fHw67ns_1467 = NULL;
+   
+   TH2D* fHa14mv_1467 = NULL;
+   TH2D* fHa67mv_1467 = NULL;
+   
    TH2D* fHt2367ns = NULL;
    TH1D* fHtof2367ns = NULL;
+   
+   TH2D* fHw23ns_2367 = NULL;
+   TH2D* fHw67ns_2367 = NULL;
+   
+   TH2D* fHa23mv_2367 = NULL;
+   TH2D* fHa67mv_2367 = NULL;
    
 #if 0
    TH1D* fHt01old = NULL;
@@ -1244,14 +1271,14 @@ public:
       fHt58ns = new TH1D("t58ns", "Paddle 3 time difference, t8-t5 (ns)", 200, -10, 10);
       fHt67ns = new TH1D("t67ns", "Paddle 4 time difference, t7-t6 (ns)", 200, -10, 10);
 
-      fHt15ns = new TH1D("t15ns", "t5-t1 (ns)", 200, -10, 10);
-      fHt16ns = new TH1D("t16ns", "t6-t1 (ns)", 200, -10, 10);
-      fHt25ns = new TH1D("t25ns", "t5-t2 (ns)", 200, -10, 10);
-      fHt26ns = new TH1D("t26ns", "t6-t2 (ns)", 200, -10, 10);
-      fHt35ns = new TH1D("t35ns", "t5-t3 (ns)", 200, -10, 10);
-      fHt36ns = new TH1D("t36ns", "t6-t3 (ns)", 200, -10, 10);
-      fHt45ns = new TH1D("t45ns", "t5-t4 (ns)", 200, -10, 10);
-      fHt46ns = new TH1D("t46ns", "t6-t4 (ns)", 200, -10, 10);
+      //fHt15ns = new TH1D("t15ns", "t5-t1 (ns)", 200, -10, 10);
+      //fHt16ns = new TH1D("t16ns", "t6-t1 (ns)", 200, -10, 10);
+      //fHt25ns = new TH1D("t25ns", "t5-t2 (ns)", 200, -10, 10);
+      //fHt26ns = new TH1D("t26ns", "t6-t2 (ns)", 200, -10, 10);
+      //fHt35ns = new TH1D("t35ns", "t5-t3 (ns)", 200, -10, 10);
+      //fHt36ns = new TH1D("t36ns", "t6-t3 (ns)", 200, -10, 10);
+      //fHt45ns = new TH1D("t45ns", "t5-t4 (ns)", 200, -10, 10);
+      //fHt46ns = new TH1D("t46ns", "t6-t4 (ns)", 200, -10, 10);
 
       fHw1ns = new TH1D("w1ns", "w1ns", 100, 0, 100);
       fHw2ns = new TH1D("w2ns", "w2ns", 100, 0, 100);
@@ -1319,14 +1346,14 @@ public:
       fHa58mv = new TH2D("a58mv", "calculated amp 8 vs amp 5, mV", 100, 0, 2000, 100, 0, 2000);
       fHa67mv = new TH2D("a67mv", "calculated amp 7 vs amp 6, mV", 100, 0, 2000, 100, 0, 2000);
 
-      fHa15mv = new TH2D("a15mv", "calculated amp 5 vs amp 1, mV", 100, 0, 2000, 100, 0, 2000);
-      fHa16mv = new TH2D("a16mv", "calculated amp 6 vs amp 1, mV", 100, 0, 2000, 100, 0, 2000);
-      fHa25mv = new TH2D("a25mv", "calculated amp 5 vs amp 2, mV", 100, 0, 2000, 100, 0, 2000);
-      fHa26mv = new TH2D("a26mv", "calculated amp 6 vs amp 2, mV", 100, 0, 2000, 100, 0, 2000);
-      fHa35mv = new TH2D("a35mv", "calculated amp 5 vs amp 3, mV", 100, 0, 2000, 100, 0, 2000);
-      fHa36mv = new TH2D("a36mv", "calculated amp 6 vs amp 3, mV", 100, 0, 2000, 100, 0, 2000);
-      fHa45mv = new TH2D("a45mv", "calculated amp 5 vs amp 4, mV", 100, 0, 2000, 100, 0, 2000);
-      fHa46mv = new TH2D("a46mv", "calculated amp 6 vs amp 4, mV", 100, 0, 2000, 100, 0, 2000);
+      //fHa15mv = new TH2D("a15mv", "calculated amp 5 vs amp 1, mV", 100, 0, 2000, 100, 0, 2000);
+      //fHa16mv = new TH2D("a16mv", "calculated amp 6 vs amp 1, mV", 100, 0, 2000, 100, 0, 2000);
+      //fHa25mv = new TH2D("a25mv", "calculated amp 5 vs amp 2, mV", 100, 0, 2000, 100, 0, 2000);
+      //fHa26mv = new TH2D("a26mv", "calculated amp 6 vs amp 2, mV", 100, 0, 2000, 100, 0, 2000);
+      //fHa35mv = new TH2D("a35mv", "calculated amp 5 vs amp 3, mV", 100, 0, 2000, 100, 0, 2000);
+      //fHa36mv = new TH2D("a36mv", "calculated amp 6 vs amp 3, mV", 100, 0, 2000, 100, 0, 2000);
+      //fHa45mv = new TH2D("a45mv", "calculated amp 5 vs amp 4, mV", 100, 0, 2000, 100, 0, 2000);
+      //fHa46mv = new TH2D("a46mv", "calculated amp 6 vs amp 4, mV", 100, 0, 2000, 100, 0, 2000);
 
 #if 0
       fH_a1mv_t14ns = new TH2D("a1mv_t14ns", "t4-t1 (ns) vs a1 (mV)", 100, 0, 2000, 100, -10, 10);
@@ -1347,17 +1374,44 @@ public:
       fHt23ns_cut_twc = new TH1D("t23ns_cut_twc", "t23ns_cut with time walk correction", 500, -10, 10);
 #endif
 
-      fHt1458ns = new TH2D("t1458ns", "TOF 14 vs 58 (ns)", 200, -10, 10, 200, -10, 10);
-      fHtof1458ns = new TH1D("tof1458ns", "TOF 14 vs 58 (ns)", 200, -10, 10);
+      fHt1458ns = new TH2D("t1458ns_1458", "TOF 14 vs 58 (ns)", 200, -10, 10, 200, -10, 10);
+      fHtof1458ns = new TH1D("tof_1458", "TOF 14 vs 58 (ns)", 200, -10, 10);
 
-      fHt2358ns = new TH2D("t2358ns", "TOF 23 vs 58 (ns)", 200, -10, 10, 200, -10, 10);
-      fHtof2358ns = new TH1D("tof2358ns", "TOF 23 vs 58 (ns)", 200, -10, 10);
+      fHw14ns_1458 = new TH2D("w14ns_1458", "w4ns vs w1ns, 1*4*5*8", 100, 0, 100, 100, 0, 100);
+      fHw58ns_1458 = new TH2D("w58ns_1458", "w8ns vs w5ns, 1*4*5*8", 100, 0, 100, 100, 0, 100);
 
-      fHt1467ns = new TH2D("t1467ns", "TOF 14 vs 67 (ns)", 200, -10, 10, 200, -10, 10);
-      fHtof1467ns = new TH1D("tof1467ns", "TOF 14 vs 67 (ns)", 200, -10, 10);
+      fHa14mv_1458 = new TH2D("a14mv_1458", "calculated amp 4 vs amp 1, mV, 1*4*5*8", 100, 0, 2000, 100, 0, 2000);
+      fHa58mv_1458 = new TH2D("a58mv_1458", "calculated amp 8 vs amp 5, mV, 1*4*5*8", 100, 0, 2000, 100, 0, 2000);
+
+      fHtof_a1mv_1458 = new TH2D("tof_a1mv_1458", "tof vs a1 (mV), 1*4*5*8", 100, 0, 2000, 100, -10, 10);
+      fHtof_a4mv_1458 = new TH2D("tof_a4mv_1458", "tof vs a4 (mV), 1*4*5*8", 100, 0, 2000, 100, -10, 10);
+
+      fHt2358ns = new TH2D("t2358ns_2358", "TOF 23 vs 58 (ns)", 200, -10, 10, 200, -10, 10);
+      fHtof2358ns = new TH1D("tof_2358", "TOF 23 vs 58 (ns)", 200, -10, 10);
+
+      fHw23ns_2358 = new TH2D("w23ns_2358", "w3ns vs w2ns, 2*3*5*8", 100, 0, 100, 100, 0, 100);
+      fHw58ns_2358 = new TH2D("w58ns_2358", "w8ns vs w5ns, 2*3*5*8", 100, 0, 100, 100, 0, 100);
+
+      fHa23mv_2358 = new TH2D("a23mv_2358", "calculated amp 3 vs amp 2, mV, 2*3*5*8", 100, 0, 2000, 100, 0, 2000);
+      fHa58mv_2358 = new TH2D("a58mv_2358", "calculated amp 8 vs amp 5, mV, 2*3*5*8", 100, 0, 2000, 100, 0, 2000);
+
+      fHt1467ns = new TH2D("t1467ns_1467", "TOF 14 vs 67 (ns)", 200, -10, 10, 200, -10, 10);
+      fHtof1467ns = new TH1D("tof_1467", "TOF 14 vs 67 (ns)", 200, -10, 10);
+
+      fHw14ns_1467 = new TH2D("w14ns_1467", "w4ns vs w1ns, 1*4*6*7", 100, 0, 100, 100, 0, 100);
+      fHw67ns_1467 = new TH2D("w67ns_1467", "w7ns vs w6ns, 1*4*6*7", 100, 0, 100, 100, 0, 100);
+
+      fHa14mv_1467 = new TH2D("a14mv_1467", "calculated amp 4 vs amp 1, mV, 1*4*6*7", 100, 0, 2000, 100, 0, 2000);
+      fHa67mv_1467 = new TH2D("a67mv_1467", "calculated amp 7 vs amp 6, mV, 1*4*6*7", 100, 0, 2000, 100, 0, 2000);
 
       fHt2367ns = new TH2D("t2367ns", "TOF 23 vs 58 (ns)", 200, -10, 10, 200, -10, 10);
       fHtof2367ns = new TH1D("tof2367ns", "TOF 23 vs 67 (ns)", 200, -10, 10);
+
+      fHw23ns_2367 = new TH2D("w23ns_2367", "w3ns vs w2ns, 2*3*6*7", 100, 0, 100, 100, 0, 100);
+      fHw67ns_2367 = new TH2D("w67ns_2367", "w7ns vs w6ns, 2*3*6*7", 100, 0, 100, 100, 0, 100);
+
+      fHa23mv_2367 = new TH2D("a23mv_2367", "calculated amp 3 vs amp 2, mV, 2*3*6*7", 100, 0, 2000, 100, 0, 2000);
+      fHa67mv_2367 = new TH2D("a67mv_2367", "calculated amp 7 vs amp 6, mV, 2*3*6*7", 100, 0, 2000, 100, 0, 2000);
 
 #if 0
       fHt01old = new TH1D("t01old", "t01old", 150, -500, 500);
@@ -2048,16 +2102,17 @@ public:
 
          fHt14ns->Fill(t14_ns);
          fHw14ns->Fill(w1_ns, w4_ns);
+         fHa14mv->Fill(a1_mv, a4_mv);
+
          //fHt14w1ns->Fill(t14_ns, w1_ns);
          //fHt14w4ns->Fill(t14_ns, w4_ns);
-         fHa14mv->Fill(a1_mv, a4_mv);
          //fH_a1mv_t14ns->Fill(a1_mv, t14_ns);
          //fH_a4mv_t14ns->Fill(a4_mv, t14_ns);
 
-         fHa15mv->Fill(a1_mv, a5_mv);
-         fHa16mv->Fill(a1_mv, a6_mv);
-         fHa45mv->Fill(a4_mv, a5_mv);
-         fHa46mv->Fill(a4_mv, a6_mv);
+         //fHa15mv->Fill(a1_mv, a5_mv);
+         //fHa16mv->Fill(a1_mv, a6_mv);
+         //fHa45mv->Fill(a4_mv, a5_mv);
+         //fHa46mv->Fill(a4_mv, a6_mv);
          
          // Time walk corrected versions
          // double t14_ns_twc = t14_ns - 0.001*time_walk_correction_ps(a4_mv) + 0.001*time_walk_correction_ps(a1_mv);
@@ -2175,16 +2230,17 @@ public:
          
          fHt23ns->Fill(t23_ns);
          fHw23ns->Fill(w2_ns, w3_ns);
+         fHa23mv->Fill(a2_mv, a3_mv);
+
          //fHt23w2ns->Fill(t23_ns, w2_ns);
          //fHt23w3ns->Fill(t23_ns, w3_ns);
-         fHa23mv->Fill(a2_mv, a3_mv);
          //fH_a2mv_t23ns->Fill(a2_mv, t23_ns);
          //fH_a3mv_t23ns->Fill(a3_mv, t23_ns);
 
-         fHa25mv->Fill(a2_mv, a5_mv);
-         fHa26mv->Fill(a2_mv, a6_mv);
-         fHa35mv->Fill(a3_mv, a5_mv);
-         fHa36mv->Fill(a3_mv, a6_mv);
+         //fHa25mv->Fill(a2_mv, a5_mv);
+         //fHa26mv->Fill(a2_mv, a6_mv);
+         //fHa35mv->Fill(a3_mv, a5_mv);
+         //fHa36mv->Fill(a3_mv, a6_mv);
          
          //if (w2_ns > 150 && w3_ns > 150) {
          //   fHt23ns_cut->Fill(t23_ns);
@@ -2255,18 +2311,8 @@ public:
          }
 
          fHt58ns->Fill(t58_ns);
-         //fHw14ns->Fill(w1_ns, w4_ns);
-         //fHt14w1ns->Fill(t14_ns, w1_ns);
-         //fHt14w4ns->Fill(t14_ns, w4_ns);
          fHw58ns->Fill(w5_ns, w8_ns);
          fHa58mv->Fill(a5_mv, a8_mv);
-         //fH_a1mv_t14ns->Fill(a1_mv, t14_ns);
-         //fH_a4mv_t14ns->Fill(a4_mv, t14_ns);
-
-         //fHa15mv->Fill(a1_mv, a5_mv);
-         //fHa16mv->Fill(a1_mv, a6_mv);
-         //fHa45mv->Fill(a4_mv, a5_mv);
-         //fHa46mv->Fill(a4_mv, a6_mv);
 
          if (w1_ns > 0 && w4_ns > 0) {
 
@@ -2289,6 +2335,14 @@ public:
             double tof1458 = 0.5*(t15_ns + t48_ns);
 
             fHtof1458ns->Fill(tof1458);
+
+            fHw14ns_1458->Fill(w1_ns, w4_ns);
+            fHw58ns_1458->Fill(w5_ns, w8_ns);
+            fHa14mv_1458->Fill(a1_mv, a4_mv);
+            fHa58mv_1458->Fill(a5_mv, a8_mv);
+
+            fHtof_a1mv_1458->Fill(a1_mv, tof1458);
+            fHtof_a4mv_1458->Fill(a4_mv, tof1458);
          }
 
          if (w2_ns > 0 && w3_ns > 0) {
@@ -2311,6 +2365,11 @@ public:
             double tof2358 = 0.5*(t25_ns + t38_ns);
 
             fHtof2358ns->Fill(tof2358);
+
+            fHw23ns_2358->Fill(w2_ns, w3_ns);
+            fHw58ns_2358->Fill(w5_ns, w8_ns);
+            fHa23mv_2358->Fill(a2_mv, a3_mv);
+            fHa58mv_2358->Fill(a5_mv, a8_mv);
          }
       }
 
@@ -2322,18 +2381,8 @@ public:
          }
 
          fHt67ns->Fill(t67_ns);
-         //fHw14ns->Fill(w1_ns, w4_ns);
-         //fHt14w1ns->Fill(t14_ns, w1_ns);
-         //fHt14w4ns->Fill(t14_ns, w4_ns);
          fHw67ns->Fill(w6_ns, w7_ns);
          fHa67mv->Fill(a6_mv, a7_mv);
-         //fH_a1mv_t14ns->Fill(a1_mv, t14_ns);
-         //fH_a4mv_t14ns->Fill(a4_mv, t14_ns);
-
-         //fHa15mv->Fill(a1_mv, a5_mv);
-         //fHa16mv->Fill(a1_mv, a6_mv);
-         //fHa45mv->Fill(a4_mv, a5_mv);
-         //fHa46mv->Fill(a4_mv, a6_mv);
 
          if (w1_ns > 0 && w4_ns > 0) {
 
@@ -2351,6 +2400,11 @@ public:
             double tof1467 = 0.5*(t16_ns + t47_ns);
 
             fHtof1467ns->Fill(tof1467);
+
+            fHw14ns_1467->Fill(w1_ns, w4_ns);
+            fHw67ns_1467->Fill(w6_ns, w7_ns);
+            fHa14mv_1467->Fill(a1_mv, a4_mv);
+            fHa67mv_1467->Fill(a6_mv, a7_mv);
          }
 
          if (w2_ns > 0 && w3_ns > 0) {
@@ -2369,6 +2423,11 @@ public:
             double tof2367 = 0.5*(t26_ns + t37_ns);
 
             fHtof2367ns->Fill(tof2367);
+
+            fHw23ns_2367->Fill(w2_ns, w3_ns);
+            fHw67ns_2367->Fill(w6_ns, w7_ns);
+            fHa23mv_2367->Fill(a2_mv, a3_mv);
+            fHa67mv_2367->Fill(a6_mv, a7_mv);
          }
       }
 
