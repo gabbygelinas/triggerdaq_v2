@@ -673,21 +673,31 @@ bool DlTdcUnpack::Unpack(DlTdcHit*h, uint32_t lo, uint32_t hi)
 
       if (h->phase > 0) {
          if (calib) {
-            if (h->le)
+            if (h->le) {
                h->fine_ns = fCalib[ch].lepos.GetTime(h->phase) - fClkPeriodNs;
-            if (h->te)
+               h->offset_ns = fCalib[ch].lepos.fOffsetNs;
+            }
+            if (h->te) {
                h->fine_ns = fCalib[ch].tepos.GetTime(h->phase) - fClkPeriodNs;
+               h->offset_ns = fCalib[ch].tepos.fOffsetNs;
+            }
          } else {
             h->fine_ns = fClkPeriodNs/bits*h->phase - fClkPeriodNs;
+            h->offset_ns = 0;
          }
       } else {
          if (calib) {
-            if (h->le)
+            if (h->le) {
                h->fine_ns = fCalib[ch].leneg.GetTime(-h->phase);
-            if (h->te)
+               h->offset_ns = fCalib[ch].leneg.fOffsetNs;
+            }
+            if (h->te) {
                h->fine_ns = fCalib[ch].teneg.GetTime(-h->phase);
+               h->offset_ns = fCalib[ch].teneg.fOffsetNs;
+            }
          } else {
             h->fine_ns = -fClkPeriodNs/bits*h->phase;
+            h->offset_ns = 0;
          }
       }
    } else {
@@ -702,21 +712,31 @@ bool DlTdcUnpack::Unpack(DlTdcHit*h, uint32_t lo, uint32_t hi)
 
       if (h->phase > 0) {
          if (calib) {
-            if (h->le)
+            if (h->le) {
                h->fine_ns = fCalib[ch].lepos.GetTime(h->phase);
-            if (h->te)
+               h->offset_ns = fCalib[ch].lepos.fOffsetNs;
+            }
+            if (h->te) {
                h->fine_ns = fCalib[ch].tepos.GetTime(h->phase);
+               h->offset_ns = fCalib[ch].tepos.fOffsetNs;
+            }
          } else {
             h->fine_ns = fClkPeriodNs/bits*h->phase;
+            h->offset_ns = 0;
          }
       } else {
          if (calib) {
-            if (h->le)
+            if (h->le) {
                h->fine_ns = fCalib[ch].leneg.GetTime(-h->phase) - fClkPeriodNs;
-            if (h->te)
+               h->offset_ns = fCalib[ch].leneg.fOffsetNs;
+            }
+            if (h->te) {
                h->fine_ns = fCalib[ch].teneg.GetTime(-h->phase) - fClkPeriodNs;
+               h->offset_ns = fCalib[ch].teneg.fOffsetNs;
+            }
          } else {
             h->fine_ns = -fClkPeriodNs/bits*h->phase - fClkPeriodNs;
+            h->offset_ns = 0;
          }
       }
    }
@@ -888,7 +908,7 @@ bool DlTdcUnpack::Unpack(DlTdcHit*h, uint32_t lo, uint32_t hi)
    
    //h->fine_ns = h->phase_ns;
    //h->time_sec = fClkPeriodNs*(h->coarse&(~1)) + h->phase_ns;
-   h->time_sec = h->coarse_sec + h->fine_ns*1e-9;
+   h->time_sec = h->coarse_sec + (h->fine_ns + h->offset_ns)*1e-9;
 
    return true;
 };

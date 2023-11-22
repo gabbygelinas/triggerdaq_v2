@@ -41,7 +41,7 @@ static double sec_to_ns(double t)
 
 static double subtract_ns(const DlTdcHit& h1, const DlTdcHit& h2)
 {
-   return (h1.coarse_sec - h2.coarse_sec)*1e9 + (h1.fine_ns - h2.fine_ns);
+   return (h1.coarse_sec- h2.coarse_sec)*1e9 + ((h1.fine_ns + h1.offset_ns) - (h2.fine_ns - h2.offset_ns));
 }
 
 class DlTdcFlags
@@ -652,6 +652,8 @@ public:
    TH1D* fHfineLe[MAX_TDC_CHAN+1];
    TH1D* fHfineTe[MAX_TDC_CHAN+1];
 
+   TH1D* fHwidth[MAX_TDC_CHAN+1];
+
 #if 0
    TH1D* hcalle[MAX_TDC_CHAN+1];
    TH1D* hcalte[MAX_TDC_CHAN+1];
@@ -1062,6 +1064,35 @@ public:
             printf("Cannot load TDC calibration for run %d\n", runinfo->fRunNo);
             exit(123);
          }
+
+         if (runinfo->fRunNo > 906000) {
+            fU->fCalib[0].lepos.fOffsetNs = fU->fCalib[0].leneg.fOffsetNs = 0;
+            fU->fCalib[1].lepos.fOffsetNs = fU->fCalib[1].leneg.fOffsetNs = 0;
+            fU->fCalib[2].lepos.fOffsetNs = fU->fCalib[2].leneg.fOffsetNs = 0;
+            fU->fCalib[3].lepos.fOffsetNs = fU->fCalib[3].leneg.fOffsetNs = 0;
+            fU->fCalib[4].lepos.fOffsetNs = fU->fCalib[4].leneg.fOffsetNs = 0;
+            fU->fCalib[5].lepos.fOffsetNs = fU->fCalib[5].leneg.fOffsetNs = 0;
+            fU->fCalib[6].lepos.fOffsetNs = fU->fCalib[6].leneg.fOffsetNs = 0;
+            fU->fCalib[7].lepos.fOffsetNs = fU->fCalib[7].leneg.fOffsetNs = 0;
+            fU->fCalib[8].lepos.fOffsetNs = fU->fCalib[8].leneg.fOffsetNs = 0;
+            fU->fCalib[9].lepos.fOffsetNs = fU->fCalib[9].leneg.fOffsetNs = 0;
+            fU->fCalib[10].lepos.fOffsetNs = fU->fCalib[10].leneg.fOffsetNs = 0;
+            fU->fCalib[11].lepos.fOffsetNs = fU->fCalib[11].leneg.fOffsetNs = 0;
+
+            // number from width plot with opposite sign
+            fU->fCalib[0].tepos.fOffsetNs  = fU->fCalib[0].teneg.fOffsetNs  = -0.100; // A
+            fU->fCalib[1].tepos.fOffsetNs  = fU->fCalib[1].teneg.fOffsetNs  = +1.000; // B
+            fU->fCalib[2].tepos.fOffsetNs  = fU->fCalib[2].teneg.fOffsetNs  = -0.600; // chan1
+            fU->fCalib[3].tepos.fOffsetNs  = fU->fCalib[3].teneg.fOffsetNs  = +0.100; // chan2
+            fU->fCalib[4].tepos.fOffsetNs  = fU->fCalib[4].teneg.fOffsetNs  = +0.300; // chan3
+            fU->fCalib[5].tepos.fOffsetNs  = fU->fCalib[5].teneg.fOffsetNs  = -0.300; // chan4
+            fU->fCalib[6].tepos.fOffsetNs  = fU->fCalib[6].teneg.fOffsetNs  = -0.700; // chan5
+            fU->fCalib[7].tepos.fOffsetNs  = fU->fCalib[7].teneg.fOffsetNs  = +0.500; // chan6
+            fU->fCalib[8].tepos.fOffsetNs  = fU->fCalib[8].teneg.fOffsetNs  = +0.400; // chan7
+            fU->fCalib[9].tepos.fOffsetNs  = fU->fCalib[9].teneg.fOffsetNs  = -0.100; // chan8
+            fU->fCalib[10].tepos.fOffsetNs = fU->fCalib[10].teneg.fOffsetNs = +0.500; // T
+            fU->fCalib[11].tepos.fOffsetNs = fU->fCalib[11].teneg.fOffsetNs = 0; // nc
+         }
       }
 
 #ifdef HAVE_ROOT
@@ -1170,6 +1201,10 @@ public:
          sprintf(name,  "tdc%02d_fine_te", i);
          sprintf(title, "tdc%02d_fine_te, ns", i);
          fHfineTe[i] = new TH1D(name, title, 200, -5, 15);
+
+         sprintf(name,  "tdc%02d_width_ns", i);
+         sprintf(title, "tdc%02d_width_ns, ns", i);
+         fHwidth[i] = new TH1D(name, title, 100, -5, 5);
       }
 
 #if 0
@@ -1632,13 +1667,22 @@ public:
       //   fPrevTdcTime = tdc_time;
       //}
 
+      ///////// create width calibration histograms ///////////
+
+      for (size_t ch=0; ch<=MAX_TDC_CHAN; ch++) {
+         //printf("ch %d, up down %d %d\n", ch, t.fHits[ch].fUp, t.fHits[ch].fDown);
+         if (!t.fHits[ch].fUp && t.fHits[ch].fDown) {
+            fHwidth[ch]->Fill(sec_to_ns(t.fHits[ch].fWidthSec));
+         }
+      }
+
       ///////// COMPUTE WIDTH AND PULSE HEIGHT ///////////
 
       double w1_ns = -9999;
       double a1_mv = -9999;
       if (t.havechan1le && t.havechan1te) {
          w1_ns = subtract_ns(t.chan1te, t.chan1le);
-         if (w1_ns < 0.1) {
+         if (w1_ns < 0.01) {
             printf("TTT: BAD WIDTH chan1 %f!\n", w1_ns);
             w1_ns = -9999;
          } else {
@@ -1650,7 +1694,7 @@ public:
       double a2_mv = -9999;
       if (t.havechan2le && t.havechan2te) {
          w2_ns = subtract_ns(t.chan2te, t.chan2le);
-         if (w2_ns < 0.1) {
+         if (w2_ns < 0.01) {
             printf("TTT: BAD WIDTH chan2 %f!\n", w2_ns);
             w2_ns = -9999;
          } else {
@@ -1662,7 +1706,7 @@ public:
       double a3_mv = -9999;
       if (t.havechan3le && t.havechan3te) {
          w3_ns = subtract_ns(t.chan3te, t.chan3le);
-         if (w3_ns < 0.1) {
+         if (w3_ns < 0.01) {
             printf("TTT: BAD WIDTH chan3 %f!\n", w3_ns);
             w3_ns = -9999;
          } else {
@@ -1674,7 +1718,7 @@ public:
       double a4_mv = -9999;
       if (t.havechan4le && t.havechan4te) {
          w4_ns = subtract_ns(t.chan4te, t.chan4le);
-         if (w4_ns < 0.1) {
+         if (w4_ns < 0.01) {
             printf("TTT: BAD WIDTH chan4 %f!\n", w4_ns);
             w4_ns = -9999;
          } else {
@@ -1686,7 +1730,7 @@ public:
       double a5_mv = -9999;
       if (t.havechan5le && t.havechan5te) {
          w5_ns = subtract_ns(t.chan5te, t.chan5le);
-         if (w5_ns < 0.1) {
+         if (w5_ns < 0.01) {
             printf("TTT: BAD WIDTH chan5 %f!\n", w5_ns);
             w5_ns = -9999;
          } else {
@@ -1700,7 +1744,7 @@ public:
 
       if (t.havechan6le && t.havechan6te) {
          w6_ns = subtract_ns(t.chan6te, t.chan6le);
-         if (w6_ns < 0.1) {
+         if (w6_ns < 0.01) {
             printf("TTT: BAD WIDTH chan6 %f!\n", w6_ns);
             w6_ns = -9999;
          } else {
@@ -1719,7 +1763,7 @@ public:
          //   fFlags->fDebug = true;
          //}
 
-         if (w7_ns < 0.1) {
+         if (w7_ns < 0.01) {
             printf("TTT: BAD WIDTH chan7 %f!\n", w7_ns);
             w7_ns = -9999;
          } else {
@@ -1732,7 +1776,7 @@ public:
 
       if (t.havechan8le && t.havechan8te) {
          w8_ns = subtract_ns(t.chan8te, t.chan8le);
-         if (w8_ns < 0.1) {
+         if (w8_ns < 0.01) {
             printf("TTT: BAD WIDTH chan8 %f!\n", w8_ns);
             w8_ns = -9999;
          } else {
@@ -1745,9 +1789,9 @@ public:
       if (t.havechanAle && t.havechanAte) {
          double wA_ns = sec_to_ns(t.chanAte.time_sec - t.chanAle.time_sec);
 
-         //if (wA_ns < 0.1) {
-         //   printf("TTT: BAD WIDTH chanA %f!\n", wA_ns);
-         //}
+         if (wA_ns < 0.01) {
+            printf("TTT: BAD WIDTH chanA %f!\n", wA_ns);
+         }
 
          if (fFlags->fPrint) {
             printf("new dlsc event A, le %.9f, w %.0f!\n", t.chanAle.time_sec, wA_ns);
@@ -1759,9 +1803,9 @@ public:
       if (t.havechanBle && t.havechanBte) {
          double wB_ns = sec_to_ns(t.chanBte.time_sec - t.chanBle.time_sec);
 
-         //if (wB_ns < 0.1) {
-         //   printf("TTT: BAD WIDTH chanB %f!\n", wB_ns);
-         //}
+         if (wB_ns < 0.01) {
+            printf("TTT: BAD WIDTH chanB %f!\n", wB_ns);
+         }
 
          if (fFlags->fPrint) {
             printf("new dlsc event B, le %.9f, w %.0f!\n", t.chanBle.time_sec, wB_ns);
@@ -1773,9 +1817,9 @@ public:
       if (t.havechanTle && t.havechanTte) {
          double wT_ns = sec_to_ns(t.chanTte.time_sec - t.chanTle.time_sec);
 
-         //if (wT_ns < 0.1) {
-         //   printf("TTT: BAD WIDTH chanT %f!\n", wT_ns);
-         //}
+         if (wT_ns < 0.01) {
+            printf("TTT: BAD WIDTH chanT %f!\n", wT_ns);
+         }
 
          if (fFlags->fPrint) {
             printf("new dlsc event T, le %.9f, w %.0f!\n", t.chanTle.time_sec, wT_ns);

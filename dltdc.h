@@ -19,6 +19,7 @@ struct DlTdcHit
    double coarse_epoch = 0;
    double coarse_sec = 0;
    double fine_ns  = 0;
+   double offset_ns = 0;
    double time_sec = 0;
 
    void Clear()
@@ -64,6 +65,8 @@ public:
 
    double fFineOffset = 0; // offset we computed and will save to file
    double fFineOffsetFromFile = 0; // offset applied to data, loaded from file
+
+   double fOffsetNs = 0;
 
 public:
    DlTdcFineCalib1(); // ctor
