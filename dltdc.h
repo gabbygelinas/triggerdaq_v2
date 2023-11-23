@@ -34,13 +34,11 @@ struct DlTdcHit
       coarse_epoch = 0;
       coarse_sec = 0;
       fine_ns  = 0;
+      offset_ns = 0;
       time_sec = 0;
    }
 
-   void Print() const
-   {
-      printf("data 0x%08x 0x%08x, %d phase %3d, %5.1f ns, ch %2d lete %d%d, time: %.0f %.9f %.9f sec", data_hi, data_lo, coarse&1, phase, fine_ns, ch, le, te, coarse_epoch, coarse_sec, time_sec);
-   }
+   void Print() const;
 };
 
 class DlTdcFineCalib1

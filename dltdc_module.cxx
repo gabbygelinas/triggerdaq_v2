@@ -26,6 +26,7 @@
 #include "TGraph.h"
 #endif
 
+#if 0
 static double amin(double a, double b)
 {
    if (a < b)
@@ -33,6 +34,7 @@ static double amin(double a, double b)
    else
       return b;
 }
+#endif
 
 static double sec_to_ns(double t)
 {
@@ -41,7 +43,7 @@ static double sec_to_ns(double t)
 
 static double subtract_ns(const DlTdcHit& h1, const DlTdcHit& h2)
 {
-   return (h1.coarse_sec- h2.coarse_sec)*1e9 + ((h1.fine_ns + h1.offset_ns) - (h2.fine_ns - h2.offset_ns));
+   return (h1.coarse_sec- h2.coarse_sec)*1e9 + ((h1.fine_ns + h1.offset_ns) - (h2.fine_ns + h2.offset_ns));
 }
 
 class DlTdcFlags
@@ -1066,30 +1068,41 @@ public:
          }
 
          if (runinfo->fRunNo > 906000) {
-            fU->fCalib[0].lepos.fOffsetNs = fU->fCalib[0].leneg.fOffsetNs = 0;
-            fU->fCalib[1].lepos.fOffsetNs = fU->fCalib[1].leneg.fOffsetNs = 0;
-            fU->fCalib[2].lepos.fOffsetNs = fU->fCalib[2].leneg.fOffsetNs = 0;
-            fU->fCalib[3].lepos.fOffsetNs = fU->fCalib[3].leneg.fOffsetNs = 0;
-            fU->fCalib[4].lepos.fOffsetNs = fU->fCalib[4].leneg.fOffsetNs = 0;
-            fU->fCalib[5].lepos.fOffsetNs = fU->fCalib[5].leneg.fOffsetNs = 0;
-            fU->fCalib[6].lepos.fOffsetNs = fU->fCalib[6].leneg.fOffsetNs = 0;
-            fU->fCalib[7].lepos.fOffsetNs = fU->fCalib[7].leneg.fOffsetNs = 0;
-            fU->fCalib[8].lepos.fOffsetNs = fU->fCalib[8].leneg.fOffsetNs = 0;
-            fU->fCalib[9].lepos.fOffsetNs = fU->fCalib[9].leneg.fOffsetNs = 0;
-            fU->fCalib[10].lepos.fOffsetNs = fU->fCalib[10].leneg.fOffsetNs = 0;
-            fU->fCalib[11].lepos.fOffsetNs = fU->fCalib[11].leneg.fOffsetNs = 0;
+
+            double xt1 = +1.75;
+            double xt2 = -3.2;
+            double xt5 = -1;
+            double xt6 = -3;
+
+            double xt14 = -1.9;
+            double xt58 = 3.37;
+
+            double xt1458 = -2.688;
+
+            fU->fCalib[0].lepos.fOffsetNs = fU->fCalib[0].leneg.fOffsetNs = 0; // A
+            fU->fCalib[1].lepos.fOffsetNs = fU->fCalib[1].leneg.fOffsetNs = 0; // B
+            fU->fCalib[2].lepos.fOffsetNs = fU->fCalib[2].leneg.fOffsetNs = xt1 + xt14; // chan1
+            fU->fCalib[3].lepos.fOffsetNs = fU->fCalib[3].leneg.fOffsetNs = xt2; // chan2
+            fU->fCalib[4].lepos.fOffsetNs = fU->fCalib[4].leneg.fOffsetNs = 0; // chan3
+            fU->fCalib[5].lepos.fOffsetNs = fU->fCalib[5].leneg.fOffsetNs = xt14; // chan4
+            fU->fCalib[6].lepos.fOffsetNs = fU->fCalib[6].leneg.fOffsetNs = xt5 + xt58 + xt1458; // chan5
+            fU->fCalib[7].lepos.fOffsetNs = fU->fCalib[7].leneg.fOffsetNs = xt6 + xt1458; // chan6
+            fU->fCalib[8].lepos.fOffsetNs = fU->fCalib[8].leneg.fOffsetNs = 0 + xt1458; // chan7
+            fU->fCalib[9].lepos.fOffsetNs = fU->fCalib[9].leneg.fOffsetNs = xt58 + xt1458; // chan8
+            fU->fCalib[10].lepos.fOffsetNs = fU->fCalib[10].leneg.fOffsetNs = 0; // T
+            fU->fCalib[11].lepos.fOffsetNs = fU->fCalib[11].leneg.fOffsetNs = 0; // nc
 
             // number from width plot with opposite sign
             fU->fCalib[0].tepos.fOffsetNs  = fU->fCalib[0].teneg.fOffsetNs  = -0.100; // A
             fU->fCalib[1].tepos.fOffsetNs  = fU->fCalib[1].teneg.fOffsetNs  = +1.000; // B
-            fU->fCalib[2].tepos.fOffsetNs  = fU->fCalib[2].teneg.fOffsetNs  = -0.600; // chan1
-            fU->fCalib[3].tepos.fOffsetNs  = fU->fCalib[3].teneg.fOffsetNs  = +0.100; // chan2
+            fU->fCalib[2].tepos.fOffsetNs  = fU->fCalib[2].teneg.fOffsetNs  = -0.600 + xt1 + xt14; // chan1
+            fU->fCalib[3].tepos.fOffsetNs  = fU->fCalib[3].teneg.fOffsetNs  = +0.100 + xt2; // chan2
             fU->fCalib[4].tepos.fOffsetNs  = fU->fCalib[4].teneg.fOffsetNs  = +0.300; // chan3
-            fU->fCalib[5].tepos.fOffsetNs  = fU->fCalib[5].teneg.fOffsetNs  = -0.300; // chan4
-            fU->fCalib[6].tepos.fOffsetNs  = fU->fCalib[6].teneg.fOffsetNs  = -0.700; // chan5
-            fU->fCalib[7].tepos.fOffsetNs  = fU->fCalib[7].teneg.fOffsetNs  = +0.500; // chan6
-            fU->fCalib[8].tepos.fOffsetNs  = fU->fCalib[8].teneg.fOffsetNs  = +0.400; // chan7
-            fU->fCalib[9].tepos.fOffsetNs  = fU->fCalib[9].teneg.fOffsetNs  = -0.100; // chan8
+            fU->fCalib[5].tepos.fOffsetNs  = fU->fCalib[5].teneg.fOffsetNs  = -0.300 + xt14; // chan4
+            fU->fCalib[6].tepos.fOffsetNs  = fU->fCalib[6].teneg.fOffsetNs  = -0.700 + xt5 + xt58 + xt1458; // chan5
+            fU->fCalib[7].tepos.fOffsetNs  = fU->fCalib[7].teneg.fOffsetNs  = +0.500 + xt6 + xt1458; // chan6
+            fU->fCalib[8].tepos.fOffsetNs  = fU->fCalib[8].teneg.fOffsetNs  = +0.400 + xt1458; // chan7
+            fU->fCalib[9].tepos.fOffsetNs  = fU->fCalib[9].teneg.fOffsetNs  = -0.100 + xt58 + xt1458; // chan8
             fU->fCalib[10].tepos.fOffsetNs = fU->fCalib[10].teneg.fOffsetNs = +0.500; // T
             fU->fCalib[11].tepos.fOffsetNs = fU->fCalib[11].teneg.fOffsetNs = 0; // nc
          }
@@ -1682,6 +1695,11 @@ public:
       double a1_mv = -9999;
       if (t.havechan1le && t.havechan1te) {
          w1_ns = subtract_ns(t.chan1te, t.chan1le);
+         //printf("chan2: %.3f ns\n", w1_ns);
+         //t.chan1le.Print();
+         //printf("\n");
+         //t.chan1te.Print();
+         //printf("\n");
          if (w1_ns < 0.01) {
             printf("TTT: BAD WIDTH chan1 %f!\n", w1_ns);
             w1_ns = -9999;
@@ -1693,6 +1711,11 @@ public:
       double w2_ns = -9999;
       double a2_mv = -9999;
       if (t.havechan2le && t.havechan2te) {
+         //printf("chan2:\n");
+         //t.chan2le.Print();
+         //printf("\n");
+         //t.chan2te.Print();
+         //printf("\n");
          w2_ns = subtract_ns(t.chan2te, t.chan2le);
          if (w2_ns < 0.01) {
             printf("TTT: BAD WIDTH chan2 %f!\n", w2_ns);
@@ -1787,7 +1810,7 @@ public:
       ///////// TRIGGER CHANNALS A, B and T not used yet ///////////
 
       if (t.havechanAle && t.havechanAte) {
-         double wA_ns = sec_to_ns(t.chanAte.time_sec - t.chanAle.time_sec);
+         double wA_ns = subtract_ns(t.chanAte, t.chanAle);
 
          if (wA_ns < 0.01) {
             printf("TTT: BAD WIDTH chanA %f!\n", wA_ns);
@@ -1801,7 +1824,7 @@ public:
       }
 
       if (t.havechanBle && t.havechanBte) {
-         double wB_ns = sec_to_ns(t.chanBte.time_sec - t.chanBle.time_sec);
+         double wB_ns = subtract_ns(t.chanBte, t.chanBle);
 
          if (wB_ns < 0.01) {
             printf("TTT: BAD WIDTH chanB %f!\n", wB_ns);
@@ -1815,7 +1838,7 @@ public:
       }
 
       if (t.havechanTle && t.havechanTte) {
-         double wT_ns = sec_to_ns(t.chanTte.time_sec - t.chanTle.time_sec);
+         double wT_ns = subtract_ns(t.chanTte, t.chanTle);
 
          if (wT_ns < 0.01) {
             printf("TTT: BAD WIDTH chanT %f!\n", wT_ns);
@@ -1832,7 +1855,7 @@ public:
 
       if (w1_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 1*X, le %.9f %.9f sec, diff1X %.0f ns, w1 %.0f, wX %.0f ns, a1 %.0f, aX %.0f mV!\n", t.chan1le.time_sec, 0.0, 0.0, w1_ns, 0.0, a1_mv, 0.0);
+            printf("new dlsc event 1, le %.9f sec, w1 %.0f ns, a1 %.0f mV!\n", t.chan1le.time_sec, w1_ns, a1_mv);
          }
 
          fHw1ns->Fill(w1_ns);
@@ -1841,7 +1864,7 @@ public:
 
       if (w2_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 2*X, le %.9f %.9f sec, diff2X %.0f ns, w2 %.0f, wX %.0f ns, a2 %.0f, aX %.0f mV!\n", t.chan2le.time_sec, 0.0, 0.0, w2_ns, 0.0, a2_mv, 0.0);
+            printf("new dlsc event 2, le %.9f sec, w2 %.0f ns, a2 %.0f mV!\n", t.chan2le.time_sec, w2_ns, a2_mv);
          }
 
          fHw2ns->Fill(w2_ns);
@@ -1850,7 +1873,7 @@ public:
 
       if (w3_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 3*X, le %.9f %.9f sec, diff3X %.0f ns, w3 %.0f, wX %.0f ns, a3 %.0f, aX %.0f mV!\n", t.chan3le.time_sec, 0.0, 0.0, w3_ns, 0.0, a3_mv, 0.0);
+            printf("new dlsc event 3, le %.9f sec, w3 %.0f ns, a3 %.0f mV!\n", t.chan3le.time_sec, w3_ns, a3_mv);
          }
 
          fHw3ns->Fill(w3_ns);
@@ -1859,7 +1882,7 @@ public:
 
       if (w4_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 4*X, le %.9f %.9f sec, diff4X %.0f ns, w4 %.0f, wX %.0f ns, a4 %.0f, aX %.0f mV!\n", t.chan4le.time_sec, 0.0, 0.0, w4_ns, 0.0, a4_mv, 0.0);
+            printf("new dlsc event 4, le %.9f sec, w4 %.0f ns, a4 %.0f mV!\n", t.chan4le.time_sec, w4_ns, a4_mv);
          }
 
          fHw4ns->Fill(w4_ns);
@@ -1868,7 +1891,7 @@ public:
 
       if (w5_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 5*X, le %.9f %.9f sec, diff5X %.0f ns, w5 %.0f, wX %.0f ns, a5 %.0f, aX %.0f mV!\n", t.chan5le.time_sec, 0.0, 0.0, w5_ns, 0.0, a5_mv, 0.0);
+            printf("new dlsc event 5, le %.9f sec, w5 %.0f ns, a5 %.0f mV!\n", t.chan5le.time_sec, w5_ns, a5_mv);
          }
 
          fHw5ns->Fill(w5_ns);
@@ -1877,7 +1900,7 @@ public:
 
       if (w6_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 6*X, le %.9f %.9f sec, diff6X %.0f ns, w6 %.0f, wX %.0f ns, a6 %.0f, aX %.0f mV!\n", t.chan6le.time_sec, 0.0, 0.0, w6_ns, 0.0, a6_mv, 0.0);
+            printf("new dlsc event 6, le %.9f sec, w6 %.0f ns, a6 %.0f mV!\n", t.chan6le.time_sec, w6_ns, a6_mv);
          }
 
          fHw6ns->Fill(w6_ns);
@@ -1886,7 +1909,7 @@ public:
 
       if (w7_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 7*X, le %.9f %.9f sec, diff7X %.0f ns, w7 %.0f, wX %.0f ns, a7 %.0f, aX %.0f mV!\n", t.chan7le.time_sec, 0.0, 0.0, w7_ns, 0.0, a7_mv, 0.0);
+            printf("new dlsc event 7, le %.9f sec, w7 %.0f ns, a7 %.0f mV!\n", t.chan7le.time_sec, w7_ns, a7_mv);
          }
 
          fHw7ns->Fill(w7_ns);
@@ -1895,7 +1918,7 @@ public:
 
       if (w8_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 8*X, le %.9f %.9f sec, diff8X %.0f ns, w8 %.0f, wX %.0f ns, a8 %.0f, aX %.0f mV!\n", t.chan8le.time_sec, 0.0, 0.0, w8_ns, 0.0, a8_mv, 0.0);
+            printf("new dlsc event 8, le %.9f sec, w8 %.0f ns, a8 %.0f mV!\n", t.chan8le.time_sec, w8_ns, a8_mv);
          }
 
          fHw8ns->Fill(w8_ns);
@@ -2371,7 +2394,7 @@ public:
          fHtof_a4mv_1458->Fill(a4_mv, tof1458);
       }
 
-      if (t14_ns > -9999 && !(t58_ns > -9999)) {
+      if ((t14_ns > -9999) && !(t58_ns > -9999)) {
          if (fFlags->fPrint) {
             printf("new dlsc event 1*4*!(5*8), le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.chan5le.time_sec, t.chan8le.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
          }
