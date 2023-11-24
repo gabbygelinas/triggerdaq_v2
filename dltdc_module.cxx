@@ -602,6 +602,16 @@ public:
          havechan8te = true;
       }
    }
+
+   bool HaveCh(int ch) const
+   {
+      return fHits[ch].fDown;
+   }
+
+   const DlTdcHit2& GetCh(int ch) const
+   {
+      return fHits[ch];
+   }
 };
 
 class AdcEvent
@@ -1049,6 +1059,16 @@ public:
    //int counter_01 = 0;
    //int counter_45 = 0;
    //int counter_0145 = 0;
+
+   int fCount14 = 0;
+   int fCount23 = 0;
+   int fCount58 = 0;
+   int fCount67 = 0;
+
+   int fCount1458 = 0;
+   int fCount2358 = 0;
+   int fCount1467 = 0;
+   int fCount2367 = 0;
 
    int i = 0;
    int j = 0;
@@ -1678,6 +1698,17 @@ public:
       printf("COUNTER 45: %d\n", counter_45);
       printf("COUNTER 0145: %d\n", counter_0145);   
 #endif
+
+      printf("Run %d coincidences: 1-4: %d, 2-3: %d, 5-8: %d, 7-8: %d, 14-58: %d, 23-58: %d, 14-67: %d, 23-67: %d\n",
+             runinfo->fRunNo,
+             fCount14,
+             fCount23,
+             fCount58,
+             fCount67,
+             fCount1458,
+             fCount2358,
+             fCount1467,
+             fCount2367);
    }
    
    void PauseRun(TARunInfo* runinfo)
@@ -1735,7 +1766,7 @@ public:
 
       double w1_ns = -9999;
       double a1_mv = -9999;
-      if (t.fHits[CHAN1].fDown) {
+      if (t.HaveCh(CHAN1)) {
          //w1_ns = subtract_ns(t.chan1te, t.chan1le);
          //printf("chan2: %.3f ns\n", w1_ns);
          //t.chan1le.Print();
@@ -1743,7 +1774,8 @@ public:
          //t.chan1te.Print();
          //printf("\n");
 
-         w1_ns = t.fHits[CHAN1].fWidthNs;
+         //w1_ns = t.fHits[CHAN1].fWidthNs;
+         w1_ns = t.GetCh(CHAN1).fWidthNs;
 
          //if (fabs(w1_ns - t.fHits[2].fWidthNs) > 0.001) {
          //   printf("WWW: MISMATCH WIDTH chan1 %f vs %f!\n", w1_ns, t.fHits[2].fWidthNs);
@@ -1908,7 +1940,7 @@ public:
 
       if (w1_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 1, le %.9f sec, w1 %.0f ns, a1 %.0f mV!\n", t.chan1le.time_sec, w1_ns, a1_mv);
+            printf("new dlsc event 1, le %.9f sec, w1 %.0f ns, a1 %.0f mV!\n", t.GetCh(CHAN1).fLe.time_sec, w1_ns, a1_mv);
          }
 
          fHw1ns->Fill(w1_ns);
@@ -2243,7 +2275,7 @@ public:
       ///////// CROSS BOARD COINCIDENCES ///////////
       
       if (w1_ns > 0 && w2_ns > 0) {
-         double t12_ns = subtract_ns(t.chan2le, t.chan1le);
+         double t12_ns = subtract_ns(t.chan2le, t.GetCh(CHAN1).fLe);
          fHt12ns->Fill(t12_ns);
       }
       
@@ -2267,12 +2299,14 @@ public:
       double t14_ns = -9999;
 
       if (w1_ns > 0 && w4_ns > 0) {
-         t14_ns = subtract_ns(t.chan4le, t.chan1le);
+         t14_ns = subtract_ns(t.chan4le, t.GetCh(CHAN1).fLe);
 
          if (fFlags->fPrint) {
-            printf("new dlsc event 1*4, le %.9f %.9f sec, diff14 %.0f ns, w1 %.0f, w4 %.0f ns, a1 %.0f, a4 %.0f mV!\n", t.chan1le.time_sec, t.chan4le.time_sec, t14_ns, w1_ns, w4_ns, a1_mv, a4_mv);
+            printf("new dlsc event 1*4, le %.9f %.9f sec, diff14 %.0f ns, w1 %.0f, w4 %.0f ns, a1 %.0f, a4 %.0f mV!\n", t.GetCh(CHAN1).fLe.time_sec, t.chan4le.time_sec, t14_ns, w1_ns, w4_ns, a1_mv, a4_mv);
          }
 
+         fCount14++;
+         
          fHt14ns->Fill(t14_ns);
          fHw14ns->Fill(w1_ns, w4_ns);
          fHa14mv->Fill(a1_mv, a4_mv);
@@ -2382,6 +2416,8 @@ public:
             printf("new dlsc event 2*3, le %.9f %.9f sec, diff23 %.0f ns, w2 %.0f, w3 %.0f ns!\n", t.chan2le.time_sec, t.chan3le.time_sec, t23_ns, w2_ns, w3_ns);
          }
          
+         fCount23++;
+
          fHt23ns->Fill(t23_ns);
          fHw23ns->Fill(w2_ns, w3_ns);
          fHa23mv->Fill(a2_mv, a3_mv);
@@ -2395,6 +2431,8 @@ public:
          if (fFlags->fPrint) {
             printf("new dlsc event 5*8, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.chan5le.time_sec, t.chan8le.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
          }
+
+         fCount58++;
 
          fHt58ns->Fill(t58_ns);
          fHw58ns->Fill(w5_ns, w8_ns);
@@ -2410,6 +2448,8 @@ public:
             printf("new dlsc event 6*7, le %.9f %.9f sec, diff67 %.0f ns, w6 %.0f, w7 %.0f ns, a6 %.0f, a7 %.0f mV!\n", t.chan6le.time_sec, t.chan7le.time_sec, t67_ns, w6_ns, w7_ns, a6_mv, a7_mv);
          }
 
+         fCount67++;
+
          fHt67ns->Fill(t67_ns);
          fHw67ns->Fill(w6_ns, w7_ns);
          fHa67mv->Fill(a6_mv, a7_mv);
@@ -2421,13 +2461,15 @@ public:
          if (fFlags->fPrint) {
             printf("new dlsc event 1*4*5*8, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.chan5le.time_sec, t.chan8le.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
          }
+
+         fCount1458++;
          
          //double avg14 = 0.5*(t.chan1le.time_sec + t.chan4le.time_sec);
          //double avg58 = 0.5*(t.chan5le.time_sec + t.chan8le.time_sec);
          //
          //double tof1458 = avg58 - avg14;
          
-         double t15_ns = subtract_ns(t.chan5le, t.chan1le);
+         double t15_ns = subtract_ns(t.chan5le, t.GetCh(CHAN1).fLe);
          double t48_ns = subtract_ns(t.chan8le, t.chan4le);
          
          double tof1458 = 0.5*(t15_ns + t48_ns);
@@ -2470,6 +2512,8 @@ public:
             printf("new dlsc event 2*3*5*8, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.chan5le.time_sec, t.chan8le.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
          }
          
+         fCount2358++;
+
          double t25_ns = subtract_ns(t.chan5le, t.chan2le);
          double t38_ns = subtract_ns(t.chan8le, t.chan3le);
          
@@ -2509,7 +2553,9 @@ public:
             printf("new dlsc event 1*4*6*7, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.chan5le.time_sec, t.chan8le.time_sec, t67_ns, w5_ns, w8_ns, a5_mv, a8_mv);
          }
          
-         double t16_ns = subtract_ns(t.chan6le, t.chan1le);
+         fCount1467++;
+
+         double t16_ns = subtract_ns(t.chan6le, t.GetCh(CHAN1).fLe);
          double t47_ns = subtract_ns(t.chan7le, t.chan4le);
          
          double tof1467 = 0.5*(t16_ns + t47_ns);
@@ -2547,6 +2593,8 @@ public:
          if (fFlags->fPrint) {
             printf("new dlsc event 2*3*6*7, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.chan5le.time_sec, t.chan8le.time_sec, t67_ns, w5_ns, w8_ns, a5_mv, a8_mv);
          }
+
+         fCount2367++;
          
          double t26_ns = subtract_ns(t.chan6le, t.chan2le);
          double t37_ns = subtract_ns(t.chan7le, t.chan3le);
