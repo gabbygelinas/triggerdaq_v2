@@ -674,6 +674,14 @@ bool DlTdcUnpack::Unpack(DlTdcHit*h, uint32_t lo, uint32_t hi)
       
       h->coarse_sec -= fFirstTimeSec;
 
+      if (h->coarse_sec < -1.0 && h->coarse_epoch == 0) {
+         printf("ch %d: correct epoch0\n", ch);
+         fEpoch[ch] = 1;
+         h->coarse_epoch = 1;
+         h->coarse_sec = fClkPeriodNs*h->coarse*1e-9 + h->coarse_epoch*0x40000000*fClkPeriodNs*1e-9;
+         h->coarse_sec -= fFirstTimeSec;
+      }
+
       h->phase = ph; // FindEdge(sr1);
 
       if (h->phase > 0) {
@@ -712,6 +720,14 @@ bool DlTdcUnpack::Unpack(DlTdcHit*h, uint32_t lo, uint32_t hi)
          fFirstTimeSec = h->coarse_sec;
       
       h->coarse_sec -= fFirstTimeSec;
+
+      if (h->coarse_sec < -1.0 && h->coarse_epoch == 0) {
+         printf("ch %d: correct epoch0\n", ch);
+         fEpoch[ch] = 1;
+         h->coarse_epoch = 1;
+         h->coarse_sec = fClkPeriodNs*h->coarse*1e-9 + h->coarse_epoch*0x40000000*fClkPeriodNs*1e-9;
+         h->coarse_sec -= fFirstTimeSec;
+      }
 
       h->phase = ph; // FindEdge(sr1);
 
