@@ -134,6 +134,18 @@ public:
 
 #define MAX_TDC_CHAN 11
 
+#define CHANA 0
+#define CHANB 1
+#define CHAN1 2
+#define CHAN2 3
+#define CHAN3 4
+#define CHAN4 5
+#define CHAN5 6
+#define CHAN6 7
+#define CHAN7 8
+#define CHAN8 9
+#define CHANT 10
+
 class DlTdcEvent
 {
 public: // matching with ADC data
@@ -1723,25 +1735,27 @@ public:
 
       double w1_ns = -9999;
       double a1_mv = -9999;
-      if (t.havechan1le && t.havechan1te) {
-         w1_ns = subtract_ns(t.chan1te, t.chan1le);
+      if (t.fHits[CHAN1].fDown) {
+         //w1_ns = subtract_ns(t.chan1te, t.chan1le);
          //printf("chan2: %.3f ns\n", w1_ns);
          //t.chan1le.Print();
          //printf("\n");
          //t.chan1te.Print();
          //printf("\n");
 
-         if (fabs(w1_ns - t.fHits[2].fWidthNs) > 0.001) {
-            printf("WWW: MISMATCH WIDTH chan1 %f vs %f!\n", w1_ns, t.fHits[2].fWidthNs);
+         w1_ns = t.fHits[CHAN1].fWidthNs;
 
-            printf("chan1: %.3f ns\n", w1_ns);
-            t.chan1le.Print();
-            printf("\n");
-            t.chan1te.Print();
-            printf("\n");
-            t.fHits[2].Print();
-            printf("---\n");
-         }
+         //if (fabs(w1_ns - t.fHits[2].fWidthNs) > 0.001) {
+         //   printf("WWW: MISMATCH WIDTH chan1 %f vs %f!\n", w1_ns, t.fHits[2].fWidthNs);
+         //
+         //   printf("chan1: %.3f ns\n", w1_ns);
+         //   t.chan1le.Print();
+         //   printf("\n");
+         //   t.chan1te.Print();
+         //   printf("\n");
+         //   t.fHits[2].Print();
+         //   printf("---\n");
+         //}
 
          if (w1_ns < 0.01) {
             printf("WWW: BAD WIDTH chan1 %f!\n", w1_ns);
@@ -1753,13 +1767,10 @@ public:
 
       double w2_ns = -9999;
       double a2_mv = -9999;
-      if (t.havechan2le && t.havechan2te) {
-         //printf("chan2:\n");
-         //t.chan2le.Print();
-         //printf("\n");
-         //t.chan2te.Print();
-         //printf("\n");
-         w2_ns = subtract_ns(t.chan2te, t.chan2le);
+      //if (t.havechan2le && t.havechan2te) {
+      if (t.fHits[CHAN2].fDown) {
+         //w2_ns = subtract_ns(t.chan2te, t.chan2le);
+         w2_ns = t.fHits[CHAN2].fWidthNs;
          if (w2_ns < 0.01) {
             printf("WWW: BAD WIDTH chan2 %f!\n", w2_ns);
             w2_ns = -9999;
@@ -1770,8 +1781,10 @@ public:
 
       double w3_ns = -9999;
       double a3_mv = -9999;
-      if (t.havechan3le && t.havechan3te) {
-         w3_ns = subtract_ns(t.chan3te, t.chan3le);
+      //if (t.havechan3le && t.havechan3te) {
+      if (t.fHits[CHAN3].fDown) {
+         //w3_ns = subtract_ns(t.chan3te, t.chan3le);
+         w3_ns = t.fHits[CHAN3].fWidthNs;
          if (w3_ns < 0.01) {
             printf("WWW: BAD WIDTH chan3 %f!\n", w3_ns);
             w3_ns = -9999;
@@ -1782,8 +1795,10 @@ public:
 
       double w4_ns = -9999;
       double a4_mv = -9999;
-      if (t.havechan4le && t.havechan4te) {
-         w4_ns = subtract_ns(t.chan4te, t.chan4le);
+      //if (t.havechan4le && t.havechan4te) {
+      if (t.fHits[CHAN4].fDown) {
+         //w4_ns = subtract_ns(t.chan4te, t.chan4le);
+         w4_ns = t.fHits[CHAN4].fWidthNs;
          if (w4_ns < 0.01) {
             printf("WWW: BAD WIDTH chan4 %f!\n", w4_ns);
             w4_ns = -9999;
@@ -1794,8 +1809,9 @@ public:
 
       double w5_ns = -9999;
       double a5_mv = -9999;
-      if (t.havechan5le && t.havechan5te) {
-         w5_ns = subtract_ns(t.chan5te, t.chan5le);
+
+      if (t.fHits[CHAN5].fDown) {
+         w5_ns = t.fHits[CHAN5].fWidthNs;
          if (w5_ns < 0.01) {
             printf("WWW: BAD WIDTH chan5 %f!\n", w5_ns);
             w5_ns = -9999;
@@ -1808,8 +1824,8 @@ public:
       double w6_ns = -9999;
       double a6_mv = -9999;
 
-      if (t.havechan6le && t.havechan6te) {
-         w6_ns = subtract_ns(t.chan6te, t.chan6le);
+      if (t.fHits[CHAN6].fDown) {
+         w6_ns = t.fHits[CHAN6].fWidthNs;
          if (w6_ns < 0.01) {
             printf("WWW: BAD WIDTH chan6 %f!\n", w6_ns);
             w6_ns = -9999;
@@ -1821,14 +1837,8 @@ public:
       double w7_ns = -9999;
       double a7_mv = -9999;
 
-      if (t.havechan7le && t.havechan7te) {
-         w7_ns = subtract_ns(t.chan7te, t.chan7le);
-
-         //if (w7_ns > 1000 || w7_ns < -1000) {
-         //   printf("HERE %f\n", w7_ns);
-         //   fFlags->fDebug = true;
-         //}
-
+      if (t.fHits[CHAN7].fDown) {
+         w7_ns = t.fHits[CHAN7].fWidthNs;
          if (w7_ns < 0.01) {
             printf("WWW: BAD WIDTH chan7 %f!\n", w7_ns);
             w7_ns = -9999;
@@ -1840,8 +1850,8 @@ public:
       double w8_ns = -9999;
       double a8_mv = -9999;
 
-      if (t.havechan8le && t.havechan8te) {
-         w8_ns = subtract_ns(t.chan8te, t.chan8le);
+      if (t.fHits[CHAN8].fDown) {
+         w8_ns = t.fHits[CHAN8].fWidthNs;
          if (w8_ns < 0.01) {
             printf("WWW: BAD WIDTH chan8 %f!\n", w8_ns);
             w8_ns = -9999;
@@ -1852,19 +1862,11 @@ public:
 
       ///////// TRIGGER CHANNALS A, B and T not used yet ///////////
 
-      if (t.havechanAle && t.havechanAte) {
-         double wA_ns = subtract_ns(t.chanAte, t.chanAle);
-
-         //printf("chanA: %.3f ns\n", wA_ns);
-         //t.chanAle.Print();
-         //printf("\n");
-         //t.chanAte.Print();
-         //printf("\n");
-         //t.fHits[0].Print();
-         //printf("\n");
+      if (t.fHits[CHANA].fDown) {
+         double wA_ns = t.fHits[CHANA].fWidthNs;
 
          if (wA_ns < 0.01) {
-            printf("WWW: BAD WIDTH chanA %f vs %f!\n", wA_ns, t.fHits[0].fWidthNs);
+            printf("WWW: BAD WIDTH chanA %f!\n", wA_ns);
          }
 
          if (fFlags->fPrint) {
@@ -1874,8 +1876,8 @@ public:
          fHwAns->Fill(wA_ns);
       }
 
-      if (t.havechanBle && t.havechanBte) {
-         double wB_ns = subtract_ns(t.chanBte, t.chanBle);
+      if (t.fHits[CHANB].fDown) {
+         double wB_ns = t.fHits[CHANB].fWidthNs;
 
          if (wB_ns < 0.01) {
             printf("WWW: BAD WIDTH chanB %f!\n", wB_ns);
@@ -1888,8 +1890,8 @@ public:
          fHwBns->Fill(wB_ns);
       }
 
-      if (t.havechanTle && t.havechanTte) {
-         double wT_ns = subtract_ns(t.chanTte, t.chanTle);
+      if (t.fHits[CHANT].fDown) {
+         double wT_ns = t.fHits[CHANT].fWidthNs;
 
          if (wT_ns < 0.01) {
             printf("WWW: BAD WIDTH chanT %f!\n", wT_ns);
