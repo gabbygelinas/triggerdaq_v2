@@ -64,42 +64,72 @@ public:
    DlTdcHit fTe;
    bool     fUp   = false;
    bool     fDown = false;
+   int      fCount = 0;
 
 public:
    double fTimeSec  = 0;
-   double fWidthSec = 0;
+   double fWidthNs = 0;
 
 public:
-   void Reset()
+   void Clear()
    {
+      fLe.Clear();
+      fTe.Clear();
       fUp   = false;
       fDown = false;
+      fCount = 0;
       fTimeSec  = 0;
-      fWidthSec = 0;
+      fWidthNs = 0;
    }
 
-   void AddHit(const DlTdcHit& h, bool verbose=false)
+   void AddHit(const DlTdcHit& h)
    {
       if (h.le) {
          if (!fUp) {
             fUp = true;
             fDown = false;
-            fLe = h;
-            fTimeSec = h.time_sec;
+            if (fCount == 0) {
+               fLe = h;
+               fTimeSec = h.time_sec;
+            } else {
+               printf("TTT: MULTIPLE DlTdcHit, ch %d, time %.9f -> %.9f sec, dt %.3f ns, count %d\n", h.ch, fTimeSec, h.time_sec, sec_to_ns(h.time_sec - fTimeSec), fCount);
+            }
          } else {
-            if (verbose) printf("TTT: MISSING TE DlTdcHit, chan %d, time %.9f -> %.9f\n", h.ch, fTimeSec, h.time_sec);
+            double dt_ns = sec_to_ns(h.time_sec - fTimeSec);
+            if (dt_ns < 60.0) {
+               printf("TTT: MISSING DOUBLE TE, dt %.3f ns\n", dt_ns);
+            } else {
+               printf("TTT: MISSING TE DlTdcHit, ch %d, time %.9f -> %.9f sec, dt %.3f ns, count %d\n", h.ch, fTimeSec, h.time_sec, dt_ns, fCount);
+            }
          }
       } else if (h.te) {
          if (fUp) {
             fUp = false;
             fDown = true;
-            fTe = h;
-            fWidthSec = fTe.time_sec - fTimeSec;
+            if (fCount == 0) {
+               fTe = h;
+               fWidthNs = subtract_ns(fTe, fLe);
+            }
+            fCount++;
          } else {
-            if (verbose) printf("TTT: MISSING LE DlTdcHit, chan %d\n", h.ch);
+            if (fCount == 0) {
+               printf("TTT: TE without LE, ch %d\n", h.ch);
+            } else {
+               double dt_ns = sec_to_ns(h.time_sec - fTimeSec);
+               printf("TTT: MISSING LE DlTdcHit, ch %d, count %d, dt %.3f ns\n", h.ch, fCount, dt_ns);
+            }
          }
       }
    };
+
+   void Print() const
+   {
+      printf("DlTdcHit2: u/d %d%d, time_sec %.9f, w_ns %.3f\n", fUp, fDown, fTimeSec, fWidthNs);
+      fLe.Print();
+      printf("\n");
+      fTe.Print();
+      printf("\n");
+   }
 };
 
 #define MAX_TDC_CHAN 11
@@ -233,7 +263,7 @@ public: // TDC hits
    bool havechan8te = false;
 
 public:
-   void Reset()
+   void Clear()
    {
       first_time_sec = 0;
       last_time_sec = 0;
@@ -242,7 +272,7 @@ public:
       max_time_sec = 0;
 
       for (int i=0; i<=MAX_TDC_CHAN; i++) {
-         fHits[i].Reset();
+         fHits[i].Clear();
       }
 
       have0le = false;
@@ -297,7 +327,7 @@ public:
       havechan8te = false;
    }
 
-   void AddHit4A(const DlTdcHit& h, bool verbose)
+   void AddHit4A(const DlTdcHit& h)
    {
       if (first_time_sec == 0) {
          first_time_sec = h.time_sec;
@@ -316,7 +346,7 @@ public:
       assert(h.ch >= 0);
       assert(h.ch <= MAX_TDC_CHAN);
 
-      fHits[h.ch].AddHit(h, verbose);
+      fHits[h.ch].AddHit(h);
       
       if (h.ch == 0 && h.le && !have0le) {
          h0le = h;
@@ -429,7 +459,7 @@ public:
       }
    }
 
-   void AddHit8(const DlTdcHit& h, bool verbose)
+   void AddHit8(const DlTdcHit& h)
    {
       if (first_time_sec == 0) {
          first_time_sec = h.time_sec;
@@ -448,7 +478,7 @@ public:
       assert(h.ch >= 0);
       assert(h.ch <= MAX_TDC_CHAN);
 
-      fHits[h.ch].AddHit(h, verbose);
+      fHits[h.ch].AddHit(h);
       
       if (h.ch == 0 && h.le && !havechanAle) {
          chanAle = h;
@@ -1685,7 +1715,7 @@ public:
       for (size_t ch=0; ch<=MAX_TDC_CHAN; ch++) {
          //printf("ch %d, up down %d %d\n", ch, t.fHits[ch].fUp, t.fHits[ch].fDown);
          if (!t.fHits[ch].fUp && t.fHits[ch].fDown) {
-            fHwidth[ch]->Fill(sec_to_ns(t.fHits[ch].fWidthSec));
+            fHwidth[ch]->Fill(t.fHits[ch].fWidthNs);
          }
       }
 
@@ -1700,8 +1730,21 @@ public:
          //printf("\n");
          //t.chan1te.Print();
          //printf("\n");
+
+         if (fabs(w1_ns - t.fHits[2].fWidthNs) > 0.001) {
+            printf("WWW: MISMATCH WIDTH chan1 %f vs %f!\n", w1_ns, t.fHits[2].fWidthNs);
+
+            printf("chan1: %.3f ns\n", w1_ns);
+            t.chan1le.Print();
+            printf("\n");
+            t.chan1te.Print();
+            printf("\n");
+            t.fHits[2].Print();
+            printf("---\n");
+         }
+
          if (w1_ns < 0.01) {
-            printf("TTT: BAD WIDTH chan1 %f!\n", w1_ns);
+            printf("WWW: BAD WIDTH chan1 %f!\n", w1_ns);
             w1_ns = -9999;
          } else {
             a1_mv = ns_to_mv(w1_ns);
@@ -1718,7 +1761,7 @@ public:
          //printf("\n");
          w2_ns = subtract_ns(t.chan2te, t.chan2le);
          if (w2_ns < 0.01) {
-            printf("TTT: BAD WIDTH chan2 %f!\n", w2_ns);
+            printf("WWW: BAD WIDTH chan2 %f!\n", w2_ns);
             w2_ns = -9999;
          } else {
             a2_mv = ns_to_mv(w2_ns);
@@ -1730,7 +1773,7 @@ public:
       if (t.havechan3le && t.havechan3te) {
          w3_ns = subtract_ns(t.chan3te, t.chan3le);
          if (w3_ns < 0.01) {
-            printf("TTT: BAD WIDTH chan3 %f!\n", w3_ns);
+            printf("WWW: BAD WIDTH chan3 %f!\n", w3_ns);
             w3_ns = -9999;
          } else {
             a3_mv = ns_to_mv(w3_ns);
@@ -1742,7 +1785,7 @@ public:
       if (t.havechan4le && t.havechan4te) {
          w4_ns = subtract_ns(t.chan4te, t.chan4le);
          if (w4_ns < 0.01) {
-            printf("TTT: BAD WIDTH chan4 %f!\n", w4_ns);
+            printf("WWW: BAD WIDTH chan4 %f!\n", w4_ns);
             w4_ns = -9999;
          } else {
             a4_mv = ns_to_mv(w4_ns);
@@ -1754,7 +1797,7 @@ public:
       if (t.havechan5le && t.havechan5te) {
          w5_ns = subtract_ns(t.chan5te, t.chan5le);
          if (w5_ns < 0.01) {
-            printf("TTT: BAD WIDTH chan5 %f!\n", w5_ns);
+            printf("WWW: BAD WIDTH chan5 %f!\n", w5_ns);
             w5_ns = -9999;
          } else {
             a5_mv = ns_to_mv(w5_ns);
@@ -1768,7 +1811,7 @@ public:
       if (t.havechan6le && t.havechan6te) {
          w6_ns = subtract_ns(t.chan6te, t.chan6le);
          if (w6_ns < 0.01) {
-            printf("TTT: BAD WIDTH chan6 %f!\n", w6_ns);
+            printf("WWW: BAD WIDTH chan6 %f!\n", w6_ns);
             w6_ns = -9999;
          } else {
             a6_mv = ns_to_mv(w6_ns);
@@ -1787,7 +1830,7 @@ public:
          //}
 
          if (w7_ns < 0.01) {
-            printf("TTT: BAD WIDTH chan7 %f!\n", w7_ns);
+            printf("WWW: BAD WIDTH chan7 %f!\n", w7_ns);
             w7_ns = -9999;
          } else {
             a7_mv = ns_to_mv(w7_ns);
@@ -1800,7 +1843,7 @@ public:
       if (t.havechan8le && t.havechan8te) {
          w8_ns = subtract_ns(t.chan8te, t.chan8le);
          if (w8_ns < 0.01) {
-            printf("TTT: BAD WIDTH chan8 %f!\n", w8_ns);
+            printf("WWW: BAD WIDTH chan8 %f!\n", w8_ns);
             w8_ns = -9999;
          } else {
             a8_mv = ns_to_mv(w8_ns);
@@ -1812,8 +1855,16 @@ public:
       if (t.havechanAle && t.havechanAte) {
          double wA_ns = subtract_ns(t.chanAte, t.chanAle);
 
+         //printf("chanA: %.3f ns\n", wA_ns);
+         //t.chanAle.Print();
+         //printf("\n");
+         //t.chanAte.Print();
+         //printf("\n");
+         //t.fHits[0].Print();
+         //printf("\n");
+
          if (wA_ns < 0.01) {
-            printf("TTT: BAD WIDTH chanA %f!\n", wA_ns);
+            printf("WWW: BAD WIDTH chanA %f vs %f!\n", wA_ns, t.fHits[0].fWidthNs);
          }
 
          if (fFlags->fPrint) {
@@ -1827,7 +1878,7 @@ public:
          double wB_ns = subtract_ns(t.chanBte, t.chanBle);
 
          if (wB_ns < 0.01) {
-            printf("TTT: BAD WIDTH chanB %f!\n", wB_ns);
+            printf("WWW: BAD WIDTH chanB %f!\n", wB_ns);
          }
 
          if (fFlags->fPrint) {
@@ -1841,7 +1892,7 @@ public:
          double wT_ns = subtract_ns(t.chanTte, t.chanTle);
 
          if (wT_ns < 0.01) {
-            printf("TTT: BAD WIDTH chanT %f!\n", wT_ns);
+            printf("WWW: BAD WIDTH chanT %f!\n", wT_ns);
          }
 
          if (fFlags->fPrint) {
@@ -2842,37 +2893,55 @@ public:
 
             //printf("TTX %.9f %.9f sec, first %.9f, last %.9f sec\n", fCt->min_time_sec, fCt->max_time_sec, fCt->first_time_sec, fCt->last_time_sec);
 
-            if (hit_dt_ns > 300.0) {
+            if (h.le && hit_dt_ns > 300.0) {
                double event_dt_ns = sec_to_ns(h.time_sec - fCt->min_time_sec);
 
-               //printf("TTT %.9f -> %.9f sec, dt %.3f ns\n", fCt->min_time_sec, h.time_sec, event_dt_ns);
-               fHeventdt1ns->Fill(event_dt_ns);
-               fHeventdt2ns->Fill(event_dt_ns);
-               fHeventdt3ns->Fill(event_dt_ns);
-               fHeventdt4ns->Fill(event_dt_ns);
 
-               if (fFlags->fHaveAdc) {
-                  if (fCt->havexle && fCt->havexte) {
-                     if (fFirstTrig) {
-                        fU->Reset();
-                        fFirstTrig = false;
-                     } else {
-                        fCt->time_sec = fCt->hxle.time_sec;
-                        fCt->dt = fCt->hxle.time_sec - fLastXtime;
-                        fLastXtime = fCt->hxle.time_sec;
-                        fTq.push_back(fCt);
-                        fCt = new DlTdcEvent;
-                     }
-                  } else {
-                     fCt->Reset();
-                  }
-               } else {
-                  FinishEventT(fPrevEventTimeSec, *fCt);
+               if (0) {
+                  printf("finish event ch %d, lete %d%d, time %.9f sec, max %.9f sec, dt %.3f ns\n", h.ch, h.le, h.te, h.time_sec, fCt->max_time_sec, event_dt_ns);
+                  //h.Print();
+                  //printf("===\n");
                }
 
-               fPrevEventTimeSec = fCt->min_time_sec;
+               for (size_t ch=0; ch<MAX_TDC_CHAN; ch++) {
+                  if (fCt->fHits[ch].fUp) {
+                     printf("TTT: ch %zu no TE\n", ch);
+                  }
+               }
 
-               fCt->Reset();
+               if (1) {
+                  //printf("TTT %.9f -> %.9f sec, dt %.3f ns\n", fCt->min_time_sec, h.time_sec, event_dt_ns);
+                  fHeventdt1ns->Fill(event_dt_ns);
+                  fHeventdt2ns->Fill(event_dt_ns);
+                  fHeventdt3ns->Fill(event_dt_ns);
+                  fHeventdt4ns->Fill(event_dt_ns);
+                  
+                  if (fFlags->fHaveAdc) {
+                     if (fCt->havexle && fCt->havexte) {
+                        if (fFirstTrig) {
+                           fU->Reset();
+                           fFirstTrig = false;
+                        } else {
+                           fCt->time_sec = fCt->hxle.time_sec;
+                           fCt->dt = fCt->hxle.time_sec - fLastXtime;
+                           fLastXtime = fCt->hxle.time_sec;
+                           fTq.push_back(fCt);
+                           fCt = new DlTdcEvent;
+                        }
+                     } else {
+                        fCt->Clear();
+                     }
+                  } else {
+                     FinishEventT(fPrevEventTimeSec, *fCt);
+                  }
+                  
+                  fPrevEventTimeSec = fCt->min_time_sec;
+                  
+                  fCt->Clear();
+
+                  //printf("Clear: ");
+                  //fCt->fHits[2].Print();
+               }
             }
 
 #ifdef HAVE_ROOT
@@ -2907,9 +2976,16 @@ public:
             }
 #endif
             if (runinfo->fRunNo < 905994)
-               fCt->AddHit4A(h, fFlags->fDebug);
+               fCt->AddHit4A(h);
             else
-               fCt->AddHit8(h, fFlags->fDebug);
+               fCt->AddHit8(h);
+            
+            //if (h.ch == 2) {
+            //   printf("add ch 2\n");
+            //   h.Print();
+            //   printf("\n");
+            //   fCt->fHits[2].Print();
+            //}
 
          } // loop over data
 
