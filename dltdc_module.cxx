@@ -51,7 +51,7 @@ class DlTdcFlags
 public:
    bool fEnabled = false;
    bool fCalib   = false;
-   bool fHaveAdc = false;
+   //bool fHaveAdc = false;
    bool fDebug = false;
    bool fPrint = false;
    //bool fEnforceCoincidence = false;
@@ -163,11 +163,11 @@ public: // TDC hits
    DlTdcHit2 fHits[MAX_TDC_CHAN+1];
 
 public: // TDC hits
-   DlTdcHit h0le;
-   DlTdcHit h0te;
+   //DlTdcHit h0le;
+   //DlTdcHit h0te;
    
-   DlTdcHit h1le;
-   DlTdcHit h1te;
+   //DlTdcHit h1le;
+   //DlTdcHit h1te;
    
    //DlTdcHit h2le;
    //DlTdcHit h2te;
@@ -175,104 +175,104 @@ public: // TDC hits
    //DlTdcHit h3le;
    //DlTdcHit h3te;
    
-   DlTdcHit h4le;
-   DlTdcHit h4te;
+   //DlTdcHit h4le;
+   //DlTdcHit h4te;
    
-   DlTdcHit h5le;
-   DlTdcHit h5te;
+   //DlTdcHit h5le;
+   //DlTdcHit h5te;
 
-   DlTdcHit h8le;
-   DlTdcHit h8te;
+   //DlTdcHit h8le;
+   //DlTdcHit h8te;
 
-   DlTdcHit h9le;
-   DlTdcHit h9te;
+   //DlTdcHit h9le;
+   //DlTdcHit h9te;
 
-   DlTdcHit hxle;
-   DlTdcHit hxte;
+   //DlTdcHit hxle;
+   //DlTdcHit hxte;
 
-   bool have0le = false;
-   bool have1le = false;
-   bool have0te = false;
-   bool have1te = false;
+   //bool have0le = false;
+   //bool have1le = false;
+   //bool have0te = false;
+   //bool have1te = false;
    
-   bool have4le = false;
-   bool have5le = false;
-   bool have4te = false;
-   bool have5te = false;
+   //bool have4le = false;
+   //bool have5le = false;
+   //bool have4te = false;
+   //bool have5te = false;
    
-   bool have8le = false;
-   bool have9le = false;
-   bool have8te = false;
-   bool have9te = false;
+   //bool have8le = false;
+   //bool have9le = false;
+   //bool have8te = false;
+   //bool have9te = false;
 
-   bool havexle = false;
-   bool havexte = false;
+   //bool havexle = false;
+   //bool havexte = false;
 
-   DlTdcHit chanAle;
-   DlTdcHit chanAte;
+   //DlTdcHit chanAle;
+   //DlTdcHit chanAte;
 
-   DlTdcHit chanBle;
-   DlTdcHit chanBte;
+   //DlTdcHit chanBle;
+   //DlTdcHit chanBte;
 
-   DlTdcHit chanTle;
-   DlTdcHit chanTte;
+   //DlTdcHit chanTle;
+   //DlTdcHit chanTte;
 
-   DlTdcHit chan1le;
-   DlTdcHit chan1te;
+   //DlTdcHit chan1le;
+   //DlTdcHit chan1te;
 
-   DlTdcHit chan2le;
-   DlTdcHit chan2te;
+   //DlTdcHit chan2le;
+   //DlTdcHit chan2te;
 
-   DlTdcHit chan3le;
-   DlTdcHit chan3te;
+   //DlTdcHit chan3le;
+   //DlTdcHit chan3te;
 
-   DlTdcHit chan4le;
-   DlTdcHit chan4te;
+   //DlTdcHit chan4le;
+   //DlTdcHit chan4te;
 
-   DlTdcHit chan5le;
-   DlTdcHit chan5te;
+   //DlTdcHit chan5le;
+   //DlTdcHit chan5te;
 
-   DlTdcHit chan6le;
-   DlTdcHit chan6te;
+   //DlTdcHit chan6le;
+   //DlTdcHit chan6te;
 
-   DlTdcHit chan7le;
-   DlTdcHit chan7te;
+   //DlTdcHit chan7le;
+   //DlTdcHit chan7te;
 
-   DlTdcHit chan8le;
-   DlTdcHit chan8te;
+   //DlTdcHit chan8le;
+   //DlTdcHit chan8te;
 
-   bool havechanAle = false;
-   bool havechanAte = false;
+   //bool havechanAle = false;
+   //bool havechanAte = false;
 
-   bool havechanBle = false;
-   bool havechanBte = false;
+   //bool havechanBle = false;
+   //bool havechanBte = false;
 
-   bool havechanTle = false;
-   bool havechanTte = false;
+   //bool havechanTle = false;
+   //bool havechanTte = false;
 
-   bool havechan1le = false;
-   bool havechan1te = false;
+   //bool havechan1le = false;
+   //bool havechan1te = false;
 
-   bool havechan2le = false;
-   bool havechan2te = false;
+   //bool havechan2le = false;
+   //bool havechan2te = false;
 
-   bool havechan3le = false;
-   bool havechan3te = false;
+   //bool havechan3le = false;
+   //bool havechan3te = false;
 
-   bool havechan4le = false;
-   bool havechan4te = false;
+   //bool havechan4le = false;
+   //bool havechan4te = false;
 
-   bool havechan5le = false;
-   bool havechan5te = false;
+   //bool havechan5le = false;
+   //bool havechan5te = false;
 
-   bool havechan6le = false;
-   bool havechan6te = false;
+   //bool havechan6le = false;
+   //bool havechan6te = false;
 
-   bool havechan7le = false;
-   bool havechan7te = false;
+   //bool havechan7le = false;
+   //bool havechan7te = false;
 
-   bool havechan8le = false;
-   bool havechan8te = false;
+   //bool havechan8le = false;
+   //bool havechan8te = false;
 
 public:
    void Clear()
@@ -287,6 +287,7 @@ public:
          fHits[i].Clear();
       }
 
+#if 0
       have0le = false;
       have1le = false;
       have0te = false;
@@ -304,41 +305,43 @@ public:
       
       havexle = false;
       havexte = false;
+#endif
 
-      havechanAle = false;
-      havechanAte = false;
+      //havechanAle = false;
+      //havechanAte = false;
 
-      havechanBle = false;
-      havechanBte = false;
+      //havechanBle = false;
+      //havechanBte = false;
 
-      havechanTle = false;
-      havechanTte = false;
+      //havechanTle = false;
+      //havechanTte = false;
 
-      havechan1le = false;
-      havechan1te = false;
+      //havechan1le = false;
+      //havechan1te = false;
 
-      havechan2le = false;
-      havechan2te = false;
+      //havechan2le = false;
+      //havechan2te = false;
 
-      havechan3le = false;
-      havechan3te = false;
+      //havechan3le = false;
+      //havechan3te = false;
 
-      havechan4le = false;
-      havechan4te = false;
+      //havechan4le = false;
+      //havechan4te = false;
 
-      havechan5le = false;
-      havechan5te = false;
+      //havechan5le = false;
+      //havechan5te = false;
 
-      havechan6le = false;
-      havechan6te = false;
+      //havechan6le = false;
+      //havechan6te = false;
 
-      havechan7le = false;
-      havechan7te = false;
+      //havechan7le = false;
+      //havechan7te = false;
 
-      havechan8le = false;
-      havechan8te = false;
+      //havechan8le = false;
+      //havechan8te = false;
    }
 
+#if 0
    void AddHit4A(const DlTdcHit& h)
    {
       if (first_time_sec == 0) {
@@ -430,15 +433,15 @@ public:
          havexte = true;
       }
 
-      if (h.ch == 8 && h.le && !havechan1le) {
-         chan1le = h;
-         havechan1le = true;
-      }
+      //if (h.ch == 8 && h.le && !havechan1le) {
+      //   chan1le = h;
+      //   havechan1le = true;
+      //}
       
-      if (h.ch == 8 && h.te && !havechan1te) {
-         chan1te = h;
-         havechan1te = true;
-      }
+      //if (h.ch == 8 && h.te && !havechan1te) {
+      //   chan1te = h;
+      //   havechan1te = true;
+      //}
 
       if (h.ch == 9 && h.le && !havechan2le) {
          chan2le = h;
@@ -460,16 +463,17 @@ public:
          havechan3te = true;
       }
 
-      if (h.ch == 11 && h.le && !havechan4le) {
-         chan4le = h;
-         havechan4le = true;
-      }
+      //if (h.ch == 11 && h.le && !havechan4le) {
+      //   chan4le = h;
+      //   havechan4le = true;
+      //}
       
-      if (h.ch == 11 && h.te && !havechan4te) {
-         chan4te = h;
-         havechan4te = true;
-      }
+      //if (h.ch == 11 && h.te && !havechan4te) {
+      //   chan4te = h;
+      //   havechan4te = true;
+      //}
    }
+#endif
 
    void AddHit8(const DlTdcHit& h)
    {
@@ -491,7 +495,8 @@ public:
       assert(h.ch <= MAX_TDC_CHAN);
 
       fHits[h.ch].AddHit(h);
-      
+
+#if 0      
       if (h.ch == 0 && h.le && !havechanAle) {
          chanAle = h;
          havechanAle = true;
@@ -521,47 +526,49 @@ public:
          chanTte = h;
          havechanTte = true;
       }
+#endif
 
-      if (h.ch == 2 && h.le && !havechan1le) {
-         chan1le = h;
-         havechan1le = true;
-      }
+      //if (h.ch == 2 && h.le && !havechan1le) {
+      //   chan1le = h;
+      //   havechan1le = true;
+      //}
       
-      if (h.ch == 2 && h.te && !havechan1te) {
-         chan1te = h;
-         havechan1te = true;
-      }
+      //if (h.ch == 2 && h.te && !havechan1te) {
+      //   chan1te = h;
+      //   havechan1te = true;
+      //}
 
-      if (h.ch == 3 && h.le && !havechan2le) {
-         chan2le = h;
-         havechan2le = true;
-      }
+      //if (h.ch == 3 && h.le && !havechan2le) {
+      //   chan2le = h;
+      //   havechan2le = true;
+      //}
       
-      if (h.ch == 3 && h.te && !havechan2te) {
-         chan2te = h;
-         havechan2te = true;
-      }
+      //if (h.ch == 3 && h.te && !havechan2te) {
+      //   chan2te = h;
+      //   havechan2te = true;
+      //}
 
-      if (h.ch == 4 && h.le && !havechan3le) {
-         chan3le = h;
-         havechan3le = true;
-      }
+      //if (h.ch == 4 && h.le && !havechan3le) {
+      //   chan3le = h;
+      //   havechan3le = true;
+      //}
       
-      if (h.ch == 4 && h.te && !havechan3te) {
-         chan3te = h;
-         havechan3te = true;
-      }
+      //if (h.ch == 4 && h.te && !havechan3te) {
+      //   chan3te = h;
+      //   havechan3te = true;
+      //}
 
-      if (h.ch == 5 && h.le && !havechan4le) {
-         chan4le = h;
-         havechan4le = true;
-      }
+      //if (h.ch == 5 && h.le && !havechan4le) {
+      //   chan4le = h;
+      //   havechan4le = true;
+      //}
       
-      if (h.ch == 5 && h.te && !havechan4te) {
-         chan4te = h;
-         havechan4te = true;
-      }
+      //if (h.ch == 5 && h.te && !havechan4te) {
+      //   chan4te = h;
+      //   havechan4te = true;
+      //}
 
+#if 0
       if (h.ch == 6 && h.le && !havechan5le) {
          chan5le = h;
          havechan5le = true;
@@ -601,6 +608,7 @@ public:
          chan8te = h;
          havechan8te = true;
       }
+#endif
    }
 
    bool HaveCh(int ch) const
@@ -1311,7 +1319,7 @@ public:
       fHeventdt3ns = new TH1D("eventdt3ns", "event dt 1000 us", 100, 1000, 1000000); // 1 msec
       fHeventdt4ns = new TH1D("eventdt4ns", "event dt 1000 ms", 100, 1000000, 1000000000); // 1 sec
 
-      if (fFlags->fHaveAdc || fFlags->fEnabled) {
+      if (/*fFlags->fHaveAdc ||*/ fFlags->fEnabled) {
 	 fDL1 = new TCanvas("dl1", "dl1", 1600, 800);
          fDL1->Clear();
          fDL1->Divide(4, 2);
@@ -1746,7 +1754,7 @@ public:
       //}
 
       if (fFlags->fDebug) {
-         printf("EVENT %d %d %d %d %d %d %d %d, ABT %d%d%d\n", t.havechan1le, t.havechan2le, t.havechan3le, t.havechan4le, t.havechan5le, t.havechan6le, t.havechan7le, t.havechan8le, t.havechanAle, t.havechanBle, t.havechanTle);
+         printf("EVENT %d %d %d %d %d %d %d %d, ABT %d%d%d\n", t.HaveCh(CHAN1), t.HaveCh(CHAN2), t.HaveCh(CHAN3), t.HaveCh(CHAN4), t.HaveCh(CHAN5), t.HaveCh(CHAN6), t.HaveCh(CHAN7), t.HaveCh(CHAN8), t.HaveCh(CHANA), t.HaveCh(CHANB), t.HaveCh(CHANT));
       }
 
       //if (w > 500) {
@@ -1902,7 +1910,7 @@ public:
          }
 
          if (fFlags->fPrint) {
-            printf("new dlsc event A, le %.9f, w %.0f!\n", t.chanAle.time_sec, wA_ns);
+            printf("new dlsc event A, le %.9f, w %.0f!\n", t.GetCh(CHANA).fLe.time_sec, wA_ns);
          }
 
          fHwAns->Fill(wA_ns);
@@ -1916,7 +1924,7 @@ public:
          }
 
          if (fFlags->fPrint) {
-            printf("new dlsc event B, le %.9f, w %.0f!\n", t.chanBle.time_sec, wB_ns);
+            printf("new dlsc event B, le %.9f, w %.0f!\n", t.GetCh(CHANB).fLe.time_sec, wB_ns);
          }
 
          fHwBns->Fill(wB_ns);
@@ -1930,7 +1938,7 @@ public:
          }
 
          if (fFlags->fPrint) {
-            printf("new dlsc event T, le %.9f, w %.0f!\n", t.chanTle.time_sec, wT_ns);
+            printf("new dlsc event T, le %.9f, w %.0f!\n", t.GetCh(CHANT).fLe.time_sec, wT_ns);
          }
 
          fHwTns->Fill(wT_ns);
@@ -1949,7 +1957,7 @@ public:
 
       if (w2_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 2, le %.9f sec, w2 %.0f ns, a2 %.0f mV!\n", t.chan2le.time_sec, w2_ns, a2_mv);
+            printf("new dlsc event 2, le %.9f sec, w2 %.0f ns, a2 %.0f mV!\n", t.GetCh(CHAN2).fLe.time_sec, w2_ns, a2_mv);
          }
 
          fHw2ns->Fill(w2_ns);
@@ -1958,7 +1966,7 @@ public:
 
       if (w3_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 3, le %.9f sec, w3 %.0f ns, a3 %.0f mV!\n", t.chan3le.time_sec, w3_ns, a3_mv);
+            printf("new dlsc event 3, le %.9f sec, w3 %.0f ns, a3 %.0f mV!\n", t.GetCh(CHAN3).fLe.time_sec, w3_ns, a3_mv);
          }
 
          fHw3ns->Fill(w3_ns);
@@ -1967,7 +1975,7 @@ public:
 
       if (w4_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 4, le %.9f sec, w4 %.0f ns, a4 %.0f mV!\n", t.chan4le.time_sec, w4_ns, a4_mv);
+            printf("new dlsc event 4, le %.9f sec, w4 %.0f ns, a4 %.0f mV!\n", t.GetCh(CHAN4).fLe.time_sec, w4_ns, a4_mv);
          }
 
          fHw4ns->Fill(w4_ns);
@@ -1976,7 +1984,7 @@ public:
 
       if (w5_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 5, le %.9f sec, w5 %.0f ns, a5 %.0f mV!\n", t.chan5le.time_sec, w5_ns, a5_mv);
+            printf("new dlsc event 5, le %.9f sec, w5 %.0f ns, a5 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, w5_ns, a5_mv);
          }
 
          fHw5ns->Fill(w5_ns);
@@ -1985,7 +1993,7 @@ public:
 
       if (w6_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 6, le %.9f sec, w6 %.0f ns, a6 %.0f mV!\n", t.chan6le.time_sec, w6_ns, a6_mv);
+            printf("new dlsc event 6, le %.9f sec, w6 %.0f ns, a6 %.0f mV!\n", t.GetCh(CHAN6).fLe.time_sec, w6_ns, a6_mv);
          }
 
          fHw6ns->Fill(w6_ns);
@@ -1994,7 +2002,7 @@ public:
 
       if (w7_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 7, le %.9f sec, w7 %.0f ns, a7 %.0f mV!\n", t.chan7le.time_sec, w7_ns, a7_mv);
+            printf("new dlsc event 7, le %.9f sec, w7 %.0f ns, a7 %.0f mV!\n", t.GetCh(CHAN7).fLe.time_sec, w7_ns, a7_mv);
          }
 
          fHw7ns->Fill(w7_ns);
@@ -2003,7 +2011,7 @@ public:
 
       if (w8_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 8, le %.9f sec, w8 %.0f ns, a8 %.0f mV!\n", t.chan8le.time_sec, w8_ns, a8_mv);
+            printf("new dlsc event 8, le %.9f sec, w8 %.0f ns, a8 %.0f mV!\n", t.GetCh(CHAN8).fLe.time_sec, w8_ns, a8_mv);
          }
 
          fHw8ns->Fill(w8_ns);
@@ -2093,7 +2101,7 @@ public:
 #endif
 
       // Old bar.
-      if (t.have0le && t.have0te && t.have1le && t.have1te && t.have4le && t.have4te && t.have5le && t.have5te) {
+      //if (t.have0le && t.have0te && t.have1le && t.have1te && t.have4le && t.have4te && t.have5le && t.have5te) {
          //DlTdcHit x;
 
          //x = t.h1le;
@@ -2183,7 +2191,7 @@ public:
          //fX3->Fill(w4, a.a10.amp);
          //fX4->Fill(w4, a.a11.amp);
 //#endif
-      }
+      //}
       //end of FinishEventTA (OLD BAR)
 
       ////////////////////////////////////////////////////
@@ -2275,22 +2283,22 @@ public:
       ///////// CROSS BOARD COINCIDENCES ///////////
       
       if (w1_ns > 0 && w2_ns > 0) {
-         double t12_ns = subtract_ns(t.chan2le, t.GetCh(CHAN1).fLe);
+         double t12_ns = subtract_ns(t.GetCh(CHAN2).fLe, t.GetCh(CHAN1).fLe);
          fHt12ns->Fill(t12_ns);
       }
       
       if (w3_ns > 0 && w4_ns > 0) {
-         double t34_ns = subtract_ns(t.chan4le, t.chan3le);
+         double t34_ns = subtract_ns(t.GetCh(CHAN4).fLe, t.GetCh(CHAN3).fLe);
          fHt34ns->Fill(t34_ns);
       }
       
       if (w5_ns > 0 && w6_ns > 0) {
-         double t56_ns = subtract_ns(t.chan6le, t.chan5le);
+         double t56_ns = subtract_ns(t.GetCh(CHAN6).fLe, t.GetCh(CHAN5).fLe);
          fHt56ns->Fill(t56_ns);
       }
 
       if (w7_ns > 0 && w8_ns > 0) {
-         double t78_ns = subtract_ns(t.chan8le, t.chan7le);
+         double t78_ns = subtract_ns(t.GetCh(CHAN8).fLe, t.GetCh(CHAN7).fLe);
          fHt78ns->Fill(t78_ns);
       }
 
@@ -2299,10 +2307,10 @@ public:
       double t14_ns = -9999;
 
       if (w1_ns > 0 && w4_ns > 0) {
-         t14_ns = subtract_ns(t.chan4le, t.GetCh(CHAN1).fLe);
+         t14_ns = subtract_ns(t.GetCh(CHAN4).fLe, t.GetCh(CHAN1).fLe);
 
          if (fFlags->fPrint) {
-            printf("new dlsc event 1*4, le %.9f %.9f sec, diff14 %.0f ns, w1 %.0f, w4 %.0f ns, a1 %.0f, a4 %.0f mV!\n", t.GetCh(CHAN1).fLe.time_sec, t.chan4le.time_sec, t14_ns, w1_ns, w4_ns, a1_mv, a4_mv);
+            printf("new dlsc event 1*4, le %.9f %.9f sec, diff14 %.0f ns, w1 %.0f, w4 %.0f ns, a1 %.0f, a4 %.0f mV!\n", t.GetCh(CHAN1).fLe.time_sec, t.GetCh(CHAN4).fLe.time_sec, t14_ns, w1_ns, w4_ns, a1_mv, a4_mv);
          }
 
          fCount14++;
@@ -2340,8 +2348,8 @@ public:
 
 #if 0
          if (w5_ns > 0) {
-            double t15_ns = subtract_ns(t.chan5le, t.chan1le);
-            double t45_ns = subtract_ns(t.chan5le, t.chan4le);
+            double t15_ns = subtract_ns(t.GetCh(CHAN5).fLe, t.chan1le);
+            double t45_ns = subtract_ns(t.GetCh(CHAN5).fLe, t.chan4le);
             fHt15ns->Fill(t15_ns);
             fHt45ns->Fill(t45_ns);
 
@@ -2353,8 +2361,8 @@ public:
          }
 
          if (w6_ns > 0) {
-            double t16_ns = subtract_ns(t.chan6le, t.chan1le);
-            double t46_ns = subtract_ns(t.chan6le, t.chan4le);
+            double t16_ns = subtract_ns(t.GetCh(CHAN6).fLe, t.chan1le);
+            double t46_ns = subtract_ns(t.GetCh(CHAN6).fLe, t.chan4le);
             fHt16ns->Fill(t16_ns);
             fHt46ns->Fill(t46_ns);
 
@@ -2410,10 +2418,10 @@ public:
       double t23_ns = -9999;
 
       if (w2_ns > 0 && w3_ns > 0) {
-         t23_ns = subtract_ns(t.chan3le, t.chan2le);
+         t23_ns = subtract_ns(t.GetCh(CHAN3).fLe, t.GetCh(CHAN2).fLe);
          
          if (fFlags->fPrint) {
-            printf("new dlsc event 2*3, le %.9f %.9f sec, diff23 %.0f ns, w2 %.0f, w3 %.0f ns!\n", t.chan2le.time_sec, t.chan3le.time_sec, t23_ns, w2_ns, w3_ns);
+            printf("new dlsc event 2*3, le %.9f %.9f sec, diff23 %.0f ns, w2 %.0f, w3 %.0f ns!\n", t.GetCh(CHAN2).fLe.time_sec, t.GetCh(CHAN3).fLe.time_sec, t23_ns, w2_ns, w3_ns);
          }
          
          fCount23++;
@@ -2426,10 +2434,10 @@ public:
       double t58_ns = -9999;
 
       if (w5_ns > 0 && w8_ns > 0) {
-         t58_ns = subtract_ns(t.chan8le, t.chan5le);
+         t58_ns = subtract_ns(t.GetCh(CHAN8).fLe, t.GetCh(CHAN5).fLe);
 
          if (fFlags->fPrint) {
-            printf("new dlsc event 5*8, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.chan5le.time_sec, t.chan8le.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
+            printf("new dlsc event 5*8, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
          }
 
          fCount58++;
@@ -2442,10 +2450,10 @@ public:
       double t67_ns = -9999;
    
       if (w6_ns > 0 && w7_ns > 0) {
-         t67_ns = subtract_ns(t.chan7le, t.chan6le);
+         t67_ns = subtract_ns(t.GetCh(CHAN7).fLe, t.GetCh(CHAN6).fLe);
 
          if (fFlags->fPrint) {
-            printf("new dlsc event 6*7, le %.9f %.9f sec, diff67 %.0f ns, w6 %.0f, w7 %.0f ns, a6 %.0f, a7 %.0f mV!\n", t.chan6le.time_sec, t.chan7le.time_sec, t67_ns, w6_ns, w7_ns, a6_mv, a7_mv);
+            printf("new dlsc event 6*7, le %.9f %.9f sec, diff67 %.0f ns, w6 %.0f, w7 %.0f ns, a6 %.0f, a7 %.0f mV!\n", t.GetCh(CHAN6).fLe.time_sec, t.GetCh(CHAN7).fLe.time_sec, t67_ns, w6_ns, w7_ns, a6_mv, a7_mv);
          }
 
          fCount67++;
@@ -2459,18 +2467,18 @@ public:
 
       if (t14_ns > -9999 && t58_ns > -9999) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 1*4*5*8, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.chan5le.time_sec, t.chan8le.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
+            printf("new dlsc event 1*4*5*8, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
          }
 
          fCount1458++;
          
          //double avg14 = 0.5*(t.chan1le.time_sec + t.chan4le.time_sec);
-         //double avg58 = 0.5*(t.chan5le.time_sec + t.chan8le.time_sec);
+         //double avg58 = 0.5*(t.GetCh(CHAN5).fLe.time_sec + t.GetCh(CHAN8).fLe.time_sec);
          //
          //double tof1458 = avg58 - avg14;
          
-         double t15_ns = subtract_ns(t.chan5le, t.GetCh(CHAN1).fLe);
-         double t48_ns = subtract_ns(t.chan8le, t.chan4le);
+         double t15_ns = subtract_ns(t.GetCh(CHAN5).fLe, t.GetCh(CHAN1).fLe);
+         double t48_ns = subtract_ns(t.GetCh(CHAN8).fLe, t.GetCh(CHAN4).fLe);
          
          double tof1458 = 0.5*(t15_ns + t48_ns);
          
@@ -2491,7 +2499,7 @@ public:
 
       if ((t14_ns > -9999) && !(t58_ns > -9999)) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 1*4*!(5*8), le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.chan5le.time_sec, t.chan8le.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
+            printf("new dlsc event 1*4*!(5*8), le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
          }
          
          fHt14ns_14not58->Fill(t14_ns);
@@ -2499,23 +2507,23 @@ public:
 
       if (!(t14_ns > -9999) && (t58_ns > -9999)) {
          if (fFlags->fPrint) {
-            printf("new dlsc event !(1*4)*(5*8), le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.chan5le.time_sec, t.chan8le.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
+            printf("new dlsc event !(1*4)*(5*8), le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
          }
          
          fHt58ns_58not14->Fill(t58_ns);
       }
 
       if (t23_ns > -9999 && t58_ns > -9999) {
-         t23_ns = subtract_ns(t.chan3le, t.chan2le);
+         t23_ns = subtract_ns(t.GetCh(CHAN3).fLe, t.GetCh(CHAN2).fLe);
 
          if (fFlags->fPrint) {
-            printf("new dlsc event 2*3*5*8, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.chan5le.time_sec, t.chan8le.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
+            printf("new dlsc event 2*3*5*8, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
          }
          
          fCount2358++;
 
-         double t25_ns = subtract_ns(t.chan5le, t.chan2le);
-         double t38_ns = subtract_ns(t.chan8le, t.chan3le);
+         double t25_ns = subtract_ns(t.GetCh(CHAN5).fLe, t.GetCh(CHAN2).fLe);
+         double t38_ns = subtract_ns(t.GetCh(CHAN8).fLe, t.GetCh(CHAN3).fLe);
          
          double tof2358 = 0.5*(t25_ns + t38_ns);
          
@@ -2533,7 +2541,7 @@ public:
 
       if ((t23_ns > -9999) && !(t58_ns > -9999)) {
          if (fFlags->fPrint) {
-            printf("new dlsc event (2*3)*!(5*8), le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.chan5le.time_sec, t.chan8le.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
+            printf("new dlsc event (2*3)*!(5*8), le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
          }
          
          fHt23ns_23not58->Fill(t23_ns);
@@ -2541,7 +2549,7 @@ public:
 
       if (!(t23_ns > -9999) && (t58_ns > -9999)) {
          if (fFlags->fPrint) {
-            printf("new dlsc event !(2*3)*(5*8), le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.chan5le.time_sec, t.chan8le.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
+            printf("new dlsc event !(2*3)*(5*8), le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
          }
          
          fHt58ns_58not23->Fill(t58_ns);
@@ -2550,13 +2558,13 @@ public:
       if (t14_ns > -9999 && t67_ns > -9999) {
 
          if (fFlags->fPrint) {
-            printf("new dlsc event 1*4*6*7, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.chan5le.time_sec, t.chan8le.time_sec, t67_ns, w5_ns, w8_ns, a5_mv, a8_mv);
+            printf("new dlsc event 1*4*6*7, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t67_ns, w5_ns, w8_ns, a5_mv, a8_mv);
          }
          
          fCount1467++;
 
-         double t16_ns = subtract_ns(t.chan6le, t.GetCh(CHAN1).fLe);
-         double t47_ns = subtract_ns(t.chan7le, t.chan4le);
+         double t16_ns = subtract_ns(t.GetCh(CHAN6).fLe, t.GetCh(CHAN1).fLe);
+         double t47_ns = subtract_ns(t.GetCh(CHAN7).fLe, t.GetCh(CHAN4).fLe);
          
          double tof1467 = 0.5*(t16_ns + t47_ns);
          
@@ -2574,7 +2582,7 @@ public:
 
       if ((t14_ns > -9999) && !(t67_ns > -9999)) {
          if (fFlags->fPrint) {
-            printf("new dlsc event (1*4)*!(6*7), le %.9f %.9f sec, diff67 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.chan5le.time_sec, t.chan8le.time_sec, t67_ns, w5_ns, w8_ns, a5_mv, a8_mv);
+            printf("new dlsc event (1*4)*!(6*7), le %.9f %.9f sec, diff67 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t67_ns, w5_ns, w8_ns, a5_mv, a8_mv);
          }
          
          fHt14ns_14not67->Fill(t14_ns);
@@ -2582,7 +2590,7 @@ public:
 
       if (!(t14_ns > -9999) && (t67_ns > -9999)) {
          if (fFlags->fPrint) {
-            printf("new dlsc event !(1*4)*(6*7), le %.9f %.9f sec, diff67 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.chan5le.time_sec, t.chan8le.time_sec, t67_ns, w5_ns, w8_ns, a5_mv, a8_mv);
+            printf("new dlsc event !(1*4)*(6*7), le %.9f %.9f sec, diff67 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t67_ns, w5_ns, w8_ns, a5_mv, a8_mv);
          }
          
          fHt67ns_67not14->Fill(t67_ns);
@@ -2591,13 +2599,13 @@ public:
       if (t23_ns > -9999 && t67_ns > -9999) {
          
          if (fFlags->fPrint) {
-            printf("new dlsc event 2*3*6*7, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.chan5le.time_sec, t.chan8le.time_sec, t67_ns, w5_ns, w8_ns, a5_mv, a8_mv);
+            printf("new dlsc event 2*3*6*7, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t67_ns, w5_ns, w8_ns, a5_mv, a8_mv);
          }
 
          fCount2367++;
          
-         double t26_ns = subtract_ns(t.chan6le, t.chan2le);
-         double t37_ns = subtract_ns(t.chan7le, t.chan3le);
+         double t26_ns = subtract_ns(t.GetCh(CHAN6).fLe, t.GetCh(CHAN2).fLe);
+         double t37_ns = subtract_ns(t.GetCh(CHAN7).fLe, t.GetCh(CHAN3).fLe);
          
          double tof2367 = 0.5*(t26_ns + t37_ns);
          
@@ -2615,7 +2623,7 @@ public:
 
       if ((t23_ns > -9999) && !(t67_ns > -9999)) {
          if (fFlags->fPrint) {
-            printf("new dlsc event (2*3)*!(6*7), le %.9f %.9f sec, diff67 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.chan5le.time_sec, t.chan8le.time_sec, t67_ns, w5_ns, w8_ns, a5_mv, a8_mv);
+            printf("new dlsc event (2*3)*!(6*7), le %.9f %.9f sec, diff67 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t67_ns, w5_ns, w8_ns, a5_mv, a8_mv);
          }
          
          fHt23ns_23not67->Fill(t23_ns);
@@ -2623,7 +2631,7 @@ public:
 
       if (!(t23_ns > -9999) && (t67_ns > -9999)) {
          if (fFlags->fPrint) {
-            printf("new dlsc event !(2*3)*(6*7), le %.9f %.9f sec, diff67 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.chan5le.time_sec, t.chan8le.time_sec, t67_ns, w5_ns, w8_ns, a5_mv, a8_mv);
+            printf("new dlsc event !(2*3)*(6*7), le %.9f %.9f sec, diff67 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t67_ns, w5_ns, w8_ns, a5_mv, a8_mv);
          }
          
          fHt67ns_67not23->Fill(t67_ns);
@@ -2821,6 +2829,7 @@ public:
       }*/
    }
 
+#if 0
    void A()
    {
       printf("A %zu %zu\n", fTq.size(), fAq.size());
@@ -2882,6 +2891,7 @@ public:
       }
 #endif
    }
+#endif
 
    double fLastXtime = 0;
 
@@ -2966,24 +2976,24 @@ public:
                   fHeventdt3ns->Fill(event_dt_ns);
                   fHeventdt4ns->Fill(event_dt_ns);
                   
-                  if (fFlags->fHaveAdc) {
-                     if (fCt->havexle && fCt->havexte) {
-                        if (fFirstTrig) {
-                           fU->Reset();
-                           fFirstTrig = false;
-                        } else {
-                           fCt->time_sec = fCt->hxle.time_sec;
-                           fCt->dt = fCt->hxle.time_sec - fLastXtime;
-                           fLastXtime = fCt->hxle.time_sec;
-                           fTq.push_back(fCt);
-                           fCt = new DlTdcEvent;
-                        }
-                     } else {
-                        fCt->Clear();
-                     }
-                  } else {
-                     FinishEventT(fPrevEventTimeSec, *fCt);
-                  }
+                  //if (fFlags->fHaveAdc) {
+                  //   if (fCt->havexle && fCt->havexte) {
+                  //      if (fFirstTrig) {
+                  //         fU->Reset();
+                  //         fFirstTrig = false;
+                  //      } else {
+                  //         fCt->time_sec = fCt->hxle.time_sec;
+                  //         fCt->dt = fCt->hxle.time_sec - fLastXtime;
+                  //         fLastXtime = fCt->hxle.time_sec;
+                  //         fTq.push_back(fCt);
+                  //         fCt = new DlTdcEvent;
+                  //      }
+                  //   } else {
+                  //      fCt->Clear();
+                  //   }
+                  //} else {
+                  FinishEventT(fPrevEventTimeSec, *fCt);
+                  //}
                   
                   fPrevEventTimeSec = fCt->min_time_sec;
                   
@@ -3025,17 +3035,7 @@ public:
                }
             }
 #endif
-            if (runinfo->fRunNo < 905994)
-               fCt->AddHit4A(h);
-            else
-               fCt->AddHit8(h);
-            
-            //if (h.ch == 2) {
-            //   printf("add ch 2\n");
-            //   h.Print();
-            //   printf("\n");
-            //   fCt->fHits[2].Print();
-            //}
+            fCt->AddHit8(h);
 
          } // loop over data
 
@@ -3080,9 +3080,9 @@ public:
          
       }
 
-      if (fFlags->fHaveAdc) {
-         A();
-      }
+      //if (fFlags->fHaveAdc) {
+      //   A();
+      //}
       
       return flow;
    }
@@ -3091,6 +3091,7 @@ public:
 
    TAFlowEvent* AnalyzeFlowEvent(TARunInfo* runinfo, TAFlags* flags, TAFlowEvent* flow)
    {
+#if 0
       if (!fFlags->fEnabled)
          return flow;
       
@@ -3143,7 +3144,7 @@ public:
 
          A();
       }
-
+#endif
       return flow;
    }
 
@@ -3165,7 +3166,7 @@ public:
       printf("DlTdcModuleFactory flags:\n");
       printf("--dltdc -- enable dltdc code\n");
       printf("--dltdc-calib -- calibrate dltdc\n");
-      printf("--dltdc-adc -- have ADC data\n");
+      //printf("--dltdc-adc -- have ADC data\n");
       printf("--dltdc-debug -- print detailed information\n");
       printf("--dltdc-print -- print events\n");
       //printf("--dltdc-coincidence -- require coincidence with lower bar for all histograms\n");
@@ -3182,9 +3183,9 @@ public:
          if (args[i] == "--dltdc-calib") {
             fFlags.fCalib = true;
          }
-         if (args[i] == "--dltdc-adc") {
-            fFlags.fHaveAdc = true;
-         }
+         //if (args[i] == "--dltdc-adc") {
+         //   fFlags.fHaveAdc = true;
+         //}
          if (args[i] == "--dltdc-debug") {
             fFlags.fDebug = true;
          }
