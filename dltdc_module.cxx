@@ -404,6 +404,15 @@ public:
    int fCount2358 = 0;
    int fCount1467 = 0;
    int fCount2367 = 0;
+
+   int fCountMyA = 0;
+   int fCountMyB = 0;
+   int fCountMyT = 0;
+
+   int fCountA = 0;
+   int fCountB = 0;
+   int fCountT = 0;
+
 #endif
 
    double fPrevEventTimeSec = 0;
@@ -461,6 +470,19 @@ public:
             double xt14 = -0.774;
             double xt58 = -6.328;
             double xt1458 = -2.9;
+
+            if (runinfo->fRunNo >= 906028) {
+               // pass1
+               xt12 = 2.792; // pulser run 906028.
+               xt34 = 3.209;
+               xt56 = 2.690;
+               xt78 = -2.563;
+               // pass2
+               xt14 = -0.069;
+               xt58 = -2.337;
+               // pass3
+               xt1458 = -2.614;
+            }
 
             fU->fCalib[0].lepos.fOffsetNs = fU->fCalib[0].leneg.fOffsetNs = 0; // A
             fU->fCalib[1].lepos.fOffsetNs = fU->fCalib[1].leneg.fOffsetNs = 0; // B
@@ -664,7 +686,7 @@ public:
          fU->Save(runinfo->fRunNo);
       }
 
-      printf("Run %d coincidences: 1-4: %d, 2-3: %d, 5-8: %d, 7-8: %d, 14-58: %d, 23-58: %d, 14-67: %d, 23-67: %d\n",
+      printf("Run %d coincidences: 1-4: %d, 2-3: %d, 5-8: %d, 7-8: %d, 14-58: %d, 23-58: %d, 14-67: %d, 23-67: %d, A: %d/%d, B: %d/%d, T: %d/%d\n",
              runinfo->fRunNo,
              fCount14,
              fCount23,
@@ -673,7 +695,10 @@ public:
              fCount1458,
              fCount2358,
              fCount1467,
-             fCount2367);
+             fCount2367,
+             fCountMyA, fCountA,
+             fCountMyB, fCountB,
+             fCountMyT, fCountT);
    }
    
    void PauseRun(TARunInfo* runinfo)
@@ -824,6 +849,8 @@ public:
          }
 
          fHwAns->Fill(wA_ns);
+
+         fCountA++;
       }
 
       if (t.fHits[CHANB].fDown) {
@@ -838,6 +865,8 @@ public:
          }
 
          fHwBns->Fill(wB_ns);
+
+         fCountB++;
       }
 
       if (t.fHits[CHANT].fDown) {
@@ -852,6 +881,8 @@ public:
          }
 
          fHwTns->Fill(wT_ns);
+         
+         fCountT++;
       }
 
       ///////// SINGLES ///////////
@@ -962,6 +993,7 @@ public:
          }
 
          fCount14++;
+         fCountMyA++;
          
          fHt14ns->Fill(t14_ns);
          fHw14ns->Fill(w1_ns, w4_ns);
@@ -978,6 +1010,7 @@ public:
          }
          
          fCount23++;
+         fCountMyA++;
 
          fHt23ns->Fill(t23_ns);
          fHw23ns->Fill(w2_ns, w3_ns);
@@ -994,6 +1027,7 @@ public:
          }
 
          fCount58++;
+         fCountMyB++;
 
          fHt58ns->Fill(t58_ns);
          fHw58ns->Fill(w5_ns, w8_ns);
@@ -1010,6 +1044,7 @@ public:
          }
 
          fCount67++;
+         fCountMyB++;
 
          fHt67ns->Fill(t67_ns);
          fHw67ns->Fill(w6_ns, w7_ns);
@@ -1024,6 +1059,7 @@ public:
          }
 
          fCount1458++;
+         fCountMyT++;
          
          //double avg14 = 0.5*(t.chan1le.time_sec + t.chan4le.time_sec);
          //double avg58 = 0.5*(t.GetCh(CHAN5).fLe.time_sec + t.GetCh(CHAN8).fLe.time_sec);
@@ -1074,6 +1110,7 @@ public:
          }
          
          fCount2358++;
+         fCountMyT++;
 
          double t25_ns = subtract_ns(t.GetCh(CHAN5).fLe, t.GetCh(CHAN2).fLe);
          double t38_ns = subtract_ns(t.GetCh(CHAN8).fLe, t.GetCh(CHAN3).fLe);
@@ -1115,6 +1152,7 @@ public:
          }
          
          fCount1467++;
+         fCountMyT++;
 
          double t16_ns = subtract_ns(t.GetCh(CHAN6).fLe, t.GetCh(CHAN1).fLe);
          double t47_ns = subtract_ns(t.GetCh(CHAN7).fLe, t.GetCh(CHAN4).fLe);
@@ -1156,6 +1194,7 @@ public:
          }
 
          fCount2367++;
+         fCountMyT++;
          
          double t26_ns = subtract_ns(t.GetCh(CHAN6).fLe, t.GetCh(CHAN2).fLe);
          double t37_ns = subtract_ns(t.GetCh(CHAN7).fLe, t.GetCh(CHAN3).fLe);
