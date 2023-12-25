@@ -22,8 +22,6 @@
 #ifdef HAVE_ROOT
 #include "TH1D.h"
 #include "TH2D.h"
-#include "TCanvas.h"
-#include "TGraph.h"
 #endif
 
 #if 0
@@ -272,6 +270,13 @@ public:
 
    TH1D* fHwidth[MAX_TDC_CHAN+1];
 
+   TH1D* fHpulserLeAll = NULL;
+   TH1D* fHpulserTeAll = NULL;
+   TH1D* fHpulserWiAll = NULL;
+   TH1D* fHpulserLe[MAX_TDC_CHAN+1];
+   TH1D* fHpulserTe[MAX_TDC_CHAN+1];
+   TH1D* fHpulserWi[MAX_TDC_CHAN+1];
+
    TH1D* fHhitdt1ns = NULL;
    TH1D* fHhitdt2ns = NULL;
    TH1D* fHhitdt3ns = NULL;
@@ -454,7 +459,7 @@ public:
          printf("DlTdcModule::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
 
       if  (!fFlags->fCalib) {
-         bool load_ok = fU->Load(runinfo->fRunNo);
+         bool load_ok = fU->LoadCalib(runinfo->fRunNo);
          if (!load_ok) {
             printf("Cannot load TDC calibration for run %d\n", runinfo->fRunNo);
             exit(123);
@@ -484,8 +489,21 @@ public:
                xt1458 = -2.614;
             }
 
-            fU->fCalib[0].lepos.fOffsetNs = fU->fCalib[0].leneg.fOffsetNs = 0; // A
-            fU->fCalib[1].lepos.fOffsetNs = fU->fCalib[1].leneg.fOffsetNs = 0; // B
+            if (runinfo->fRunNo >= 906041) {
+               // pass1
+               xt12 = 2.792-0.556224+0.042; // pulser run 906042.
+               xt34 = 3.209+0.029908-0.074;
+               xt56 = 2.690-1.881289+0.737;
+               xt78 = -2.563-0.028077+0.193;
+               // pass2
+               xt14 = -0.069-0.332+0.748-0.042;
+               xt58 = -2.337-0.737+1.400-0.737;
+               // pass3
+               xt1458 = -2.614-0.509-0.138+0.674-0.348;
+            }
+
+            fU->fCalib[0].lepos.fOffsetNs = fU->fCalib[0].leneg.fOffsetNs = -3.865; // A
+            fU->fCalib[1].lepos.fOffsetNs = fU->fCalib[1].leneg.fOffsetNs = -1.578; // B
             fU->fCalib[2].lepos.fOffsetNs = fU->fCalib[2].leneg.fOffsetNs = xt12 + xt14 + xt1458; // chan1
             fU->fCalib[3].lepos.fOffsetNs = fU->fCalib[3].leneg.fOffsetNs = xt14 + xt1458; // chan2
             fU->fCalib[4].lepos.fOffsetNs = fU->fCalib[4].leneg.fOffsetNs = xt34 + xt1458; // chan3
@@ -494,22 +512,22 @@ public:
             fU->fCalib[7].lepos.fOffsetNs = fU->fCalib[7].leneg.fOffsetNs = xt58; // chan6
             fU->fCalib[8].lepos.fOffsetNs = fU->fCalib[8].leneg.fOffsetNs = xt78; // chan7
             fU->fCalib[9].lepos.fOffsetNs = fU->fCalib[9].leneg.fOffsetNs = 0; // chan8
-            fU->fCalib[10].lepos.fOffsetNs = fU->fCalib[10].leneg.fOffsetNs = 0; // T
+            fU->fCalib[10].lepos.fOffsetNs = fU->fCalib[10].leneg.fOffsetNs = -4.739; // T
             fU->fCalib[11].lepos.fOffsetNs = fU->fCalib[11].leneg.fOffsetNs = 0; // nc
 
             // number from width plot with opposite sign
             // cosmic run 906005
-            fU->fCalib[0].tepos.fOffsetNs  = fU->fCalib[0].teneg.fOffsetNs  = fU->fCalib[0].lepos.fOffsetNs  -0.100; // A
-            fU->fCalib[1].tepos.fOffsetNs  = fU->fCalib[1].teneg.fOffsetNs  = fU->fCalib[1].lepos.fOffsetNs  +1.000 +0.400; // B
+            fU->fCalib[0].tepos.fOffsetNs  = fU->fCalib[0].teneg.fOffsetNs  = fU->fCalib[0].lepos.fOffsetNs  -0.100 +3.905; // A
+            fU->fCalib[1].tepos.fOffsetNs  = fU->fCalib[1].teneg.fOffsetNs  = fU->fCalib[1].lepos.fOffsetNs  +1.000 +0.400 -0.120; // B
             fU->fCalib[2].tepos.fOffsetNs  = fU->fCalib[2].teneg.fOffsetNs  = fU->fCalib[2].lepos.fOffsetNs  -0.600 +1.100; // chan1
-            fU->fCalib[3].tepos.fOffsetNs  = fU->fCalib[3].teneg.fOffsetNs  = fU->fCalib[3].lepos.fOffsetNs  +0.100 +0.300; // chan2
-            fU->fCalib[4].tepos.fOffsetNs  = fU->fCalib[4].teneg.fOffsetNs  = fU->fCalib[4].lepos.fOffsetNs  +0.300 +0.600 + 0.400; // chan3
-            fU->fCalib[5].tepos.fOffsetNs  = fU->fCalib[5].teneg.fOffsetNs  = fU->fCalib[5].lepos.fOffsetNs  -0.300 +0.100; // chan4
-            fU->fCalib[6].tepos.fOffsetNs  = fU->fCalib[6].teneg.fOffsetNs  = fU->fCalib[6].lepos.fOffsetNs  -0.700 +0.900; // chan5
-            fU->fCalib[7].tepos.fOffsetNs  = fU->fCalib[7].teneg.fOffsetNs  = fU->fCalib[7].lepos.fOffsetNs  +0.500 +0.300; // chan6
-            fU->fCalib[8].tepos.fOffsetNs  = fU->fCalib[8].teneg.fOffsetNs  = fU->fCalib[8].lepos.fOffsetNs  +0.400 +0.100; // chan7
-            fU->fCalib[9].tepos.fOffsetNs  = fU->fCalib[9].teneg.fOffsetNs  = fU->fCalib[9].lepos.fOffsetNs  -0.100 +0.500; // chan8
-            fU->fCalib[10].tepos.fOffsetNs = fU->fCalib[10].teneg.fOffsetNs = fU->fCalib[10].lepos.fOffsetNs +0.500; // T
+            fU->fCalib[3].tepos.fOffsetNs  = fU->fCalib[3].teneg.fOffsetNs  = fU->fCalib[3].lepos.fOffsetNs  +0.100 +0.300 +3.358; // chan2
+            fU->fCalib[4].tepos.fOffsetNs  = fU->fCalib[4].teneg.fOffsetNs  = fU->fCalib[4].lepos.fOffsetNs  +0.300 +0.600 + 0.400 -1.361; // chan3
+            fU->fCalib[5].tepos.fOffsetNs  = fU->fCalib[5].teneg.fOffsetNs  = fU->fCalib[5].lepos.fOffsetNs  -0.300 +0.100 +3.923; // chan4
+            fU->fCalib[6].tepos.fOffsetNs  = fU->fCalib[6].teneg.fOffsetNs  = fU->fCalib[6].lepos.fOffsetNs  -0.700 +0.900 -0.867; // chan5
+            fU->fCalib[7].tepos.fOffsetNs  = fU->fCalib[7].teneg.fOffsetNs  = fU->fCalib[7].lepos.fOffsetNs  +0.500 +0.300 +3.373; // chan6
+            fU->fCalib[8].tepos.fOffsetNs  = fU->fCalib[8].teneg.fOffsetNs  = fU->fCalib[8].lepos.fOffsetNs  +0.400 +0.100 +3.412; // chan7
+            fU->fCalib[9].tepos.fOffsetNs  = fU->fCalib[9].teneg.fOffsetNs  = fU->fCalib[9].lepos.fOffsetNs  -0.100 +0.500 -0.583; // chan8
+            fU->fCalib[10].tepos.fOffsetNs = fU->fCalib[10].teneg.fOffsetNs = fU->fCalib[10].lepos.fOffsetNs +0.500 +3.951; // T
             fU->fCalib[11].tepos.fOffsetNs = fU->fCalib[11].teneg.fOffsetNs = fU->fCalib[11].lepos.fOffsetNs +0; // nc
          }
       }
@@ -518,6 +536,8 @@ public:
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
       TDirectory* dir = gDirectory->mkdir("dltdc");
       dir->cd(); // select correct ROOT directory
+
+      dir->mkdir("fine_time")->cd();
 
       for (int i=0; i<=MAX_TDC_CHAN; i++) {
          char name[256];
@@ -544,6 +564,30 @@ public:
          fHwidth[i] = new TH1D(name, title, 100, -5, 5);
       }
 
+      dir->mkdir("pulser")->cd();
+
+      fHpulserLeAll = new TH1D("tdc_pulser_le_all", "tdc pulser le all, ns", 200, -10, 10);
+      fHpulserTeAll = new TH1D("tdc_pulser_te_all", "tdc_pulser_te_all, ns", 200, -10, 10);
+      fHpulserWiAll = new TH1D("tdc_pulser_width_all", "tdc_pulser_width_all, ns", 200, 0, 20);
+
+      for (int i=0; i<=MAX_TDC_CHAN; i++) {
+         char name[256];
+         char title[256];
+
+         sprintf(name,  "tdc%02d_pulser_le", i);
+         sprintf(title, "tdc%02d_pulser_le, ns", i);
+         fHpulserLe[i] = new TH1D(name, title, 200, -10, 10);
+
+         sprintf(name,  "tdc%02d_pulser_te", i);
+         sprintf(title, "tdc%02d_pulser_te, ns", i);
+         fHpulserTe[i] = new TH1D(name, title, 200, -10, 10);
+
+         sprintf(name,  "tdc%02d_pulser_width", i);
+         sprintf(title, "tdc%02d_pulser_width, ns", i);
+         fHpulserWi[i] = new TH1D(name, title, 200, 0, 20);
+      }
+
+      dir->cd();
 
       fHhitdt1ns = new TH1D("hitdt1ns", "hit dt 100 ns", 100, 0, 100); // 100 ns
       fHhitdt2ns = new TH1D("hitdt2ns", "hit dt 1000 ns", 100, 100, 1000); // 1 usec
@@ -683,7 +727,8 @@ public:
 
       if (fFlags->fCalib) {
          printf("DlTdcModule::EndRun: Saving TDC calibrations for run %d\n", runinfo->fRunNo);
-         fU->Save(runinfo->fRunNo);
+         fU->UpdateCalib();
+         fU->SaveCalib(runinfo->fRunNo);
       }
 
       printf("Run %d coincidences: 1-4: %d, 2-3: %d, 5-8: %d, 7-8: %d, 14-58: %d, 23-58: %d, 14-67: %d, 23-67: %d, A: %d/%d, B: %d/%d, T: %d/%d\n",
@@ -699,6 +744,38 @@ public:
              fCountMyA, fCountA,
              fCountMyB, fCountB,
              fCountMyT, fCountT);
+
+      printf("Run %d calibration: t12ns: %8.3f, t34ns: %8.3f, t56ns: %8.3f, t78ns: %8.3f, t14ns: %8.3f, t58ns: %8.3f, t1458ns: %8.3f\n",
+             runinfo->fRunNo,
+             fHt12ns->GetMean(),
+             fHt34ns->GetMean(),
+             fHt56ns->GetMean(),
+             fHt78ns->GetMean(),
+             fHt14ns->GetMean(),
+             fHt58ns->GetMean(),
+             fHtof_1458->GetMean()
+             );
+
+      printf("Run %d pulser:\n", runinfo->fRunNo);
+
+      for (size_t ch=0; ch<=MAX_TDC_CHAN; ch++) {
+         printf("tdc chan%02zu: LE %8.3f, TE %8.3f, Width: %8.3f, RMS %.3f %.3f %.3f\n",
+                ch,
+                fHpulserLe[ch]->GetMean(),
+                fHpulserTe[ch]->GetMean(),
+                fHpulserWi[ch]->GetMean(),
+                fHpulserLe[ch]->GetRMS(),
+                fHpulserTe[ch]->GetRMS(),
+                fHpulserWi[ch]->GetRMS());
+      }
+
+         printf("tdc sumary: LE %8.3f, LE %8.3f, Width: %8.3f, RMS %.3f %.3f %.3f\n",
+                fHpulserLeAll->GetMean(),
+                fHpulserTeAll->GetMean(),
+                fHpulserWiAll->GetMean(),
+                fHpulserLeAll->GetRMS(),
+                fHpulserTeAll->GetRMS(),
+                fHpulserWiAll->GetRMS());
    }
    
    void PauseRun(TARunInfo* runinfo)
@@ -717,6 +794,29 @@ public:
    {
       if (fFlags->fDebug) {
          printf("EVENT %d %d %d %d %d %d %d %d, ABT %d%d%d\n", t.HaveCh(CHAN1), t.HaveCh(CHAN2), t.HaveCh(CHAN3), t.HaveCh(CHAN4), t.HaveCh(CHAN5), t.HaveCh(CHAN6), t.HaveCh(CHAN7), t.HaveCh(CHAN8), t.HaveCh(CHANA), t.HaveCh(CHANB), t.HaveCh(CHANT));
+      }
+      
+      ///////// pulser calibration histograms ///////////
+         
+      size_t pulserMaster = CHAN1;
+      bool   pulserMasterHave = t.HaveCh(pulserMaster);
+
+      if (pulserMasterHave) {
+         for (size_t ch=0; ch<=MAX_TDC_CHAN; ch++) {
+            //printf("ch %d, up down %d %d\n", ch, t.fHits[ch].fUp, t.fHits[ch].fDown);
+            if (t.HaveCh(ch)) {
+               if (ch != pulserMaster) {
+                  fHpulserLeAll->Fill(subtract_ns(t.GetCh(ch).fLe, t.GetCh(pulserMaster).fLe));
+                  fHpulserTeAll->Fill(subtract_ns(t.GetCh(ch).fTe, t.GetCh(pulserMaster).fTe));
+
+                  fHpulserLe[ch]->Fill(subtract_ns(t.GetCh(ch).fLe, t.GetCh(pulserMaster).fLe));
+                  fHpulserTe[ch]->Fill(subtract_ns(t.GetCh(ch).fTe, t.GetCh(pulserMaster).fTe));
+               }
+
+               fHpulserWiAll->Fill(t.fHits[ch].fWidthNs);
+               fHpulserWi[ch]->Fill(t.fHits[ch].fWidthNs);
+            }
+         }
       }
 
       ///////// create width calibration histograms ///////////
