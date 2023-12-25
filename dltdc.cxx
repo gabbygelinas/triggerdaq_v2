@@ -318,7 +318,7 @@ static void LoadFromJson(const MJsonNode*j, DlTdcFineCalib1& c)
    c.fFineVar  = j->FindObjectNode("FineVarNs")->GetDouble();
    c.fFineRms  = j->FindObjectNode("FineRmsNs")->GetDouble();
    c.fFineOffset = 0;
-   c.fFineOffsetFromFile = j->FindObjectNode("FineOffsetNs")->GetDouble();
+   c.fFineOffsetFromFile = 0; // j->FindObjectNode("FineOffsetNs")->GetDouble();
 
    c.fHistogram.clear();
    const MJsonNodeVector* v = j->FindObjectNode("Histogram")->GetArray();
@@ -693,6 +693,7 @@ bool DlTdcUnpack::Unpack(DlTdcHit*h, uint32_t lo, uint32_t hi)
             if (h->te) {
                h->fine_ns = fCalib[ch].tepos.GetTime(h->phase) - fClkPeriodNs;
                h->offset_ns = fCalib[ch].tepos.fOffsetNs;
+               //printf("ch %d: ", ch); fCalib[ch].tepos.Print();
             }
          } else {
             h->fine_ns = fClkPeriodNs/bits*h->phase - fClkPeriodNs;
@@ -762,6 +763,11 @@ bool DlTdcUnpack::Unpack(DlTdcHit*h, uint32_t lo, uint32_t hi)
       }
    }
 
+   //if (h->fine_ns < -4.0) {
+   //   h->Print();
+   //   abort();
+   //}
+   
    //printf("phase %2d %2d\n", ph, h->phase);
 
    //if (ph == h->phase*2) {
@@ -934,7 +940,14 @@ bool DlTdcUnpack::Unpack(DlTdcHit*h, uint32_t lo, uint32_t hi)
    return true;
 };
 
-void DlTdcUnpack::Save(int runno) const
+void DlTdcUnpack::UpdateCalib()
+{
+   for (size_t i = 0; i < fCalib.size(); i++) {
+      fCalib[i].Update();
+   }
+}
+
+void DlTdcUnpack::SaveCalib(int runno) const
 {
    for (size_t i = 0; i < fCalib.size(); i++) {
       if (fCalib[i].lepos.fMaxPhase > 0) {
@@ -945,7 +958,7 @@ void DlTdcUnpack::Save(int runno) const
    }
 }
 
-bool DlTdcUnpack::Load(int runno)
+bool DlTdcUnpack::LoadCalib(int runno)
 {
    for (int r=0; r<100; r++) {
       bool load_ok = false;

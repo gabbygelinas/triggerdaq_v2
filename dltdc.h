@@ -117,8 +117,9 @@ private:
 public:
    void Reset();
    bool Unpack(DlTdcHit* h, uint32_t lo, uint32_t hi);
-   bool Load(int runno);
-   void Save(int runno) const;
+   void UpdateCalib();
+   bool LoadCalib(int runno);
+   void SaveCalib(int runno) const;
 
 public: // internal state
    double fFirstTimeSec = 0;
