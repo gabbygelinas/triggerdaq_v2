@@ -297,6 +297,16 @@ public:
    TH1D* fHt58ns = NULL;
    TH1D* fHt67ns = NULL;
 
+   TH1D* fHt12ns_cut = NULL;
+   TH1D* fHt34ns_cut = NULL;
+   TH1D* fHt56ns_cut = NULL;
+   TH1D* fHt78ns_cut = NULL;
+
+   TH1D* fHt14ns_cut = NULL;
+   TH1D* fHt23ns_cut = NULL;
+   TH1D* fHt58ns_cut = NULL;
+   TH1D* fHt67ns_cut = NULL;
+
    TH1D* fHw1ns = NULL;
    TH1D* fHw2ns = NULL;
    TH1D* fHw3ns = NULL;
@@ -306,6 +316,15 @@ public:
    TH1D* fHw7ns = NULL;
    TH1D* fHw8ns = NULL;
 
+   TH1D* fHw1ns_cut = NULL;
+   TH1D* fHw2ns_cut = NULL;
+   TH1D* fHw3ns_cut = NULL;
+   TH1D* fHw4ns_cut = NULL;
+   TH1D* fHw5ns_cut = NULL;
+   TH1D* fHw6ns_cut = NULL;
+   TH1D* fHw7ns_cut = NULL;
+   TH1D* fHw8ns_cut = NULL;
+
    TH1D* fHwAns = NULL;
    TH1D* fHwBns = NULL;
    TH1D* fHwTns = NULL;
@@ -314,7 +333,7 @@ public:
    TH2D* fHw23ns = NULL;
    TH2D* fHw58ns = NULL;
    TH2D* fHw67ns = NULL;
-
+#if 0
    TH1D* fHa1mv = NULL;
    TH1D* fHa2mv = NULL;
    TH1D* fHa3mv = NULL;
@@ -328,78 +347,120 @@ public:
    TH2D* fHa23mv = NULL;
    TH2D* fHa58mv = NULL;
    TH2D* fHa67mv = NULL;
+#endif
+   TH2D* fHt14ns_w1ns = NULL;
+   TH2D* fHt14ns_w4ns = NULL;
+   TH2D* fHt23ns_w2ns = NULL;
+   TH2D* fHt23ns_w3ns = NULL;
+   TH2D* fHt58ns_w5ns = NULL;
+   TH2D* fHt58ns_w8ns = NULL;
+   TH2D* fHt67ns_w6ns = NULL;
+   TH2D* fHt67ns_w7ns = NULL;
 
    // QUAD 14*58
 
    TH1D* fHtof_1458   = NULL;
+   TH1D* fHtof_1458_cut   = NULL;
 
    TH1D* fHt14ns_1458 = NULL;
    TH1D* fHt58ns_1458 = NULL;
    TH2D* fHt14t58ns_1458 = NULL;
+
+   TH1D* fHt14ns_1458_cut = NULL;
+   TH1D* fHt58ns_1458_cut = NULL;
+   TH2D* fHt14t58ns_1458_cut = NULL;
 
    TH1D* fHt14ns_14not58 = NULL;
    TH1D* fHt58ns_58not14 = NULL;
 
    TH2D* fHw14ns_1458 = NULL;
    TH2D* fHw58ns_1458 = NULL;
-   
+#if 0   
    TH2D* fHa14mv_1458 = NULL;
    TH2D* fHa58mv_1458 = NULL;
 
    TH2D* fHtof_a1mv_1458 = NULL;
    TH2D* fHtof_a4mv_1458 = NULL;
+
+   TH2D* fHtof_a1mv_1458_cut = NULL;
+   TH2D* fHtof_a4mv_1458_cut = NULL;
+#endif
+   TH2D* fHtof_w1ns_1458 = NULL;
+   TH2D* fHtof_w4ns_1458 = NULL;
+
+   TH2D* fHtof_w1ns_1458_cut = NULL;
+   TH2D* fHtof_w4ns_1458_cut = NULL;
    
    // QUAD 23*58
 
    TH1D* fHtof_2358   = NULL;
+   TH1D* fHtof_2358_cut   = NULL;
    
    TH1D* fHt23ns_2358 = NULL;
    TH1D* fHt58ns_2358 = NULL;
    TH2D* fHt23t58ns_2358 = NULL;
+
+   TH1D* fHt23ns_2358_cut = NULL;
+   TH1D* fHt58ns_2358_cut = NULL;
+   TH2D* fHt23t58ns_2358_cut = NULL;
 
    TH1D* fHt23ns_23not58 = NULL;
    TH1D* fHt58ns_58not23 = NULL;
 
    TH2D* fHw23ns_2358 = NULL;
    TH2D* fHw58ns_2358 = NULL;
-   
+#if 0   
    TH2D* fHa23mv_2358 = NULL;
    TH2D* fHa58mv_2358 = NULL;
-   
+#endif   
    // QUAD 14*67
 
    TH1D* fHtof_1467   = NULL;
+   TH1D* fHtof_1467_cut   = NULL;
    
    TH1D* fHt14ns_1467 = NULL;
    TH1D* fHt67ns_1467 = NULL;
    TH2D* fHt14t67ns_1467 = NULL;
+
+   TH1D* fHt14ns_1467_cut = NULL;
+   TH1D* fHt67ns_1467_cut = NULL;
+   TH2D* fHt14t67ns_1467_cut = NULL;
 
    TH1D* fHt14ns_14not67 = NULL;
    TH1D* fHt67ns_67not14 = NULL;
 
    TH2D* fHw14ns_1467 = NULL;
    TH2D* fHw67ns_1467 = NULL;
-   
+#if 0   
    TH2D* fHa14mv_1467 = NULL;
    TH2D* fHa67mv_1467 = NULL;
+#endif
+
+   TH2D* fHt67ns_w6ns_1467 = NULL;
+   TH2D* fHt67ns_w7ns_1467 = NULL;
    
    // QUAD 23*67
 
    TH1D* fHtof_2367   = NULL;
+   TH1D* fHtof_2367_cut   = NULL;
    
    TH1D* fHt23ns_2367 = NULL;
    TH1D* fHt67ns_2367 = NULL;
    TH2D* fHt23t67ns_2367 = NULL;
+
+   TH1D* fHt23ns_2367_cut = NULL;
+   TH1D* fHt67ns_2367_cut = NULL;
+   TH2D* fHt23t67ns_2367_cut = NULL;
 
    TH1D* fHt23ns_23not67 = NULL;
    TH1D* fHt67ns_67not23 = NULL;
 
    TH2D* fHw23ns_2367 = NULL;
    TH2D* fHw67ns_2367 = NULL;
-   
+#if 0   
    TH2D* fHa23mv_2367 = NULL;
    TH2D* fHa67mv_2367 = NULL;
-
+#endif
    int fCount14 = 0;
    int fCount23 = 0;
    int fCount58 = 0;
@@ -609,6 +670,16 @@ public:
       fHt58ns = new TH1D("t58ns", "Paddle 3 time difference, t8-t5 (ns)", 200, -10, 10);
       fHt67ns = new TH1D("t67ns", "Paddle 4 time difference, t7-t6 (ns)", 200, -10, 10);
 
+      fHt12ns_cut = new TH1D("t12ns_cut", "sipm board 1, t2-t1, ns with cut", 200, -10, 10);
+      fHt34ns_cut = new TH1D("t34ns_cut", "sipm board 2, t4-t3, ns with cut", 200, -10, 10);
+      fHt56ns_cut = new TH1D("t56ns_cut", "sipm board 3, t6-t5, ns with cut", 200, -10, 10);
+      fHt78ns_cut = new TH1D("t78ns_cut", "sipm board 4, t8-t7, ns with cut", 200, -10, 10);
+
+      fHt14ns_cut = new TH1D("t14ns_cut", "Paddle 1 time difference, t4-t1 (ns) with cut", 200, -10, 10);
+      fHt23ns_cut = new TH1D("t23ns_cut", "Paddle 2 time difference, t3-t2 (ns) with cut", 200, -10, 10);
+      fHt58ns_cut = new TH1D("t58ns_cut", "Paddle 3 time difference, t8-t5 (ns) with cut", 200, -10, 10);
+      fHt67ns_cut = new TH1D("t67ns_cut", "Paddle 4 time difference, t7-t6 (ns) with cut", 200, -10, 10);
+
       fHw1ns = new TH1D("w1ns", "w1ns", 100, 0, 100);
       fHw2ns = new TH1D("w2ns", "w2ns", 100, 0, 100);
       fHw3ns = new TH1D("w3ns", "w3ns", 100, 0, 100);
@@ -618,10 +689,19 @@ public:
       fHw7ns = new TH1D("w7ns", "w7ns", 100, 0, 100);
       fHw8ns = new TH1D("w8ns", "w8ns", 100, 0, 100);
 
+      fHw1ns_cut = new TH1D("w1ns_cut", "w1ns with cut", 100, 0, 100);
+      fHw2ns_cut = new TH1D("w2ns_cut", "w2ns with cut", 100, 0, 100);
+      fHw3ns_cut = new TH1D("w3ns_cut", "w3ns with cut", 100, 0, 100);
+      fHw4ns_cut = new TH1D("w4ns_cut", "w4ns with cut", 100, 0, 100);
+      fHw5ns_cut = new TH1D("w5ns_cut", "w5ns with cut", 100, 0, 100);
+      fHw6ns_cut = new TH1D("w6ns_cut", "w6ns with cut", 100, 0, 100);
+      fHw7ns_cut = new TH1D("w7ns_cut", "w7ns with cut", 100, 0, 100);
+      fHw8ns_cut = new TH1D("w8ns_cut", "w8ns with cut", 100, 0, 100);
+
       fHwAns = new TH1D("wAns", "wAns", 100, 0, 100);
       fHwBns = new TH1D("wBns", "wBns", 100, 0, 100);
       fHwTns = new TH1D("wTns", "wTns", 100, 0, 100);
-
+#if 0
       fHa1mv = new TH1D("a1mv", "calculated amp 1, mV", 100, 0, 2000);
       fHa2mv = new TH1D("a2mv", "calculated amp 2, mV", 100, 0, 2000);
       fHa3mv = new TH1D("a3mv", "calculated amp 3, mV", 100, 0, 2000);
@@ -630,87 +710,130 @@ public:
       fHa6mv = new TH1D("a6mv", "calculated amp 6, mV", 100, 0, 2000);
       fHa7mv = new TH1D("a7mv", "calculated amp 7, mV", 100, 0, 2000);
       fHa8mv = new TH1D("a8mv", "calculated amp 8, mV", 100, 0, 2000);
-
+#endif
       fHw14ns = new TH2D("w14ns", "w4ns vs w1ns", 100, 0, 100, 100, 0, 100);
       fHw23ns = new TH2D("w23ns", "w3ns vs w2ns", 100, 0, 100, 100, 0, 100);
       fHw58ns = new TH2D("w58ns", "w8ns vs w5ns", 100, 0, 100, 100, 0, 100);
       fHw67ns = new TH2D("w67ns", "w7ns vs w6ns", 100, 0, 100, 100, 0, 100);
-
+#if 0
       fHa14mv = new TH2D("a14mv", "calculated amp 4 vs amp 1, mV", 100, 0, 2000, 100, 0, 2000);
       fHa23mv = new TH2D("a23mv", "calculated amp 3 vs amp 2, mV", 100, 0, 2000, 100, 0, 2000);
       fHa58mv = new TH2D("a58mv", "calculated amp 8 vs amp 5, mV", 100, 0, 2000, 100, 0, 2000);
       fHa67mv = new TH2D("a67mv", "calculated amp 7 vs amp 6, mV", 100, 0, 2000, 100, 0, 2000);
+#endif
+      fHt14ns_w1ns = new TH2D("t14ns_w1ns", "t4-t1 (ns) vs w1 (ns)", 100, 0, 100, 200, -10, 10);
+      fHt14ns_w4ns = new TH2D("t14ns_w4ns", "t4-t1 (ns) vs w4 (ns)", 100, 0, 100, 200, -10, 10);
+      fHt23ns_w2ns = new TH2D("t23ns_w2ns", "t3-t2 (ns) vs w2 (ns)", 100, 0, 100, 200, -10, 10);
+      fHt23ns_w3ns = new TH2D("t23ns_w3ns", "t3-t2 (ns) vs w3 (ns)", 100, 0, 100, 200, -10, 10);
+      fHt58ns_w5ns = new TH2D("t58ns_w5ns", "t8-t5 (ns) vs w5 (ns)", 100, 0, 100, 200, -10, 10);
+      fHt58ns_w8ns = new TH2D("t58ns_w8ns", "t8-t5 (ns) vs w8 (ns)", 100, 0, 100, 200, -10, 10);
+      fHt67ns_w6ns = new TH2D("t67ns_w6ns", "t7-t6 (ns) vs w6 (ns)", 100, 0, 100, 200, -10, 10);
+      fHt67ns_w7ns = new TH2D("t67ns_w7ns", "t7-t6 (ns) vs w7 (ns)", 100, 0, 100, 200, -10, 10);
 
       // QUAD 14*58
 
       fHtof_1458 = new TH1D("tof_1458", "TOF 14 vs 58 (ns)", 200, -10, 10);
+      fHtof_1458_cut = new TH1D("tof_1458_cut", "TOF 14 vs 58 (ns) with cut", 200, -10, 10);
 
       fHt14ns_1458 = new TH1D("t14ns_1458", "Paddle 1 time difference, t4-t1 (ns), 1*4*5*8", 200, -10, 10);
       fHt58ns_1458 = new TH1D("t58ns_1458", "Paddle X time difference, t8-t5 (ns), 1*4*5*8", 200, -10, 10);
       fHt14t58ns_1458 = new TH2D("t14t58ns_1458", "t14 vs t58 (ns), 1*4*5*8", 200, -10, 10, 200, -10, 10);
+
+      fHt14ns_1458_cut = new TH1D("t14ns_1458_cut", "Paddle 1 time difference, t4-t1 (ns), 1*4*5*8 with cut", 200, -10, 10);
+      fHt58ns_1458_cut = new TH1D("t58ns_1458_cut", "Paddle X time difference, t8-t5 (ns), 1*4*5*8 with cut", 200, -10, 10);
+      fHt14t58ns_1458_cut = new TH2D("t14t58ns_1458_cut", "t14 vs t58 (ns), 1*4*5*8 with cut", 200, -10, 10, 200, -10, 10);
 
       fHt14ns_14not58 = new TH1D("t14ns_14not58", "t4-t1 (ns), (1*4)*!(5*8)", 200, -10, 10);
       fHt58ns_58not14 = new TH1D("t58ns_58not14", "t8-t5 (ns), !(1*4)*(5*8)", 200, -10, 10);
 
       fHw14ns_1458 = new TH2D("w14ns_1458", "w4ns vs w1ns, 1*4*5*8", 100, 0, 100, 100, 0, 100);
       fHw58ns_1458 = new TH2D("w58ns_1458", "w8ns vs w5ns, 1*4*5*8", 100, 0, 100, 100, 0, 100);
-
+#if 0
       fHa14mv_1458 = new TH2D("a14mv_1458", "calculated amp 4 vs amp 1, mV, 1*4*5*8", 100, 0, 2000, 100, 0, 2000);
       fHa58mv_1458 = new TH2D("a58mv_1458", "calculated amp 8 vs amp 5, mV, 1*4*5*8", 100, 0, 2000, 100, 0, 2000);
 
       fHtof_a1mv_1458 = new TH2D("tof_a1mv_1458", "tof vs a1 (mV), 1*4*5*8", 100, 0, 2000, 100, -10, 10);
       fHtof_a4mv_1458 = new TH2D("tof_a4mv_1458", "tof vs a4 (mV), 1*4*5*8", 100, 0, 2000, 100, -10, 10);
 
+      fHtof_a1mv_1458_cut = new TH2D("tof_a1mv_1458_cut", "tof vs a1 (mV), 1*4*5*8 with cut", 100, 0, 2000, 100, -10, 10);
+      fHtof_a4mv_1458_cut = new TH2D("tof_a4mv_1458_cut", "tof vs a4 (mV), 1*4*5*8 with cut", 100, 0, 2000, 100, -10, 10);
+#endif
+      fHtof_w1ns_1458 = new TH2D("tof_w1ns_1458", "tof vs w1 (ns), 1*4*5*8", 100, 0, 100, 100, -10, 10);
+      fHtof_w4ns_1458 = new TH2D("tof_w4ns_1458", "tof vs w4 (ns), 1*4*5*8", 100, 0, 100, 100, -10, 10);
+
+      fHtof_w1ns_1458_cut = new TH2D("tof_w1ns_1458_cut", "tof vs w1 (ns), 1*4*5*8 with cut", 100, 0, 100, 100, -10, 10);
+      fHtof_w4ns_1458_cut = new TH2D("tof_w4ns_1458_cut", "tof vs w4 (ns), 1*4*5*8 with cut", 100, 0, 100, 100, -10, 10);
+
       // QUAD 23*58
 
       fHtof_2358 = new TH1D("tof_2358", "TOF 23 vs 58 (ns)", 200, -10, 10);
+      fHtof_2358_cut = new TH1D("tof_2358_cut", "TOF 23 vs 58 (ns) with cut", 200, -10, 10);
 
       fHt23ns_2358 = new TH1D("t23ns_2358", "t3-t2 (ns), 2*3*5*8", 200, -10, 10);
       fHt58ns_2358 = new TH1D("t58ns_2358", "t8-t5 (ns), 2*3*5*8", 200, -10, 10);
       fHt23t58ns_2358 = new TH2D("t23t58ns_2358", "t23 vs t58 (ns), 2*3*5*8", 200, -10, 10, 200, -10, 10);
+
+      fHt23ns_2358_cut = new TH1D("t23ns_2358_cut", "t3-t2 (ns), 2*3*5*8 with cut", 200, -10, 10);
+      fHt58ns_2358_cut = new TH1D("t58ns_2358_cut", "t8-t5 (ns), 2*3*5*8 with cut", 200, -10, 10);
+      fHt23t58ns_2358_cut = new TH2D("t23t58ns_2358_cut", "t23 vs t58 (ns), 2*3*5*8 with cut", 200, -10, 10, 200, -10, 10);
 
       fHt23ns_23not58 = new TH1D("t23ns_23not58", "t4-t1 (ns), (2*3)*!(5*8)", 200, -10, 10);
       fHt58ns_58not23 = new TH1D("t58ns_58not23", "t3-t2 (ns), !(2*3)*(5*8)", 200, -10, 10);
 
       fHw23ns_2358 = new TH2D("w23ns_2358", "w3ns vs w2ns, 2*3*5*8", 100, 0, 100, 100, 0, 100);
       fHw58ns_2358 = new TH2D("w58ns_2358", "w8ns vs w5ns, 2*3*5*8", 100, 0, 100, 100, 0, 100);
-
+#if 0
       fHa23mv_2358 = new TH2D("a23mv_2358", "calculated amp 3 vs amp 2, mV, 2*3*5*8", 100, 0, 2000, 100, 0, 2000);
       fHa58mv_2358 = new TH2D("a58mv_2358", "calculated amp 8 vs amp 5, mV, 2*3*5*8", 100, 0, 2000, 100, 0, 2000);
-
+#endif
       // QUAD 14*67
 
       fHtof_1467 = new TH1D("tof_1467", "TOF 14 vs 67 (ns)", 200, -10, 10);
+      fHtof_1467_cut = new TH1D("tof_1467_cut", "TOF 14 vs 67 (ns) with cut", 200, -10, 10);
 
       fHt14ns_1467 = new TH1D("t14ns_1467", "Paddle 1 time difference, t4-t1 (ns), 1*4*6*7", 200, -10, 10);
-      fHt67ns_1467 = new TH1D("t58ns_1467", "Paddle X time difference, t7-t6 (ns), 1*4*6*7", 200, -10, 10);
+      fHt67ns_1467 = new TH1D("t67ns_1467", "Paddle X time difference, t7-t6 (ns), 1*4*6*7", 200, -10, 10);
       fHt14t67ns_1467 = new TH2D("t14t67ns_1467", "t14 vs t67 (ns), 1*4*6*7", 200, -10, 10, 200, -10, 10);
+
+      fHt14ns_1467_cut = new TH1D("t14ns_1467_cut", "Paddle 1 time difference, t4-t1 (ns), 1*4*6*7 with cut", 200, -10, 10);
+      fHt67ns_1467_cut = new TH1D("t67ns_1467_cut", "Paddle X time difference, t7-t6 (ns), 1*4*6*7 with cut", 200, -10, 10);
+      fHt14t67ns_1467_cut = new TH2D("t14t67ns_1467_cut", "t14 vs t67 (ns), 1*4*6*7 with cut", 200, -10, 10, 200, -10, 10);
 
       fHt14ns_14not67 = new TH1D("t14ns_14not67", "t4-t1 (ns), (1*4)*!(6*7)", 200, -10, 10);
       fHt67ns_67not14 = new TH1D("t67ns_67not14", "t7-t6 (ns), !(1*4)*(6*7)", 200, -10, 10);
 
       fHw14ns_1467 = new TH2D("w14ns_1467", "w4ns vs w1ns, 1*4*6*7", 100, 0, 100, 100, 0, 100);
       fHw67ns_1467 = new TH2D("w67ns_1467", "w7ns vs w6ns, 1*4*6*7", 100, 0, 100, 100, 0, 100);
-
+#if 0
       fHa14mv_1467 = new TH2D("a14mv_1467", "calculated amp 4 vs amp 1, mV, 1*4*6*7", 100, 0, 2000, 100, 0, 2000);
       fHa67mv_1467 = new TH2D("a67mv_1467", "calculated amp 7 vs amp 6, mV, 1*4*6*7", 100, 0, 2000, 100, 0, 2000);
+#endif
+
+      fHt67ns_w6ns_1467 = new TH2D("t67ns_w6ns_1467", "t7-t6 (ns) vs w6 (ns), 1*4*6*7", 100, 0, 100, 200, -10, 10);
+      fHt67ns_w7ns_1467 = new TH2D("t67ns_w7ns_1467", "t7-t6 (ns) vs w7 (ns), 1*4*6*7", 100, 0, 100, 200, -10, 10);
 
       // QUAD 23*67
 
       fHtof_2367 = new TH1D("tof_2367", "TOF 23 vs 67 (ns)", 200, -10, 10);
+      fHtof_2367_cut = new TH1D("tof_2367_cut", "TOF 23 vs 67 (ns) with cut", 200, -10, 10);
 
       fHt23ns_2367 = new TH1D("t23ns_2367", "Paddle 1 time difference, t3-t2 (ns), 2*3*6*7", 200, -10, 10);
-      fHt67ns_2367 = new TH1D("t58ns_2367", "Paddle X time difference, t7-t6 (ns), 2*3*6*7", 200, -10, 10);
+      fHt67ns_2367 = new TH1D("t67ns_2367", "Paddle X time difference, t7-t6 (ns), 2*3*6*7", 200, -10, 10);
       fHt23t67ns_2367 = new TH2D("t23t67ns_2367", "t23 vs t67 (ns), 2*3*6*7", 200, -10, 10, 200, -10, 10);
+
+      fHt23ns_2367_cut = new TH1D("t23ns_2367_cut", "Paddle 1 time difference, t3-t2 (ns), 2*3*6*7 with cut", 200, -10, 10);
+      fHt67ns_2367_cut = new TH1D("t67ns_2367_cut", "Paddle X time difference, t7-t6 (ns), 2*3*6*7 with cut", 200, -10, 10);
+      fHt23t67ns_2367_cut = new TH2D("t23t67ns_2367_cut", "t23 vs t67 (ns), 2*3*6*7 with cut", 200, -10, 10, 200, -10, 10);
 
       fHt23ns_23not67 = new TH1D("t23ns_23not67", "t4-t1 (ns), (2*3)*!(6*7)", 200, -10, 10);
       fHt67ns_67not23 = new TH1D("t67ns_67not23", "t7-t6 (ns), !(2*3)*(6*7)", 200, -10, 10);
 
       fHw23ns_2367 = new TH2D("w23ns_2367", "w3ns vs w2ns, 2*3*6*7", 100, 0, 100, 100, 0, 100);
       fHw67ns_2367 = new TH2D("w67ns_2367", "w7ns vs w6ns, 2*3*6*7", 100, 0, 100, 100, 0, 100);
-
+#if 0
       fHa23mv_2367 = new TH2D("a23mv_2367", "calculated amp 3 vs amp 2, mV, 2*3*6*7", 100, 0, 2000, 100, 0, 2000);
       fHa67mv_2367 = new TH2D("a67mv_2367", "calculated amp 7 vs amp 6, mV, 2*3*6*7", 100, 0, 2000, 100, 0, 2000);
+#endif
 #endif
    }
 
@@ -827,6 +950,17 @@ public:
             fHwidth[ch]->Fill(t.fHits[ch].fWidthNs);
          }
       }
+
+      ///////// SET WIDTH CUTOFFS (NS)  /////////
+      
+      double w1_cut = 25;
+      double w2_cut = 25;
+      double w3_cut = 25;
+      double w4_cut = 25;
+      double w5_cut = 15;
+      double w6_cut = 15;
+      double w7_cut = 15;
+      double w8_cut = 15;
 
       ///////// COMPUTE WIDTH AND PULSE HEIGHT ///////////
 
@@ -993,7 +1127,11 @@ public:
          }
 
          fHw1ns->Fill(w1_ns);
-         fHa1mv->Fill(a1_mv);
+         // fHa1mv->Fill(a1_mv);
+
+         if (w1_ns > w1_cut) { 
+            fHw1ns_cut->Fill(w1_ns);
+         }
       }
 
       if (w2_ns > 0) {
@@ -1002,7 +1140,11 @@ public:
          }
 
          fHw2ns->Fill(w2_ns);
-         fHa2mv->Fill(a2_mv);
+         // fHa2mv->Fill(a2_mv);
+
+         if (w2_ns > w2_cut) { 
+            fHw2ns_cut->Fill(w2_ns);
+         }
       }
 
       if (w3_ns > 0) {
@@ -1011,7 +1153,11 @@ public:
          }
 
          fHw3ns->Fill(w3_ns);
-         fHa3mv->Fill(a3_mv);
+         // fHa3mv->Fill(a3_mv);
+
+         if (w3_ns > w3_cut) { 
+            fHw3ns_cut->Fill(w3_ns);
+         }
       }
 
       if (w4_ns > 0) {
@@ -1020,7 +1166,11 @@ public:
          }
 
          fHw4ns->Fill(w4_ns);
-         fHa4mv->Fill(a4_mv);
+         // fHa4mv->Fill(a4_mv);
+
+         if (w4_ns > w4_cut) { 
+            fHw4ns_cut->Fill(w4_ns);
+         }
       }
 
       if (w5_ns > 0) {
@@ -1029,7 +1179,11 @@ public:
          }
 
          fHw5ns->Fill(w5_ns);
-         fHa5mv->Fill(a5_mv);
+         // fHa5mv->Fill(a5_mv);
+
+         if (w5_ns > w5_cut) { 
+            fHw5ns_cut->Fill(w5_ns);
+         }
       }
 
       if (w6_ns > 0) {
@@ -1038,7 +1192,11 @@ public:
          }
 
          fHw6ns->Fill(w6_ns);
-         fHa6mv->Fill(a6_mv);
+         // fHa6mv->Fill(a6_mv);
+
+         if (w6_ns > w6_cut) { 
+            fHw6ns_cut->Fill(w6_ns);
+         }
       }
 
       if (w7_ns > 0) {
@@ -1047,7 +1205,11 @@ public:
          }
 
          fHw7ns->Fill(w7_ns);
-         fHa7mv->Fill(a7_mv);
+         // fHa7mv->Fill(a7_mv);
+
+         if (w7_ns > w7_cut) { 
+            fHw7ns_cut->Fill(w7_ns);
+         }
       }
 
       if (w8_ns > 0) {
@@ -1056,7 +1218,11 @@ public:
          }
 
          fHw8ns->Fill(w8_ns);
-         fHa8mv->Fill(a8_mv);
+         // fHa8mv->Fill(a8_mv);
+
+         if (w8_ns > w8_cut) { 
+            fHw8ns_cut->Fill(w8_ns);
+         }
       }
 
       ///////// CROSS BOARD COINCIDENCES ///////////
@@ -1064,21 +1230,37 @@ public:
       if (w1_ns > 0 && w2_ns > 0) {
          double t12_ns = subtract_ns(t.GetCh(CHAN2).fLe, t.GetCh(CHAN1).fLe);
          fHt12ns->Fill(t12_ns);
+         
+         if (w1_ns > w1_cut && w2_ns > w1_cut) {
+            fHt12ns_cut->Fill(t12_ns);
+         }
       }
       
       if (w3_ns > 0 && w4_ns > 0) {
          double t34_ns = subtract_ns(t.GetCh(CHAN4).fLe, t.GetCh(CHAN3).fLe);
          fHt34ns->Fill(t34_ns);
+
+         if (w3_ns > w3_cut && w4_ns > w4_cut) {
+            fHt34ns_cut->Fill(t34_ns);
+         }
       }
       
       if (w5_ns > 0 && w6_ns > 0) {
          double t56_ns = subtract_ns(t.GetCh(CHAN6).fLe, t.GetCh(CHAN5).fLe);
          fHt56ns->Fill(t56_ns);
+
+         if (w5_ns > w5_cut && w6_ns > w6_cut) {
+            fHt56ns_cut->Fill(t56_ns);
+         }
       }
 
       if (w7_ns > 0 && w8_ns > 0) {
          double t78_ns = subtract_ns(t.GetCh(CHAN8).fLe, t.GetCh(CHAN7).fLe);
          fHt78ns->Fill(t78_ns);
+
+         if (w7_ns > w7_cut && w8_ns > w8_cut) {
+            fHt78ns_cut->Fill(t78_ns);
+         }
       }
 
       ///////// PAIR COINCIDENCES ///////////
@@ -1097,7 +1279,16 @@ public:
          
          fHt14ns->Fill(t14_ns);
          fHw14ns->Fill(w1_ns, w4_ns);
-         fHa14mv->Fill(a1_mv, a4_mv);
+         // fHa14mv->Fill(a1_mv, a4_mv);
+
+         fHt14ns_w1ns->Fill(w1_ns, t14_ns);
+         fHt14ns_w4ns->Fill(w4_ns, t14_ns);
+
+
+
+         if (w1_ns > w1_cut && w4_ns > w4_cut) {
+            fHt14ns_cut->Fill(t14_ns);
+         }
       }
 
       double t23_ns = -9999;
@@ -1114,7 +1305,14 @@ public:
 
          fHt23ns->Fill(t23_ns);
          fHw23ns->Fill(w2_ns, w3_ns);
-         fHa23mv->Fill(a2_mv, a3_mv);
+         // fHa23mv->Fill(a2_mv, a3_mv);
+
+         fHt23ns_w2ns->Fill(w2_ns, t23_ns);
+         fHt23ns_w3ns->Fill(w3_ns, t23_ns);
+
+         if (w2_ns > w2_cut && w3_ns > w3_cut) {
+            fHt23ns_cut->Fill(t23_ns);
+         }
       }
 
       double t58_ns = -9999;
@@ -1131,7 +1329,14 @@ public:
 
          fHt58ns->Fill(t58_ns);
          fHw58ns->Fill(w5_ns, w8_ns);
-         fHa58mv->Fill(a5_mv, a8_mv);
+         // fHa58mv->Fill(a5_mv, a8_mv);
+
+         fHt58ns_w5ns->Fill(w5_ns, t58_ns);
+         fHt58ns_w8ns->Fill(w8_ns, t58_ns);
+
+         if (w5_ns > w5_cut && w8_ns > w8_cut) {
+            fHt58ns_cut->Fill(t58_ns);
+         }
       }
 
       double t67_ns = -9999;
@@ -1148,7 +1353,14 @@ public:
 
          fHt67ns->Fill(t67_ns);
          fHw67ns->Fill(w6_ns, w7_ns);
-         fHa67mv->Fill(a6_mv, a7_mv);
+         // fHa67mv->Fill(a6_mv, a7_mv);
+
+         fHt67ns_w6ns->Fill(w6_ns, t67_ns);
+         fHt67ns_w7ns->Fill(w7_ns, t67_ns);
+
+         if (w6_ns > w6_cut && w7_ns > w7_cut) {
+            fHt67ns_cut->Fill(t67_ns);
+         }
       }
       
       ///////// QUAD COINCIDENCES ///////////
@@ -1179,11 +1391,28 @@ public:
          
          fHw14ns_1458->Fill(w1_ns, w4_ns);
          fHw58ns_1458->Fill(w5_ns, w8_ns);
-         fHa14mv_1458->Fill(a1_mv, a4_mv);
-         fHa58mv_1458->Fill(a5_mv, a8_mv);
          
-         fHtof_a1mv_1458->Fill(a1_mv, tof1458);
-         fHtof_a4mv_1458->Fill(a4_mv, tof1458);
+         // fHa14mv_1458->Fill(a1_mv, a4_mv);
+         // fHa58mv_1458->Fill(a5_mv, a8_mv);
+         
+         // fHtof_a1mv_1458->Fill(a1_mv, tof1458);
+         // fHtof_a4mv_1458->Fill(a4_mv, tof1458);
+
+         fHtof_w1ns_1458->Fill(w1_ns, tof1458);
+         fHtof_w4ns_1458->Fill(w4_ns, tof1458);
+
+         if (w1_ns > w1_cut && w4_ns > w4_cut && w5_ns > w5_cut && w8_ns > w8_cut) {
+            fHtof_1458_cut->Fill(tof1458);
+            // fHtof_a1mv_1458_cut->Fill(a1_mv, tof1458);
+            // fHtof_a4mv_1458_cut->Fill(a4_mv, tof1458);
+
+            fHtof_w1ns_1458_cut->Fill(w1_ns, tof1458);
+            fHtof_w4ns_1458_cut->Fill(w4_ns, tof1458);
+
+            fHt14ns_1458_cut->Fill(t14_ns);
+            fHt58ns_1458_cut->Fill(t58_ns);
+            fHt14t58ns_1458_cut->Fill(t14_ns, t58_ns);
+         }
       }
 
       if ((t14_ns > -9999) && !(t58_ns > -9999)) {
@@ -1225,8 +1454,16 @@ public:
          
          fHw23ns_2358->Fill(w2_ns, w3_ns);
          fHw58ns_2358->Fill(w5_ns, w8_ns);
-         fHa23mv_2358->Fill(a2_mv, a3_mv);
-         fHa58mv_2358->Fill(a5_mv, a8_mv);
+         // fHa23mv_2358->Fill(a2_mv, a3_mv);
+         // fHa58mv_2358->Fill(a5_mv, a8_mv);
+
+         if (w2_ns > w2_cut && w3_ns > w3_cut && w5_ns > w5_cut && w8_ns > w8_cut) {
+            fHtof_2358_cut->Fill(tof2358);
+
+            fHt23ns_2358_cut->Fill(t23_ns);
+            fHt58ns_2358_cut->Fill(t58_ns);
+            fHt23t58ns_2358_cut->Fill(t23_ns, t58_ns);
+         }
       }
 
       if ((t23_ns > -9999) && !(t58_ns > -9999)) {
@@ -1267,8 +1504,19 @@ public:
          
          fHw14ns_1467->Fill(w1_ns, w4_ns);
          fHw67ns_1467->Fill(w6_ns, w7_ns);
-         fHa14mv_1467->Fill(a1_mv, a4_mv);
-         fHa67mv_1467->Fill(a6_mv, a7_mv);
+         // fHa14mv_1467->Fill(a1_mv, a4_mv);
+         // fHa67mv_1467->Fill(a6_mv, a7_mv);
+
+         fHt67ns_w6ns_1467->Fill(w6_ns, t67_ns);
+         fHt67ns_w7ns_1467->Fill(w7_ns, t67_ns);
+
+         if (w1_ns > w1_cut && w4_ns > w4_cut && w6_ns > w6_cut && w7_ns > w7_cut) {
+            fHtof_1467_cut->Fill(tof1467);
+
+            fHt14ns_1467_cut->Fill(t14_ns);
+            fHt67ns_1467_cut->Fill(t67_ns);
+            fHt14t67ns_1467_cut->Fill(t14_ns, t67_ns);
+         }
       }
 
       if ((t14_ns > -9999) && !(t67_ns > -9999)) {
@@ -1309,8 +1557,16 @@ public:
          
          fHw23ns_2367->Fill(w2_ns, w3_ns);
          fHw67ns_2367->Fill(w6_ns, w7_ns);
-         fHa23mv_2367->Fill(a2_mv, a3_mv);
-         fHa67mv_2367->Fill(a6_mv, a7_mv);
+         // fHa23mv_2367->Fill(a2_mv, a3_mv);
+         // fHa67mv_2367->Fill(a6_mv, a7_mv);
+
+         if (w2_ns > w2_cut && w3_ns > w3_cut && w6_ns > w6_cut && w7_ns > w7_cut) {
+            fHtof_2367_cut->Fill(tof2367);
+
+            fHt23ns_2367_cut->Fill(t23_ns);
+            fHt67ns_2367_cut->Fill(t67_ns);
+            fHt23t67ns_2367_cut->Fill(t23_ns, t67_ns);
+         }
       }
 
       if ((t23_ns > -9999) && !(t67_ns > -9999)) {
