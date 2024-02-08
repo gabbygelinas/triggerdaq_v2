@@ -1646,7 +1646,7 @@ public:
 
             //printf("TTX %.9f %.9f sec, first %.9f, last %.9f sec\n", fCt->min_time_sec, fCt->max_time_sec, fCt->first_time_sec, fCt->last_time_sec);
 
-            if (h.le && hit_dt_ns > 300.0) {
+            if (h.le && hit_dt_ns > 80.0) {
                double event_dt_ns = sec_to_ns(h.time_sec - fCt->min_time_sec);
 
 
