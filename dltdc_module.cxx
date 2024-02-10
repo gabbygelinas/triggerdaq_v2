@@ -80,6 +80,8 @@ public:
 
    void AddHit(const DlTdcHit& h)
    {
+      bool complain = false;
+
       if (h.le) {
          if (!fUp) {
             fUp = true;
@@ -88,14 +90,27 @@ public:
                fLe = h;
                fTimeSec = h.time_sec;
             } else {
-               printf("TTT: MULTIPLE DlTdcHit, ch %d, time %.9f -> %.9f sec, dt %.3f ns, count %d\n", h.ch, fTimeSec, h.time_sec, sec_to_ns(h.time_sec - fTimeSec), fCount);
+               double te_to_le_ns = sec_to_ns(h.time_sec - fTe.time_sec);
+               if (te_to_le_ns < 5.0) {
+                  if (complain)
+                     printf("TTT: ch %d: LE-TE-LE, MERGE TE to LE %.3f ns\n", h.ch, te_to_le_ns);
+                  fCount = 0;
+               } else {
+                  if (complain)
+                     printf("TTT: ch %d: MULTIPLE HIT, time %.9f -> %.9f sec, dt %.3f ns, TE to LE %.3f ns, count %d\n", h.ch, fTimeSec, h.time_sec, sec_to_ns(h.time_sec - fTimeSec), sec_to_ns(h.time_sec - fTe.time_sec), fCount);
+                  //fLe.Print(); printf("\n");
+                  //fTe.Print(); printf("\n");
+                  //h.Print(); printf("\n");
+               }
             }
          } else {
-            double dt_ns = sec_to_ns(h.time_sec - fTimeSec);
-            if (dt_ns < 60.0) {
-               printf("TTT: MISSING DOUBLE TE, dt %.3f ns\n", dt_ns);
+            double le_le_dt_ns = sec_to_ns(h.time_sec - fLe.time_sec);
+            if (le_le_dt_ns < 80.0) {
+               if (complain)
+                  printf("TTT: ch %d: LE-LE, LE-LE %.3f ns\n", h.ch, le_le_dt_ns);
             } else {
-               printf("TTT: MISSING TE DlTdcHit, ch %d, time %.9f -> %.9f sec, dt %.3f ns, count %d\n", h.ch, fTimeSec, h.time_sec, dt_ns, fCount);
+               if (complain)
+                  printf("TTT: ch %d: LE-LE, LE FROM WRONG EVENT, LE-LE %.3f ns, count %d\n", h.ch, le_le_dt_ns, fCount);
             }
          }
       } else if (h.te) {
@@ -109,10 +124,21 @@ public:
             fCount++;
          } else {
             if (fCount == 0) {
-               printf("TTT: TE without LE, ch %d\n", h.ch);
+               if (complain)
+                  printf("TTT: ch %d: TE without LE\n", h.ch);
             } else {
-               double dt_ns = sec_to_ns(h.time_sec - fTimeSec);
-               printf("TTT: MISSING LE DlTdcHit, ch %d, count %d, dt %.3f ns\n", h.ch, fCount, dt_ns);
+               double le_te_dt_ns = sec_to_ns(fTe.time_sec - fLe.time_sec);
+               double te_te_dt_ns = sec_to_ns(h.time_sec - fTe.time_sec);
+               if (te_te_dt_ns < 80.0) {
+                  if (complain)
+                     printf("TTT: ch %d: LE-TE-TE, MISSING LE, LE-TE %.3f, TE-TE %.3f ns, count %d\n", h.ch, le_te_dt_ns, te_te_dt_ns, fCount);
+               } else {
+                  if (complain)
+                     printf("TTT: ch %d: LE-TE-TE, TE FROM WRONG EVENT, LE-TE %.3f, TE-TE %.3f ns, count %d\n", h.ch, le_te_dt_ns, te_te_dt_ns, fCount);
+               }
+               //fLe.Print(); printf("\n");
+               //fTe.Print(); printf("\n");
+               //h.Print(); printf("\n");
             }
          }
       }
@@ -357,6 +383,15 @@ public:
    TH2D* fHt67ns_w6ns = NULL;
    TH2D* fHt67ns_w7ns = NULL;
 
+   TH2D* fHt14ns_w1ns_cutw4 = NULL;
+   TH2D* fHt14ns_w4ns_cutw1 = NULL;
+   TH2D* fHt23ns_w2ns_cutw3 = NULL;
+   TH2D* fHt23ns_w3ns_cutw2 = NULL;
+   TH2D* fHt58ns_w5ns_cutw8 = NULL;
+   TH2D* fHt58ns_w8ns_cutw5 = NULL;
+   TH2D* fHt67ns_w6ns_cutw7 = NULL;
+   TH2D* fHt67ns_w7ns_cutw6 = NULL;
+
    // QUAD 14*58
 
    TH1D* fHtof_1458   = NULL;
@@ -387,9 +422,13 @@ public:
 #endif
    TH2D* fHtof_w1ns_1458 = NULL;
    TH2D* fHtof_w4ns_1458 = NULL;
+   TH2D* fHtof_w5ns_1458 = NULL;
+   TH2D* fHtof_w8ns_1458 = NULL;
 
    TH2D* fHtof_w1ns_1458_cut = NULL;
    TH2D* fHtof_w4ns_1458_cut = NULL;
+   TH2D* fHtof_w5ns_1458_cut = NULL;
+   TH2D* fHtof_w8ns_1458_cut = NULL;
    
    // QUAD 23*58
 
@@ -730,6 +769,15 @@ public:
       fHt67ns_w6ns = new TH2D("t67ns_w6ns", "t7-t6 (ns) vs w6 (ns)", 100, 0, 100, 200, -10, 10);
       fHt67ns_w7ns = new TH2D("t67ns_w7ns", "t7-t6 (ns) vs w7 (ns)", 100, 0, 100, 200, -10, 10);
 
+      fHt14ns_w1ns_cutw4 = new TH2D("t14ns_w1ns_cutw4", "t4-t1 (ns) vs w1 (ns) cut on w4", 100, 0, 100, 200, -10, 10);
+      fHt14ns_w4ns_cutw1 = new TH2D("t14ns_w4ns_cutw1", "t4-t1 (ns) vs w4 (ns) cut on w1", 100, 0, 100, 200, -10, 10);
+      fHt23ns_w2ns_cutw3 = new TH2D("t23ns_w2ns_cutw3", "t3-t2 (ns) vs w2 (ns) cut on w3", 100, 0, 100, 200, -10, 10);
+      fHt23ns_w3ns_cutw2 = new TH2D("t23ns_w3ns_cutw2", "t3-t2 (ns) vs w3 (ns) cut on w2", 100, 0, 100, 200, -10, 10);
+      fHt58ns_w5ns_cutw8 = new TH2D("t58ns_w5ns_cutw8", "t8-t5 (ns) vs w5 (ns) cut on w8", 100, 0, 100, 200, -10, 10);
+      fHt58ns_w8ns_cutw5 = new TH2D("t58ns_w8ns_cutw5", "t8-t5 (ns) vs w8 (ns) cut on w5", 100, 0, 100, 200, -10, 10);
+      fHt67ns_w6ns_cutw7 = new TH2D("t67ns_w6ns_cutw7", "t7-t6 (ns) vs w6 (ns) cut on w7", 100, 0, 100, 200, -10, 10);
+      fHt67ns_w7ns_cutw6 = new TH2D("t67ns_w7ns_cutw6", "t7-t6 (ns) vs w7 (ns) cut on w6", 100, 0, 100, 200, -10, 10);
+
       // QUAD 14*58
 
       fHtof_1458 = new TH1D("tof_1458", "TOF 14 vs 58 (ns)", 200, -10, 10);
@@ -760,9 +808,13 @@ public:
 #endif
       fHtof_w1ns_1458 = new TH2D("tof_w1ns_1458", "tof vs w1 (ns), 1*4*5*8", 100, 0, 100, 100, -10, 10);
       fHtof_w4ns_1458 = new TH2D("tof_w4ns_1458", "tof vs w4 (ns), 1*4*5*8", 100, 0, 100, 100, -10, 10);
+      fHtof_w5ns_1458 = new TH2D("tof_w5ns_1458", "tof vs w5 (ns), 1*4*5*8", 100, 0, 100, 100, -10, 10);
+      fHtof_w8ns_1458 = new TH2D("tof_w8ns_1458", "tof vs w8 (ns), 1*4*5*8", 100, 0, 100, 100, -10, 10);
 
       fHtof_w1ns_1458_cut = new TH2D("tof_w1ns_1458_cut", "tof vs w1 (ns), 1*4*5*8 with cut", 100, 0, 100, 100, -10, 10);
       fHtof_w4ns_1458_cut = new TH2D("tof_w4ns_1458_cut", "tof vs w4 (ns), 1*4*5*8 with cut", 100, 0, 100, 100, -10, 10);
+      fHtof_w5ns_1458_cut = new TH2D("tof_w5ns_1458_cut", "tof vs w5 (ns), 1*4*5*8 with cut", 100, 0, 100, 100, -10, 10);
+      fHtof_w8ns_1458_cut = new TH2D("tof_w8ns_1458_cut", "tof vs w8 (ns), 1*4*5*8 with cut", 100, 0, 100, 100, -10, 10);
 
       // QUAD 23*58
 
@@ -1284,7 +1336,11 @@ public:
          fHt14ns_w1ns->Fill(w1_ns, t14_ns);
          fHt14ns_w4ns->Fill(w4_ns, t14_ns);
 
+         if (w4_ns > w4_cut)
+            fHt14ns_w1ns_cutw4->Fill(w1_ns, t14_ns);
 
+         if (w1_ns > w1_cut)
+            fHt14ns_w4ns_cutw1->Fill(w4_ns, t14_ns);
 
          if (w1_ns > w1_cut && w4_ns > w4_cut) {
             fHt14ns_cut->Fill(t14_ns);
@@ -1310,6 +1366,12 @@ public:
          fHt23ns_w2ns->Fill(w2_ns, t23_ns);
          fHt23ns_w3ns->Fill(w3_ns, t23_ns);
 
+         if (w3_ns > w3_cut)
+            fHt23ns_w2ns_cutw3->Fill(w2_ns, t23_ns);
+
+         if (w2_ns > w2_cut)
+            fHt23ns_w3ns_cutw2->Fill(w3_ns, t23_ns);
+
          if (w2_ns > w2_cut && w3_ns > w3_cut) {
             fHt23ns_cut->Fill(t23_ns);
          }
@@ -1334,6 +1396,12 @@ public:
          fHt58ns_w5ns->Fill(w5_ns, t58_ns);
          fHt58ns_w8ns->Fill(w8_ns, t58_ns);
 
+         if (w8_ns > w8_cut)
+            fHt58ns_w5ns_cutw8->Fill(w5_ns, t58_ns);
+
+         if (w5_ns > w5_cut)
+            fHt58ns_w8ns_cutw5->Fill(w8_ns, t58_ns);
+
          if (w5_ns > w5_cut && w8_ns > w8_cut) {
             fHt58ns_cut->Fill(t58_ns);
          }
@@ -1357,6 +1425,12 @@ public:
 
          fHt67ns_w6ns->Fill(w6_ns, t67_ns);
          fHt67ns_w7ns->Fill(w7_ns, t67_ns);
+
+         if (w7_ns > w7_cut)
+            fHt67ns_w6ns_cutw7->Fill(w6_ns, t67_ns);
+
+         if (w6_ns > w6_cut)
+            fHt67ns_w7ns_cutw6->Fill(w7_ns, t67_ns);
 
          if (w6_ns > w6_cut && w7_ns > w7_cut) {
             fHt67ns_cut->Fill(t67_ns);
@@ -1401,6 +1475,9 @@ public:
          fHtof_w1ns_1458->Fill(w1_ns, tof1458);
          fHtof_w4ns_1458->Fill(w4_ns, tof1458);
 
+         fHtof_w5ns_1458->Fill(w5_ns, tof1458);
+         fHtof_w8ns_1458->Fill(w8_ns, tof1458);
+
          if (w1_ns > w1_cut && w4_ns > w4_cut && w5_ns > w5_cut && w8_ns > w8_cut) {
             fHtof_1458_cut->Fill(tof1458);
             // fHtof_a1mv_1458_cut->Fill(a1_mv, tof1458);
@@ -1408,6 +1485,9 @@ public:
 
             fHtof_w1ns_1458_cut->Fill(w1_ns, tof1458);
             fHtof_w4ns_1458_cut->Fill(w4_ns, tof1458);
+
+            fHtof_w5ns_1458_cut->Fill(w5_ns, tof1458);
+            fHtof_w8ns_1458_cut->Fill(w8_ns, tof1458);
 
             fHt14ns_1458_cut->Fill(t14_ns);
             fHt58ns_1458_cut->Fill(t58_ns);
@@ -1656,11 +1736,11 @@ public:
                   //printf("===\n");
                }
 
-               for (size_t ch=0; ch<MAX_TDC_CHAN; ch++) {
-                  if (fCt->fHits[ch].fUp) {
-                     printf("TTT: ch %zu no TE\n", ch);
-                  }
-               }
+               //for (size_t ch=0; ch<MAX_TDC_CHAN; ch++) {
+               //   if (fCt->fHits[ch].fUp) {
+               //      printf("TTT: ch %zu no TE\n", ch);
+               //   }
+               //}
 
                if (1) {
                   //printf("TTT %.9f -> %.9f sec, dt %.3f ns\n", fCt->min_time_sec, h.time_sec, event_dt_ns);
