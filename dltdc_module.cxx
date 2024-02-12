@@ -48,6 +48,7 @@ class DlTdcFlags
 {
 public:
    bool fEnabled = false;
+   bool fTriggered = false;
    bool fCalib   = false;
    bool fDebug = false;
    bool fPrint = false;
@@ -312,6 +313,15 @@ public:
    TH1D* fHeventdt2ns = NULL;
    TH1D* fHeventdt3ns = NULL;
    TH1D* fHeventdt4ns = NULL;
+
+   TH1D* fHdt1Le[MAX_TDC_CHAN+1];
+   TH1D* fHdt2Le[MAX_TDC_CHAN+1];
+   TH1D* fHdt3Le[MAX_TDC_CHAN+1];
+   TH1D* fHdt4Le[MAX_TDC_CHAN+1];
+
+   std::vector<TH1D*> fHunphysical_pair_ns;
+
+   TH1D* fHtABns = NULL;
 
    TH1D* fHt12ns = NULL;
    TH1D* fHt34ns = NULL;
@@ -687,17 +697,57 @@ public:
          fHpulserWi[i] = new TH1D(name, title, 200, 0, 20);
       }
 
-      dir->cd();
+      dir->mkdir("poisson")->cd();
 
       fHhitdt1ns = new TH1D("hitdt1ns", "hit dt 100 ns", 100, 0, 100); // 100 ns
-      fHhitdt2ns = new TH1D("hitdt2ns", "hit dt 1000 ns", 100, 100, 1000); // 1 usec
-      fHhitdt3ns = new TH1D("hitdt3ns", "hit dt 1000 us", 100, 1000, 1000000); // 1 msec
-      fHhitdt4ns = new TH1D("hitdt4ns", "hit dt 1000 ms", 100, 1000000, 1000000000); // 1 sec
+      fHhitdt2ns = new TH1D("hitdt2ns", "hit dt 1000 ns", 100, 0, 1000); // 1 usec
+      fHhitdt3ns = new TH1D("hitdt3ns", "hit dt 1000 us", 100, 0, 1000000); // 1 msec
+      fHhitdt4ns = new TH1D("hitdt4ns", "hit dt 1000 ms", 100, 0, 1000000000); // 1 sec
 
       fHeventdt1ns = new TH1D("eventdt1ns", "event dt 100 ns", 100, 0, 100); // 100 ns
-      fHeventdt2ns = new TH1D("eventdt2ns", "event dt 1000 ns", 100, 100, 1000); // 1 usec
-      fHeventdt3ns = new TH1D("eventdt3ns", "event dt 1000 us", 100, 1000, 1000000); // 1 msec
-      fHeventdt4ns = new TH1D("eventdt4ns", "event dt 1000 ms", 100, 1000000, 1000000000); // 1 sec
+      fHeventdt2ns = new TH1D("eventdt2ns", "event dt 1000 ns", 100, 0, 1000); // 1 usec
+      fHeventdt3ns = new TH1D("eventdt3ns", "event dt 1000 us", 100, 0, 1000000); // 1 msec
+      fHeventdt4ns = new TH1D("eventdt4ns", "event dt 1000 ms", 100, 0, 1000000000); // 1 sec
+
+      for (int i=0; i<=MAX_TDC_CHAN; i++) {
+         char name[256];
+         char title[256];
+
+         sprintf(name,  "tdc%02d_dt1_le", i);
+         sprintf(title, "tdc%02d_dt1_le, ns", i);
+         fHdt1Le[i] = new TH1D(name, title, 100, 0, 100); // 10 ns
+
+         sprintf(name,  "tdc%02d_dt2_le", i);
+         sprintf(title, "tdc%02d_dt2_le, ns", i);
+         fHdt2Le[i] = new TH1D(name, title, 100, 0, 1000); // 1 usec
+
+         sprintf(name,  "tdc%02d_dt3_le", i);
+         sprintf(title, "tdc%02d_dt3_le, ns", i);
+         fHdt3Le[i] = new TH1D(name, title, 100, 0, 1000000); // 1 msec
+
+         sprintf(name,  "tdc%02d_dt4_le", i);
+         sprintf(title, "tdc%02d_dt4_le, ns", i);
+         fHdt4Le[i] = new TH1D(name, title, 100, 0, 1000000000); // 1 sec
+      }
+
+      dir->mkdir("unphysical")->cd();
+
+      fHunphysical_pair_ns.resize((MAX_TDC_CHAN+1)*(MAX_TDC_CHAN+1));
+      for (int i=0; i<=MAX_TDC_CHAN; i++) {
+         for (int j=i+1; j<=MAX_TDC_CHAN; j++) {
+            char name[256];
+            char title[256];
+
+            sprintf(name,  "tdc%02d_tdc%02d_le_ns", i, j);
+            sprintf(title, "tdc%02d_le - tdc%02d_le, ns", i, j);
+            fHunphysical_pair_ns[i*(MAX_TDC_CHAN+1) + j] = new TH1D(name, title, 200, -50, 50);
+            fHunphysical_pair_ns[i*(MAX_TDC_CHAN+1) + j]->SetMinimum(0);
+         }
+      }
+
+      dir->cd();
+
+      fHtABns = new TH1D("tABns", "time between 1234 trigger and 4567 trigger, A-B, ns", 200, -10, 10);
 
       fHt12ns = new TH1D("t12ns", "sipm board 1, t2-t1, ns", 200, -10, 10);
       fHt34ns = new TH1D("t34ns", "sipm board 2, t4-t3, ns", 200, -10, 10);
@@ -971,6 +1021,12 @@ public:
          printf("EVENT %d %d %d %d %d %d %d %d, ABT %d%d%d\n", t.HaveCh(CHAN1), t.HaveCh(CHAN2), t.HaveCh(CHAN3), t.HaveCh(CHAN4), t.HaveCh(CHAN5), t.HaveCh(CHAN6), t.HaveCh(CHAN7), t.HaveCh(CHAN8), t.HaveCh(CHANA), t.HaveCh(CHANB), t.HaveCh(CHANT));
       }
       
+      ///////// check for triggered event ///////////
+
+      if (fFlags->fTriggered && !t.HaveCh(CHANT)) {
+         return;
+      }
+
       ///////// pulser calibration histograms ///////////
          
       size_t pulserMaster = CHAN1;
@@ -1000,6 +1056,38 @@ public:
          //printf("ch %d, up down %d %d\n", ch, t.fHits[ch].fUp, t.fHits[ch].fDown);
          if (!t.fHits[ch].fUp && t.fHits[ch].fDown) {
             fHwidth[ch]->Fill(t.fHits[ch].fWidthNs);
+         }
+      }
+
+      ///////// plot trigger A-B time ///////////
+      
+      if (t.HaveCh(CHANA) && t.HaveCh(CHANB)) {
+         double tAB_ns = subtract_ns(t.GetCh(CHANA).fLe, t.GetCh(CHANB).fLe);
+         //if (tAB_ns < -0.6)
+         //   return;
+         //fHtABns->Fill(tAB_ns); // not claibrated. KO 11feb2024
+      }
+
+      //if (!t.HaveCh(CHANB)) return;
+
+      // cut on t6-t7
+      
+      if (t.HaveCh(CHAN6) && t.HaveCh(CHAN7)) {
+         double t67_ns = subtract_ns(t.GetCh(CHAN7).fLe, t.GetCh(CHAN6).fLe);
+
+         //if (t67_ns > -0.6) return;
+         if (t67_ns < -0.4) return;
+      } else {
+         return;
+      }
+
+      ///////// plot unphysical time pairs /////////
+
+      for (int i=0; i<=MAX_TDC_CHAN; i++) {
+         for (int j=i+1; j<=MAX_TDC_CHAN; j++) {
+            if (t.HaveCh(i) && t.HaveCh(j)) {
+               fHunphysical_pair_ns[i*(MAX_TDC_CHAN+1) + j]->Fill(subtract_ns(t.GetCh(i).fLe, t.GetCh(j).fLe));
+            }
          }
       }
 
@@ -1670,6 +1758,8 @@ public:
 
    bool fFirstTrig = true;
 
+   std::vector<DlTdcHit> fPrevLe;
+
    TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
    {
       //printf("DlTdcModule::Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
@@ -1680,6 +1770,11 @@ public:
       if (!fFlags->fEnabled)
          return flow;
 
+      if (fPrevLe.size() != MAX_TDC_CHAN+1) {
+         //printf("RESIZE!\n");
+         fPrevLe.resize(MAX_TDC_CHAN+1);
+      }
+      
       TMBank* tdcbank = event->FindBank("CBT2");
 
       bool calib = fFlags->fCalib;
@@ -1715,6 +1810,16 @@ public:
 
             if (calib) {
                fU->fCalib[h.ch].AddHit(h);
+            }
+
+            if (h.le) {
+               double dt = subtract_ns(h, fPrevLe[h.ch]);
+               //printf("ch %d: dt %.3f ns\n", h.ch, dt);
+               fHdt1Le[h.ch]->Fill(dt);
+               fHdt2Le[h.ch]->Fill(dt);
+               fHdt3Le[h.ch]->Fill(dt);
+               fHdt4Le[h.ch]->Fill(dt);
+               fPrevLe[h.ch] = h;
             }
 
             double hit_dt_ns = sec_to_ns(h.time_sec - fCt->max_time_sec);
@@ -1831,6 +1936,9 @@ public:
          }
          if (args[i] == "--dltdc-calib") {
             fFlags.fCalib = true;
+         }
+         if (args[i] == "--dltdc-triggered") {
+            fFlags.fTriggered = true;
          }
          if (args[i] == "--dltdc-debug") {
             fFlags.fDebug = true;
