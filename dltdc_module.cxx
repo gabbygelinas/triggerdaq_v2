@@ -1072,14 +1072,14 @@ public:
 
       // cut on t6-t7
       
-      if (t.HaveCh(CHAN6) && t.HaveCh(CHAN7)) {
-         double t67_ns = subtract_ns(t.GetCh(CHAN7).fLe, t.GetCh(CHAN6).fLe);
-
-         //if (t67_ns > -0.6) return;
-         if (t67_ns < -0.4) return;
-      } else {
-         return;
-      }
+      //if (t.HaveCh(CHAN6) && t.HaveCh(CHAN7)) {
+      //   double t67_ns = subtract_ns(t.GetCh(CHAN7).fLe, t.GetCh(CHAN6).fLe);
+      //
+      //   //if (t67_ns > -0.6) return;
+      //   if (t67_ns < -0.4) return;
+      //} else {
+      //   return;
+      //}
 
       ///////// plot unphysical time pairs /////////
 
