@@ -81,7 +81,7 @@ public:
 
    void AddHit(const DlTdcHit& h)
    {
-      bool complain = false;
+      bool complain = true; // false;
 
       if (h.le) {
          if (!fUp) {
@@ -121,6 +121,9 @@ public:
             if (fCount == 0) {
                fTe = h;
                fWidthNs = subtract_ns(fTe, fLe);
+            } else {
+               if (complain)
+                  printf("TTT: ch %d: TE multiple hit, count %d\n", h.ch, fCount);
             }
             fCount++;
          } else {
@@ -639,6 +642,36 @@ public:
             fU->fCalib[9].tepos.fOffsetNs  = fU->fCalib[9].teneg.fOffsetNs  = fU->fCalib[9].lepos.fOffsetNs  -0.100 +0.500 -0.583; // chan8
             fU->fCalib[10].tepos.fOffsetNs = fU->fCalib[10].teneg.fOffsetNs = fU->fCalib[10].lepos.fOffsetNs +0.500 +3.951; // T
             fU->fCalib[11].tepos.fOffsetNs = fU->fCalib[11].teneg.fOffsetNs = fU->fCalib[11].lepos.fOffsetNs +0; // nc
+
+            if (runinfo->fRunNo >= 906095) {
+               // number from pulser tdc chanNN LE table:
+               fU->fCalib[0].lepos.fOffsetNs  = fU->fCalib[0].leneg.fOffsetNs  -= -0.650; // A
+               fU->fCalib[1].lepos.fOffsetNs  = fU->fCalib[1].leneg.fOffsetNs  -=  0.315; // B
+               fU->fCalib[2].lepos.fOffsetNs  = fU->fCalib[2].leneg.fOffsetNs  -=  0.000; // chan1
+               fU->fCalib[3].lepos.fOffsetNs  = fU->fCalib[3].leneg.fOffsetNs  -= -0.424; // chan2
+               fU->fCalib[4].lepos.fOffsetNs  = fU->fCalib[4].leneg.fOffsetNs  -=  0.559; // chan3
+               fU->fCalib[5].lepos.fOffsetNs  = fU->fCalib[5].leneg.fOffsetNs  -=  0.025; // chan4
+               fU->fCalib[6].lepos.fOffsetNs  = fU->fCalib[6].leneg.fOffsetNs  -=  0.234; // chan5
+               fU->fCalib[7].lepos.fOffsetNs  = fU->fCalib[7].leneg.fOffsetNs  -= -0.140; // chan6
+               fU->fCalib[8].lepos.fOffsetNs  = fU->fCalib[8].leneg.fOffsetNs  -= -0.417; // chan7
+               fU->fCalib[9].lepos.fOffsetNs  = fU->fCalib[9].leneg.fOffsetNs  -= -1.040; // chan8
+               fU->fCalib[10].lepos.fOffsetNs = fU->fCalib[10].leneg.fOffsetNs -= -1.330; // T
+               fU->fCalib[11].lepos.fOffsetNs = fU->fCalib[11].leneg.fOffsetNs = 0; // nc
+
+               // number from pulser tdc chanNN TE table:
+               fU->fCalib[0].tepos.fOffsetNs  = fU->fCalib[0].teneg.fOffsetNs  -= -0.057 + 0.442; // A
+               fU->fCalib[1].tepos.fOffsetNs  = fU->fCalib[1].teneg.fOffsetNs  -= -0.313  -0.761; // B
+               fU->fCalib[2].tepos.fOffsetNs  = fU->fCalib[2].teneg.fOffsetNs  -=  0.000; // chan1
+               fU->fCalib[3].tepos.fOffsetNs  = fU->fCalib[3].teneg.fOffsetNs  -= -1.352 + 1.405; // chan2
+               fU->fCalib[4].tepos.fOffsetNs  = fU->fCalib[4].teneg.fOffsetNs  -=  1.250  -0.538; // chan3
+               fU->fCalib[5].tepos.fOffsetNs  = fU->fCalib[5].teneg.fOffsetNs  -= -0.460 + 0.616; // chan4
+               fU->fCalib[6].tepos.fOffsetNs  = fU->fCalib[6].teneg.fOffsetNs  -=  2.412  -1.914; // chan5
+               fU->fCalib[7].tepos.fOffsetNs  = fU->fCalib[7].teneg.fOffsetNs  -= -1.652 + 1.754; // chan6
+               fU->fCalib[8].tepos.fOffsetNs  = fU->fCalib[8].teneg.fOffsetNs  -= -2.276 + 1.783; // chan7
+               fU->fCalib[9].tepos.fOffsetNs  = fU->fCalib[9].teneg.fOffsetNs  -= -2.919 + 0.857 -0.148; // chan8
+               fU->fCalib[10].tepos.fOffsetNs = fU->fCalib[10].teneg.fOffsetNs -= -1.253 + 0.148 -0.148; // T
+               fU->fCalib[11].tepos.fOffsetNs = fU->fCalib[11].teneg.fOffsetNs = 0; // nc
+            }
          }
       }
 
@@ -1063,9 +1096,7 @@ public:
       
       if (t.HaveCh(CHANA) && t.HaveCh(CHANB)) {
          double tAB_ns = subtract_ns(t.GetCh(CHANA).fLe, t.GetCh(CHANB).fLe);
-         //if (tAB_ns < -0.6)
-         //   return;
-         //fHtABns->Fill(tAB_ns); // not claibrated. KO 11feb2024
+         fHtABns->Fill(tAB_ns);
       }
 
       //if (!t.HaveCh(CHANB)) return;
