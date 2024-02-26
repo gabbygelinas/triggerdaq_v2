@@ -6,6 +6,12 @@
 #include <stdio.h>
 #include <stdlib.h> // drand48()
 #include <assert.h> // assert()
+#include <math.h> // sqrt()
+
+void DlTdcHit::Print() const
+{
+   printf("data 0x%08x 0x%08x, %d phase %3d, %5.1f ns, ch %2d lete %d%d, time: %.0f %.9f %.9f sec", data_hi, data_lo, coarse&1, phase, fine_ns, ch, le, te, coarse_epoch, coarse_sec, time_sec);
+}
 
 DlTdcFineCalib1::DlTdcFineCalib1() // ctor
 {
@@ -36,7 +42,7 @@ void DlTdcFineCalib1::Reset()
    }
 }
 
-void DlTdcFineCalib1::AddHit(int phase)
+void DlTdcFineCalib1::AddHit(int phase, double fine_ns)
 {
    if (phase == 0)
       return;
@@ -53,6 +59,10 @@ void DlTdcFineCalib1::AddHit(int phase)
       Update();
       //Print();
    }
+
+   fFineSum0 += 1;
+   fFineSum1 += fine_ns;
+   fFineSum2 += fine_ns*fine_ns;
 }
 
 void DlTdcFineCalib1::Update()
@@ -84,6 +94,18 @@ void DlTdcFineCalib1::Update()
          if (fBinWidthNs[i] < fBinMinNs)
             fBinMinNs = fBinWidthNs[i];
       }
+   }
+
+   if (fFineSum0 > 10) {
+      fFineMean = fFineSum1/fFineSum0;
+      fFineVar  = fFineSum2/fFineSum0 - fFineMean*fFineMean;
+      if (fFineVar > 0) {
+         fFineRms  = sqrt(fFineVar);
+      }
+
+      fFineOffset = fTotalNs/2.0 - fFineMean;
+
+      //printf("Fine %f %f %f, %f\n", fFineMean, fFineVar, fFineRms, fFineOffset);
    }
 
    //Print();
@@ -120,9 +142,6 @@ void DlTdcFineCalib1::Print() const
    printf("\n");
 }
 
-//std::vector<double> fBinWidthNs;
-//std::vector<double> fBinTimeNs;
-
 std::string DlTdcFineCalib1::toJson() const
 {
   char buf[256];
@@ -142,6 +161,18 @@ std::string DlTdcFineCalib1::toJson() const
   s += buf;
   s += ",\n";
   sprintf(buf, "  \"BinMaxNs\":%.3f", fBinMaxNs);
+  s += buf;
+  s += ",\n";
+  sprintf(buf, "  \"FineMeanNs\":%.3f", fFineMean);
+  s += buf;
+  s += ",\n";
+  sprintf(buf, "  \"FineVarNs\":%.3f", fFineVar);
+  s += buf;
+  s += ",\n";
+  sprintf(buf, "  \"FineRmsNs\":%.3f", fFineRms);
+  s += buf;
+  s += ",\n";
+  sprintf(buf, "  \"FineOffsetNs\":%.3f", fFineOffset);
   s += buf;
   s += ",\n";
   sprintf(buf, "  \"Bins\":%zu", fHistogram.size());
@@ -185,7 +216,7 @@ double DlTdcFineCalib1::GetTime(int phase)
    double time  = fBinTimeNs[phase];
    double width = fBinWidthNs[phase];
    double random = drand48();
-   return time + width*random;
+   return time + width*random + fFineOffsetFromFile;
 }
 
 DlTdcFineCalib::DlTdcFineCalib() // ctor
@@ -208,7 +239,7 @@ void DlTdcFineCalib::Reset()
 
 void DlTdcFineCalib::Print() const
 {
-   printf("min bin: %.3f %.3f %.3f %.3f ns, max bin: %.3f %.3f %.3f %.3f ns, max phase %2d %2d %2d %2d\n",
+   printf("min bin: %.3f %.3f %.3f %.3f ns, max bin: %.3f %.3f %.3f %.3f ns, max phase %2d %2d %2d %2d, mean: %.3f %.3f %.3f %.3f, rms: %.3f %.3f %.3f %.3f, offset: %.3f %.3f %.3f %.3f\n",
           lepos.fBinMinNs,
           leneg.fBinMinNs,
           tepos.fBinMinNs,
@@ -220,7 +251,19 @@ void DlTdcFineCalib::Print() const
           lepos.fMaxPhase,
           leneg.fMaxPhase,
           tepos.fMaxPhase,
-          teneg.fMaxPhase);
+          teneg.fMaxPhase,
+          lepos.fFineMean,
+          leneg.fFineMean,
+          tepos.fFineMean,
+          teneg.fFineMean,
+          lepos.fFineRms,
+          leneg.fFineRms,
+          tepos.fFineRms,
+          teneg.fFineRms,
+          lepos.fFineOffset,
+          leneg.fFineOffset,
+          tepos.fFineOffset,
+          teneg.fFineOffset);
 }
 
 #if 0
@@ -271,6 +314,11 @@ static void LoadFromJson(const MJsonNode*j, DlTdcFineCalib1& c)
    c.fMaxPhase = j->FindObjectNode("MaxPhase")->GetInt();
    c.fBinMinNs = j->FindObjectNode("BinMinNs")->GetDouble();
    c.fBinMaxNs = j->FindObjectNode("BinMaxNs")->GetDouble();
+   c.fFineMean = j->FindObjectNode("FineMeanNs")->GetDouble();
+   c.fFineVar  = j->FindObjectNode("FineVarNs")->GetDouble();
+   c.fFineRms  = j->FindObjectNode("FineRmsNs")->GetDouble();
+   c.fFineOffset = 0;
+   c.fFineOffsetFromFile = 0; // j->FindObjectNode("FineOffsetNs")->GetDouble();
 
    c.fHistogram.clear();
    const MJsonNodeVector* v = j->FindObjectNode("Histogram")->GetArray();
@@ -320,16 +368,10 @@ std::string DlTdcFineCalib::toJson() const
 
 void DlTdcFineCalib::SaveToFile(const char* filename) const
 {
+   Print();
+
    FILE *fp = fopen(filename, "w");
    assert(fp);
-   //fprintf(fp, "lepos ");
-   //SaveToFile1(fp, lepos);
-   //fprintf(fp, "leneg ");
-   //SaveToFile1(fp, leneg);
-   //fprintf(fp, "tepos ");
-   //SaveToFile1(fp, tepos);
-   //fprintf(fp, "teneg ");
-   //SaveToFile1(fp, teneg);
    fprintf(fp, "%s\n", toJson().c_str());
    fclose(fp);
 }
@@ -341,7 +383,7 @@ bool DlTdcFineCalib::LoadFromFile(const char* filename)
      return false;
    assert(fp);
 
-   printf("Loading DL=TDC calibrations from \"%s\"\n", filename);
+   printf("Loading DL-TDC calibrations from \"%s\"\n", filename);
 
    std::string json;
    while (1) {
@@ -375,16 +417,16 @@ void DlTdcFineCalib::AddHit(const DlTdcHit& h)
 {
    if (h.le) {
       if (h.phase > 0)
-         lepos.AddHit(h.phase);
+         lepos.AddHit(h.phase, h.fine_ns);
       else
-         leneg.AddHit(-h.phase);
+         leneg.AddHit(-h.phase, h.fine_ns);
    }
 
    if (h.te) {
       if (h.phase > 0)
-         tepos.AddHit(h.phase);
+         tepos.AddHit(h.phase, h.fine_ns);
       else
-         teneg.AddHit(-h.phase);
+         teneg.AddHit(-h.phase, h.fine_ns);
    }
 }
 
@@ -402,6 +444,7 @@ DlTdcUnpack::DlTdcUnpack(int nchan) // ctor
 {
    fLastCoarse.resize(nchan);
    fEpoch.resize(nchan);
+   fEpochHits.resize(nchan);
    fCalib.resize(nchan);
 };
 
@@ -416,6 +459,7 @@ void DlTdcUnpack::Reset()
    for (size_t i=0; i<n; i++) {
       fLastCoarse[i] = 0;
       fEpoch[i] = 0;
+      fEpochHits[i] = 0;
    }
    fFirstTimeSec = 0;
 
@@ -577,10 +621,31 @@ bool DlTdcUnpack::Unpack(DlTdcHit*h, uint32_t lo, uint32_t hi)
       ph = -(ph&~0x80);
 
    if (h->coarse < fLastCoarse[ch]) {
-      fEpoch[ch] += 1;
+      double max_epoch = 0;
+      for (size_t cc=0; cc<fEpoch.size(); cc++) {
+         if (fEpoch[cc] > max_epoch) {
+            max_epoch = fEpoch[cc];
+         }
+      }
+
+      //printf("ch %d epoch increment %6.0f with %4.0f hits, max epoch %6.0f: 0x%08x -> 0x%08x\n", ch, fEpoch[ch], fEpochHits[ch], max_epoch, fLastCoarse[ch], h->coarse);
+
+      if (fEpoch[ch] == max_epoch) {
+         // we are the first to see epoch increment
+         fEpoch[ch] += 1;
+      } else if (fEpoch[ch] + 1 == max_epoch) {
+         // we will increment epoch and it will be same as others
+         fEpoch[ch] += 1;
+      } else {
+         // we missed an epoch update!
+         printf("missed epoch: ch %d forced update from %.0f to %.0f, have %.0f hits\n", ch, fEpoch[ch], max_epoch, fEpochHits[ch]);
+         fEpoch[ch] = max_epoch;
+      }
+      fEpochHits[ch] = 0;
    }
 
    fLastCoarse[ch] = h->coarse;
+   fEpochHits[ch] += 1;
    h->coarse_epoch = fEpoch[ch];
 
    uint32_t sr1 = lo & 0xFFFF;
@@ -609,25 +674,44 @@ bool DlTdcUnpack::Unpack(DlTdcHit*h, uint32_t lo, uint32_t hi)
       
       h->coarse_sec -= fFirstTimeSec;
 
+      if (h->coarse_sec < -1.0 && h->coarse_epoch == 0) {
+         printf("ch %d: correct epoch0\n", ch);
+         fEpoch[ch] = 1;
+         h->coarse_epoch = 1;
+         h->coarse_sec = fClkPeriodNs*h->coarse*1e-9 + h->coarse_epoch*0x40000000*fClkPeriodNs*1e-9;
+         h->coarse_sec -= fFirstTimeSec;
+      }
+
       h->phase = ph; // FindEdge(sr1);
 
       if (h->phase > 0) {
          if (calib) {
-            if (h->le)
+            if (h->le) {
                h->fine_ns = fCalib[ch].lepos.GetTime(h->phase) - fClkPeriodNs;
-            if (h->te)
+               h->offset_ns = fCalib[ch].lepos.fOffsetNs;
+            }
+            if (h->te) {
                h->fine_ns = fCalib[ch].tepos.GetTime(h->phase) - fClkPeriodNs;
+               h->offset_ns = fCalib[ch].tepos.fOffsetNs;
+               //printf("ch %d: ", ch); fCalib[ch].tepos.Print();
+            }
          } else {
             h->fine_ns = fClkPeriodNs/bits*h->phase - fClkPeriodNs;
+            h->offset_ns = 0;
          }
       } else {
          if (calib) {
-            if (h->le)
+            if (h->le) {
                h->fine_ns = fCalib[ch].leneg.GetTime(-h->phase);
-            if (h->te)
+               h->offset_ns = fCalib[ch].leneg.fOffsetNs;
+            }
+            if (h->te) {
                h->fine_ns = fCalib[ch].teneg.GetTime(-h->phase);
+               h->offset_ns = fCalib[ch].teneg.fOffsetNs;
+            }
          } else {
             h->fine_ns = -fClkPeriodNs/bits*h->phase;
+            h->offset_ns = 0;
          }
       }
    } else {
@@ -638,29 +722,52 @@ bool DlTdcUnpack::Unpack(DlTdcHit*h, uint32_t lo, uint32_t hi)
       
       h->coarse_sec -= fFirstTimeSec;
 
+      if (h->coarse_sec < -1.0 && h->coarse_epoch == 0) {
+         printf("ch %d: correct epoch0\n", ch);
+         fEpoch[ch] = 1;
+         h->coarse_epoch = 1;
+         h->coarse_sec = fClkPeriodNs*h->coarse*1e-9 + h->coarse_epoch*0x40000000*fClkPeriodNs*1e-9;
+         h->coarse_sec -= fFirstTimeSec;
+      }
+
       h->phase = ph; // FindEdge(sr1);
 
       if (h->phase > 0) {
          if (calib) {
-            if (h->le)
+            if (h->le) {
                h->fine_ns = fCalib[ch].lepos.GetTime(h->phase);
-            if (h->te)
+               h->offset_ns = fCalib[ch].lepos.fOffsetNs;
+            }
+            if (h->te) {
                h->fine_ns = fCalib[ch].tepos.GetTime(h->phase);
+               h->offset_ns = fCalib[ch].tepos.fOffsetNs;
+            }
          } else {
             h->fine_ns = fClkPeriodNs/bits*h->phase;
+            h->offset_ns = 0;
          }
       } else {
          if (calib) {
-            if (h->le)
+            if (h->le) {
                h->fine_ns = fCalib[ch].leneg.GetTime(-h->phase) - fClkPeriodNs;
-            if (h->te)
+               h->offset_ns = fCalib[ch].leneg.fOffsetNs;
+            }
+            if (h->te) {
                h->fine_ns = fCalib[ch].teneg.GetTime(-h->phase) - fClkPeriodNs;
+               h->offset_ns = fCalib[ch].teneg.fOffsetNs;
+            }
          } else {
             h->fine_ns = -fClkPeriodNs/bits*h->phase - fClkPeriodNs;
+            h->offset_ns = 0;
          }
       }
    }
 
+   //if (h->fine_ns < -4.0) {
+   //   h->Print();
+   //   abort();
+   //}
+   
    //printf("phase %2d %2d\n", ph, h->phase);
 
    //if (ph == h->phase*2) {
@@ -828,12 +935,19 @@ bool DlTdcUnpack::Unpack(DlTdcHit*h, uint32_t lo, uint32_t hi)
    
    //h->fine_ns = h->phase_ns;
    //h->time_sec = fClkPeriodNs*(h->coarse&(~1)) + h->phase_ns;
-   h->time_sec = h->coarse_sec + h->fine_ns*1e-9;
+   h->time_sec = h->coarse_sec + (h->fine_ns + h->offset_ns)*1e-9;
 
    return true;
 };
 
-void DlTdcUnpack::Save(int runno) const
+void DlTdcUnpack::UpdateCalib()
+{
+   for (size_t i = 0; i < fCalib.size(); i++) {
+      fCalib[i].Update();
+   }
+}
+
+void DlTdcUnpack::SaveCalib(int runno) const
 {
    for (size_t i = 0; i < fCalib.size(); i++) {
       if (fCalib[i].lepos.fMaxPhase > 0) {
@@ -844,7 +958,7 @@ void DlTdcUnpack::Save(int runno) const
    }
 }
 
-bool DlTdcUnpack::Load(int runno)
+bool DlTdcUnpack::LoadCalib(int runno)
 {
    for (int r=0; r<100; r++) {
       bool load_ok = false;

@@ -19,6 +19,7 @@ struct DlTdcHit
    double coarse_epoch = 0;
    double coarse_sec = 0;
    double fine_ns  = 0;
+   double offset_ns = 0;
    double time_sec = 0;
 
    void Clear()
@@ -33,13 +34,11 @@ struct DlTdcHit
       coarse_epoch = 0;
       coarse_sec = 0;
       fine_ns  = 0;
+      offset_ns = 0;
       time_sec = 0;
    }
 
-   void Print() const
-   {
-      printf("data 0x%08x 0x%08x, %d phase %3d, %5.1f ns, ch %2d lete %d%d, time: %.0f %.9f %.9f sec", data_hi, data_lo, coarse&1, phase, fine_ns, ch, le, te, coarse_epoch, coarse_sec, time_sec);
-   }
+   void Print() const;
 };
 
 class DlTdcFineCalib1
@@ -54,6 +53,19 @@ public:
    double fBinMinNs = 0;
    double fBinMaxNs = 0;
 
+   double fFineSum0 = 0;
+   double fFineSum1 = 0;
+   double fFineSum2 = 0;
+
+   double fFineMean = 0;
+   double fFineVar  = 0;
+   double fFineRms  = 0;
+
+   double fFineOffset = 0; // offset we computed and will save to file
+   double fFineOffsetFromFile = 0; // offset applied to data, loaded from file
+
+   double fOffsetNs = 0;
+
 public:
    DlTdcFineCalib1(); // ctor
    ~DlTdcFineCalib1(); // dtor
@@ -61,7 +73,7 @@ public:
 public:
    void Resize(int nbins);
    void Reset();
-   void AddHit(int phase);
+   void AddHit(int phase, double fine_ns);
    void Update();
    void Print() const;
    double GetTime(int phase);
@@ -105,13 +117,15 @@ private:
 public:
    void Reset();
    bool Unpack(DlTdcHit* h, uint32_t lo, uint32_t hi);
-   bool Load(int runno);
-   void Save(int runno) const;
+   void UpdateCalib();
+   bool LoadCalib(int runno);
+   void SaveCalib(int runno) const;
 
 public: // internal state
    double fFirstTimeSec = 0;
    std::vector<uint32_t> fLastCoarse;
    std::vector<double>   fEpoch;
+   std::vector<double>   fEpochHits;
    std::vector<DlTdcFineCalib> fCalib;
 
 public:
