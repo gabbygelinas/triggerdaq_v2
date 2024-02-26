@@ -1650,13 +1650,15 @@ public:
          fHt14ns_w1ns->Fill(w1_ns, t14_ns);
          fHt14ns_w4ns->Fill(w4_ns, t14_ns);
 
-         if (w4_ns > w4_cut)
+         if (w4_ns > w4_cut) {
             fHt14ns_w1ns_cutw4->Fill(w1_ns, t14_ns);
             fHt14ns_w1ns_cutw4_twc->Fill(w1_ns, t14_ns_twc);
+         }
 
-         if (w1_ns > w1_cut)
+         if (w1_ns > w1_cut) {
             fHt14ns_w4ns_cutw1->Fill(w4_ns, t14_ns);
             fHt14ns_w4ns_cutw1_twc->Fill(w4_ns, t14_ns_twc);
+         }
 
          if (w1_ns > w1_cut && w4_ns > w4_cut) {
             fHt14ns_cut->Fill(t14_ns);
@@ -1686,13 +1688,15 @@ public:
          fHt23ns_w2ns->Fill(w2_ns, t23_ns);
          fHt23ns_w3ns->Fill(w3_ns, t23_ns);
 
-         if (w3_ns > w3_cut)
+         if (w3_ns > w3_cut) {
             fHt23ns_w2ns_cutw3->Fill(w2_ns, t23_ns);
             fHt23ns_w2ns_cutw3_twc->Fill(w2_ns, t23_ns_twc);
+         }
 
-         if (w2_ns > w2_cut)
+         if (w2_ns > w2_cut) {
             fHt23ns_w3ns_cutw2->Fill(w3_ns, t23_ns);
             fHt23ns_w3ns_cutw2_twc->Fill(w3_ns, t23_ns_twc);
+         }
 
          if (w2_ns > w2_cut && w3_ns > w3_cut) {
             fHt23ns_cut->Fill(t23_ns);
@@ -1722,13 +1726,15 @@ public:
          fHt58ns_w5ns->Fill(w5_ns, t58_ns);
          fHt58ns_w8ns->Fill(w8_ns, t58_ns);
 
-         if (w8_ns > w8_cut)
+         if (w8_ns > w8_cut) {
             fHt58ns_w5ns_cutw8->Fill(w5_ns, t58_ns);
             fHt58ns_w5ns_cutw8_twc->Fill(w5_ns, t58_ns_twc);
+         }
 
-         if (w5_ns > w5_cut)
+         if (w5_ns > w5_cut) {
             fHt58ns_w8ns_cutw5->Fill(w8_ns, t58_ns);
             fHt58ns_w8ns_cutw5_twc->Fill(w8_ns, t58_ns_twc);
+         }
 
          if (w5_ns > w5_cut && w8_ns > w8_cut) {
             fHt58ns_cut->Fill(t58_ns);
@@ -1758,13 +1764,15 @@ public:
          fHt67ns_w6ns->Fill(w6_ns, t67_ns);
          fHt67ns_w7ns->Fill(w7_ns, t67_ns);
 
-         if (w7_ns > w7_cut)
+         if (w7_ns > w7_cut) {
             fHt67ns_w6ns_cutw7->Fill(w6_ns, t67_ns);
             fHt67ns_w6ns_cutw7_twc->Fill(w6_ns, t67_ns_twc);
+         }
 
-         if (w6_ns > w6_cut)
+         if (w6_ns > w6_cut) {
             fHt67ns_w7ns_cutw6->Fill(w7_ns, t67_ns);
             fHt67ns_w7ns_cutw6_twc->Fill(w7_ns, t67_ns_twc);
+         }
 
          if (w6_ns > w6_cut && w7_ns > w7_cut) {
             fHt67ns_cut->Fill(t67_ns);
