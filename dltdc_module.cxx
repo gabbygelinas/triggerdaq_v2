@@ -795,9 +795,9 @@ public:
 
       dir->mkdir("pulser")->cd();
 
-      fHpulserLeAll = new TH1D("tdc_pulser_le_all", "tdc pulser le all, ns", 200, -10, 10);
-      fHpulserTeAll = new TH1D("tdc_pulser_te_all", "tdc_pulser_te_all, ns", 200, -10, 10);
-      fHpulserWiAll = new TH1D("tdc_pulser_width_all", "tdc_pulser_width_all, ns", 200, 0, 20);
+      fHpulserLeAll = new TH1D("tdc_pulser_le_all", "tdc pulser le all, ns", 400, -40, 40);
+      fHpulserTeAll = new TH1D("tdc_pulser_te_all", "tdc_pulser_te_all, ns", 400, -40, 40);
+      fHpulserWiAll = new TH1D("tdc_pulser_width_all", "tdc_pulser_width_all, ns", 400, 0, 80);
 
       for (int i=0; i<=MAX_TDC_CHAN; i++) {
          char name[256];
@@ -805,15 +805,15 @@ public:
 
          sprintf(name,  "tdc%02d_pulser_le", i);
          sprintf(title, "tdc%02d_pulser_le, ns", i);
-         fHpulserLe[i] = new TH1D(name, title, 200, -10, 10);
+         fHpulserLe[i] = new TH1D(name, title, 400, -40, 40);
 
          sprintf(name,  "tdc%02d_pulser_te", i);
          sprintf(title, "tdc%02d_pulser_te, ns", i);
-         fHpulserTe[i] = new TH1D(name, title, 200, -10, 10);
+         fHpulserTe[i] = new TH1D(name, title, 400, -40, 40);
 
          sprintf(name,  "tdc%02d_pulser_width", i);
          sprintf(title, "tdc%02d_pulser_width, ns", i);
-         fHpulserWi[i] = new TH1D(name, title, 200, 0, 20);
+         fHpulserWi[i] = new TH1D(name, title, 400, 0, 80);
       }
 
       dir->mkdir("poisson")->cd();
