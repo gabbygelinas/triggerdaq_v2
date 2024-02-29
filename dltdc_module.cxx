@@ -158,19 +158,80 @@ public:
    }
 };
 
-#define MAX_TDC_CHAN 11
+#define NUM_TDC_CHAN (32+3)
+#define MAX_TDC_CHAN (NUM_TDC_CHAN-1)
 
-#define CHANA 0
-#define CHANB 1
-#define CHAN1 2
-#define CHAN2 3
-#define CHAN3 4
-#define CHAN4 5
-#define CHAN5 6
-#define CHAN6 7
-#define CHAN7 8
-#define CHAN8 9
-#define CHANT 10
+//#define CHANA 0
+//#define CHANB 1
+//#define CHAN1 2
+//#define CHAN2 3
+//#define CHAN3 4
+//#define CHAN4 5
+//#define CHAN5 6
+//#define CHAN6 7
+//#define CHAN7 8
+//#define CHAN8 9
+//#define CHANT 10
+
+#define CHAN1 (fConf->fChan1)
+#define CHAN2 (fConf->fChan2)
+#define CHAN3 (fConf->fChan3)
+#define CHAN4 (fConf->fChan4)
+#define CHAN5 (fConf->fChan5)
+#define CHAN6 (fConf->fChan6)
+#define CHAN7 (fConf->fChan7)
+#define CHAN8 (fConf->fChan8)
+
+
+class DlTdcConfig
+{
+public:
+   std::vector<double> fLeOffset;
+   std::vector<double> fTeOffset;
+
+public:
+   int fChan1 = 2;
+   int fChan2 = 3;
+   int fChan3 = 4;
+   int fChan4 = 5;
+   int fChan5 = 6;
+   int fChan6 = 7;
+   int fChan7 = 8;
+   int fChan8 = 9;
+   int fChanA = 0;
+   int fChanB = 1;
+   int fChanT = 10;
+
+public:
+   DlTdcConfig(int num);
+   bool ReadJson(int runno);
+};
+
+DlTdcConfig::DlTdcConfig(int num)
+{
+   fLeOffset.resize(num);
+   fTeOffset.resize(num);
+}
+
+bool DlTdcConfig::ReadJson(int runno)
+{
+   if (runno >= 17 && runno < 900000) {
+      printf("NEW MAP!\n");
+      fChan1 = 16;
+      fChan2 = 17;
+      fChan3 = 22;
+      fChan4 = 23;
+      fChan5 = 26;
+      fChan6 = 27;
+      fChan7 = 30;
+      fChan8 = 31;
+      fChanA = 33;
+      fChanB = 34;
+      fChanT = 35;
+   }
+
+   return true;
+};
 
 class DlTdcEvent
 {
@@ -282,8 +343,6 @@ static double time_walk_correction_ps(double amv)
       return 0;
    }
 }
-
-#define MAX_TDC_CHAN 11
 
 class DlTdcModule: public TARunObject
 {
@@ -619,9 +678,17 @@ public:
 
 #endif
 
+   int fCountCut2367 = 0;
+   int fCountCut1 = 0;
+   int fCountCut4 = 0;
+   int fCountCut5 = 0;
+   int fCountCut8 = 0;
+
    double fPrevEventTimeSec = 0;
 
    DlTdcEvent *fCt = NULL;
+
+   DlTdcConfig *fConf = NULL;
 
    bool fTrace = false;
    
@@ -633,22 +700,30 @@ public:
 
       fModuleName = "dltdc_module";
       fFlags   = flags;
-      fU = new DlTdcUnpack(35);
+      fU = new DlTdcUnpack(NUM_TDC_CHAN);
 
       if (1) {
          for (double amv = 0; amv <= 800; amv += 50) {
             printf("time walk for %5.0f mV is %5.0f ps\n", amv, time_walk_correction_ps(amv));
          }
       }
+
+      fConf = new DlTdcConfig(NUM_TDC_CHAN);
    }
 
    ~DlTdcModule()
    {
       if (fTrace)
          printf("DlTdcModule::dtor!\n");
+
       if (fU) {
          delete fU;
          fU = NULL;
+      }
+
+      if (fConf) {
+         delete fConf;
+         fConf = NULL;
       }
    }
 
@@ -656,6 +731,12 @@ public:
    {
       if (fTrace)
          printf("DlTdcModule::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
+
+      bool conf_ok = fConf->ReadJson(runinfo->fRunNo);
+      if (!conf_ok) {
+         printf("Cannot load TDC configuration for run %d\n", runinfo->fRunNo);
+         exit(123);
+      }
 
       if  (!fFlags->fCalib) {
          bool load_ok = fU->LoadCalib(runinfo->fRunNo);
@@ -1204,6 +1285,8 @@ public:
                 fHpulserLeAll->GetRMS(),
                 fHpulserTeAll->GetRMS(),
                 fHpulserWiAll->GetRMS());
+
+         printf("cuts: 2367: %d, w1 %d, w4 %d, w5 %d, w8 %d\n", fCountCut2367, fCountCut1, fCountCut4, fCountCut5, fCountCut8);
    }
    
    void PauseRun(TARunInfo* runinfo)
@@ -1221,12 +1304,12 @@ public:
    void FinishEventT(double prev_event_time_sec, const DlTdcEvent& t)
    {
       if (fFlags->fDebug) {
-         printf("EVENT %d %d %d %d %d %d %d %d, ABT %d%d%d\n", t.HaveCh(CHAN1), t.HaveCh(CHAN2), t.HaveCh(CHAN3), t.HaveCh(CHAN4), t.HaveCh(CHAN5), t.HaveCh(CHAN6), t.HaveCh(CHAN7), t.HaveCh(CHAN8), t.HaveCh(CHANA), t.HaveCh(CHANB), t.HaveCh(CHANT));
+         printf("EVENT %d %d %d %d %d %d %d %d, ABT %d%d%d\n", t.HaveCh(CHAN1), t.HaveCh(CHAN2), t.HaveCh(CHAN3), t.HaveCh(CHAN4), t.HaveCh(CHAN5), t.HaveCh(CHAN6), t.HaveCh(CHAN7), t.HaveCh(CHAN8), t.HaveCh(fConf->fChanA), t.HaveCh(fConf->fChanB), t.HaveCh(fConf->fChanT));
       }
       
       ///////// check for triggered event ///////////
 
-      if (fFlags->fTriggered && !t.HaveCh(CHANT)) {
+      if (fFlags->fTriggered && !t.HaveCh(fConf->fChanT)) {
          return;
       }
 
@@ -1264,12 +1347,12 @@ public:
 
       ///////// plot trigger A-B time ///////////
       
-      if (t.HaveCh(CHANA) && t.HaveCh(CHANB)) {
-         double tAB_ns = subtract_ns(t.GetCh(CHANA).fLe, t.GetCh(CHANB).fLe);
+      if (t.HaveCh(fConf->fChanA) && t.HaveCh(fConf->fChanB)) {
+         double tAB_ns = subtract_ns(t.GetCh(fConf->fChanA).fLe, t.GetCh(fConf->fChanB).fLe);
          fHtABns->Fill(tAB_ns);
       }
 
-      //if (!t.HaveCh(CHANB)) return;
+      //if (!t.HaveCh(fConf->fChanB)) return;
 
       // cut on t6-t7
       
@@ -1435,15 +1518,15 @@ public:
 
       ///////// TRIGGER CHANNALS A, B and T not used yet ///////////
 
-      if (t.fHits[CHANA].fDown) {
-         double wA_ns = t.fHits[CHANA].fWidthNs;
+      if (t.fHits[fConf->fChanA].fDown) {
+         double wA_ns = t.fHits[fConf->fChanA].fWidthNs;
 
          if (wA_ns < 0.01) {
             printf("WWW: BAD WIDTH chanA %f!\n", wA_ns);
          }
 
          if (fFlags->fPrint) {
-            printf("new dlsc event A, le %.9f, w %.0f!\n", t.GetCh(CHANA).fLe.time_sec, wA_ns);
+            printf("new dlsc event A, le %.9f, w %.0f!\n", t.GetCh(fConf->fChanA).fLe.time_sec, wA_ns);
          }
 
          fHwAns->Fill(wA_ns);
@@ -1451,15 +1534,15 @@ public:
          fCountA++;
       }
 
-      if (t.fHits[CHANB].fDown) {
-         double wB_ns = t.fHits[CHANB].fWidthNs;
+      if (t.fHits[fConf->fChanB].fDown) {
+         double wB_ns = t.fHits[fConf->fChanB].fWidthNs;
 
          if (wB_ns < 0.01) {
             printf("WWW: BAD WIDTH chanB %f!\n", wB_ns);
          }
 
          if (fFlags->fPrint) {
-            printf("new dlsc event B, le %.9f, w %.0f!\n", t.GetCh(CHANB).fLe.time_sec, wB_ns);
+            printf("new dlsc event B, le %.9f, w %.0f!\n", t.GetCh(fConf->fChanB).fLe.time_sec, wB_ns);
          }
 
          fHwBns->Fill(wB_ns);
@@ -1467,21 +1550,49 @@ public:
          fCountB++;
       }
 
-      if (t.fHits[CHANT].fDown) {
-         double wT_ns = t.fHits[CHANT].fWidthNs;
+      if (t.fHits[fConf->fChanT].fDown) {
+         double wT_ns = t.fHits[fConf->fChanT].fWidthNs;
 
          if (wT_ns < 0.01) {
             printf("WWW: BAD WIDTH chanT %f!\n", wT_ns);
          }
 
          if (fFlags->fPrint) {
-            printf("new dlsc event T, le %.9f, w %.0f!\n", t.GetCh(CHANT).fLe.time_sec, wT_ns);
+            printf("new dlsc event T, le %.9f, w %.0f!\n", t.GetCh(fConf->fChanT).fLe.time_sec, wT_ns);
          }
 
          fHwTns->Fill(wT_ns);
          
          fCountT++;
       }
+
+#if 0
+      bool cut = false;
+
+      if (w2_ns>0&&w3_ns>0&&w6_ns>0&&w7_ns>0) {
+         bool flag = false;
+         if (w1_ns>0) { fCountCut1++; flag = true; }
+         if (w4_ns>0) { fCountCut4++; flag = true; }
+         if (w5_ns>0) { fCountCut5++; flag = true; }
+         if (w8_ns>0) { fCountCut8++; flag = true; }
+         if (flag)
+            cut = true;
+      } else if (w1_ns>0&&w4_ns>0&&w6_ns>0&&w7_ns>0) {
+         bool flag = false;
+         if (w2_ns>0) { flag = true; }
+         if (w3_ns>0) { flag = true; }
+         if (w5_ns>0) { flag = true; }
+         if (w8_ns>0) { flag = true; }
+         if (flag)
+            cut = true;
+      } else {
+         //fCountCut2367++;
+         cut = true;
+      }
+
+      if (cut) return;
+      //if (!cut) return;
+#endif
 
       ///////// SINGLES ///////////
 
