@@ -664,7 +664,7 @@ bool DlTdcUnpack::Unpack(DlTdcHit*h, uint32_t lo, uint32_t hi)
    h->fine_ns = 0; // h->phase * fNsPerBit[ch]; // this is wrong, should use min and max
 
    bool calib = true;
-   double bits = 30.0;
+   double bits = 40.0;
 
    if ((h->coarse & 1) == 0) {
       h->coarse_sec = fClkPeriodNs*h->coarse*1e-9 + h->coarse_epoch*0x40000000*fClkPeriodNs*1e-9;
@@ -761,6 +761,10 @@ bool DlTdcUnpack::Unpack(DlTdcHit*h, uint32_t lo, uint32_t hi)
             h->offset_ns = 0;
          }
       }
+   }
+
+   if (h->fine_ns < -2.0) {
+      h->fine_ns += 2.0*fClkPeriodNs;
    }
 
    //if (h->fine_ns < -4.0) {
