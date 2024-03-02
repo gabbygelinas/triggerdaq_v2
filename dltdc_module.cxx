@@ -227,9 +227,9 @@ bool DlTdcConfig::ReadJson(int runno)
       fChan6 = 27;
       fChan7 = 30;
       fChan8 = 31;
-      fChanA = 33;
-      fChanB = 34;
-      fChanT = 35;
+      fChanA = 32;
+      fChanB = 33;
+      fChanT = 34;
    }
 
    return true;
