@@ -22,6 +22,7 @@
 #ifdef HAVE_ROOT
 #include "TH1D.h"
 #include "TH2D.h"
+#include "TF1.h"
 #endif
 
 #if 0
@@ -52,6 +53,7 @@ public:
    bool fCalib   = false;
    bool fDebug = false;
    bool fPrint = false;
+   bool fTWC = false;
 };
 
 class DlTdcHit2
@@ -1287,6 +1289,37 @@ public:
                 fHpulserWiAll->GetRMS());
 
          printf("cuts: 2367: %d, w1 %d, w4 %d, w5 %d, w8 %d\n", fCountCut2367, fCountCut1, fCountCut4, fCountCut5, fCountCut8);
+
+         if (fFlags->fTWC) {
+            std::vector<TH2D *> fit_histograms (8);
+      
+            fit_histograms[0] = fHt158ns_w1ns_1458;
+            fit_histograms[1] = fHt267ns_w2ns_2367;
+            fit_histograms[2] = fHt367ns_w3ns_2367;
+            fit_histograms[3] = fHt458ns_w4ns_1458;
+            fit_histograms[4] = fHt145ns_w5ns_1458;
+            fit_histograms[5] = fHt236ns_w6ns_2367;
+            fit_histograms[6] = fHt237ns_w7ns_2367;
+            fit_histograms[7] = fHt148ns_w8ns_1458;
+      
+
+            TF1 *f_twc = new TF1("f_twc", "[0] + [1]/sqrt(x)",0,100);
+            f_twc->SetParameters(-1,10);
+            f_twc->SetParNames("Offset", "W");
+
+            printf("----------\n\nTWC W PARAMETERS:\n");
+            for (int i=0; i<8; i++) {
+               fit_histograms[i]->Fit(f_twc);
+               TF1 *fit  = fit_histograms[i]->GetFunction("f_twc");
+               Double_t chi2 = fit->GetChisquare();
+               Double_t W = fit->GetParameter(1);
+               Double_t W_err = fit->GetParError(1);
+
+               printf("FOR CH%d: Chi squared %f, W = %f +/- %f\n",i+1, chi2, W, W_err);
+            }
+            printf("\n----------\n");
+         }
+
    }
    
    void PauseRun(TARunInfo* runinfo)
@@ -1497,24 +1530,24 @@ public:
       //double W_twc = 22.0;
 
       // OPTIMIZED WITH CUT
-      //double W1_twc = 14.28;
-      //double W2_twc = 15.21;
-      //double W3_twc = 16.75;
-      //double W4_twc = 15.32;
-      //double W5_twc = 14.03;
-      //double W6_twc = 15.69;
-      //double W7_twc = 16.16;
-      //double W8_twc = 15.18;
+      double W1_twc = 9.09;
+      double W2_twc = 7.02;
+      double W3_twc = 10.84;
+      double W4_twc = 7.53;
+      double W5_twc = 7.36;
+      double W6_twc = 4.41;
+      double W7_twc = 4.91;
+      double W8_twc = 6.26;
 
       // OPTIMIZED WITH NO CUT
-      double W1_twc = 11.43;
-      double W2_twc = 12.36;
-      double W3_twc = 12.49;
-      double W4_twc = 11.48;
-      double W5_twc = 10.94;
-      double W6_twc = 12.14;
-      double W7_twc = 12.63;
-      double W8_twc = 12.14;
+      //double W1_twc = 11.43;
+      //double W2_twc = 12.36;
+      //double W3_twc = 12.49;
+      //double W4_twc = 11.48;
+      //double W5_twc = 10.94;
+      //double W6_twc = 12.14;
+      //double W7_twc = 12.63;
+      //double W8_twc = 12.14;
 
       ///////// TRIGGER CHANNALS A, B and T not used yet ///////////
 
@@ -2406,6 +2439,7 @@ public:
       printf("--dltdc-calib -- calibrate dltdc\n");
       printf("--dltdc-debug -- print detailed information\n");
       printf("--dltdc-print -- print events\n");
+      printf("--dltdc-twc -- get twc W parameter");
    }
 
    void Init(const std::vector<std::string> &args)
@@ -2427,6 +2461,9 @@ public:
          }
          if (args[i] == "--dltdc-print") {
             fFlags.fPrint = true;
+         }
+         if (args[i] == "--dltdc-twc") {
+            fFlags.fTWC = true;
          }
       }
    }
