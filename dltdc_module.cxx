@@ -841,6 +841,34 @@ public:
                fU->fCalib[10].tepos.fOffsetNs = fU->fCalib[10].teneg.fOffsetNs -= -1.253 + 0.148 -0.148; // T
                fU->fCalib[11].tepos.fOffsetNs = fU->fCalib[11].teneg.fOffsetNs = 0; // nc
             }
+         } else {
+            if (runinfo->fRunNo >= 22) {
+               // number from pulser tdc chanNN LE table:
+               fU->fCalib[16].lepos.fOffsetNs = fU->fCalib[16].leneg.fOffsetNs  =  0;     // chan1
+               fU->fCalib[17].lepos.fOffsetNs = fU->fCalib[17].leneg.fOffsetNs -= -0.359; // chan2
+               fU->fCalib[22].lepos.fOffsetNs = fU->fCalib[22].leneg.fOffsetNs -= -1.495; // chan3
+               fU->fCalib[23].lepos.fOffsetNs = fU->fCalib[23].leneg.fOffsetNs -=  0.123; // chan4
+               fU->fCalib[26].lepos.fOffsetNs = fU->fCalib[26].leneg.fOffsetNs -=  0.435; // chan5
+               fU->fCalib[27].lepos.fOffsetNs = fU->fCalib[27].leneg.fOffsetNs -= -1.175; // chan6
+               fU->fCalib[30].lepos.fOffsetNs = fU->fCalib[30].leneg.fOffsetNs -=  0.614; // chan7
+               fU->fCalib[31].lepos.fOffsetNs = fU->fCalib[31].leneg.fOffsetNs -= -0.731; // chan8
+               fU->fCalib[32].lepos.fOffsetNs = fU->fCalib[32].leneg.fOffsetNs -=  2.059; // chanA
+               fU->fCalib[33].lepos.fOffsetNs = fU->fCalib[33].leneg.fOffsetNs -=  0.893; // chanB
+               fU->fCalib[34].lepos.fOffsetNs = fU->fCalib[34].leneg.fOffsetNs -=  2.238; // chanT
+
+               // number from pulser tdc chanNN TE table:
+               fU->fCalib[16].tepos.fOffsetNs = fU->fCalib[16].teneg.fOffsetNs  =  0;     // chan1
+               fU->fCalib[17].tepos.fOffsetNs = fU->fCalib[17].teneg.fOffsetNs -= -1.918; // chan2
+               fU->fCalib[22].tepos.fOffsetNs = fU->fCalib[22].teneg.fOffsetNs -= -1.714; // chan3
+               fU->fCalib[23].tepos.fOffsetNs = fU->fCalib[23].teneg.fOffsetNs -= -1.888; // chan4
+               fU->fCalib[26].tepos.fOffsetNs = fU->fCalib[26].teneg.fOffsetNs -= -1.589; // chan5
+               fU->fCalib[27].tepos.fOffsetNs = fU->fCalib[27].teneg.fOffsetNs -= -2.000; // chan6
+               fU->fCalib[30].tepos.fOffsetNs = fU->fCalib[30].teneg.fOffsetNs -= -1.211; // chan7
+               fU->fCalib[31].tepos.fOffsetNs = fU->fCalib[31].teneg.fOffsetNs -= -1.239; // chan8
+               fU->fCalib[32].tepos.fOffsetNs = fU->fCalib[32].teneg.fOffsetNs -= -0.729; // chanA
+               fU->fCalib[33].tepos.fOffsetNs = fU->fCalib[33].teneg.fOffsetNs -=  0.373; // chanB
+               fU->fCalib[34].tepos.fOffsetNs = fU->fCalib[34].teneg.fOffsetNs -= -0.168; // chanT
+            }
          }
       }
 
@@ -1527,27 +1555,27 @@ public:
       }
 
       // SET UP TIME WALK CORRECT VALUES //
-      //double W_twc = 22.0;
+      double W_twc = 8.0;
 
       // OPTIMIZED WITH CUT
-      double W1_twc = 9.09;
-      double W2_twc = 7.02;
-      double W3_twc = 10.84;
-      double W4_twc = 7.53;
-      double W5_twc = 7.36;
-      double W6_twc = 4.41;
-      double W7_twc = 4.91;
-      double W8_twc = 6.26;
+      double W1_twc = 8.63;
+      double W2_twc = 8.46;
+      double W3_twc = 8.71;
+      double W4_twc = 9.66;
+      double W5_twc = 6.98;
+      double W6_twc = 7.47;
+      double W7_twc = 7.09;
+      double W8_twc = 6.68;
 
-      // OPTIMIZED WITH NO CUT
-      //double W1_twc = 11.43;
-      //double W2_twc = 12.36;
-      //double W3_twc = 12.49;
-      //double W4_twc = 11.48;
-      //double W5_twc = 10.94;
-      //double W6_twc = 12.14;
-      //double W7_twc = 12.63;
-      //double W8_twc = 12.14;
+      // UNIFORM FOR GENERAL USE
+      //double W1_twc = W_twc;
+      //double W2_twc = W_twc;
+      //double W3_twc = W_twc;
+      //double W4_twc = W_twc;
+      //double W5_twc = W_twc;
+      //double W6_twc = W_twc;
+      //double W7_twc = W_twc;
+      //double W8_twc = W_twc;
 
       ///////// TRIGGER CHANNALS A, B and T not used yet ///////////
 
