@@ -298,54 +298,6 @@ public:
    }
 };
 
-static double ns_to_mv(double x)
-{
-#if 0
-   if (x < 25)
-      return 250;
-
-   return 211 + 0.704*x + 0.0309*x*x;
-#endif
-
-   if (x < 0)
-      return 0;
-
-   if (x > 300)
-      return 9999;
-
-   // for threshold 160 mV
-   // return 191 + 1.45*x + 0.0259*x*x;
-
-   // for threshold 160 mV, updated relationship (09/14/23)
-   // return 129 + 5.64*x + 0.407*x*x;
-
-   // for threshold 80 mV, updated relationship (13 sep 2023)
-   return 98 - 0.737*x + 0.301*x*x;
-}
-
-static double time_walk_correction_ps(double amv)
-{
-   // for threshold 160 mV
-
-   if (amv < 290) {
-      return 320+(290-amv)*(570-320)/(290-216);
-   } else if (amv < 380) {
-      return 190+(380-amv)*(320-190)/(380-290);
-   } else if (amv < 465) {
-      return 110+(465-amv)*(190-110)/(465-380);
-   } else if (amv < 520) {
-      return  60+(520-amv)*(110-60)/(520-465);
-   } else if (amv < 620) {
-      return  40+(620-amv)*(60-40)/(620-520);
-   } else if (amv < 690) {
-      return  30+(690-amv)*(40-30)/(690-620);
-   } else if (amv < 780) {
-      return  0+(780-amv)*(30-0)/(780-690);
-   } else {
-      return 0;
-   }
-}
-
 class DlTdcModule: public TARunObject
 {
 public:
@@ -438,21 +390,7 @@ public:
    TH2D* fHw23ns = NULL;
    TH2D* fHw58ns = NULL;
    TH2D* fHw67ns = NULL;
-#if 0
-   TH1D* fHa1mv = NULL;
-   TH1D* fHa2mv = NULL;
-   TH1D* fHa3mv = NULL;
-   TH1D* fHa4mv = NULL;
-   TH1D* fHa5mv = NULL;
-   TH1D* fHa6mv = NULL;
-   TH1D* fHa7mv = NULL;
-   TH1D* fHa8mv = NULL;
 
-   TH2D* fHa14mv = NULL;
-   TH2D* fHa23mv = NULL;
-   TH2D* fHa58mv = NULL;
-   TH2D* fHa67mv = NULL;
-#endif
    TH2D* fHt14ns_w1ns = NULL;
    TH2D* fHt14ns_w4ns = NULL;
    TH2D* fHt23ns_w2ns = NULL;
@@ -497,8 +435,6 @@ public:
    TH2D* fHt14t58ns_1458 = NULL;
    TH2D* fHt14t58ns_1458_cut = NULL;
    TH2D* fHt14t58ns_1458_cut_twc = NULL;
-   //TH1D* fHt14ns_1458_cut = NULL;
-   //TH1D* fHt58ns_1458_cut = NULL;
 
    TH1D* fHt158ns_1458_twc = NULL;
    TH1D* fHt458ns_1458_twc = NULL;
@@ -510,21 +446,9 @@ public:
    TH1D* fHt145ns_1458_twc_cut = NULL;
    TH1D* fHt148ns_1458_twc_cut = NULL;
 
-   TH1D* fHt14ns_14not58 = NULL;
-   TH1D* fHt58ns_58not14 = NULL;
-
    TH2D* fHw14ns_1458 = NULL;
    TH2D* fHw58ns_1458 = NULL;
-#if 0   
-   TH2D* fHa14mv_1458 = NULL;
-   TH2D* fHa58mv_1458 = NULL;
 
-   TH2D* fHtof_a1mv_1458 = NULL;
-   TH2D* fHtof_a4mv_1458 = NULL;
-
-   TH2D* fHtof_a1mv_1458_cut = NULL;
-   TH2D* fHtof_a4mv_1458_cut = NULL;
-#endif
    TH2D* fHtof_w1ns_1458 = NULL;
    TH2D* fHtof_w4ns_1458 = NULL;
    TH2D* fHtof_w5ns_1458 = NULL;
@@ -561,18 +485,9 @@ public:
    TH2D* fHt23t58ns_2358 = NULL;
    TH2D* fHt23t58ns_2358_cut = NULL;
    TH2D* fHt23t58ns_2358_cut_twc = NULL;
-   //TH1D* fHt23ns_2358_cut = NULL;
-   //TH1D* fHt58ns_2358_cut = NULL;
-
-   TH1D* fHt23ns_23not58 = NULL;
-   TH1D* fHt58ns_58not23 = NULL;
 
    TH2D* fHw23ns_2358 = NULL;
    TH2D* fHw58ns_2358 = NULL;
-#if 0   
-   TH2D* fHa23mv_2358 = NULL;
-   TH2D* fHa58mv_2358 = NULL;
-#endif   
 
    TH2D* fHtof_w2ns_2358_twc = NULL;
    TH2D* fHtof_w3ns_2358_twc = NULL;
@@ -590,18 +505,9 @@ public:
    TH2D* fHt14t67ns_1467 = NULL;
    TH2D* fHt14t67ns_1467_cut = NULL;
    TH2D* fHt14t67ns_1467_cut_twc = NULL;
-   //TH1D* fHt14ns_1467_cut = NULL;
-   //TH1D* fHt67ns_1467_cut = NULL;
-
-   TH1D* fHt14ns_14not67 = NULL;
-   TH1D* fHt67ns_67not14 = NULL;
 
    TH2D* fHw14ns_1467 = NULL;
    TH2D* fHw67ns_1467 = NULL;
-#if 0   
-   TH2D* fHa14mv_1467 = NULL;
-   TH2D* fHa67mv_1467 = NULL;
-#endif
 
    TH2D* fHt67ns_w6ns_1467 = NULL;
    TH2D* fHt67ns_w7ns_1467 = NULL;
@@ -622,8 +528,6 @@ public:
    TH2D* fHt23t67ns_2367 = NULL;
    TH2D* fHt23t67ns_2367_cut = NULL;
    TH2D* fHt23t67ns_2367_cut_twc = NULL;
-   //TH1D* fHt23ns_2367_cut = NULL;
-   //TH1D* fHt67ns_2367_cut = NULL;
 
    TH1D* fHt267ns_2367_twc = NULL;
    TH1D* fHt367ns_2367_twc = NULL;
@@ -635,15 +539,8 @@ public:
    TH1D* fHt236ns_2367_twc_cut = NULL;
    TH1D* fHt237ns_2367_twc_cut = NULL;
 
-   TH1D* fHt23ns_23not67 = NULL;
-   TH1D* fHt67ns_67not23 = NULL;
-
    TH2D* fHw23ns_2367 = NULL;
    TH2D* fHw67ns_2367 = NULL;
-#if 0   
-   TH2D* fHa23mv_2367 = NULL;
-   TH2D* fHa67mv_2367 = NULL;
-#endif
 
    TH2D* fHtof_w2ns_2367_twc = NULL;
    TH2D* fHtof_w3ns_2367_twc = NULL;
@@ -703,12 +600,6 @@ public:
       fModuleName = "dltdc_module";
       fFlags   = flags;
       fU = new DlTdcUnpack(NUM_TDC_CHAN);
-
-      if (1) {
-         for (double amv = 0; amv <= 800; amv += 50) {
-            printf("time walk for %5.0f mV is %5.0f ps\n", amv, time_walk_correction_ps(amv));
-         }
-      }
 
       fConf = new DlTdcConfig(NUM_TDC_CHAN);
    }
@@ -1025,26 +916,12 @@ public:
       fHwAns = new TH1D("wAns", "wAns", 100, 0, 100);
       fHwBns = new TH1D("wBns", "wBns", 100, 0, 100);
       fHwTns = new TH1D("wTns", "wTns", 100, 0, 100);
-#if 0
-      fHa1mv = new TH1D("a1mv", "calculated amp 1, mV", 100, 0, 2000);
-      fHa2mv = new TH1D("a2mv", "calculated amp 2, mV", 100, 0, 2000);
-      fHa3mv = new TH1D("a3mv", "calculated amp 3, mV", 100, 0, 2000);
-      fHa4mv = new TH1D("a4mv", "calculated amp 4, mV", 100, 0, 2000);
-      fHa5mv = new TH1D("a5mv", "calculated amp 5, mV", 100, 0, 2000);
-      fHa6mv = new TH1D("a6mv", "calculated amp 6, mV", 100, 0, 2000);
-      fHa7mv = new TH1D("a7mv", "calculated amp 7, mV", 100, 0, 2000);
-      fHa8mv = new TH1D("a8mv", "calculated amp 8, mV", 100, 0, 2000);
-#endif
+
       fHw14ns = new TH2D("w14ns", "w4ns vs w1ns", 100, 0, 100, 100, 0, 100);
       fHw23ns = new TH2D("w23ns", "w3ns vs w2ns", 100, 0, 100, 100, 0, 100);
       fHw58ns = new TH2D("w58ns", "w8ns vs w5ns", 100, 0, 100, 100, 0, 100);
       fHw67ns = new TH2D("w67ns", "w7ns vs w6ns", 100, 0, 100, 100, 0, 100);
-#if 0
-      fHa14mv = new TH2D("a14mv", "calculated amp 4 vs amp 1, mV", 100, 0, 2000, 100, 0, 2000);
-      fHa23mv = new TH2D("a23mv", "calculated amp 3 vs amp 2, mV", 100, 0, 2000, 100, 0, 2000);
-      fHa58mv = new TH2D("a58mv", "calculated amp 8 vs amp 5, mV", 100, 0, 2000, 100, 0, 2000);
-      fHa67mv = new TH2D("a67mv", "calculated amp 7 vs amp 6, mV", 100, 0, 2000, 100, 0, 2000);
-#endif
+
       fHt14ns_w1ns = new TH2D("t14ns_w1ns", "t4-t1 (ns) vs w1 (ns)", 100, 0, 100, 200, -10, 10);
       fHt14ns_w4ns = new TH2D("t14ns_w4ns", "t4-t1 (ns) vs w4 (ns)", 100, 0, 100, 200, -10, 10);
       fHt23ns_w2ns = new TH2D("t23ns_w2ns", "t3-t2 (ns) vs w2 (ns)", 100, 0, 100, 200, -10, 10);
@@ -1101,21 +978,9 @@ public:
       fHt145ns_1458_twc_cut = new TH1D("t145ns_1458_twc_cut", "t5 - 0.5*(t1 + t4) (ns), CH5 minus upper paddle w/ twc and cut", 200, -10, 10);
       fHt148ns_1458_twc_cut = new TH1D("t148ns_1458_twc_cut", "t8 - 0.5*(t1 + t4) (ns), CH8 minus upper paddle w/ twc and cut", 200, -10, 10); 
 
-      fHt14ns_14not58 = new TH1D("t14ns_14not58", "t4-t1 (ns), (1*4)*!(5*8)", 200, -10, 10);
-      fHt58ns_58not14 = new TH1D("t58ns_58not14", "t8-t5 (ns), !(1*4)*(5*8)", 200, -10, 10);
-
       fHw14ns_1458 = new TH2D("w14ns_1458", "w4ns vs w1ns, 1*4*5*8", 100, 0, 100, 100, 0, 100);
       fHw58ns_1458 = new TH2D("w58ns_1458", "w8ns vs w5ns, 1*4*5*8", 100, 0, 100, 100, 0, 100);
-#if 0
-      fHa14mv_1458 = new TH2D("a14mv_1458", "calculated amp 4 vs amp 1, mV, 1*4*5*8", 100, 0, 2000, 100, 0, 2000);
-      fHa58mv_1458 = new TH2D("a58mv_1458", "calculated amp 8 vs amp 5, mV, 1*4*5*8", 100, 0, 2000, 100, 0, 2000);
 
-      fHtof_a1mv_1458 = new TH2D("tof_a1mv_1458", "tof vs a1 (mV), 1*4*5*8", 100, 0, 2000, 100, -10, 10);
-      fHtof_a4mv_1458 = new TH2D("tof_a4mv_1458", "tof vs a4 (mV), 1*4*5*8", 100, 0, 2000, 100, -10, 10);
-
-      fHtof_a1mv_1458_cut = new TH2D("tof_a1mv_1458_cut", "tof vs a1 (mV), 1*4*5*8 with cut", 100, 0, 2000, 100, -10, 10);
-      fHtof_a4mv_1458_cut = new TH2D("tof_a4mv_1458_cut", "tof vs a4 (mV), 1*4*5*8 with cut", 100, 0, 2000, 100, -10, 10);
-#endif
       fHtof_w1ns_1458 = new TH2D("tof_w1ns_1458", "tof vs w1 (ns), 1*4*5*8", 100, 0, 100, 100, -10, 10);
       fHtof_w4ns_1458 = new TH2D("tof_w4ns_1458", "tof vs w4 (ns), 1*4*5*8", 100, 0, 100, 100, -10, 10);
       fHtof_w5ns_1458 = new TH2D("tof_w5ns_1458", "tof vs w5 (ns), 1*4*5*8", 100, 0, 100, 100, -10, 10);
@@ -1155,15 +1020,8 @@ public:
       //fHt23ns_2358_cut = new TH1D("t23ns_2358_cut", "t3-t2 (ns), 2*3*5*8 with cut", 200, -10, 10);
       //fHt58ns_2358_cut = new TH1D("t58ns_2358_cut", "t8-t5 (ns), 2*3*5*8 with cut", 200, -10, 10);
 
-      fHt23ns_23not58 = new TH1D("t23ns_23not58", "t4-t1 (ns), (2*3)*!(5*8)", 200, -10, 10);
-      fHt58ns_58not23 = new TH1D("t58ns_58not23", "t3-t2 (ns), !(2*3)*(5*8)", 200, -10, 10);
-
       fHw23ns_2358 = new TH2D("w23ns_2358", "w3ns vs w2ns, 2*3*5*8", 100, 0, 100, 100, 0, 100);
       fHw58ns_2358 = new TH2D("w58ns_2358", "w8ns vs w5ns, 2*3*5*8", 100, 0, 100, 100, 0, 100);
-#if 0
-      fHa23mv_2358 = new TH2D("a23mv_2358", "calculated amp 3 vs amp 2, mV, 2*3*5*8", 100, 0, 2000, 100, 0, 2000);
-      fHa58mv_2358 = new TH2D("a58mv_2358", "calculated amp 8 vs amp 5, mV, 2*3*5*8", 100, 0, 2000, 100, 0, 2000);
-#endif
 
       fHtof_w2ns_2358_twc = new TH2D("tof_w2ns_2358_twc", "tof vs w2 (ns), 2*3*5*8 with twc", 100, 0, 100, 100, -10, 10);
       fHtof_w3ns_2358_twc = new TH2D("tof_w3ns_2358_twc", "tof vs w3 (ns), 2*3*5*8 with twc", 100, 0, 100, 100, -10, 10);
@@ -1184,15 +1042,8 @@ public:
       //fHt14ns_1467_cut = new TH1D("t14ns_1467_cut", "Paddle 1 time difference, t4-t1 (ns), 1*4*6*7 with cut", 200, -10, 10);
       //fHt67ns_1467_cut = new TH1D("t67ns_1467_cut", "Paddle X time difference, t7-t6 (ns), 1*4*6*7 with cut", 200, -10, 10);
 
-      fHt14ns_14not67 = new TH1D("t14ns_14not67", "t4-t1 (ns), (1*4)*!(6*7)", 200, -10, 10);
-      fHt67ns_67not14 = new TH1D("t67ns_67not14", "t7-t6 (ns), !(1*4)*(6*7)", 200, -10, 10);
-
       fHw14ns_1467 = new TH2D("w14ns_1467", "w4ns vs w1ns, 1*4*6*7", 100, 0, 100, 100, 0, 100);
       fHw67ns_1467 = new TH2D("w67ns_1467", "w7ns vs w6ns, 1*4*6*7", 100, 0, 100, 100, 0, 100);
-#if 0
-      fHa14mv_1467 = new TH2D("a14mv_1467", "calculated amp 4 vs amp 1, mV, 1*4*6*7", 100, 0, 2000, 100, 0, 2000);
-      fHa67mv_1467 = new TH2D("a67mv_1467", "calculated amp 7 vs amp 6, mV, 1*4*6*7", 100, 0, 2000, 100, 0, 2000);
-#endif
 
       fHt67ns_w6ns_1467 = new TH2D("t67ns_w6ns_1467", "t7-t6 (ns) vs w6 (ns), 1*4*6*7", 100, 0, 100, 200, -10, 10);
       fHt67ns_w7ns_1467 = new TH2D("t67ns_w7ns_1467", "t7-t6 (ns) vs w7 (ns), 1*4*6*7", 100, 0, 100, 200, -10, 10);
@@ -1226,15 +1077,8 @@ public:
       fHt236ns_2367_twc_cut = new TH1D("t236ns_2367_twc_cut", "t6 - 0.5*(t2 + t3) (ns), CH6 minus upper paddle w/ twc and cut", 200, -10, 10);
       fHt237ns_2367_twc_cut = new TH1D("t237ns_2367_twc_cut", "t7 - 0.5*(t2 + t3) (ns), CH7 minus upper paddle w/ twc and cut", 200, -10, 10);
 
-      fHt23ns_23not67 = new TH1D("t23ns_23not67", "t4-t1 (ns), (2*3)*!(6*7)", 200, -10, 10);
-      fHt67ns_67not23 = new TH1D("t67ns_67not23", "t7-t6 (ns), !(2*3)*(6*7)", 200, -10, 10);
-
       fHw23ns_2367 = new TH2D("w23ns_2367", "w3ns vs w2ns, 2*3*6*7", 100, 0, 100, 100, 0, 100);
       fHw67ns_2367 = new TH2D("w67ns_2367", "w7ns vs w6ns, 2*3*6*7", 100, 0, 100, 100, 0, 100);
-#if 0
-      fHa23mv_2367 = new TH2D("a23mv_2367", "calculated amp 3 vs amp 2, mV, 2*3*6*7", 100, 0, 2000, 100, 0, 2000);
-      fHa67mv_2367 = new TH2D("a67mv_2367", "calculated amp 7 vs amp 6, mV, 2*3*6*7", 100, 0, 2000, 100, 0, 2000);
-#endif
 
       fHtof_w2ns_2367_twc = new TH2D("tof_w2ns_2367_twc", "tof vs w2 (ns), 2*3*6*7 with twc", 100, 0, 100, 100, -10, 10);
       fHtof_w3ns_2367_twc = new TH2D("tof_w3ns_2367_twc", "tof vs w3 (ns), 2*3*6*7 with twc", 100, 0, 100, 100, -10, 10);
@@ -1450,7 +1294,6 @@ public:
       ///////// COMPUTE WIDTH AND PULSE HEIGHT ///////////
 
       double w1_ns = -9999;
-      double a1_mv = -9999;
 
       if (t.HaveCh(CHAN1)) {
          w1_ns = t.GetCh(CHAN1).fWidthNs;
@@ -1458,12 +1301,10 @@ public:
             printf("WWW: BAD WIDTH chan1 %f!\n", w1_ns);
             w1_ns = -9999;
          } else {
-            a1_mv = ns_to_mv(w1_ns);
          }
       }
 
       double w2_ns = -9999;
-      double a2_mv = -9999;
 
       if (t.fHits[CHAN2].fDown) {
          w2_ns = t.fHits[CHAN2].fWidthNs;
@@ -1471,12 +1312,10 @@ public:
             printf("WWW: BAD WIDTH chan2 %f!\n", w2_ns);
             w2_ns = -9999;
          } else {
-            a2_mv = ns_to_mv(w2_ns);
          }
       }
 
       double w3_ns = -9999;
-      double a3_mv = -9999;
 
       if (t.fHits[CHAN3].fDown) {
          w3_ns = t.fHits[CHAN3].fWidthNs;
@@ -1484,12 +1323,10 @@ public:
             printf("WWW: BAD WIDTH chan3 %f!\n", w3_ns);
             w3_ns = -9999;
          } else {
-            a3_mv = ns_to_mv(w3_ns);
          }
       }
 
       double w4_ns = -9999;
-      double a4_mv = -9999;
 
       if (t.fHits[CHAN4].fDown) {
          w4_ns = t.fHits[CHAN4].fWidthNs;
@@ -1497,12 +1334,10 @@ public:
             printf("WWW: BAD WIDTH chan4 %f!\n", w4_ns);
             w4_ns = -9999;
          } else {
-            a4_mv = ns_to_mv(w4_ns);
          }
       }
 
       double w5_ns = -9999;
-      double a5_mv = -9999;
 
       if (t.fHits[CHAN5].fDown) {
          w5_ns = t.fHits[CHAN5].fWidthNs;
@@ -1510,13 +1345,11 @@ public:
             printf("WWW: BAD WIDTH chan5 %f!\n", w5_ns);
             w5_ns = -9999;
          } else {
-            a5_mv = ns_to_mv(w5_ns);
          }
 
       }
 
       double w6_ns = -9999;
-      double a6_mv = -9999;
 
       if (t.fHits[CHAN6].fDown) {
          w6_ns = t.fHits[CHAN6].fWidthNs;
@@ -1524,12 +1357,10 @@ public:
             printf("WWW: BAD WIDTH chan6 %f!\n", w6_ns);
             w6_ns = -9999;
          } else {
-            a6_mv = ns_to_mv(w6_ns);
          }
       }
 
       double w7_ns = -9999;
-      double a7_mv = -9999;
 
       if (t.fHits[CHAN7].fDown) {
          w7_ns = t.fHits[CHAN7].fWidthNs;
@@ -1537,12 +1368,10 @@ public:
             printf("WWW: BAD WIDTH chan7 %f!\n", w7_ns);
             w7_ns = -9999;
          } else {
-            a7_mv = ns_to_mv(w7_ns);
          }
       }
 
       double w8_ns = -9999;
-      double a8_mv = -9999;
 
       if (t.fHits[CHAN8].fDown) {
          w8_ns = t.fHits[CHAN8].fWidthNs;
@@ -1550,7 +1379,6 @@ public:
             printf("WWW: BAD WIDTH chan8 %f!\n", w8_ns);
             w8_ns = -9999;
          } else {
-            a8_mv = ns_to_mv(w8_ns);
          }
       }
 
@@ -1659,11 +1487,10 @@ public:
 
       if (w1_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 1, le %.9f sec, w1 %.0f ns, a1 %.0f mV!\n", t.GetCh(CHAN1).fLe.time_sec, w1_ns, a1_mv);
+            printf("new dlsc event 1, le %.9f sec, w1 %.0f ns!\n", t.GetCh(CHAN1).fLe.time_sec, w1_ns);
          }
 
          fHw1ns->Fill(w1_ns);
-         // fHa1mv->Fill(a1_mv);
 
          if (w1_ns > w1_cut) { 
             fHw1ns_cut->Fill(w1_ns);
@@ -1672,11 +1499,10 @@ public:
 
       if (w2_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 2, le %.9f sec, w2 %.0f ns, a2 %.0f mV!\n", t.GetCh(CHAN2).fLe.time_sec, w2_ns, a2_mv);
+            printf("new dlsc event 2, le %.9f sec, w2 %.0f ns!\n", t.GetCh(CHAN2).fLe.time_sec, w2_ns);
          }
 
          fHw2ns->Fill(w2_ns);
-         // fHa2mv->Fill(a2_mv);
 
          if (w2_ns > w2_cut) { 
             fHw2ns_cut->Fill(w2_ns);
@@ -1685,11 +1511,10 @@ public:
 
       if (w3_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 3, le %.9f sec, w3 %.0f ns, a3 %.0f mV!\n", t.GetCh(CHAN3).fLe.time_sec, w3_ns, a3_mv);
+            printf("new dlsc event 3, le %.9f sec, w3 %.0f ns!\n", t.GetCh(CHAN3).fLe.time_sec, w3_ns);
          }
 
          fHw3ns->Fill(w3_ns);
-         // fHa3mv->Fill(a3_mv);
 
          if (w3_ns > w3_cut) { 
             fHw3ns_cut->Fill(w3_ns);
@@ -1698,11 +1523,10 @@ public:
 
       if (w4_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 4, le %.9f sec, w4 %.0f ns, a4 %.0f mV!\n", t.GetCh(CHAN4).fLe.time_sec, w4_ns, a4_mv);
+            printf("new dlsc event 4, le %.9f sec, w4 %.0f ns!\n", t.GetCh(CHAN4).fLe.time_sec, w4_ns);
          }
 
          fHw4ns->Fill(w4_ns);
-         // fHa4mv->Fill(a4_mv);
 
          if (w4_ns > w4_cut) { 
             fHw4ns_cut->Fill(w4_ns);
@@ -1711,11 +1535,10 @@ public:
 
       if (w5_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 5, le %.9f sec, w5 %.0f ns, a5 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, w5_ns, a5_mv);
+            printf("new dlsc event 5, le %.9f sec, w5 %.0f ns!\n", t.GetCh(CHAN5).fLe.time_sec, w5_ns);
          }
 
          fHw5ns->Fill(w5_ns);
-         // fHa5mv->Fill(a5_mv);
 
          if (w5_ns > w5_cut) { 
             fHw5ns_cut->Fill(w5_ns);
@@ -1724,11 +1547,10 @@ public:
 
       if (w6_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 6, le %.9f sec, w6 %.0f ns, a6 %.0f mV!\n", t.GetCh(CHAN6).fLe.time_sec, w6_ns, a6_mv);
+            printf("new dlsc event 6, le %.9f sec, w6 %.0f ns!\n", t.GetCh(CHAN6).fLe.time_sec, w6_ns);
          }
 
          fHw6ns->Fill(w6_ns);
-         // fHa6mv->Fill(a6_mv);
 
          if (w6_ns > w6_cut) { 
             fHw6ns_cut->Fill(w6_ns);
@@ -1737,11 +1559,10 @@ public:
 
       if (w7_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 7, le %.9f sec, w7 %.0f ns, a7 %.0f mV!\n", t.GetCh(CHAN7).fLe.time_sec, w7_ns, a7_mv);
+            printf("new dlsc event 7, le %.9f sec, w7 %.0f ns!\n", t.GetCh(CHAN7).fLe.time_sec, w7_ns);
          }
 
          fHw7ns->Fill(w7_ns);
-         // fHa7mv->Fill(a7_mv);
 
          if (w7_ns > w7_cut) { 
             fHw7ns_cut->Fill(w7_ns);
@@ -1750,11 +1571,10 @@ public:
 
       if (w8_ns > 0) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 8, le %.9f sec, w8 %.0f ns, a8 %.0f mV!\n", t.GetCh(CHAN8).fLe.time_sec, w8_ns, a8_mv);
+            printf("new dlsc event 8, le %.9f sec, w8 %.0f ns!\n", t.GetCh(CHAN8).fLe.time_sec, w8_ns);
          }
 
          fHw8ns->Fill(w8_ns);
-         // fHa8mv->Fill(a8_mv);
 
          if (w8_ns > w8_cut) { 
             fHw8ns_cut->Fill(w8_ns);
@@ -1809,7 +1629,7 @@ public:
          t14_ns_twc = t14_ns + (W1_twc / sqrt(w1_ns) - W4_twc / sqrt(w4_ns));
 
          if (fFlags->fPrint) {
-            printf("new dlsc event 1*4, le %.9f %.9f sec, diff14 %.0f ns, w1 %.0f, w4 %.0f ns, a1 %.0f, a4 %.0f mV!\n", t.GetCh(CHAN1).fLe.time_sec, t.GetCh(CHAN4).fLe.time_sec, t14_ns, w1_ns, w4_ns, a1_mv, a4_mv);
+            printf("new dlsc event 1*4, le %.9f %.9f sec, diff14 %.0f ns, w1 %.0f, w4 %.0f ns!\n", t.GetCh(CHAN1).fLe.time_sec, t.GetCh(CHAN4).fLe.time_sec, t14_ns, w1_ns, w4_ns);
          }
 
          fCount14++;
@@ -1817,7 +1637,6 @@ public:
          
          fHt14ns->Fill(t14_ns);
          fHw14ns->Fill(w1_ns, w4_ns);
-         // fHa14mv->Fill(a1_mv, a4_mv);
 
          fHt14ns_w1ns->Fill(w1_ns, t14_ns);
          fHt14ns_w4ns->Fill(w4_ns, t14_ns);
@@ -1855,7 +1674,6 @@ public:
 
          fHt23ns->Fill(t23_ns);
          fHw23ns->Fill(w2_ns, w3_ns);
-         // fHa23mv->Fill(a2_mv, a3_mv);
 
          fHt23ns_w2ns->Fill(w2_ns, t23_ns);
          fHt23ns_w3ns->Fill(w3_ns, t23_ns);
@@ -1885,7 +1703,7 @@ public:
          t58_ns_twc = t58_ns + (W5_twc / sqrt(w5_ns) - W8_twc / sqrt(w8_ns));
 
          if (fFlags->fPrint) {
-            printf("new dlsc event 5*8, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
+            printf("new dlsc event 5*8, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t58_ns, w5_ns, w8_ns);
          }
 
          fCount58++;
@@ -1893,7 +1711,6 @@ public:
 
          fHt58ns->Fill(t58_ns);
          fHw58ns->Fill(w5_ns, w8_ns);
-         // fHa58mv->Fill(a5_mv, a8_mv);
 
          fHt58ns_w5ns->Fill(w5_ns, t58_ns);
          fHt58ns_w8ns->Fill(w8_ns, t58_ns);
@@ -1923,7 +1740,7 @@ public:
          t67_ns_twc = t67_ns + (W6_twc / sqrt(w6_ns) - W7_twc / sqrt(w7_ns));
 
          if (fFlags->fPrint) {
-            printf("new dlsc event 6*7, le %.9f %.9f sec, diff67 %.0f ns, w6 %.0f, w7 %.0f ns, a6 %.0f, a7 %.0f mV!\n", t.GetCh(CHAN6).fLe.time_sec, t.GetCh(CHAN7).fLe.time_sec, t67_ns, w6_ns, w7_ns, a6_mv, a7_mv);
+            printf("new dlsc event 6*7, le %.9f %.9f sec, diff67 %.0f ns, w6 %.0f, w7 %.0f ns!\n", t.GetCh(CHAN6).fLe.time_sec, t.GetCh(CHAN7).fLe.time_sec, t67_ns, w6_ns, w7_ns);
          }
 
          fCount67++;
@@ -1931,7 +1748,6 @@ public:
 
          fHt67ns->Fill(t67_ns);
          fHw67ns->Fill(w6_ns, w7_ns);
-         // fHa67mv->Fill(a6_mv, a7_mv);
 
          fHt67ns_w6ns->Fill(w6_ns, t67_ns);
          fHt67ns_w7ns->Fill(w7_ns, t67_ns);
@@ -1957,7 +1773,7 @@ public:
 
       if (t14_ns > -9999 && t58_ns > -9999) {
          if (fFlags->fPrint) {
-            printf("new dlsc event 1*4*5*8, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
+            printf("new dlsc event 1*4*5*8, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t58_ns, w5_ns, w8_ns);
          }
 
          fCount1458++;
@@ -2000,12 +1816,6 @@ public:
          fHw14ns_1458->Fill(w1_ns, w4_ns);
          fHw58ns_1458->Fill(w5_ns, w8_ns);
          
-         // fHa14mv_1458->Fill(a1_mv, a4_mv);
-         // fHa58mv_1458->Fill(a5_mv, a8_mv);
-         
-         // fHtof_a1mv_1458->Fill(a1_mv, tof1458);
-         // fHtof_a4mv_1458->Fill(a4_mv, tof1458);
-
          fHtof_w1ns_1458->Fill(w1_ns, tof1458);
          fHtof_w4ns_1458->Fill(w4_ns, tof1458);
 
@@ -2015,8 +1825,6 @@ public:
          if (w1_ns > w1_cut && w4_ns > w4_cut && w5_ns > w5_cut && w8_ns > w8_cut) {
             fHtof_1458_cut->Fill(tof1458);
             fHtof_1458_cut_twc->Fill(tof1458_twc);
-            // fHtof_a1mv_1458_cut->Fill(a1_mv, tof1458);
-            // fHtof_a4mv_1458_cut->Fill(a4_mv, tof1458);
 
             fHtof_w1ns_1458_cut->Fill(w1_ns, tof1458);
             fHtof_w4ns_1458_cut->Fill(w4_ns, tof1458);
@@ -2053,27 +1861,11 @@ public:
 
       }
 
-      if ((t14_ns > -9999) && !(t58_ns > -9999)) {
-         if (fFlags->fPrint) {
-            printf("new dlsc event 1*4*!(5*8), le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
-         }
-         
-         fHt14ns_14not58->Fill(t14_ns);
-      }
-
-      if (!(t14_ns > -9999) && (t58_ns > -9999)) {
-         if (fFlags->fPrint) {
-            printf("new dlsc event !(1*4)*(5*8), le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
-         }
-         
-         fHt58ns_58not14->Fill(t58_ns);
-      }
-
       if (t23_ns > -9999 && t58_ns > -9999) {
          t23_ns = subtract_ns(t.GetCh(CHAN3).fLe, t.GetCh(CHAN2).fLe);
 
          if (fFlags->fPrint) {
-            printf("new dlsc event 2*3*5*8, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
+            printf("new dlsc event 2*3*5*8, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t58_ns, w5_ns, w8_ns);
          }
          
          fCount2358++;
@@ -2093,8 +1885,6 @@ public:
          
          fHw23ns_2358->Fill(w2_ns, w3_ns);
          fHw58ns_2358->Fill(w5_ns, w8_ns);
-         // fHa23mv_2358->Fill(a2_mv, a3_mv);
-         // fHa58mv_2358->Fill(a5_mv, a8_mv);
 
          if (w2_ns > w2_cut && w3_ns > w3_cut && w5_ns > w5_cut && w8_ns > w8_cut) {
             fHtof_2358_cut->Fill(tof2358);
@@ -2114,26 +1904,10 @@ public:
 
       }
 
-      if ((t23_ns > -9999) && !(t58_ns > -9999)) {
-         if (fFlags->fPrint) {
-            printf("new dlsc event (2*3)*!(5*8), le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
-         }
-         
-         fHt23ns_23not58->Fill(t23_ns);
-      }
-
-      if (!(t23_ns > -9999) && (t58_ns > -9999)) {
-         if (fFlags->fPrint) {
-            printf("new dlsc event !(2*3)*(5*8), le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t58_ns, w5_ns, w8_ns, a5_mv, a8_mv);
-         }
-         
-         fHt58ns_58not23->Fill(t58_ns);
-      }
-
       if (t14_ns > -9999 && t67_ns > -9999) {
 
          if (fFlags->fPrint) {
-            printf("new dlsc event 1*4*6*7, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t67_ns, w5_ns, w8_ns, a5_mv, a8_mv);
+            printf("new dlsc event 1*4*6*7, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t67_ns, w5_ns, w8_ns);
          }
          
          fCount1467++;
@@ -2162,8 +1936,6 @@ public:
          
          fHw14ns_1467->Fill(w1_ns, w4_ns);
          fHw67ns_1467->Fill(w6_ns, w7_ns);
-         // fHa14mv_1467->Fill(a1_mv, a4_mv);
-         // fHa67mv_1467->Fill(a6_mv, a7_mv);
 
          fHt67ns_w6ns_1467->Fill(w6_ns, t67_ns);
          fHt67ns_w7ns_1467->Fill(w7_ns, t67_ns);
@@ -2189,26 +1961,10 @@ public:
          fHtof_w7ns_1467_twc->Fill(w7_ns, tof1467_twc);
       }
 
-      if ((t14_ns > -9999) && !(t67_ns > -9999)) {
-         if (fFlags->fPrint) {
-            printf("new dlsc event (1*4)*!(6*7), le %.9f %.9f sec, diff67 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t67_ns, w5_ns, w8_ns, a5_mv, a8_mv);
-         }
-         
-         fHt14ns_14not67->Fill(t14_ns);
-      }
-
-      if (!(t14_ns > -9999) && (t67_ns > -9999)) {
-         if (fFlags->fPrint) {
-            printf("new dlsc event !(1*4)*(6*7), le %.9f %.9f sec, diff67 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t67_ns, w5_ns, w8_ns, a5_mv, a8_mv);
-         }
-         
-         fHt67ns_67not14->Fill(t67_ns);
-      }
-
       if (t23_ns > -9999 && t67_ns > -9999) {
          
          if (fFlags->fPrint) {
-            printf("new dlsc event 2*3*6*7, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t67_ns, w5_ns, w8_ns, a5_mv, a8_mv);
+            printf("new dlsc event 2*3*6*7, le %.9f %.9f sec, diff58 %.0f ns, w5 %.0f, w8 %.0f ns!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t67_ns, w5_ns, w8_ns);
          }
 
          fCount2367++;
@@ -2244,8 +2000,6 @@ public:
          
          fHw23ns_2367->Fill(w2_ns, w3_ns);
          fHw67ns_2367->Fill(w6_ns, w7_ns);
-         // fHa23mv_2367->Fill(a2_mv, a3_mv);
-         // fHa67mv_2367->Fill(a6_mv, a7_mv);
 
          if (w2_ns > w2_cut && w3_ns > w3_cut && w6_ns > w6_cut && w7_ns > w7_cut) {
             fHtof_2367_cut->Fill(tof2367);
@@ -2278,22 +2032,6 @@ public:
          fHt236ns_w6ns_2367_twc->Fill(w6_ns, t236_ns_twc);
          fHt237ns_w7ns_2367_twc->Fill(w7_ns, t237_ns_twc);
 
-      }
-
-      if ((t23_ns > -9999) && !(t67_ns > -9999)) {
-         if (fFlags->fPrint) {
-            printf("new dlsc event (2*3)*!(6*7), le %.9f %.9f sec, diff67 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t67_ns, w5_ns, w8_ns, a5_mv, a8_mv);
-         }
-         
-         fHt23ns_23not67->Fill(t23_ns);
-      }
-
-      if (!(t23_ns > -9999) && (t67_ns > -9999)) {
-         if (fFlags->fPrint) {
-            printf("new dlsc event !(2*3)*(6*7), le %.9f %.9f sec, diff67 %.0f ns, w5 %.0f, w8 %.0f ns, a5 %.0f, a8 %.0f mV!\n", t.GetCh(CHAN5).fLe.time_sec, t.GetCh(CHAN8).fLe.time_sec, t67_ns, w5_ns, w8_ns, a5_mv, a8_mv);
-         }
-         
-         fHt67ns_67not23->Fill(t67_ns);
       }
    }
 
