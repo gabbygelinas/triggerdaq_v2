@@ -1386,14 +1386,14 @@ public:
       double W_twc = 8.0;
 
       // OPTIMIZED WITH CUT
-      double W1_twc = 8.63;
-      double W2_twc = 8.46;
-      double W3_twc = 8.71;
-      double W4_twc = 9.66;
-      double W5_twc = 6.98;
-      double W6_twc = 7.47;
-      double W7_twc = 7.09;
-      double W8_twc = 6.68;
+      double W1_twc = 9.32; // 8.41;
+      double W2_twc = 9.89; // 8.32;
+      double W3_twc = 11.07; // 8.67;
+      double W4_twc = 10.54; // 9.26;
+      double W5_twc = 8.36; // 7.75;
+      double W6_twc = 9.39; // 8.73;
+      double W7_twc = 9.01; // 8.15;
+      double W8_twc = 9.11; // 8.05;
 
       // UNIFORM FOR GENERAL USE
       //double W1_twc = W_twc;
