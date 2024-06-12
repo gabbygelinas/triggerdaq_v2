@@ -985,7 +985,7 @@ std::string DlTdcUnpack::toJson() const
 void DlTdcUnpack::SaveCalib(int runno) const
 {
    char fname[256];
-   sprintf(fname, "dltdc_finetime_%06d.json", runno);
+   sprintf(fname, "dlcfmdb/dltdc_finetime_%06d.json", runno);
    FILE *fp = fopen(fname, "w");
    fprintf(fp, "%s", toJson().c_str());
    fclose(fp);
@@ -1002,55 +1002,70 @@ void DlTdcUnpack::SaveCalib(int runno) const
    //}
 }
 
+bool DlTdcUnpack::LoadCalib(const char* fname)
+{
+   FILE *fp = fopen(fname, "r");
+
+   if (!fp)
+      return false;
+
+   std::string json;
+   while (1) {
+      char buf[1024];
+      size_t rd = fread(buf, 1, sizeof(buf)-1, fp);
+      //printf("rd %zu\n", rd);
+      if (rd == 0)
+         break;
+      buf[rd] = 0;
+      json += buf;
+   }
+   
+   fclose(fp);
+      
+   //printf("json: %s\n", json.c_str());
+   
+   MJsonNode* j = MJsonNode::Parse(json.c_str());
+   //printf("read: %s\n", j->Stringify().c_str());
+
+   if (j == NULL)
+      return false;
+   
+   int num_channels = j->FindObjectNode("dltdc_num_channels")->GetInt();
+   
+   printf("DlTdcUnpack::LoadCalib: Loading %d channels from %s\n", num_channels, fname);
+   
+   fCalib.resize(num_channels);
+   
+   const std::vector<MJsonNode*>* jj = j->FindObjectNode("dltdc_fine_time")->GetArray();
+   
+   if (jj->size() != fCalib.size()) {
+      delete j;
+      return false;
+   }
+   
+   for (size_t i = 0; i < fCalib.size(); i++) {
+      bool load_ok = fCalib[i].LoadFromJson((*jj)[i]);
+      if (!load_ok) {
+         delete j;
+         return false;
+      }
+   }
+   
+   delete j;
+   return true;
+}
+
 bool DlTdcUnpack::LoadCalib(int runno)
 {
    for (int r=0; r<100; r++) {
 
       char fname[256];
-      sprintf(fname, "dltdc_finetime_%06d.json", runno);
-      FILE *fp = fopen(fname, "r");
+      sprintf(fname, "dlcfmdb/dltdc_finetime_%06d.json", runno);
 
-      if (fp) {
-         std::string json;
-         while (1) {
-            char buf[1024];
-            size_t rd = fread(buf, 1, sizeof(buf)-1, fp);
-            //printf("rd %zu\n", rd);
-            if (rd == 0)
-               break;
-            buf[rd] = 0;
-            json += buf;
-         }
+      bool load_ok = LoadCalib(fname);
 
-         fclose(fp);
-
-         //printf("json: %s\n", json.c_str());
-
-         MJsonNode* j = MJsonNode::Parse(json.c_str());
-         //printf("read: %s\n", j->Stringify().c_str());
-
-         int num_channels = j->FindObjectNode("dltdc_num_channels")->GetInt();
-
-         printf("DlTdcUnpack::LoadCalib: Loading %d channels from %s\n", num_channels, fname);
-
-         fCalib.resize(num_channels);
-
-         const std::vector<MJsonNode*>* jj = j->FindObjectNode("dltdc_fine_time")->GetArray();
-
-         assert(jj->size() == fCalib.size());
-
-         bool load_ok = false;
-
-         for (size_t i = 0; i < fCalib.size(); i++) {
-            load_ok |= fCalib[i].LoadFromJson((*jj)[i]);
-         }
-
-         delete j;
-         j = NULL;
-         
-         if (load_ok)
-            return true;
-      }
+      if (load_ok)
+         return true;
       
       runno--;
    }
