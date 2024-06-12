@@ -301,7 +301,7 @@ static void SaveToFile1(FILE* fp, const DlTdcFineCalib1& c)
 
 #include "mjson.h"
 
-static void LoadFromJson(const MJsonNode*j, DlTdcFineCalib1& c)
+static void LoadFromJson1(const MJsonNode*j, DlTdcFineCalib1& c)
 {
    if (!j)
       return;
@@ -376,6 +376,18 @@ void DlTdcFineCalib::SaveToFile(const char* filename) const
    fclose(fp);
 }
 
+bool DlTdcFineCalib::LoadFromJson(const MJsonNode* j)
+{
+   //printf("DlTdcFineCalib::LoadFromJson: %s\n", j->Stringify().c_str());
+
+   LoadFromJson1(j->FindObjectNode("lepos"), lepos);
+   LoadFromJson1(j->FindObjectNode("leneg"), leneg);
+   LoadFromJson1(j->FindObjectNode("tepos"), tepos);
+   LoadFromJson1(j->FindObjectNode("teneg"), teneg);
+
+   return true;
+}
+
 bool DlTdcFineCalib::LoadFromFile(const char* filename)
 {
    FILE *fp = fopen(filename, "r");
@@ -403,10 +415,7 @@ bool DlTdcFineCalib::LoadFromFile(const char* filename)
    MJsonNode* j = MJsonNode::Parse(json.c_str());
    //printf("read: %s\n", j->Stringify().c_str());
 
-   LoadFromJson(j->FindObjectNode("lepos"), lepos);
-   LoadFromJson(j->FindObjectNode("leneg"), leneg);
-   LoadFromJson(j->FindObjectNode("tepos"), tepos);
-   LoadFromJson(j->FindObjectNode("teneg"), teneg);
+   LoadFromJson(j);
 
    delete j;
 
@@ -951,30 +960,97 @@ void DlTdcUnpack::UpdateCalib()
    }
 }
 
+std::string DlTdcUnpack::toJson() const
+{
+   std::string s;
+   s += "{\n";
+   char tmp[256];
+   sprintf(tmp, "%d", (int)fCalib.size());
+   s += "\"dltdc_num_channels\":";
+   s += tmp;
+   s += ",\n";
+   s += "\"dltdc_fine_time\":[\n";
+
+   for (size_t i = 0; i < fCalib.size(); i++) {
+      if (i>0)
+         s += ",\n";
+      s += fCalib[i].toJson().c_str();
+   }
+
+   s += "]\n";
+   s += "}\n";
+   return s;
+}
+
 void DlTdcUnpack::SaveCalib(int runno) const
 {
-   for (size_t i = 0; i < fCalib.size(); i++) {
-      if (fCalib[i].lepos.fMaxPhase > 0) {
-         char fname[256];
-         sprintf(fname, "dltdc_run%d_chan%02d.json", runno, (int)i);
-         fCalib[i].SaveToFile(fname);
-      }
-   }
+   char fname[256];
+   sprintf(fname, "dltdc_finetime_%06d.json", runno);
+   FILE *fp = fopen(fname, "w");
+   fprintf(fp, "%s", toJson().c_str());
+   fclose(fp);
+
+   //for (size_t i = 0; i < fCalib.size(); i++) {
+   //   if (fCalib[i].lepos.fMaxPhase > 0) {
+   //      char fname[256];
+   //      sprintf(fname, "dltdc_run%d_chan%02d.json", runno, (int)i);
+   //      fCalib[i].SaveToFile(fname);
+   //   }
+   //   if (i>0)
+   //      fprintf(fp,",\n");
+   //   fprintf(fp, "%s\n", fCalib[i].toJson().c_str());
+   //}
 }
 
 bool DlTdcUnpack::LoadCalib(int runno)
 {
    for (int r=0; r<100; r++) {
-      bool load_ok = false;
 
-      for (size_t i = 0; i < fCalib.size(); i++) {
-         char fname[256];
-         sprintf(fname, "dltdc_run%d_chan%02d.json", runno, (int)i);
-         load_ok |= fCalib[i].LoadFromFile(fname);
+      char fname[256];
+      sprintf(fname, "dltdc_finetime_%06d.json", runno);
+      FILE *fp = fopen(fname, "r");
+
+      if (fp) {
+         std::string json;
+         while (1) {
+            char buf[1024];
+            size_t rd = fread(buf, 1, sizeof(buf)-1, fp);
+            //printf("rd %zu\n", rd);
+            if (rd == 0)
+               break;
+            buf[rd] = 0;
+            json += buf;
+         }
+
+         fclose(fp);
+
+         //printf("json: %s\n", json.c_str());
+
+         MJsonNode* j = MJsonNode::Parse(json.c_str());
+         //printf("read: %s\n", j->Stringify().c_str());
+
+         int num_channels = j->FindObjectNode("dltdc_num_channels")->GetInt();
+
+         printf("DlTdcUnpack::LoadCalib: Loading %d channels from %s\n", num_channels, fname);
+
+         fCalib.resize(num_channels);
+
+         const std::vector<MJsonNode*>* jj = j->FindObjectNode("dltdc_fine_time")->GetArray();
+
+         assert(jj->size() == fCalib.size());
+
+         bool load_ok = false;
+
+         for (size_t i = 0; i < fCalib.size(); i++) {
+            load_ok |= fCalib[i].LoadFromJson((*jj)[i]);
+         }
+
+         delete j;
+         j = NULL;
+         
+         if (load_ok)
+            return true;
       }
-
-      if (load_ok)
-         return true;
       
       runno--;
    }

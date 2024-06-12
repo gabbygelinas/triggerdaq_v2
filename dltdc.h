@@ -6,6 +6,8 @@
 #include <vector> // std::vector
 #include <string> // std::string
 
+struct MJsonNode;
+
 struct DlTdcHit
 {
    uint32_t data_lo = 0;
@@ -99,6 +101,7 @@ public:
    void Print() const;
    void SaveToFile(const char* filename) const;
    bool LoadFromFile(const char* filename);
+   bool LoadFromJson(const MJsonNode* j);
    std::string toJson() const;
 };
 
@@ -120,6 +123,7 @@ public:
    void UpdateCalib();
    bool LoadCalib(int runno);
    void SaveCalib(int runno) const;
+   std::string toJson() const;
 
 public: // internal state
    double fFirstTimeSec = 0;
