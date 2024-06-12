@@ -40,12 +40,12 @@ public:
    void Print() const; // print the database
    
    int GetRev(const char* system, const char* subsystem, int runno);
-   std::string GetFilename(const char* system, const char* subsystem, int runno);
-   std::vector<std::string> ReadFile(const char* system, const char* subsystem, int runno);
-   NcfmParser* ParseFile(const char* system, const char* subsystem, int runno);
+   std::string GetFilename(const char* system, const char* subsystem, int runno, const char* ext);
+   std::vector<std::string> ReadFile(const char* system, const char* subsystem, int runno, const char* ext);
+   NcfmParser* ParseFile(const char* system, const char* subsystem, int runno, const char* ext);
 
 public:
-   std::string MakeFilename(const char* system, const char* subsystem, int rev) const;
+   std::string MakeFilename(const char* system, const char* subsystem, int rev, const char* ext) const;
    std::vector<std::string> ReadFile(const char* filename) const;
 
 public:

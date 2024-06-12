@@ -156,24 +156,24 @@ static std::string RevToString(int rev)
   return buf;
 }
 
-std::string Ncfm::MakeFilename(const char* system, const char* subsystem, int rev) const
+std::string Ncfm::MakeFilename(const char* system, const char* subsystem, int rev, const char* ext) const
 {
-   return fRoot + "/" + system + "_" + subsystem + "_" + RevToString(rev) + ".txt";
+   return fRoot + "/" + system + "_" + subsystem + "_" + RevToString(rev) + "." + ext;
 }
 
-std::string Ncfm::GetFilename(const char* system, const char* subsystem, int runno)
+std::string Ncfm::GetFilename(const char* system, const char* subsystem, int runno, const char* ext)
 {
    int rev = GetRev(system, subsystem, runno);
    if (rev < 0)
       return "";
-   return MakeFilename(system, subsystem, rev);
+   return MakeFilename(system, subsystem, rev, ext);
 }
 
-std::vector<std::string> Ncfm::ReadFile(const char* system, const char* subsystem, int runno)
+std::vector<std::string> Ncfm::ReadFile(const char* system, const char* subsystem, int runno, const char* ext)
 {
    std::vector<std::string> v;
 
-   std::string f = GetFilename(system, subsystem, runno);
+   std::string f = GetFilename(system, subsystem, runno, ext);
    if (f.length() < 1)
       return v;
 
@@ -305,9 +305,9 @@ NcfmParser::NcfmParser(const std::vector<std::string>& file)
    }
 }
 
-NcfmParser* Ncfm::ParseFile(const char* system, const char* subsystem, int runno)
+NcfmParser* Ncfm::ParseFile(const char* system, const char* subsystem, int runno, const char* ext)
 {
-   return new NcfmParser(ReadFile(system, subsystem, runno));
+   return new NcfmParser(ReadFile(system, subsystem, runno, ext));
 }
 
 std::string NcfmParser::GetString(const char* varname, const char* default_value)
