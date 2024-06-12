@@ -15,6 +15,8 @@
 
 #include "DlFlow.h"
 
+#include "ncfm.h"
+
 #include <deque>
 
 #include <TStyle.h>
@@ -590,6 +592,8 @@ public:
    DlTdcConfig *fConf = NULL;
 
    bool fTrace = false;
+
+   Ncfm* fCfm = NULL;
    
    DlTdcModule(TARunInfo* runinfo, DlTdcFlags* flags)
       : TARunObject(runinfo)
@@ -599,6 +603,9 @@ public:
 
       fModuleName = "dltdc_module";
       fFlags   = flags;
+
+      fCfm = new Ncfm("dlcfmdb");
+
       fU = new DlTdcUnpack(NUM_TDC_CHAN);
 
       fConf = new DlTdcConfig(NUM_TDC_CHAN);
@@ -618,6 +625,11 @@ public:
          delete fConf;
          fConf = NULL;
       }
+
+      if (fCfm) {
+         delete fCfm;
+         fCfm = NULL;
+      }
    }
 
    void BeginRun(TARunInfo* runinfo)
@@ -632,7 +644,12 @@ public:
       }
 
       if  (!fFlags->fCalib) {
-         bool load_ok = fU->LoadCalib(runinfo->fRunNo);
+         std::string fine_time_json = fCfm->GetFilename("dltdc", "finetime", runinfo->fRunNo, "json");
+         bool load_ok = fU->LoadCalib(fine_time_json.c_str());
+
+         printf("json file %s load_ok %d\n", fine_time_json.c_str(), load_ok);
+
+         //bool load_ok = fU->LoadCalib(runinfo->fRunNo);
          if (!load_ok) {
             printf("Cannot load TDC calibration for run %d\n", runinfo->fRunNo);
             exit(123);
