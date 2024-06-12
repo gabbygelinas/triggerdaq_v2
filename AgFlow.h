@@ -8,10 +8,11 @@
 #ifndef AgFlow_H
 #define AgFlow_H
 
-#include "AgEvent.h"
+//#include "AgEvent.h"
 #include "unpack_cb.h"
 #include "manalyzer.h"
 
+#if 0
 class AgEventFlow: public TAFlowEvent
 {
  public:
@@ -108,6 +109,7 @@ class AgTrigUdpFlow: public TAFlowEvent
    {
    }
 };
+#endif
 
 class CbHitsFlow: public TAFlowEvent
 {

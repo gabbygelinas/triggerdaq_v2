@@ -1,5 +1,5 @@
 #
-# Makefile for the ALPHA-g online analyzer
+# Makefile for the DarkLight online analyzer
 #
 
 CXXFLAGS += -g -O2 -Wall -Wuninitialized -I. -std=c++11 $(USERFLAGS)
@@ -24,11 +24,12 @@ CXXFLAGS += -DHAVE_ROOT $(shell root-config --cflags)
 RLIBS    += -L$(ROOTSYS)/lib -lCore -lHist -lRIO -lGraf -lGui -lGpad -lRHTTP -lMathCore -lImt -lMatrix -lThread -lMultiProc -lNet
 endif
 
-UNPACK  += AgAsm.o AgEvent.o TrgAsm.o Trg.o Alpha16.o PwbAsm.o Feam.o Tdc.o ncfm.o unpack_cb.o TPCSimAsm.o TPCSimEvent.o
-MODULES += unpack_module.o EventTracker.o unpack_cb_module.o $(UNPACK) cbko_module.o adc_module.o bsc_module.o pwb_module.o feam_module.o wfsuppress.o wfsuppress2.o wfsuppress_pwb.o wfsuppress_adc.o wfexport_module.o pulser_module.o final_module.o coinc_module.o display_module.o dltdc_module.o dltdc.o
+#UNPACK  += AgAsm.o AgEvent.o TrgAsm.o Trg.o Alpha16.o PwbAsm.o Feam.o Tdc.o ncfm.o unpack_cb.o TPCSimAsm.o TPCSimEvent.o
+UNPACK  += ncfm.o unpack_cb.o
+#MODULES += unpack_module.o EventTracker.o unpack_cb_module.o $(UNPACK) cbko_module.o adc_module.o bsc_module.o pwb_module.o feam_module.o wfsuppress.o wfsuppress2.o wfsuppress_pwb.o wfsuppress_adc.o wfexport_module.o pulser_module.o final_module.o coinc_module.o display_module.o dltdc_module.o dltdc.o
+MODULES += unpack_cb_module.o $(UNPACK) cbko_module.o dltdc_module.o dltdc.o
 
-ALL     += agana.exe
-ALL     += testunpack.exe
+ALL     += dlana.exe
 #ALL     += ncfm.exe
 
 all:: $(MODULES)
@@ -46,9 +47,6 @@ cclean:
 
 %.exe: $(MODULES)
 	$(CXX) -o $@ $(MODULES) $(CXXFLAGS) $(LIBS) $(RLIBS) -lm -lz -lpthread -Wl,-rpath,$(ROOTSYS)/lib
-
-testunpack.exe: testunpack_module.o $(UNPACK)
-	$(CXX) -o $@ $^ $(CXXFLAGS) $(LIBS) $(RLIBS) -lm -lz -lpthread -Wl,-rpath,$(ROOTSYS)/lib
 
 ncfm.exe: %.exe: %.o
 	$(CXX) -o $@ $< $(CXXFLAGS) $(LIBS) -lm -lz -lpthread
