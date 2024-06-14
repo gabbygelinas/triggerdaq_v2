@@ -1055,6 +1055,59 @@ bool DlTdcUnpack::LoadCalib(const char* fname)
    return true;
 }
 
+bool DlTdcUnpack::LoadOffsets(const char* fname)
+{
+   FILE *fp = fopen(fname, "r");
+
+   if (!fp)
+      return false;
+
+   std::string json;
+   while (1) {
+      char buf[1024];
+      size_t rd = fread(buf, 1, sizeof(buf)-1, fp);
+      //printf("rd %zu\n", rd);
+      if (rd == 0)
+         break;
+      buf[rd] = 0;
+      json += buf;
+   }
+   
+   fclose(fp);
+      
+   //printf("json: %s\n", json.c_str());
+   
+   MJsonNode* j = MJsonNode::Parse(json.c_str());
+   //printf("read: %s\n", j->Stringify().c_str());
+
+   if (j == NULL)
+      return false;
+   
+   int num_channels = j->FindObjectNode("dltdc_num_channels")->GetInt();
+   
+   printf("DlTdcUnpack::LoadOffsets: Loading %d channels from %s\n", num_channels, fname);
+
+   fCalib.resize(num_channels);
+   
+   const std::vector<MJsonNode*>* jj = j->FindObjectNode("offset_ns")->GetArray();
+   
+   if (jj->size() != fCalib.size()) {
+      delete j;
+      return false;
+   }
+
+   for (size_t i = 0; i < fCalib.size(); i++) {
+      const std::vector<MJsonNode*>* jjj = (*jj)[i]->GetArray();
+      double le_offset_ns = (*jjj)[0]->GetDouble();
+      double te_offset_ns = (*jjj)[1]->GetDouble();
+      fCalib[i].lepos.fOffsetNs = fCalib[i].leneg.fOffsetNs = -le_offset_ns;
+      fCalib[i].tepos.fOffsetNs = fCalib[i].teneg.fOffsetNs = -te_offset_ns;
+   }
+   
+   delete j;
+   return true;
+}
+
 bool DlTdcUnpack::LoadCalib(int runno)
 {
    for (int r=0; r<100; r++) {

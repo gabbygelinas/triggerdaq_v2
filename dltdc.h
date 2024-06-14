@@ -122,6 +122,7 @@ public:
    bool Unpack(DlTdcHit* h, uint32_t lo, uint32_t hi);
    void UpdateCalib();
    bool LoadCalib(const char* fname);
+   bool LoadOffsets(const char* fname);
    bool LoadCalib(int runno);
    void SaveCalib(int runno) const;
    std::string toJson() const;

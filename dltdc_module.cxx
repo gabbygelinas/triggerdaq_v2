@@ -37,6 +37,20 @@ static double amin(double a, double b)
 }
 #endif
 
+static std::string toString(int i)
+{
+   char buf[256];
+   sprintf(buf, "%d", i);
+   return buf;
+}
+
+static std::string toString(const char* fmt, double v)
+{
+   char buf[256];
+   sprintf(buf, fmt, v);
+   return buf;
+}
+
 static double sec_to_ns(double t)
 {
    return t*1e9;
@@ -50,9 +64,10 @@ static double subtract_ns(const DlTdcHit& h1, const DlTdcHit& h2)
 class DlTdcFlags
 {
 public:
-   bool fEnabled = false;
+   bool fEnabled = true;
    bool fTriggered = false;
-   bool fCalib   = false;
+   bool fCalibFineTime = false;
+   bool fCalibOffsets  = false;
    bool fDebug = false;
    bool fPrint = false;
    bool fTWC = false;
@@ -643,7 +658,7 @@ public:
          exit(123);
       }
 
-      if  (!fFlags->fCalib) {
+      if (!fFlags->fCalibFineTime) {
          std::string fine_time_json = fCfm->GetFilename("dltdc", "finetime", runinfo->fRunNo, "json");
          bool load_ok = fU->LoadCalib(fine_time_json.c_str());
 
@@ -651,9 +666,12 @@ public:
 
          //bool load_ok = fU->LoadCalib(runinfo->fRunNo);
          if (!load_ok) {
-            printf("Cannot load TDC calibration for run %d\n", runinfo->fRunNo);
+            printf("Cannot load TDC fine time calibration for run %d\n", runinfo->fRunNo);
             exit(123);
          }
+      }
+
+      if (!fFlags->fCalibOffsets) {
 
          if (runinfo->fRunNo > 906000) {
 
@@ -750,6 +768,7 @@ public:
                fU->fCalib[11].tepos.fOffsetNs = fU->fCalib[11].teneg.fOffsetNs = 0; // nc
             }
          } else {
+#if 0
             if (runinfo->fRunNo >= 22) {
                // number from pulser tdc chanNN LE table:
                fU->fCalib[16].lepos.fOffsetNs = fU->fCalib[16].leneg.fOffsetNs  =  0;     // chan1
@@ -776,6 +795,18 @@ public:
                fU->fCalib[32].tepos.fOffsetNs = fU->fCalib[32].teneg.fOffsetNs -= -0.729; // chanA
                fU->fCalib[33].tepos.fOffsetNs = fU->fCalib[33].teneg.fOffsetNs -=  0.373; // chanB
                fU->fCalib[34].tepos.fOffsetNs = fU->fCalib[34].teneg.fOffsetNs -= -0.168; // chanT
+            }
+#endif
+
+            std::string offset_json = fCfm->GetFilename("dltdc", "offsets", runinfo->fRunNo, "json");
+
+            bool load_ok = fU->LoadOffsets(offset_json.c_str());
+            
+            printf("json file %s load_ok %d\n", offset_json.c_str(), load_ok);
+            
+            if (!load_ok) {
+               printf("Cannot load TDC offset calibration for run %d\n", runinfo->fRunNo);
+               exit(123);
             }
          }
       }
@@ -1125,13 +1156,18 @@ public:
       if (fTrace)
          printf("DlTdcModule::EndRun, run %d\n", runinfo->fRunNo);
 
-      if (fFlags->fCalib) {
-         printf("DlTdcModule::EndRun: Saving TDC calibrations for run %d\n", runinfo->fRunNo);
+      if (fFlags->fCalibFineTime) {
+         printf("DlTdcModule::EndRun: Saving TDC fine time calibrations for run %d\n", runinfo->fRunNo);
          fU->UpdateCalib();
          fU->SaveCalib(runinfo->fRunNo);
       }
 
-      printf("Run %d coincidences: 1-4: %d, 2-3: %d, 5-8: %d, 7-8: %d, 14-58: %d, 23-58: %d, 14-67: %d, 23-67: %d, A: %d/%d, B: %d/%d, T: %d/%d\n",
+      if (fFlags->fCalibOffsets) {
+         printf("DlTdcModule::EndRun: Saving TDC offsets calibrations for run %d\n", runinfo->fRunNo);
+         //fU->SaveOffsets(runinfo->fRunNo);
+      }
+
+      printf("Run %d coincidences: 1-4: %d, 2-3: %d, 5-8: %d, 6-7: %d, 14-58: %d, 23-58: %d, 14-67: %d, 23-67: %d, A: %d/%d, B: %d/%d, T: %d/%d\n",
              runinfo->fRunNo,
              fCount14,
              fCount23,
@@ -1158,6 +1194,13 @@ public:
 
       printf("Run %d pulser:\n", runinfo->fRunNo);
 
+      std::string s;
+      s += "{\n";
+      s += "\"dltdc_num_channels\":";
+      s += toString(MAX_TDC_CHAN+1);
+      s += ",\n";
+      s += "\"offset_ns\":[\n";
+
       for (size_t ch=0; ch<=MAX_TDC_CHAN; ch++) {
          printf("tdc chan%02zu: LE %8.3f, TE %8.3f, Width: %8.3f, RMS %.3f %.3f %.3f\n",
                 ch,
@@ -1167,7 +1210,22 @@ public:
                 fHpulserLe[ch]->GetRMS(),
                 fHpulserTe[ch]->GetRMS(),
                 fHpulserWi[ch]->GetRMS());
+
+         if (ch > 0)
+            s += ",\n";
+         s += "[";
+         s += toString("%8.3f, ", fHpulserLe[ch]->GetMean());
+         s += toString("%8.3f, ", fHpulserTe[ch]->GetMean());
+         s += toString("%8.3f, ", fHpulserWi[ch]->GetMean());
+         s += "   ";
+         s += toString("%.3f, ",  fHpulserLe[ch]->GetRMS());
+         s += toString("%.3f, ",  fHpulserTe[ch]->GetRMS());
+         s += toString("%.3f",    fHpulserWi[ch]->GetRMS());
+         s += "]";
       }
+
+      s += "\n";
+      s += "],\n";
 
          printf("tdc sumary: LE %8.3f, LE %8.3f, Width: %8.3f, RMS %.3f %.3f %.3f\n",
                 fHpulserLeAll->GetMean(),
@@ -1176,6 +1234,30 @@ public:
                 fHpulserLeAll->GetRMS(),
                 fHpulserTeAll->GetRMS(),
                 fHpulserWiAll->GetRMS());
+
+      s += "\"offset_all_ns\":[\n";
+      s += " ";
+      s += toString("%8.3f, ", fHpulserLeAll->GetMean());
+      s += toString("%8.3f, ", fHpulserTeAll->GetMean());
+      s += toString("%8.3f, ", fHpulserWiAll->GetMean());
+      s += "   ";
+      s += toString("%.3f, ",  fHpulserLeAll->GetRMS());
+      s += toString("%.3f, ",  fHpulserTeAll->GetRMS());
+      s += toString("%.3f",    fHpulserWiAll->GetRMS());
+      s += "]\n";
+      s += "},\n";
+
+      printf("offsets json:\n%s\n", s.c_str());
+
+      if (fFlags->fCalibOffsets) {
+         char fname[256];
+         sprintf(fname, "dlcfmdb/dltdc_offsets_%06d.json", runinfo->fRunNo);
+         FILE *fp = fopen(fname, "w");
+         if (fp) {
+            fprintf(fp, "%s", s.c_str());
+            fclose(fp);
+         }
+      }
 
          printf("cuts: 2367: %d, w1 %d, w4 %d, w5 %d, w8 %d\n", fCountCut2367, fCountCut1, fCountCut4, fCountCut5, fCountCut8);
 
@@ -2075,7 +2157,7 @@ public:
       
       TMBank* tdcbank = event->FindBank("CBT2");
 
-      bool calib = fFlags->fCalib;
+      bool calib = fFlags->fCalibFineTime;
 
       if (tdcbank) {
          int tdc_nw64 = tdcbank->data_size/8;
@@ -2218,8 +2300,10 @@ public:
    void Usage()
    {
       printf("DlTdcModuleFactory flags:\n");
-      printf("--dltdc -- enable dltdc code\n");
-      printf("--dltdc-calib -- calibrate dltdc\n");
+      printf("--dltdc -- enable dltdc code (default)\n");
+      printf("--no-dltdc -- disable dltdc code\n");
+      printf("--dltdc-finetime -- calibrate dltdc fine time\n");
+      printf("--dltdc-offsets  -- calibrate dltdc offsets\n");
       printf("--dltdc-debug -- print detailed information\n");
       printf("--dltdc-print -- print events\n");
       printf("--dltdc-twc -- get twc W parameter");
@@ -2230,11 +2314,17 @@ public:
       printf("DlTdcModuleFactory::Init!\n");
 
       for (unsigned i=0; i<args.size(); i++) {
+         if (args[i] == "--no-dltdc") {
+            fFlags.fEnabled = false;
+         }
          if (args[i] == "--dltdc") {
             fFlags.fEnabled = true;
          }
-         if (args[i] == "--dltdc-calib") {
-            fFlags.fCalib = true;
+         if (args[i] == "--dltdc-finetime") {
+            fFlags.fCalibFineTime = true;
+         }
+         if (args[i] == "--dltdc-offsets") {
+            fFlags.fCalibOffsets = true;
          }
          if (args[i] == "--dltdc-triggered") {
             fFlags.fTriggered = true;
