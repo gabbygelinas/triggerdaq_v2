@@ -11,6 +11,28 @@
 #include "unpack_cb.h"
 #include "manalyzer.h"
 
+#include "DlTdcEvent.h"
+
+class DlTdcEventFlow: public TAFlowEvent
+{
+public:
+   DlTdcEvent* fDlTdcEvent;
+   
+public:
+   DlTdcEventFlow(TAFlowEvent* flow, DlTdcEvent* e) // ctor
+      : TAFlowEvent(flow)
+   {
+      fDlTdcEvent = e;
+   }
+
+   ~DlTdcEventFlow() // dtor
+   {
+      if (fDlTdcEvent)
+         delete fDlTdcEvent;
+      fDlTdcEvent = NULL;
+   }
+};
+
 class CbHitsFlow: public TAFlowEvent
 {
 public:
