@@ -54,7 +54,7 @@ static std::string toString(const char* fmt, double v)
 class DlTdcFlags
 {
 public:
-   bool fEnabled = true;
+   bool fEnabled = false;
    bool fTriggered = false;
    bool fDebug = false;
    bool fPrint = false;
@@ -130,7 +130,6 @@ class DlTdc4Module: public TARunObject
 {
 public:
    DlTdcFlags* fFlags = NULL;
-   //DlTdcUnpack* fU = NULL;
    
 #ifdef HAVE_ROOT
 #if 0
@@ -415,8 +414,6 @@ public:
 
    double fPrevEventTimeSec = 0;
 
-   DlTdcEvent *fCt = NULL;
-
    DlTdcMap4 *fMap4 = NULL;
 
    bool fTrace = false;
@@ -427,14 +424,12 @@ public:
       : TARunObject(runinfo)
    {
       if (fTrace)
-         printf("DlTdcModule::ctor!\n");
+         printf("DlTdc4Module::ctor!\n");
 
       fModuleName = "dltdc4_module";
       fFlags   = flags;
 
       fCfm = new Ncfm("dlcfmdb");
-
-      //fU = new DlTdcUnpack(NUM_TDC_CHAN);
 
       fMap4 = new DlTdcMap4();
    }
@@ -442,12 +437,7 @@ public:
    ~DlTdc4Module()
    {
       if (fTrace)
-         printf("DlTdcModule::dtor!\n");
-
-      //if (fU) {
-      //   delete fU;
-      //   fU = NULL;
-      //}
+         printf("DlTdc4Module::dtor!\n");
 
       if (fMap4) {
          delete fMap4;
@@ -458,17 +448,15 @@ public:
          delete fCfm;
          fCfm = NULL;
       }
-
-      if (fCt) {
-         delete fCt;
-         fCt = NULL;
-      }
    }
 
    void BeginRun(TARunInfo* runinfo)
    {
       if (fTrace)
          printf("DlTdcModule::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
+
+      if (!fFlags->fEnabled)
+         return;
 
       bool conf_ok = fMap4->Init(runinfo->fRunNo);
       if (!conf_ok) {
@@ -721,6 +709,9 @@ public:
       if (fTrace)
          printf("DlTdcModule::EndRun, run %d\n", runinfo->fRunNo);
 
+      if (!fFlags->fEnabled)
+         return;
+
       printf("Run %d coincidences: 1-4: %d, 2-3: %d, 5-8: %d, 6-7: %d, 14-58: %d, 23-58: %d, 14-67: %d, 23-67: %d, A: %d/%d, B: %d/%d, T: %d/%d\n",
              runinfo->fRunNo,
              fCount14,
@@ -926,7 +917,7 @@ public:
       }
 
       // SET UP TIME WALK CORRECT VALUES //
-      double W_twc = 8.0;
+      //double W_twc = 8.0;
 
       // OPTIMIZED WITH CUT
       double W1_twc = 9.32; // 8.41;
@@ -1586,6 +1577,9 @@ public:
 
    TAFlowEvent* AnalyzeFlowEvent(TARunInfo* runinfo, TAFlags* flags, TAFlowEvent* flow)
    {
+      if (!fFlags->fEnabled)
+         return flow;
+
       DlTdcEventFlow* f = flow->Find<DlTdcEventFlow>();
       if (f) {
          AnalyzeTdcEvent(*f->fDlTdcEvent);
