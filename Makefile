@@ -24,7 +24,7 @@ CXXFLAGS += -DHAVE_ROOT $(shell root-config --cflags)
 RLIBS    += -L$(ROOTSYS)/lib -lCore -lHist -lRIO -lGraf -lGui -lGpad -lRHTTP -lMathCore -lImt -lMatrix -lThread -lMultiProc -lNet
 endif
 
-MODULES += unpack_cb_module.o ncfm.o unpack_cb.o cbko_module.o dltdc_module.o dltdc.o dltdc4_module.o DlTdcEvent.o
+MODULES += unpack_cb_module.o ncfm.o unpack_cb.o cbko_module.o dltdc_module.o dltdc.o dltdc4_module.o dltdc8_module.o DlTdcEvent.o
 
 ALL     += dlana.exe
 #ALL     += ncfm.exe
