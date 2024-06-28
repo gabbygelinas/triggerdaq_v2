@@ -61,9 +61,6 @@ public:
    bool fTWC = false;
 };
 
-#define NUM_TDC_CHAN (32+3)
-#define MAX_TDC_CHAN (NUM_TDC_CHAN-1)
-
 class DlTdcMap8
 {
 public:
@@ -82,38 +79,38 @@ public:
 
 bool DlTdcMap8::Init(int runno)
 {
-   fMap.resize(16);
+   fMap.resize(16+1);
 
    printf("DlTdcMap8 for run %d!\n", runno);
-   fMap[0] = 16; // chan1
-   fMap[1] = 17; // chan2
-   fMap[2] = 22; // chan3
-   fMap[3] = 23; // chan4
-   fMap[4] = 26; // chan5
-   fMap[5] = 27; // chan6
-   fMap[6] = 30; // chan7
-   fMap[7] = 31; // chan8
+   fMap[1] = 16; // chan1
+   fMap[2] = 17; // chan2
+   fMap[3] = 22; // chan3
+   fMap[4] = 23; // chan4
+   fMap[5] = 26; // chan5
+   fMap[6] = 27; // chan6
+   fMap[7] = 30; // chan7
+   fMap[8] = 31; // chan8
 
-   fMap[8]  = 18;
-   fMap[9]  = 19;
-   fMap[10] = 20;
-   fMap[11] = 21;
-   fMap[12] = 24;
-   fMap[13] = 25;
-   fMap[14] = 28;
-   fMap[15] = 29;
+   fMap[9]  = 18;
+   fMap[10]  = 19;
+   fMap[11] = 20;
+   fMap[12] = 21;
+   fMap[13] = 24;
+   fMap[14] = 25;
+   fMap[15] = 28;
+   fMap[16] = 29;
 
-   fPair1.resize(8);
-   fPair2.resize(8);
+   fPair1.resize(8+1);
+   fPair2.resize(8+1);
 
-   fPair1[0] =  0; fPair2[0] =  3; // chan14
-   fPair1[1] =  1; fPair2[1] =  2; // chan23
-   fPair1[2] =  4; fPair2[2] =  7; // chan58
-   fPair1[3] =  5; fPair2[3] =  6; // chan67
-   fPair1[4] =  8; fPair2[4] = 11;
-   fPair1[5] =  9; fPair2[5] = 10;
-   fPair1[6] = 12; fPair2[6] = 15;
-   fPair1[7] = 13; fPair2[7] = 14;
+   fPair1[1] =  1; fPair2[1] =  4; // chan14
+   fPair1[2] =  2; fPair2[2] =  3; // chan23
+   fPair1[3] =  5; fPair2[3] =  8; // chan58
+   fPair1[4] =  6; fPair2[4] =  7; // chan67
+   fPair1[5] =  9; fPair2[5] = 12;
+   fPair1[6] = 10; fPair2[6] = 11;
+   fPair1[7] = 13; fPair2[7] = 16;
+   fPair1[8] = 14; fPair2[8] = 15;
 
    return true;
 };
@@ -398,33 +395,39 @@ public:
       fHt78ns_cut = new TH1D("t78ns_cut", "sipm board 4, t8-t7, ns with cut", 200, -10, 10);
 #endif
 
-      for (size_t i=0; i<fMap8->fMap.size(); i++) {
+      fHw_ns.resize(fMap8->fMap.size() + 1);
+
+      for (size_t i=1; i<fMap8->fMap.size(); i++) {
          char name[256];
          char title[256];
 
          sprintf(name, "dltdc8_w%02d_ns", (int)i);
          sprintf(title, "pulse width chan %2d, ns", (int)i);
-         fHw_ns.push_back(new TH1D(name, title, 100, 0, 100));
+         fHw_ns[i] = new TH1D(name, title, 100, 0, 100);
       }
          
-      for (size_t i=0; i<fMap8->fMap.size(); i++) {
+      fHw_ns_cut.resize(fMap8->fMap.size() + 1);
+
+      for (size_t i=1; i<fMap8->fMap.size(); i++) {
          char name[256];
          char title[256];
 
          sprintf(name, "dltdc8_w%02d_ns_cut", (int)i);
          sprintf(title, "pulse width chan %2d with pulse height cut, ns", (int)i);
-         fHw_ns_cut.push_back(new TH1D(name, title, 100, 0, 100));
+         fHw_ns_cut[i] = new TH1D(name, title, 100, 0, 100);
       }
 
-      fHw_ns_chanmap = new TH2D("dltdc8_w_ns_chanmap", "Pulse width, ns, for each channel", fMap8->fMap.size(), -0.5, fMap8->fMap.size()-0.5, 100, 0, 100);
+      fHw_ns_chanmap = new TH2D("dltdc8_w_ns_chanmap", "Pulse width, ns, for each channel", fMap8->fMap.size(), 0.5, fMap8->fMap.size()+0.5, 100, 0, 100);
 
-      fHw_ns_chanmap_cut = new TH2D("dltdc8_w_ns_chanmap_cut", "Pulse width, ns, for each channel", fMap8->fMap.size(), -0.5, fMap8->fMap.size()-0.5, 100, 0, 100);
+      fHw_ns_chanmap_cut = new TH2D("dltdc8_w_ns_chanmap_cut", "Pulse width, ns, for each channel", fMap8->fMap.size(), 0.5, fMap8->fMap.size()+0.5, 100, 0, 100);
 
       fHwAns = new TH1D("dltdc8_wA_ns", "width of A, ns", 100, 0, 100);
       fHwBns = new TH1D("dltdc8_wB_ns", "width of B, ns", 100, 0, 100);
       fHwTns = new TH1D("dltdc8_wT_ns", "width of T, ns", 100, 0, 100);
 
-      for (size_t p=0; p<fMap8->fPair1.size(); p++) {
+      fHwpair_ns.resize(fMap8->fPair1.size() + 1);
+
+      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
          int c1 = fMap8->fPair1[p];
          int c2 = fMap8->fPair2[p];
 
@@ -433,10 +436,12 @@ public:
 
          sprintf(name, "dltdc8_pair%d_w_%02d_%02d_ns", (int)p, c1, c2);
          sprintf(title, "pair %d pulse width chan %2d vs chan %2d, ns", (int)p, c2, c1);
-         fHwpair_ns.push_back(new TH2D(name, title, 100, 0, 100, 100, 0, 100));
+         fHwpair_ns[p] = new TH2D(name, title, 100, 0, 100, 100, 0, 100);
       }
 
-      for (size_t p=0; p<fMap8->fPair1.size(); p++) {
+      fHtpair_ns.resize(fMap8->fPair1.size() + 1);
+
+      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
          int c1 = fMap8->fPair1[p];
          int c2 = fMap8->fPair2[p];
 
@@ -445,10 +450,13 @@ public:
 
          sprintf(name, "dltdc8_pair%d_t_%02d_%02d_ns", (int)p, c1, c2);
          sprintf(title, "pair %d time difference chan %2d minus %2d, ns", (int)p, c2, c1);
-         fHtpair_ns.push_back(new TH1D(name, title, 200, -10, 10));
+         fHtpair_ns[p] = new TH1D(name, title, 200, -10, 10);
       }
 
-      for (size_t p=0; p<fMap8->fPair1.size(); p++) {
+      fHtpair_w1_ns.resize(fMap8->fPair1.size() + 1);
+      fHtpair_w2_ns.resize(fMap8->fPair1.size() + 1);
+
+      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
          int c1 = fMap8->fPair1[p];
          int c2 = fMap8->fPair2[p];
 
@@ -457,14 +465,17 @@ public:
 
          sprintf(name, "dltdc8_pair%d_t_w1_%02d_%02d_ns", (int)p, c1, c2);
          sprintf(title, "pair %d time difference chan %2d minus %2d, ns vs pulse width chan %2d", (int)p, c2, c1, c1);
-         fHtpair_w1_ns.push_back(new TH2D(name, title, 100, 0, 100, 200, -10, 10));
+         fHtpair_w1_ns[p] = new TH2D(name, title, 100, 0, 100, 200, -10, 10);
 
          sprintf(name, "dltdc8_pair%d_t_w2_%02d_%02d_ns", (int)p, c1, c2);
          sprintf(title, "pair %d time difference chan %2d minus %2d, ns vs pulse width chan %2d", (int)p, c2, c1, c2);
-         fHtpair_w2_ns.push_back(new TH2D(name, title, 100, 0, 100, 200, -10, 10));
+         fHtpair_w2_ns[p] = new TH2D(name, title, 100, 0, 100, 200, -10, 10);
       }
 
-      for (size_t p=0; p<fMap8->fPair1.size(); p++) {
+      fHtpair_w1_ns_cut_w2.resize(fMap8->fPair1.size() + 1);
+      fHtpair_w2_ns_cut_w1.resize(fMap8->fPair1.size() + 1);
+
+      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
          int c1 = fMap8->fPair1[p];
          int c2 = fMap8->fPair2[p];
 
@@ -473,14 +484,16 @@ public:
 
          sprintf(name, "dltdc8_pair%d_t_w1_%02d_%02d_ns_cut_w2", (int)p, c1, c2);
          sprintf(title, "pair %d time difference chan %2d minus %2d, ns vs pulse width chan %2d, cut on width of %2d", (int)p, c2, c1, c1, c2);
-         fHtpair_w1_ns_cut_w2.push_back(new TH2D(name, title, 100, 0, 100, 200, -10, 10));
+         fHtpair_w1_ns_cut_w2[p] = new TH2D(name, title, 100, 0, 100, 200, -10, 10);
 
          sprintf(name, "dltdc8_pair%d_t_w2_%02d_%02d_ns_cut_w1", (int)p, c1, c2);
          sprintf(title, "pair %d time difference chan %2d minus %2d, ns vs pulse width chan %2d, cut on width of %2d", (int)p, c2, c1, c2, c1);
-         fHtpair_w2_ns_cut_w1.push_back(new TH2D(name, title, 100, 0, 100, 200, -10, 10));
+         fHtpair_w2_ns_cut_w1[p] = new TH2D(name, title, 100, 0, 100, 200, -10, 10);
       }
 
-      for (size_t p=0; p<fMap8->fPair1.size(); p++) {
+      fHtpair_ns_cut.resize(fMap8->fPair1.size() + 1);
+
+      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
          int c1 = fMap8->fPair1[p];
          int c2 = fMap8->fPair2[p];
 
@@ -489,10 +502,13 @@ public:
 
          sprintf(name, "dltdc8_pair%d_t_%02d_%02d_ns_cut", (int)p, c1, c2);
          sprintf(title, "pair %d time difference chan %2d minus %2d, ns, with cut on width", (int)p, c2, c1);
-         fHtpair_ns_cut.push_back(new TH1D(name, title, 200, -10, 10));
+         fHtpair_ns_cut[p] = new TH1D(name, title, 200, -10, 10);
       }
 
-      for (size_t p=0; p<fMap8->fPair1.size(); p++) {
+      fHtpair_w1_ns_cut_w2_twc.resize(fMap8->fPair1.size() + 1);
+      fHtpair_w2_ns_cut_w1_twc.resize(fMap8->fPair1.size() + 1);
+
+      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
          int c1 = fMap8->fPair1[p];
          int c2 = fMap8->fPair2[p];
 
@@ -501,14 +517,16 @@ public:
 
          sprintf(name, "dltdc8_pair%d_t_w1_%02d_%02d_ns_twc", (int)p, c1, c2);
          sprintf(title, "pair %d time difference chan %2d minus %2d, ns vs pulse width chan %2d, cut on width of %2d, with time walk correction", (int)p, c2, c1, c1, c2);
-         fHtpair_w1_ns_cut_w2_twc.push_back(new TH2D(name, title, 100, 0, 100, 200, -10, 10));
+         fHtpair_w1_ns_cut_w2_twc[p] = new TH2D(name, title, 100, 0, 100, 200, -10, 10);
 
          sprintf(name, "dltdc8_pair%d_t_w2_%02d_%02d_ns_twc", (int)p, c1, c2);
          sprintf(title, "pair %d time difference chan %2d minus %2d, ns vs pulse width chan %2d, cut on width of %2d, with time walk correction", (int)p, c2, c1, c2, c1);
-         fHtpair_w2_ns_cut_w1_twc.push_back(new TH2D(name, title, 100, 0, 100, 200, -10, 10));
+         fHtpair_w2_ns_cut_w1_twc[p] = new TH2D(name, title, 100, 0, 100, 200, -10, 10);
       }
 
-      for (size_t p=0; p<fMap8->fPair1.size(); p++) {
+      fHtpair_ns_cut_twc.resize(fMap8->fPair1.size() + 1);
+
+      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
          int c1 = fMap8->fPair1[p];
          int c2 = fMap8->fPair2[p];
 
@@ -517,7 +535,7 @@ public:
 
          sprintf(name, "dltdc8_pair%d_t_%02d_%02d_ns_cut_twc", (int)p, c1, c2);
          sprintf(title, "pair %d time difference chan %2d minus %2d, ns, with cut on width and time walk correction", (int)p, c2, c1);
-         fHtpair_ns_cut_twc.push_back(new TH1D(name, title, 200, -10, 10));
+         fHtpair_ns_cut_twc[p] = new TH1D(name, title, 200, -10, 10);
       }
 
 #if 0
@@ -760,7 +778,7 @@ public:
    {
       if (fFlags->fDebug) {
          std::string s = "";
-         for (size_t i=0; i<fMap8->fMap.size(); i++) {
+         for (size_t i=1; i<fMap8->fMap.size(); i++) {
             int tdc_ch = fMap8->fMap[i];
             if (t.HaveCh(tdc_ch))
                s += "H";
@@ -803,9 +821,9 @@ public:
 
       ///////// COMPUTE WIDTH AND PULSE HEIGHT ///////////
 
-      std::vector<double> ww_ns(fMap8->fMap.size());
+      std::vector<double> ww_ns(fMap8->fMap.size() + 1);
 
-      for (size_t i=0; i<fMap8->fMap.size(); i++) {
+      for (size_t i=1; i<fMap8->fMap.size(); i++) {
          int tdc_ch = fMap8->fMap[i];
 
          double w_ns = -9999;
@@ -927,7 +945,7 @@ public:
 
       ///////// SINGLES ///////////
 
-      for (size_t i=0; i<fMap8->fMap.size(); i++) {
+      for (size_t i=1; i<fMap8->fMap.size(); i++) {
          if (ww_ns[i] > 0) {
             fHw_ns[i]->Fill(ww_ns[i]);
             fHw_ns_chanmap->Fill(i, ww_ns[i]);
@@ -984,10 +1002,10 @@ public:
       std::vector<double> ttpair_ns;
       std::vector<double> ttpair_ns_twc;
 
-      ttpair_ns.resize(fMap8->fPair1.size());
-      ttpair_ns_twc.resize(fMap8->fPair1.size());
+      ttpair_ns.resize(fMap8->fPair1.size() + 1);
+      ttpair_ns_twc.resize(fMap8->fPair1.size() + 1);
 
-      for (size_t p=0; p<fMap8->fPair1.size(); p++) {
+      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
          int c1 = fMap8->fPair1[p];
          int c2 = fMap8->fPair2[p];
          double tpair_ns = -9999;
