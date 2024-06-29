@@ -79,38 +79,75 @@ public:
 
 bool DlTdcMap8::Init(int runno)
 {
-   fMap.resize(16+1);
+   if (runno < 156) {
+      printf("DlTdcMap8 old 1458 map for run %d!\n", runno);
 
-   printf("DlTdcMap8 for run %d!\n", runno);
-   fMap[1] = 16; // chan1
-   fMap[2] = 17; // chan2
-   fMap[3] = 22; // chan3
-   fMap[4] = 23; // chan4
-   fMap[5] = 26; // chan5
-   fMap[6] = 27; // chan6
-   fMap[7] = 30; // chan7
-   fMap[8] = 31; // chan8
+      fMap.resize(16+1);
+      
+      fMap[1] = 16; // chan1
+      fMap[2] = 17; // chan2
+      fMap[3] = 22; // chan3
+      fMap[4] = 23; // chan4
+      fMap[5] = 26; // chan5
+      fMap[6] = 27; // chan6
+      fMap[7] = 30; // chan7
+      fMap[8] = 31; // chan8
+      
+      fMap[9]  = 18;
+      fMap[10] = 19;
+      fMap[11] = 20;
+      fMap[12] = 21;
+      fMap[13] = 24;
+      fMap[14] = 25;
+      fMap[15] = 28;
+      fMap[16] = 29;
+      
+      fPair1.resize(8+1);
+      fPair2.resize(8+1);
+      
+      fPair1[1] =  1; fPair2[1] =  4; // chan14
+      fPair1[2] =  2; fPair2[2] =  3; // chan23
+      fPair1[3] =  5; fPair2[3] =  8; // chan58
+      fPair1[4] =  6; fPair2[4] =  7; // chan67
+      fPair1[5] =  9; fPair2[5] = 12;
+      fPair1[6] = 10; fPair2[6] = 11;
+      fPair1[7] = 13; fPair2[7] = 16;
+      fPair1[8] = 14; fPair2[8] = 15;
+   } else {
+      printf("DlTdcMap8 for run %d!\n", runno);
 
-   fMap[9]  = 18;
-   fMap[10]  = 19;
-   fMap[11] = 20;
-   fMap[12] = 21;
-   fMap[13] = 24;
-   fMap[14] = 25;
-   fMap[15] = 28;
-   fMap[16] = 29;
-
-   fPair1.resize(8+1);
-   fPair2.resize(8+1);
-
-   fPair1[1] =  1; fPair2[1] =  4; // chan14
-   fPair1[2] =  2; fPair2[2] =  3; // chan23
-   fPair1[3] =  5; fPair2[3] =  8; // chan58
-   fPair1[4] =  6; fPair2[4] =  7; // chan67
-   fPair1[5] =  9; fPair2[5] = 12;
-   fPair1[6] = 10; fPair2[6] = 11;
-   fPair1[7] = 13; fPair2[7] = 16;
-   fPair1[8] = 14; fPair2[8] = 15;
+      fMap.resize(16+1);
+      
+      fMap[1]  =  0; // chan1
+      fMap[2]  =  1; // chan2
+      fMap[3]  = 10; // chan3
+      fMap[4]  = 11; // chan4
+      fMap[5]  =  2 + 16; // chan5
+      fMap[6]  =  3 + 16; // chan6
+      fMap[7]  =  8 + 16; // chan7
+      fMap[8]  =  9 + 16; // chan8
+      
+      fMap[9]  = 15;
+      fMap[10] = 14;
+      fMap[11] =  7;
+      fMap[12] =  6;
+      fMap[13] = 13 + 16;
+      fMap[14] = 12 + 16;
+      fMap[15] =  5 + 16;
+      fMap[16] =  4 + 16;
+      
+      fPair1.resize(8+1);
+      fPair2.resize(8+1);
+      
+      fPair1[1] =  1; fPair2[1] =  9; // chan14
+      fPair1[2] =  2; fPair2[2] = 10; // chan23
+      fPair1[3] =  3; fPair2[3] = 11; // chan58
+      fPair1[4] =  4; fPair2[4] = 12; // chan67
+      fPair1[5] =  5; fPair2[5] = 13;
+      fPair1[6] =  6; fPair2[6] = 14;
+      fPair1[7] =  7; fPair2[7] = 15;
+      fPair1[8] =  8; fPair2[8] = 16;
+   }
 
    return true;
 };
