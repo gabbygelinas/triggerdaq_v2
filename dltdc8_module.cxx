@@ -1045,43 +1045,45 @@ public:
       for (size_t p=1; p<fMap8->fPair1.size(); p++) {
          int c1 = fMap8->fPair1[p];
          int c2 = fMap8->fPair2[p];
-         double tpair_ns = -9999;
-         double tpair_ns_twc = -9999;
 
-         if (ww_ns[c1]>0 && ww_ns[c2]>0)
-            tpair_ns = subtract_ns(t.GetCh(fMap8->fMap[c2]).fLe, t.GetCh(fMap8->fMap[c1]).fLe);
+         if (ww_ns[c1]>0 && ww_ns[c2]>0) {
+            double tpair_ns = subtract_ns(t.GetCh(fMap8->fMap[c2]).fLe, t.GetCh(fMap8->fMap[c1]).fLe);
+            double tpair_ns_twc = tpair_ns + (ww_twc / sqrt(ww_ns[c1]) - ww_twc / sqrt(ww_ns[c2]));
 
-         tpair_ns_twc = tpair_ns + (ww_twc / sqrt(ww_ns[c1]) - ww_twc / sqrt(ww_ns[c2]));
-
-         //if (fFlags->fPrint) {
-         //   printf("new dlsc event 1*4, le %.9f %.9f sec, diff14 %.0f ns, w1 %.0f, w4 %.0f ns!\n", t.GetCh(CHAN1).fLe.time_sec, t.GetCh(CHAN4).fLe.time_sec, t14_ns, w1_ns, w4_ns);
-         //}
-
-         ttpair_ns[p] = tpair_ns;
-         ttpair_ns_twc[p] = tpair_ns_twc;
-
-         //fCount14++;
-         //fCountMyA++;
-         
-         fHtpair_ns[p]->Fill(tpair_ns);
-         fHwpair_ns[p]->Fill(ww_ns[c1], ww_ns[c2]);
-
-         fHtpair_w1_ns[p]->Fill(ww_ns[c1], tpair_ns);
-         fHtpair_w2_ns[p]->Fill(ww_ns[c2], tpair_ns);
-
-         if (ww_ns[c2] > ww_cut_ns) {
-            fHtpair_w1_ns_cut_w2[p]->Fill(ww_ns[c1], tpair_ns);
-            fHtpair_w1_ns_cut_w2_twc[p]->Fill(ww_ns[c1], tpair_ns_twc);
-         }
-
-         if (ww_ns[c1] > ww_cut_ns) {
-            fHtpair_w2_ns_cut_w1[p]->Fill(ww_ns[c2], tpair_ns);
-            fHtpair_w2_ns_cut_w1_twc[p]->Fill(ww_ns[c2], tpair_ns_twc);
-         }
-
-         if (ww_ns[c1] > ww_cut_ns && ww_ns[c2] > ww_cut_ns) {
-            fHtpair_ns_cut[p]->Fill(tpair_ns);
-            fHtpair_ns_cut_twc[p]->Fill(tpair_ns_twc);
+            //if (fFlags->fPrint) {
+            //   printf("new dlsc event 1*4, le %.9f %.9f sec, diff14 %.0f ns, w1 %.0f, w4 %.0f ns!\n", t.GetCh(CHAN1).fLe.time_sec, t.GetCh(CHAN4).fLe.time_sec, t14_ns, w1_ns, w4_ns);
+            //}
+            
+            ttpair_ns[p] = tpair_ns;
+            ttpair_ns_twc[p] = tpair_ns_twc;
+            
+            //fCount14++;
+            //fCountMyA++;
+            
+            fHtpair_ns[p]->Fill(tpair_ns);
+            
+            if (ww_ns[c1] < ww_cut_ns && ww_ns[c2] < ww_cut_ns) {
+            } else {
+               fHwpair_ns[p]->Fill(ww_ns[c1], ww_ns[c2]);
+            }
+            
+            fHtpair_w1_ns[p]->Fill(ww_ns[c1], tpair_ns);
+            fHtpair_w2_ns[p]->Fill(ww_ns[c2], tpair_ns);
+            
+            if (ww_ns[c2] > ww_cut_ns) {
+               fHtpair_w1_ns_cut_w2[p]->Fill(ww_ns[c1], tpair_ns);
+               fHtpair_w1_ns_cut_w2_twc[p]->Fill(ww_ns[c1], tpair_ns_twc);
+            }
+            
+            if (ww_ns[c1] > ww_cut_ns) {
+               fHtpair_w2_ns_cut_w1[p]->Fill(ww_ns[c2], tpair_ns);
+               fHtpair_w2_ns_cut_w1_twc[p]->Fill(ww_ns[c2], tpair_ns_twc);
+            }
+            
+            if (ww_ns[c1] > ww_cut_ns && ww_ns[c2] > ww_cut_ns) {
+               fHtpair_ns_cut[p]->Fill(tpair_ns);
+               fHtpair_ns_cut_twc[p]->Fill(tpair_ns_twc);
+            }
          }
       }
 
