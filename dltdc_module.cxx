@@ -19,13 +19,10 @@
 
 #include <deque>
 
-#include <TStyle.h>
-
-#ifdef HAVE_ROOT
+#include "TStyle.h"
 #include "TH1D.h"
 #include "TH2D.h"
-#include "TF1.h"
-#endif
+#include "TProfile.h"
 
 #if 0
 static double amin(double a, double b)
@@ -104,6 +101,9 @@ public:
 #ifdef HAVE_ROOT
    TH1D* fHphaseLe[MAX_TDC_CHAN+1];
    TH1D* fHphaseTe[MAX_TDC_CHAN+1];
+
+   std::vector<TProfile*> fHfineBinsLe;
+   std::vector<TProfile*> fHfineBinsTe;
 
    TH1D* fHfineLe[MAX_TDC_CHAN+1];
    TH1D* fHfineTe[MAX_TDC_CHAN+1];
@@ -212,146 +212,18 @@ public:
       }
 
       if (!fFlags->fCalibOffsets) {
-
-         if (runinfo->fRunNo > 906000) {
-
-            // mean of corresponding tNM_ns plot with same sign
-            double xt12 = 3; // pulser run 906008.
-            double xt34 = 2.159;
-            double xt56 = 5.333;
-            double xt78 = -3.452;
-            double xt14 = -0.774;
-            double xt58 = -6.328;
-            double xt1458 = -2.9;
-
-            if (runinfo->fRunNo >= 906028) {
-               // pass1
-               xt12 = 2.792; // pulser run 906028.
-               xt34 = 3.209;
-               xt56 = 2.690;
-               xt78 = -2.563;
-               // pass2
-               xt14 = -0.069;
-               xt58 = -2.337;
-               // pass3
-               xt1458 = -2.614;
-            }
-
-            if (runinfo->fRunNo >= 906041) {
-               // pass1
-               xt12 = 2.792-0.556224+0.042; // pulser run 906042.
-               xt34 = 3.209+0.029908-0.074;
-               xt56 = 2.690-1.881289+0.737;
-               xt78 = -2.563-0.028077+0.193;
-               // pass2
-               xt14 = -0.069-0.332+0.748-0.042;
-               xt58 = -2.337-0.737+1.400-0.737;
-               // pass3
-               xt1458 = -2.614-0.509-0.138+0.674-0.348;
-            }
-
-            fU->fCalib[0].lepos.fOffsetNs = fU->fCalib[0].leneg.fOffsetNs = -3.865; // A
-            fU->fCalib[1].lepos.fOffsetNs = fU->fCalib[1].leneg.fOffsetNs = -1.578; // B
-            fU->fCalib[2].lepos.fOffsetNs = fU->fCalib[2].leneg.fOffsetNs = xt12 + xt14 + xt1458; // chan1
-            fU->fCalib[3].lepos.fOffsetNs = fU->fCalib[3].leneg.fOffsetNs = xt14 + xt1458; // chan2
-            fU->fCalib[4].lepos.fOffsetNs = fU->fCalib[4].leneg.fOffsetNs = xt34 + xt1458; // chan3
-            fU->fCalib[5].lepos.fOffsetNs = fU->fCalib[5].leneg.fOffsetNs = xt1458; // chan4
-            fU->fCalib[6].lepos.fOffsetNs = fU->fCalib[6].leneg.fOffsetNs = xt56 + xt58; // chan5
-            fU->fCalib[7].lepos.fOffsetNs = fU->fCalib[7].leneg.fOffsetNs = xt58; // chan6
-            fU->fCalib[8].lepos.fOffsetNs = fU->fCalib[8].leneg.fOffsetNs = xt78; // chan7
-            fU->fCalib[9].lepos.fOffsetNs = fU->fCalib[9].leneg.fOffsetNs = 0; // chan8
-            fU->fCalib[10].lepos.fOffsetNs = fU->fCalib[10].leneg.fOffsetNs = -4.739; // T
-            fU->fCalib[11].lepos.fOffsetNs = fU->fCalib[11].leneg.fOffsetNs = 0; // nc
-
-            // number from width plot with opposite sign
-            // cosmic run 906005
-            fU->fCalib[0].tepos.fOffsetNs  = fU->fCalib[0].teneg.fOffsetNs  = fU->fCalib[0].lepos.fOffsetNs  -0.100 +3.905; // A
-            fU->fCalib[1].tepos.fOffsetNs  = fU->fCalib[1].teneg.fOffsetNs  = fU->fCalib[1].lepos.fOffsetNs  +1.000 +0.400 -0.120; // B
-            fU->fCalib[2].tepos.fOffsetNs  = fU->fCalib[2].teneg.fOffsetNs  = fU->fCalib[2].lepos.fOffsetNs  -0.600 +1.100; // chan1
-            fU->fCalib[3].tepos.fOffsetNs  = fU->fCalib[3].teneg.fOffsetNs  = fU->fCalib[3].lepos.fOffsetNs  +0.100 +0.300 +3.358; // chan2
-            fU->fCalib[4].tepos.fOffsetNs  = fU->fCalib[4].teneg.fOffsetNs  = fU->fCalib[4].lepos.fOffsetNs  +0.300 +0.600 + 0.400 -1.361; // chan3
-            fU->fCalib[5].tepos.fOffsetNs  = fU->fCalib[5].teneg.fOffsetNs  = fU->fCalib[5].lepos.fOffsetNs  -0.300 +0.100 +3.923; // chan4
-            fU->fCalib[6].tepos.fOffsetNs  = fU->fCalib[6].teneg.fOffsetNs  = fU->fCalib[6].lepos.fOffsetNs  -0.700 +0.900 -0.867; // chan5
-            fU->fCalib[7].tepos.fOffsetNs  = fU->fCalib[7].teneg.fOffsetNs  = fU->fCalib[7].lepos.fOffsetNs  +0.500 +0.300 +3.373; // chan6
-            fU->fCalib[8].tepos.fOffsetNs  = fU->fCalib[8].teneg.fOffsetNs  = fU->fCalib[8].lepos.fOffsetNs  +0.400 +0.100 +3.412; // chan7
-            fU->fCalib[9].tepos.fOffsetNs  = fU->fCalib[9].teneg.fOffsetNs  = fU->fCalib[9].lepos.fOffsetNs  -0.100 +0.500 -0.583; // chan8
-            fU->fCalib[10].tepos.fOffsetNs = fU->fCalib[10].teneg.fOffsetNs = fU->fCalib[10].lepos.fOffsetNs +0.500 +3.951; // T
-            fU->fCalib[11].tepos.fOffsetNs = fU->fCalib[11].teneg.fOffsetNs = fU->fCalib[11].lepos.fOffsetNs +0; // nc
-
-            if (runinfo->fRunNo >= 906095) {
-               // number from pulser tdc chanNN LE table:
-               fU->fCalib[0].lepos.fOffsetNs  = fU->fCalib[0].leneg.fOffsetNs  -= -0.650; // A
-               fU->fCalib[1].lepos.fOffsetNs  = fU->fCalib[1].leneg.fOffsetNs  -=  0.315; // B
-               fU->fCalib[2].lepos.fOffsetNs  = fU->fCalib[2].leneg.fOffsetNs  -=  0.000; // chan1
-               fU->fCalib[3].lepos.fOffsetNs  = fU->fCalib[3].leneg.fOffsetNs  -= -0.424; // chan2
-               fU->fCalib[4].lepos.fOffsetNs  = fU->fCalib[4].leneg.fOffsetNs  -=  0.559; // chan3
-               fU->fCalib[5].lepos.fOffsetNs  = fU->fCalib[5].leneg.fOffsetNs  -=  0.025; // chan4
-               fU->fCalib[6].lepos.fOffsetNs  = fU->fCalib[6].leneg.fOffsetNs  -=  0.234; // chan5
-               fU->fCalib[7].lepos.fOffsetNs  = fU->fCalib[7].leneg.fOffsetNs  -= -0.140; // chan6
-               fU->fCalib[8].lepos.fOffsetNs  = fU->fCalib[8].leneg.fOffsetNs  -= -0.417; // chan7
-               fU->fCalib[9].lepos.fOffsetNs  = fU->fCalib[9].leneg.fOffsetNs  -= -1.040; // chan8
-               fU->fCalib[10].lepos.fOffsetNs = fU->fCalib[10].leneg.fOffsetNs -= -1.330; // T
-               fU->fCalib[11].lepos.fOffsetNs = fU->fCalib[11].leneg.fOffsetNs = 0; // nc
-
-               // number from pulser tdc chanNN TE table:
-               fU->fCalib[0].tepos.fOffsetNs  = fU->fCalib[0].teneg.fOffsetNs  -= -0.057 + 0.442; // A
-               fU->fCalib[1].tepos.fOffsetNs  = fU->fCalib[1].teneg.fOffsetNs  -= -0.313  -0.761; // B
-               fU->fCalib[2].tepos.fOffsetNs  = fU->fCalib[2].teneg.fOffsetNs  -=  0.000; // chan1
-               fU->fCalib[3].tepos.fOffsetNs  = fU->fCalib[3].teneg.fOffsetNs  -= -1.352 + 1.405; // chan2
-               fU->fCalib[4].tepos.fOffsetNs  = fU->fCalib[4].teneg.fOffsetNs  -=  1.250  -0.538; // chan3
-               fU->fCalib[5].tepos.fOffsetNs  = fU->fCalib[5].teneg.fOffsetNs  -= -0.460 + 0.616; // chan4
-               fU->fCalib[6].tepos.fOffsetNs  = fU->fCalib[6].teneg.fOffsetNs  -=  2.412  -1.914; // chan5
-               fU->fCalib[7].tepos.fOffsetNs  = fU->fCalib[7].teneg.fOffsetNs  -= -1.652 + 1.754; // chan6
-               fU->fCalib[8].tepos.fOffsetNs  = fU->fCalib[8].teneg.fOffsetNs  -= -2.276 + 1.783; // chan7
-               fU->fCalib[9].tepos.fOffsetNs  = fU->fCalib[9].teneg.fOffsetNs  -= -2.919 + 0.857 -0.148; // chan8
-               fU->fCalib[10].tepos.fOffsetNs = fU->fCalib[10].teneg.fOffsetNs -= -1.253 + 0.148 -0.148; // T
-               fU->fCalib[11].tepos.fOffsetNs = fU->fCalib[11].teneg.fOffsetNs = 0; // nc
-            }
-         } else {
-#if 0
-            if (runinfo->fRunNo >= 22) {
-               // number from pulser tdc chanNN LE table:
-               fU->fCalib[16].lepos.fOffsetNs = fU->fCalib[16].leneg.fOffsetNs  =  0;     // chan1
-               fU->fCalib[17].lepos.fOffsetNs = fU->fCalib[17].leneg.fOffsetNs -= -0.359; // chan2
-               fU->fCalib[22].lepos.fOffsetNs = fU->fCalib[22].leneg.fOffsetNs -= -1.495; // chan3
-               fU->fCalib[23].lepos.fOffsetNs = fU->fCalib[23].leneg.fOffsetNs -=  0.123; // chan4
-               fU->fCalib[26].lepos.fOffsetNs = fU->fCalib[26].leneg.fOffsetNs -=  0.435; // chan5
-               fU->fCalib[27].lepos.fOffsetNs = fU->fCalib[27].leneg.fOffsetNs -= -1.175; // chan6
-               fU->fCalib[30].lepos.fOffsetNs = fU->fCalib[30].leneg.fOffsetNs -=  0.614; // chan7
-               fU->fCalib[31].lepos.fOffsetNs = fU->fCalib[31].leneg.fOffsetNs -= -0.731; // chan8
-               fU->fCalib[32].lepos.fOffsetNs = fU->fCalib[32].leneg.fOffsetNs -=  2.059; // chanA
-               fU->fCalib[33].lepos.fOffsetNs = fU->fCalib[33].leneg.fOffsetNs -=  0.893; // chanB
-               fU->fCalib[34].lepos.fOffsetNs = fU->fCalib[34].leneg.fOffsetNs -=  2.238; // chanT
-
-               // number from pulser tdc chanNN TE table:
-               fU->fCalib[16].tepos.fOffsetNs = fU->fCalib[16].teneg.fOffsetNs  =  0;     // chan1
-               fU->fCalib[17].tepos.fOffsetNs = fU->fCalib[17].teneg.fOffsetNs -= -1.918; // chan2
-               fU->fCalib[22].tepos.fOffsetNs = fU->fCalib[22].teneg.fOffsetNs -= -1.714; // chan3
-               fU->fCalib[23].tepos.fOffsetNs = fU->fCalib[23].teneg.fOffsetNs -= -1.888; // chan4
-               fU->fCalib[26].tepos.fOffsetNs = fU->fCalib[26].teneg.fOffsetNs -= -1.589; // chan5
-               fU->fCalib[27].tepos.fOffsetNs = fU->fCalib[27].teneg.fOffsetNs -= -2.000; // chan6
-               fU->fCalib[30].tepos.fOffsetNs = fU->fCalib[30].teneg.fOffsetNs -= -1.211; // chan7
-               fU->fCalib[31].tepos.fOffsetNs = fU->fCalib[31].teneg.fOffsetNs -= -1.239; // chan8
-               fU->fCalib[32].tepos.fOffsetNs = fU->fCalib[32].teneg.fOffsetNs -= -0.729; // chanA
-               fU->fCalib[33].tepos.fOffsetNs = fU->fCalib[33].teneg.fOffsetNs -=  0.373; // chanB
-               fU->fCalib[34].tepos.fOffsetNs = fU->fCalib[34].teneg.fOffsetNs -= -0.168; // chanT
-            }
-#endif
-
-            std::string offset_json = fCfm->GetFilename("dltdc", "offsets", runinfo->fRunNo, "json");
-
-            bool load_ok = fU->LoadOffsets(offset_json.c_str());
-            
-            printf("json file %s load_ok %d\n", offset_json.c_str(), load_ok);
-            
-            if (!load_ok) {
-               printf("Cannot load TDC offset calibration for run %d\n", runinfo->fRunNo);
-               exit(123);
-            }
-
+         std::string offset_json = fCfm->GetFilename("dltdc", "offsets", runinfo->fRunNo, "json");
+         
+         bool load_ok = fU->LoadOffsets(offset_json.c_str());
+         
+         printf("json file %s load_ok %d\n", offset_json.c_str(), load_ok);
+         
+         if (!load_ok) {
+            printf("Cannot load TDC offset calibration for run %d\n", runinfo->fRunNo);
+            exit(123);
          }
       }
-
+      
 #if 0
       if (fFlags->fAdd40) {
          // shift B-cable signals
@@ -397,24 +269,26 @@ public:
          char name[256];
          char title[256];
 
-         sprintf(name,  "tdc%02d_phase_le", i);
-         sprintf(title, "tdc%02d_phase_le", i);
+         sprintf(name,  "tdc%02d_fine_bin_le", i);
+         sprintf(title, "tdc%02d_LE fine time bin occupancy", i);
          fHphaseLe[i] = new TH1D(name, title, 101, -50, 50);
 
-         sprintf(name,  "tdc%02d_phase_te", i);
-         sprintf(title, "tdc%02d_phase_te", i);
+         sprintf(name,  "tdc%02d_fine_bin_te", i);
+         sprintf(title, "tdc%02d_TE fine time bin occupancy", i);
          fHphaseTe[i] = new TH1D(name, title, 101, -50, 50);
 
-         sprintf(name,  "tdc%02d_fine_le", i);
-         sprintf(title, "tdc%02d_fine_le, ns", i);
+         BookFineBins(i);
+
+         sprintf(name,  "tdc%02d_fine_time_le", i);
+         sprintf(title, "tdc%02d_LE fine time distribution, ns", i);
          fHfineLe[i] = new TH1D(name, title, 200, -5, 15);
 
-         sprintf(name,  "tdc%02d_fine_te", i);
-         sprintf(title, "tdc%02d_fine_te, ns", i);
+         sprintf(name,  "tdc%02d_fine_time_te", i);
+         sprintf(title, "tdc%02d_TE fine time distribution, ns", i);
          fHfineTe[i] = new TH1D(name, title, 200, -5, 15);
 
          sprintf(name,  "tdc%02d_width_ns", i);
-         sprintf(title, "tdc%02d_width_ns, ns", i);
+         sprintf(title, "tdc%02d pulse width, ns", i);
          fHwidth[i] = new TH1D(name, title, 100, -5, 5);
       }
 
@@ -498,6 +372,10 @@ public:
          }
       }
 #endif
+
+      if (!fFlags->fCalibFineTime) {
+         PlotFineBins();
+      }
    }
 
    void PreEndRun(TARunInfo* runinfo)
@@ -515,6 +393,7 @@ public:
          printf("DlTdcModule::EndRun: Saving TDC fine time calibrations for run %d\n", runinfo->fRunNo);
          fU->UpdateCalib();
          fU->SaveCalib(runinfo->fRunNo);
+         PlotFineBins();
       }
 
       printf("Run %d pulser:\n", runinfo->fRunNo);
@@ -830,6 +709,60 @@ public:
    {
       if (fTrace)
          printf("DlTdcModule::AnalyzeSpecialEvent, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
+   }
+
+   void BookFineBins(int i)
+   {
+      const DlTdcFineCalib* c = &fU->fCalib[i];
+      if (c) {
+         char name[256];
+         char title[256];
+         
+         sprintf(name,  "tdc%02d_fine_bins_le", i);
+         sprintf(title, "tdc%02d_LE fine time bin size, ns", i);
+
+         fHfineBinsLe.push_back(new TProfile(name, title, c->leneg.fBinWidthNs.size()+c->lepos.fBinWidthNs.size()-1, 0.5-c->leneg.fBinWidthNs.size(), +c->lepos.fBinWidthNs.size()-0.5));
+         
+         sprintf(name,  "tdc%02d_fine_bins_te", i);
+         sprintf(title, "tdc%02d_TE fine time bin size, ns", i);
+         
+         fHfineBinsTe.push_back(new TProfile(name, title, c->teneg.fBinWidthNs.size()+c->tepos.fBinWidthNs.size()-1, 0.5-c->teneg.fBinWidthNs.size(), +c->tepos.fBinWidthNs.size()-0.5));
+      } else {
+         fHfineBinsLe.push_back(NULL);
+         fHfineBinsTe.push_back(NULL);
+      }
+   }
+
+   void PlotFineBins()
+   {
+      printf("PlotFineBins!\n");
+
+      for (int i=0; i<(int)fU->fCalib.size(); i++) {
+         const DlTdcFineCalib* c = &fU->fCalib[i];
+         if (c) {
+            TProfile* h = fHfineBinsLe[i];
+            if (h) {
+               for (int j=1; j<(int)c->leneg.fBinWidthNs.size(); j++) {
+                  h->Fill(-j, c->leneg.fBinWidthNs[j]);
+               }
+               
+               for (int j=1; j<(int)c->lepos.fBinWidthNs.size(); j++) {
+                  h->Fill(+j, c->lepos.fBinWidthNs[j]);
+               }
+            }
+ 
+            h = fHfineBinsTe[i];
+            if (h) {
+               for (int j=1; j<(int)c->teneg.fBinWidthNs.size(); j++) {
+                  h->Fill(-j, c->teneg.fBinWidthNs[j]);
+               }
+               
+               for (int j=1; j<(int)c->tepos.fBinWidthNs.size(); j++) {
+                  h->Fill(+j, c->tepos.fBinWidthNs[j]);
+               }
+            }
+         }
+      }
    }
 };
 
