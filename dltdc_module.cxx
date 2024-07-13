@@ -60,6 +60,8 @@ public:
    bool fCalibOffsets  = false;
    bool fDebug = false;
    bool fPrint = false;
+   bool fAdd40 = false;
+   bool fSub40 = false;
 };
 
 #define NUM_TDC_CHAN (32+3)
@@ -346,9 +348,44 @@ public:
                printf("Cannot load TDC offset calibration for run %d\n", runinfo->fRunNo);
                exit(123);
             }
+
          }
       }
 
+#if 0
+      if (fFlags->fAdd40) {
+         // shift B-cable signals
+         for (int i=16; i<32; i++) {
+            fU->fCalib[i].lepos.fOffsetNs += 40.0;
+            fU->fCalib[i].leneg.fOffsetNs += 40.0;
+            fU->fCalib[i].tepos.fOffsetNs += 40.0;
+            fU->fCalib[i].teneg.fOffsetNs += 40.0;
+         }
+         
+         // shift B signal
+         fU->fCalib[33].lepos.fOffsetNs += 40.0;
+         fU->fCalib[33].leneg.fOffsetNs += 40.0;
+         fU->fCalib[33].tepos.fOffsetNs += 40.0;
+         fU->fCalib[33].teneg.fOffsetNs += 40.0;
+      }
+      
+      if (fFlags->fSub40) {
+         // shift B-cable signals
+         for (int i=16; i<32; i++) {
+            fU->fCalib[i].lepos.fOffsetNs -= 40.0;
+            fU->fCalib[i].leneg.fOffsetNs -= 40.0;
+            fU->fCalib[i].tepos.fOffsetNs -= 40.0;
+            fU->fCalib[i].teneg.fOffsetNs -= 40.0;
+         }
+         
+         // shift B signal
+         fU->fCalib[33].lepos.fOffsetNs -= 40.0;
+         fU->fCalib[33].leneg.fOffsetNs -= 40.0;
+         fU->fCalib[33].tepos.fOffsetNs -= 40.0;
+         fU->fCalib[33].teneg.fOffsetNs -= 40.0;
+      }
+#endif
+      
 #ifdef HAVE_ROOT
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
       TDirectory* dir = gDirectory->mkdir("dltdc");
@@ -391,13 +428,22 @@ public:
          char name[256];
          char title[256];
 
+         double shift40 = 0;
+
+         if ((i>=16&&i<32) || (i==33)) { // B cable or B signal
+            if (fFlags->fAdd40)
+               shift40 = +40;
+            if (fFlags->fSub40)
+               shift40 = -40;
+         }
+
          sprintf(name,  "tdc%02d_pulser_le", i);
          sprintf(title, "tdc%02d_pulser_le, ns", i);
-         fHpulserLe[i] = new TH1D(name, title, 400, -40, 40);
+         fHpulserLe[i] = new TH1D(name, title, 400, -40+shift40, 40+shift40);
 
          sprintf(name,  "tdc%02d_pulser_te", i);
          sprintf(title, "tdc%02d_pulser_te, ns", i);
-         fHpulserTe[i] = new TH1D(name, title, 400, -40, 40);
+         fHpulserTe[i] = new TH1D(name, title, 400, -40+shift40, 40+shift40);
 
          sprintf(name,  "tdc%02d_pulser_width", i);
          sprintf(title, "tdc%02d_pulser_width, ns", i);
@@ -472,7 +518,7 @@ public:
       }
 
       printf("Run %d pulser:\n", runinfo->fRunNo);
-      
+
       std::string s;
       s += "{\n";
       s += "\"dltdc_num_channels\":";
@@ -506,13 +552,13 @@ public:
       s += "\n";
       s += "],\n";
 
-         printf("tdc sumary: LE %8.3f, LE %8.3f, Width: %8.3f, RMS %.3f %.3f %.3f\n",
-                fHpulserLeAll->GetMean(),
-                fHpulserTeAll->GetMean(),
-                fHpulserWiAll->GetMean(),
-                fHpulserLeAll->GetRMS(),
-                fHpulserTeAll->GetRMS(),
-                fHpulserWiAll->GetRMS());
+      printf("tdc sumary: LE %8.3f, LE %8.3f, Width: %8.3f, RMS %.3f %.3f %.3f\n",
+             fHpulserLeAll->GetMean(),
+             fHpulserTeAll->GetMean(),
+             fHpulserWiAll->GetMean(),
+             fHpulserLeAll->GetRMS(),
+             fHpulserTeAll->GetRMS(),
+             fHpulserWiAll->GetRMS());
 
       s += "\"offset_all_ns\":[\n";
       s += " ";
@@ -802,6 +848,8 @@ public:
       printf("--dltdc-offsets  -- calibrate dltdc offsets\n");
       printf("--dltdc-debug -- print detailed information\n");
       printf("--dltdc-print -- print events\n");
+      printf("--dltdc-add40 -- add 40 ns to B cable\n");
+      printf("--dltdc-sub40 -- subtract 40 ns from B cable\n");
    }
 
    void Init(const std::vector<std::string> &args)
@@ -827,8 +875,11 @@ public:
          if (args[i] == "--dltdc-debug") {
             fFlags.fDebug = true;
          }
-         if (args[i] == "--dltdc-print") {
-            fFlags.fPrint = true;
+         if (args[i] == "--dltdc-add40") {
+            fFlags.fAdd40 = true;
+         }
+         if (args[i] == "--dltdc-sub40") {
+            fFlags.fSub40 = true;
          }
       }
    }
