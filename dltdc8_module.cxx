@@ -854,7 +854,7 @@ public:
 
       ///////// SET WIDTH CUTOFFS (NS)  /////////
       
-      double ww_cut_ns = 10;
+      double ww_cut_ns = 20;
 
       ///////// COMPUTE WIDTH AND PULSE HEIGHT ///////////
 
