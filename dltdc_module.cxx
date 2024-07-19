@@ -622,11 +622,13 @@ public:
 
             //printf("TTX %.9f %.9f sec, first %.9f, last %.9f sec\n", fCt->min_time_sec, fCt->max_time_sec, fCt->first_time_sec, fCt->last_time_sec);
 
-            if (h.le && hit_dt_ns > 80.0) {
+            //if (h.le && hit_dt_ns > 80.0) {
+
+            if (hit_dt_ns > 80.0) {
                double event_dt_ns = sec_to_ns(h.time_sec - fCt->min_time_sec);
 
 
-               if (0) {
+               if (fFlags->fDebug) {
                   printf("finish event ch %d, lete %d%d, time %.9f sec, max %.9f sec, dt %.3f ns\n", h.ch, h.le, h.te, h.time_sec, fCt->max_time_sec, event_dt_ns);
                   //h.Print();
                   //printf("===\n");
@@ -647,7 +649,7 @@ public:
                   
                   //FinishEventT(fPrevEventTimeSec, *fCt);
 
-                  flow = new DlTdcEventFlow(flow, fCt);
+                  runinfo->AddToFlowQueue(new DlTdcEventFlow(NULL, fCt));
 
                   fCt = new DlTdcEvent();
                   fCt->Init(MAX_TDC_CHAN+1);
