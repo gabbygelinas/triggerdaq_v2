@@ -45,8 +45,8 @@ void DlTdcHit2::AddHit(const DlTdcHit& h)
          } else {
             double te_to_le_ns = sec_to_ns(h.time_sec - fTe.time_sec);
             if (te_to_le_ns < 5.0) {
-               if (complain)
-                  printf("TTT: ch %d: LE-TE-LE, MERGE TE to LE %.3f ns\n", h.ch, te_to_le_ns);
+               //if (complain)
+               //   printf("TTT: ch %d: LE-TE-LE, MERGE TE to LE %.3f ns\n", h.ch, te_to_le_ns);
                fCount = 0;
             } else {
                if (complain)
@@ -59,8 +59,8 @@ void DlTdcHit2::AddHit(const DlTdcHit& h)
       } else {
          double le_le_dt_ns = sec_to_ns(h.time_sec - fLe.time_sec);
          if (le_le_dt_ns < 80.0) {
-            if (complain)
-               printf("TTT: ch %d: LE-LE, LE-LE %.3f ns\n", h.ch, le_le_dt_ns);
+            //if (complain)
+            //   printf("TTT: ch %d: LE-LE %.3f ns\n", h.ch, le_le_dt_ns);
          } else {
             if (complain)
                printf("TTT: ch %d: LE-LE, LE FROM WRONG EVENT, LE-LE %.3f ns, count %d\n", h.ch, le_le_dt_ns, fCount);
@@ -75,7 +75,7 @@ void DlTdcHit2::AddHit(const DlTdcHit& h)
             fWidthNs = subtract_ns(fTe, fLe);
          } else {
             if (complain)
-               printf("TTT: ch %d: TE multiple hit, count %d\n", h.ch, fCount);
+               printf("TTT: ch %d: TE-TE %.3f ns, multiple hit, count %d\n", h.ch, sec_to_ns(h.time_sec - fTe.time_sec), fCount);
          }
          fCount++;
       } else {
