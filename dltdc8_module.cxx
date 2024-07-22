@@ -420,18 +420,6 @@ public:
 
       fHtABns = new TH1D("dltdc8_tABns", "time between 1234 trigger and 4567 trigger, A-B, ns", 200, -10, 10);
 
-#if 0
-      fHt12ns = new TH1D("t12ns", "sipm board 1, t2-t1, ns", 200, -10, 10);
-      fHt34ns = new TH1D("t34ns", "sipm board 2, t4-t3, ns", 200, -10, 10);
-      fHt56ns = new TH1D("t56ns", "sipm board 3, t6-t5, ns", 200, -10, 10);
-      fHt78ns = new TH1D("t78ns", "sipm board 4, t8-t7, ns", 200, -10, 10);
-
-      fHt12ns_cut = new TH1D("t12ns_cut", "sipm board 1, t2-t1, ns with cut", 200, -10, 10);
-      fHt34ns_cut = new TH1D("t34ns_cut", "sipm board 2, t4-t3, ns with cut", 200, -10, 10);
-      fHt56ns_cut = new TH1D("t56ns_cut", "sipm board 3, t6-t5, ns with cut", 200, -10, 10);
-      fHt78ns_cut = new TH1D("t78ns_cut", "sipm board 4, t8-t7, ns with cut", 200, -10, 10);
-#endif
-
       fHw_ns.resize(fMap8->fMap.size() + 1);
 
       for (size_t i=1; i<fMap8->fMap.size(); i++) {
@@ -813,17 +801,54 @@ public:
 
    void AnalyzeTdcEvent(const DlTdcEvent& t)
    {
+      // compute number of fired channels
+
+      if (0) {
+         int nhits = 0;
+         double first_le_sec = 0;
+         double last_le_sec = 0;
+         double last_te_sec = 0;
+         
+         for (size_t i=1; i<fMap8->fMap.size(); i++) {
+            int tdc_ch = fMap8->fMap[i];
+            if (t.HaveCh(tdc_ch)) {
+               double le_sec = t.GetCh(tdc_ch).fLe.time_sec;
+               double te_sec = t.GetCh(tdc_ch).fTe.time_sec;
+               if (first_le_sec==0 || le_sec < first_le_sec) {
+                  first_le_sec = le_sec;
+               }
+               if (last_le_sec==0 || le_sec > last_le_sec) {
+                  last_le_sec = le_sec;
+               }
+               if (last_te_sec==0 || te_sec > last_te_sec) {
+                  last_te_sec = te_sec;
+               }
+               nhits++;
+            } else {
+            }
+         }
+         
+         double le_le_ns = sec_to_ns(last_le_sec-first_le_sec);
+         double le_te_ns = sec_to_ns(last_te_sec-first_le_sec);
+         
+         if (le_le_ns > 20.0)
+            printf("nhits %d, le-le %.3f ns, le-te %.3f ns\n", nhits, le_le_ns, le_te_ns);
+      }
+
       if (fFlags->fDebug) {
+         int nhits = 0;
          std::string s = "";
          for (size_t i=1; i<fMap8->fMap.size(); i++) {
             int tdc_ch = fMap8->fMap[i];
-            if (t.HaveCh(tdc_ch))
+            if (t.HaveCh(tdc_ch)) {
+               nhits++;
                s += "H";
-            else
+            } else {
                s += ".";
+            }
          }
 
-         printf("EVENT %s, ABT %d%d%d\n", s.c_str(), t.HaveCh(fMap8->fChanA), t.HaveCh(fMap8->fChanB), t.HaveCh(fMap8->fChanT));
+         printf("EVENT %s, ABT %d%d%d, %d hits\n", s.c_str(), t.HaveCh(fMap8->fChanA), t.HaveCh(fMap8->fChanB), t.HaveCh(fMap8->fChanT), nhits);
       }
 
       ///////// check for triggered event ///////////
@@ -907,7 +932,7 @@ public:
       if (t.fHits[fMap8->fChanA].fDown) {
          double wA_ns = t.fHits[fMap8->fChanA].fWidthNs;
 
-         if (wA_ns < 0.01) {
+         if (wA_ns < -2.0) {
             printf("WWW: BAD WIDTH chanA %f!\n", wA_ns);
          }
 
@@ -923,7 +948,7 @@ public:
       if (t.fHits[fMap8->fChanB].fDown) {
          double wB_ns = t.fHits[fMap8->fChanB].fWidthNs;
 
-         if (wB_ns < 0.01) {
+         if (wB_ns < -2.0) {
             printf("WWW: BAD WIDTH chanB %f!\n", wB_ns);
          }
 
@@ -939,7 +964,7 @@ public:
       if (t.fHits[fMap8->fChanT].fDown) {
          double wT_ns = t.fHits[fMap8->fChanT].fWidthNs;
 
-         if (wT_ns < 0.01) {
+         if (wT_ns < -2.0) {
             printf("WWW: BAD WIDTH chanT %f!\n", wT_ns);
          }
 
