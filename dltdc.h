@@ -15,6 +15,7 @@ struct DlTdcHit
    int ch = 0;
    bool le = false;
    bool te = false;
+   bool ts0 = false;
    uint32_t coarse = 0;
    int phase = 0;
 
@@ -31,6 +32,7 @@ struct DlTdcHit
       ch = 0;
       le = false;
       te = false;
+      ts0 = false;
       coarse = 0;
       phase = 0;
       coarse_epoch = 0;
@@ -54,18 +56,6 @@ public:
    int    fMaxPhase = 0;
    double fBinMinNs = 0;
    double fBinMaxNs = 0;
-
-   double fFineSum0 = 0;
-   double fFineSum1 = 0;
-   double fFineSum2 = 0;
-
-   double fFineMean = 0;
-   double fFineVar  = 0;
-   double fFineRms  = 0;
-
-   double fFineOffset = 0; // offset we computed and will save to file
-   double fFineOffsetFromFile = 0; // offset applied to data, loaded from file
-
    double fOffsetNs = 0;
 
 public:
