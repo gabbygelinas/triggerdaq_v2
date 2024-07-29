@@ -181,6 +181,8 @@ public:
    std::vector<TH2D*> fHtpair_w1_ns_cut_w2_twc;
    std::vector<TH2D*> fHtpair_w2_ns_cut_w1_twc;
    std::vector<TH1D*> fHtpair_ns_cut_twc;
+   std::vector<TH2D*> fHpairPP;
+   std::vector<TH2D*> fHpairFF;
 
 #if 0
    TH1D* fHt12ns = NULL;
@@ -462,6 +464,28 @@ public:
          sprintf(name, "dltdc8_pair%d_w_%02d_%02d_ns", (int)p, c1, c2);
          sprintf(title, "pair %d pulse width chan %2d vs chan %2d, ns", (int)p, c2, c1);
          fHwpair_ns[p] = new TH2D(name, title, 100, 0, 100, 100, 0, 100);
+      }
+
+      fHpairPP.resize(fMap8->fPair1.size() + 1);
+      fHpairFF.resize(fMap8->fPair1.size() + 1);
+
+      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
+         int c1 = fMap8->fPair1[p];
+         int c2 = fMap8->fPair2[p];
+
+         int tdc1 = fMap8->fMap[c1];
+         int tdc2 = fMap8->fMap[c2];
+
+         char name[256];
+         char title[256];
+
+         sprintf(name, "dltdc8_pair%d_t_%02d_%02d_PP", (int)p, c1, c2);
+         sprintf(title, "pair %d time bin chan %2d vs chan %2d, tdc %2d vs %2d", (int)p, c2, c1, tdc2, tdc1);
+         fHpairPP[p] = new TH2D(name, title, 101, -50.5, 50.5, 101, -50.5, 50.5);
+
+         sprintf(name, "dltdc8_pair%d_t_%02d_%02d_FF", (int)p, c1, c2);
+         sprintf(title, "pair %d fine time chan %2d vs %2d, tdc %2d vs %2d, ns vs ns", (int)p, c2, c1, tdc2, tdc1);
+         fHpairFF[p] = new TH2D(name, title, 200, -5, 15, 200, -5, 15);
       }
 
       fHtpair_ns.resize(fMap8->fPair1.size() + 1);
@@ -880,6 +904,7 @@ public:
       ///////// SET WIDTH CUTOFFS (NS)  /////////
       
       double ww_cut_ns = 20;
+      //double ww_cut_ns = 2;
 
       ///////// COMPUTE WIDTH AND PULSE HEIGHT ///////////
 
@@ -1071,8 +1096,11 @@ public:
          int c1 = fMap8->fPair1[p];
          int c2 = fMap8->fPair2[p];
 
+         int tdc1 = fMap8->fMap[c1];
+         int tdc2 = fMap8->fMap[c2];
+
          if (ww_ns[c1]>0 && ww_ns[c2]>0) {
-            double tpair_ns = subtract_ns(t.GetCh(fMap8->fMap[c2]).fLe, t.GetCh(fMap8->fMap[c1]).fLe);
+            double tpair_ns = subtract_ns(t.GetCh(tdc2).fLe, t.GetCh(tdc1).fLe);
             double tpair_ns_twc = tpair_ns + (ww_twc / sqrt(ww_ns[c1]) - ww_twc / sqrt(ww_ns[c2]));
 
             //if (fFlags->fPrint) {
@@ -1086,7 +1114,32 @@ public:
             //fCountMyA++;
             
             fHtpair_ns[p]->Fill(tpair_ns);
-            
+
+#if 0
+            if (t.fHits[tdc1].fLe.phase == -10) continue;
+            if (t.fHits[tdc1].fLe.phase == -20) continue;
+            if (t.fHits[tdc1].fLe.phase == -30) continue;
+            if (t.fHits[tdc1].fLe.phase == -40) continue;
+
+            if (t.fHits[tdc2].fLe.phase == -10) continue;
+            if (t.fHits[tdc2].fLe.phase == -20) continue;
+            if (t.fHits[tdc2].fLe.phase == -30) continue;
+            if (t.fHits[tdc2].fLe.phase == -40) continue;
+
+            if (t.fHits[tdc1].fLe.phase ==  10) continue;
+            if (t.fHits[tdc1].fLe.phase ==  20) continue;
+            if (t.fHits[tdc1].fLe.phase ==  30) continue;
+            if (t.fHits[tdc1].fLe.phase ==  40) continue;
+
+            if (t.fHits[tdc2].fLe.phase ==  10) continue;
+            if (t.fHits[tdc2].fLe.phase ==  20) continue;
+            if (t.fHits[tdc2].fLe.phase ==  30) continue;
+            if (t.fHits[tdc2].fLe.phase ==  40) continue;
+#endif
+
+            fHpairPP[p]->Fill(t.fHits[tdc1].fLe.phase, t.fHits[tdc2].fLe.phase);
+            fHpairFF[p]->Fill(t.fHits[tdc1].fLe.fine_ns, t.fHits[tdc2].fLe.fine_ns);
+
             if (ww_ns[c1] < ww_cut_ns && ww_ns[c2] < ww_cut_ns) {
             } else {
                fHwpair_ns[p]->Fill(ww_ns[c1], ww_ns[c2]);
