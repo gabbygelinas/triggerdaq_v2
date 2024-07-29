@@ -51,6 +51,12 @@ ncfm.exe: %.exe: %.o
 %.o: %.cxx
 	$(CXX) -o $@ $(CXXFLAGS) -c $<
 
+dltdc.o: dltdc.cxx dltdc.h
+DlTdcEvent.o: dltdc.h DlTdcEvent.h
+dltdc_module.o: dltdc.h DlTdcEvent.h
+dltdc4_module.o: dltdc.h DlTdcEvent.h
+dltdc8_module.o: dltdc.h DlTdcEvent.h
+
 #%.o: ../chronobox_software/%.cxx
 #	$(CXX) -o $@ $(CXXFLAGS) -c $<
 
