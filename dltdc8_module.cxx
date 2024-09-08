@@ -404,7 +404,7 @@ public:
    void BeginRun(TARunInfo* runinfo)
    {
       if (fTrace)
-         printf("DlTdcModule::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
+         printf("DlTdc8Module::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
 
       if (!fFlags->fEnabled)
          return;
@@ -740,13 +740,13 @@ public:
    void PreEndRun(TARunInfo* runinfo)
    {
       if (fTrace)
-         printf("DlTdcModule::PreEndRun, run %d\n", runinfo->fRunNo);
+         printf("DlTdc8Module::PreEndRun, run %d\n", runinfo->fRunNo);
    }
    
    void EndRun(TARunInfo* runinfo)
    {
       if (fTrace)
-         printf("DlTdcModule::EndRun, run %d\n", runinfo->fRunNo);
+         printf("DlTdc8Module::EndRun, run %d\n", runinfo->fRunNo);
 
       if (!fFlags->fEnabled)
          return;
@@ -814,13 +814,13 @@ public:
    void PauseRun(TARunInfo* runinfo)
    {
       if (fTrace)
-         printf("DlTdcModule::PauseRun, run %d\n", runinfo->fRunNo);
+         printf("DlTdc8Module::PauseRun, run %d\n", runinfo->fRunNo);
    }
 
    void ResumeRun(TARunInfo* runinfo)
    {
       if (fTrace)
-         printf("DlTdcModule::ResumeRun, run %d\n", runinfo->fRunNo);
+         printf("DlTdc8Module::ResumeRun, run %d\n", runinfo->fRunNo);
    }
 
    void AnalyzeTdcEvent(const DlTdcEvent& t)
@@ -1434,12 +1434,14 @@ public:
 
    TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
    {
-      //printf("DlTdcModule::Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
+      //printf("DlTdc8Module::Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
       return flow;
    }
 
    TAFlowEvent* AnalyzeFlowEvent(TARunInfo* runinfo, TAFlags* flags, TAFlowEvent* flow)
    {
+      //printf("DlTdc8Module::AnalyzeFlowEvent, run %d\n", runinfo->fRunNo);
+
       if (!fFlags->fEnabled)
          return flow;
 
@@ -1453,7 +1455,7 @@ public:
    void AnalyzeSpecialEvent(TARunInfo* runinfo, TMEvent* event)
    {
       if (fTrace)
-         printf("DlTdcModule::AnalyzeSpecialEvent, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
+         printf("DlTdc8Module::AnalyzeSpecialEvent, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
    }
 };
 
@@ -1476,6 +1478,17 @@ public:
    void Init(const std::vector<std::string> &args)
    {
       printf("DlTdc8ModuleFactory::Init!\n");
+
+      //for (unsigned i=0; i<args.size(); i++) {
+      //   printf("arg[%d] is [%s]\n", i, args[i].c_str());
+      //}
+
+      //printf("test1 %d\n", (std::string("--dltdc8") == "--dltdc8"));
+      //printf("test2 %d\n", (args[1] == "--dltdc8"));
+      //printf("test3 length %zu\n", args[1].length());
+      //for (size_t i=0; i<args[1].length(); i++) {
+      //   printf("char %zu is %d [%c]\n", i, args[1][i], args[1][i]);
+      //}
 
       for (unsigned i=0; i<args.size(); i++) {
          if (args[i] == "--dltdc8") {
