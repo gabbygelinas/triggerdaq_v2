@@ -42,6 +42,9 @@ public: // time of first and last TDC hits
 public: // TDC hits
    std::vector<DlTdcHit2> fHits;
 
+ public: // all hits
+   std::vector<DlTdcHit> fTdcHits;
+
 public:
    void Init(int num_chan);
    void Clear();

@@ -147,6 +147,7 @@ void DlTdcEvent::AddHit8(const DlTdcHit& h)
    assert(h.ch < (int)fHits.size());
    
    fHits[h.ch].AddHit(h);
+   fTdcHits.push_back(h);
 }
 
 bool DlTdcEvent::HaveCh(int ch) const
