@@ -113,6 +113,11 @@ public:
    TH1D* fHfineTeP[MAX_TDC_CHAN+1];
    TH1D* fHfineTeN[MAX_TDC_CHAN+1];
 
+   TH2D* fHfineLeP0 = NULL;
+   TH2D* fHfineTeN0 = NULL;
+   TH2D* fHfineLeP1 = NULL;
+   TH2D* fHfineTeN1 = NULL;
+
    TH1D* fHwidth[MAX_TDC_CHAN+1];
 
    TH1D* fHpulserLeAll = NULL;
@@ -139,11 +144,20 @@ public:
    TH1D* fHdt3Le[MAX_TDC_CHAN+1];
    TH1D* fHdt4Le[MAX_TDC_CHAN+1];
 
-   std::vector<TH2D*> fHdt_PP;
+   //std::vector<TH2D*> fHdt_PP;
    std::vector<TH2D*> fHdt_FF;
 
-   std::vector<TH1D*> fHunphysical_pair_ns;
-   std::vector<TH2D*> fHunphysical_PP;
+   TH1D* fHunphysical_map  = NULL;
+   TH2D* fHunphysical_map2 = NULL;
+
+   TH2D* fHunphysical_ns_01_14_w01 = NULL;
+   TH2D* fHunphysical_ns_01_14_w14 = NULL;
+
+   TH2D* fHunphysical_ns_01_14_c01 = NULL;
+   TH2D* fHunphysical_ns_01_14_c14 = NULL;
+
+   std::vector<TH1D*> fHunphysical_ns;
+   //std::vector<TH2D*> fHunphysical_PP;
    std::vector<TH2D*> fHunphysical_FF;
 #endif
 
@@ -277,6 +291,46 @@ public:
 
       dir->mkdir("fine_time")->cd();
 
+      double max_time_hour = 3600;
+      double max_time_day  = 24*max_time_hour;
+      double max_time = 6.0*max_time_day;
+
+      if (1) {
+         int i=0;
+         char name[256];
+         char title[256];
+         sprintf(name,  "aaa_tdc%02d_fine_time_le_pos", i);
+         sprintf(title, "aaa_tdc%02d_LE_pos fine time distribution, ns", i);
+         fHfineLeP0 = new TH2D(name, title, 100, -5, 15, 50, 0, max_time);
+      }
+
+      if (1) {
+         int i=0;
+         char name[256];
+         char title[256];
+         sprintf(name,  "aaa_tdc%02d_fine_time_te_neg", i);
+         sprintf(title, "aaa_tdc%02d_TE_neg fine time distribution, ns", i);
+         fHfineTeN0 = new TH2D(name, title, 100, -5, 15, 50, 0, max_time);
+      }
+
+      if (1) {
+         int i=1;
+         char name[256];
+         char title[256];
+         sprintf(name,  "aaa_tdc%02d_fine_time_le_pos", i);
+         sprintf(title, "aaa_tdc%02d_LE_pos fine time distribution, ns", i);
+         fHfineLeP1 = new TH2D(name, title, 100, -5, 15, 50, 0, max_time);
+      }
+
+      if (1) {
+         int i=1;
+         char name[256];
+         char title[256];
+         sprintf(name,  "aaa_tdc%02d_fine_time_te_neg", i);
+         sprintf(title, "aaa_tdc%02d_TE_neg fine time distribution, ns", i);
+         fHfineTeN1 = new TH2D(name, title, 100, -5, 15, 50, 0, max_time);
+      }
+
       for (int i=0; i<=MAX_TDC_CHAN; i++) {
          char name[256];
          char title[256];
@@ -372,7 +426,7 @@ public:
       fHeventdt3ns = new TH1D("eventdt3ns", "event dt 1000 us", 100, 0, 1000000); // 1 msec
       fHeventdt4ns = new TH1D("eventdt4ns", "event dt 1000 ms", 100, 0, 1000000000); // 1 sec
 
-      fHdt_PP.resize(MAX_TDC_CHAN+1);
+      //fHdt_PP.resize(MAX_TDC_CHAN+1);
       fHdt_FF.resize(MAX_TDC_CHAN+1);
 
       for (int i=0; i<=MAX_TDC_CHAN; i++) {
@@ -395,9 +449,9 @@ public:
          sprintf(title, "tdc%02d_dt4_le, ns", i);
          fHdt4Le[i] = new TH1D(name, title, 100, 0, 1000000000); // 1 sec
 
-         sprintf(name,  "tdc%02d_pp", i);
-         sprintf(title, "tdc%02d phase vs phase", i);
-         fHdt_PP[i] = new TH2D(name, title, 101, -50.5, 50.5, 101, -50.5, 50.5);
+         //sprintf(name,  "tdc%02d_pp", i);
+         //sprintf(title, "tdc%02d phase vs phase", i);
+         //fHdt_PP[i] = new TH2D(name, title, 101, -50.5, 50.5, 101, -50.5, 50.5);
 
          sprintf(name,  "tdc%02d_ff", i);
          sprintf(title, "tdc%02d fine time vs fine time", i);
@@ -406,7 +460,16 @@ public:
 
       dir->mkdir("unphysical")->cd();
 
-      fHunphysical_pair_ns.resize((MAX_TDC_CHAN+1)*(MAX_TDC_CHAN+1));
+      fHunphysical_map  = new TH1D("tdc_map", " TDC hit map", MAX_TDC_CHAN+1, 0-0.5, MAX_TDC_CHAN+1-0.5);
+      fHunphysical_map2 = new TH2D("tdc_map2", "TDC pairs of hits map", MAX_TDC_CHAN+1, 0-0.5, MAX_TDC_CHAN+1-0.5, MAX_TDC_CHAN+1, 0-0.5, MAX_TDC_CHAN+1-0.5);
+
+      fHunphysical_ns_01_14_w01 = new TH2D("tdc01_tdc14_vs_w01", "tdc01_le - tdc14_le, ns vs tdc01_width, ns", 200, -50, 50, 100, 0, 100);
+      fHunphysical_ns_01_14_w14 = new TH2D("tdc01_tdc14_vs_w14", "tdc01_le - tdc14_le, ns vs tdc14_width, ns", 200, -50, 50, 100, 0, 100);
+
+      fHunphysical_ns_01_14_c01 = new TH2D("tdc01_tdc14_vs_c10", "tdc01_le - tdc14_le, ns vs tdc01_hit_count", 200, -50, 50, 20, 0, 20);
+      fHunphysical_ns_01_14_c14 = new TH2D("tdc01_tdc14_vs_c14", "tdc01_le - tdc14_le, ns vs tdc14_hit_count", 200, -50, 50, 20, 0, 20);
+
+      fHunphysical_ns.resize((MAX_TDC_CHAN+1)*(MAX_TDC_CHAN+1));
       for (int i=0; i<=MAX_TDC_CHAN; i++) {
          for (int j=i+1; j<=MAX_TDC_CHAN; j++) {
             char name[256];
@@ -414,14 +477,14 @@ public:
 
             sprintf(name,  "tdc%02d_tdc%02d_le_ns", i, j);
             sprintf(title, "tdc%02d_le - tdc%02d_le, ns", i, j);
-            fHunphysical_pair_ns[i*(MAX_TDC_CHAN+1) + j] = new TH1D(name, title, 200, -50, 50);
-            fHunphysical_pair_ns[i*(MAX_TDC_CHAN+1) + j]->SetMinimum(0);
+            fHunphysical_ns[i*(MAX_TDC_CHAN+1) + j] = new TH1D(name, title, 200, -50, 50);
+            fHunphysical_ns[i*(MAX_TDC_CHAN+1) + j]->SetMinimum(0);
          }
       }
 
-      dir->mkdir("unphysical_PP_FF")->cd();
+      dir->mkdir("unphysical_FF")->cd();
 
-      fHunphysical_PP.resize((MAX_TDC_CHAN+1)*(MAX_TDC_CHAN+1));
+      //fHunphysical_PP.resize((MAX_TDC_CHAN+1)*(MAX_TDC_CHAN+1));
       fHunphysical_FF.resize((MAX_TDC_CHAN+1)*(MAX_TDC_CHAN+1));
 
       for (int i=0; i<=MAX_TDC_CHAN; i++) {
@@ -429,9 +492,9 @@ public:
             char name[256];
             char title[256];
 
-            sprintf(name,  "tdc%02d_tdc%02d_le_PP", i, j);
-            sprintf(title, "TDC fine bin tdc%02d_le vs tdc%02d_le, ns", i, j);
-            fHunphysical_PP[i*(MAX_TDC_CHAN+1) + j] = new TH2D(name, title, 101, -50.5, 50.5, 101, -50.5, 50.5);
+            //sprintf(name,  "tdc%02d_tdc%02d_le_PP", i, j);
+            //sprintf(title, "TDC fine bin tdc%02d_le vs tdc%02d_le, ns", i, j);
+            //fHunphysical_PP[i*(MAX_TDC_CHAN+1) + j] = new TH2D(name, title, 101, -50.5, 50.5, 101, -50.5, 50.5);
 
             sprintf(name,  "tdc%02d_tdc%02d_le_FF", i, j);
             sprintf(title, "TDC fine time tdc%02d_le vs tdc%02d_le, ns", i, j);
@@ -559,6 +622,69 @@ public:
          return;
       }
 
+      ///////// debug spikes in dark noise data ///////////
+
+      if (0) {
+         if (t.HaveCh(1) && t.HaveCh(14)) {
+            double dt_ns = subtract_ns(t.GetCh(1).fLe, t.GetCh(14).fLe);
+            //if (t.GetCh(1).fWidthNs > 10.0)
+            //   return;
+            //if (t.GetCh(14).fWidthNs > 10.0)
+            //   return;
+            //if (fabs(dt_ns) > 5.0)
+            //   return;
+            printf("dt 01-14: %6.3f ns, width %6.3f %6.3f ns\n", dt_ns, t.GetCh(1).fWidthNs, t.GetCh(14).fWidthNs);
+         } else {
+            return;
+         }
+      }
+      
+      int ntdchits = 0;
+
+      for (int tdc_ch=0; tdc_ch<=MAX_TDC_CHAN; tdc_ch++) {
+         if (t.HaveCh(tdc_ch)) {
+            ntdchits++;
+         }
+      }
+
+      if (fFlags->fDebug) {
+         std::string s = "";
+         for (int tdc_ch=0; tdc_ch<=MAX_TDC_CHAN; tdc_ch++) {
+            if (t.HaveCh(tdc_ch)) {
+               s += "H";
+            } else {
+               s += ".";
+            }
+         }
+
+         printf("EVENT %s, ABT %d%d%d, %d hits\n", s.c_str(), t.HaveCh(fConf->fChanA), t.HaveCh(fConf->fChanB), t.HaveCh(fConf->fChanT), ntdchits);
+      }
+
+      if (ntdchits != 7)
+         return;
+
+      if (0) {
+         printf("have %zu hits:\n", t.fTdcHits.size());
+         double t1 = -9999;
+         double t14 = -8888;
+         for (size_t i=0; i<t.fTdcHits.size(); i++) {
+            if (t.fTdcHits[i].ch == 1 || t.fTdcHits[i].ch == 14) {
+               t.fTdcHits[i].Print();
+               if (t.fTdcHits[i].le) {
+                  if (t.fTdcHits[i].ch == 1) {
+                     t1 = t.fTdcHits[i].time_sec;
+                     printf(" t1-t14 is %6.3f ns", sec_to_ns(t1-t14));
+                  }
+                  if (t.fTdcHits[i].ch == 14) {
+                     t14 = t.fTdcHits[i].time_sec;
+                     printf(" t1-t14 is %6.3f ns", sec_to_ns(t1-t14));
+                  }
+               }
+               printf("\n");
+            }
+         }
+      }
+
       ///////// pulser calibration histograms ///////////
          
       if (!fPulserMasterHave) {
@@ -606,11 +732,36 @@ public:
       ///////// plot unphysical time pairs /////////
 
       for (int i=0; i<=MAX_TDC_CHAN; i++) {
-         for (int j=i+1; j<=MAX_TDC_CHAN; j++) {
-            if (t.HaveCh(i) && t.HaveCh(j)) {
-               fHunphysical_pair_ns[i*(MAX_TDC_CHAN+1) + j]->Fill(subtract_ns(t.GetCh(i).fLe, t.GetCh(j).fLe));
-               fHunphysical_PP[i*(MAX_TDC_CHAN+1) + j]->Fill(t.GetCh(i).fLe.phase, t.GetCh(j).fLe.phase);
-               fHunphysical_FF[i*(MAX_TDC_CHAN+1) + j]->Fill(t.GetCh(i).fLe.fine_ns, t.GetCh(j).fLe.fine_ns);
+         if (t.HaveCh(i)) {
+            fHunphysical_map->Fill(i);
+            for (int j=i+1; j<=MAX_TDC_CHAN; j++) {
+               if (t.HaveCh(j)) {
+                  fHunphysical_map2->Fill(i,j);
+                  fHunphysical_map2->Fill(j,i);
+                  fHunphysical_ns[i*(MAX_TDC_CHAN+1) + j]->Fill(subtract_ns(t.GetCh(i).fLe, t.GetCh(j).fLe));
+                  //fHunphysical_PP[i*(MAX_TDC_CHAN+1) + j]->Fill(t.GetCh(i).fLe.phase, t.GetCh(j).fLe.phase);
+                  fHunphysical_FF[i*(MAX_TDC_CHAN+1) + j]->Fill(t.GetCh(i).fLe.fine_ns, t.GetCh(j).fLe.fine_ns);
+
+                  //if (i==0 && j==1) {
+                  //   printf("tdc00-01 %.0f\n", subtract_ns(t.GetCh(i).fLe, t.GetCh(j).fLe));
+                  //   t.GetCh(i).Print();
+                  //   t.GetCh(j).Print();
+                  //}
+
+                  if (i==1 && j==14) {
+                     fHunphysical_ns_01_14_w01->Fill(subtract_ns(t.GetCh(i).fLe, t.GetCh(j).fLe), t.GetCh(i).fWidthNs);
+                     fHunphysical_ns_01_14_w14->Fill(subtract_ns(t.GetCh(i).fLe, t.GetCh(j).fLe), t.GetCh(j).fWidthNs);
+
+                     fHunphysical_ns_01_14_c01->Fill(subtract_ns(t.GetCh(i).fLe, t.GetCh(j).fLe), t.GetCh(i).fCount);
+                     fHunphysical_ns_01_14_c14->Fill(subtract_ns(t.GetCh(i).fLe, t.GetCh(j).fLe), t.GetCh(j).fCount);
+
+                     //printf("dt %6.3f ns\n", subtract_ns(t.GetCh(i).fLe, t.GetCh(j).fLe));
+                     //t.GetCh(i).Print();
+                     //t.GetCh(j).Print();
+                  }
+                  
+                  //printf("count %d %d\n", t.GetCh(i).fCount, t.GetCh(j).fCount);
+               }
             }
          }
       }
@@ -655,6 +806,12 @@ public:
             uint32_t wlo = tdc_data[i*2+0];
             uint32_t whi = tdc_data[i*2+1];
 
+            if (wlo == 0 && whi == 0) {
+               if (i <= 8192) 
+                  printf("bank data at offset %d is zero\n", i);
+               continue;
+            }
+
             //printf("%2d: 0x%08x 0x%08x\n", i, whi, wlo);
 
             DlTdcHit h;
@@ -683,7 +840,7 @@ public:
                fHdt3Le[h.ch]->Fill(dt);
                fHdt4Le[h.ch]->Fill(dt);
 
-               fHdt_PP[h.ch]->Fill(h.phase, fPrevLe[h.ch].phase);
+               //fHdt_PP[h.ch]->Fill(h.phase, fPrevLe[h.ch].phase);
                fHdt_FF[h.ch]->Fill(h.fine_ns, fPrevLe[h.ch].fine_ns);
 
                fPrevLe[h.ch] = h;
@@ -747,6 +904,13 @@ public:
                      fHphaseLe[h.ch]->Fill(50 + h.phase);
                      fHfineLe[h.ch]->Fill(h.fine_ns);
                      fHfineLeP[h.ch]->Fill(h.fine_ns);
+                     if (h.ch == 0) {
+                        fHfineLeP0->Fill(h.fine_ns, h.time_sec);
+                        //printf("X000 time %.0f\n", h.time_sec);
+                     }
+                     if (h.ch == 1) {
+                        fHfineLeP1->Fill(h.fine_ns, h.time_sec);
+                     }
                   }
                }
                if (h.te) {
@@ -754,6 +918,12 @@ public:
                      fHphaseTe[h.ch]->Fill(0 - h.phase);
                      fHfineTe[h.ch]->Fill(h.fine_ns);
                      fHfineTeN[h.ch]->Fill(h.fine_ns);
+                     if (h.ch == 0) {
+                        fHfineTeN0->Fill(h.fine_ns, h.time_sec);
+                     }
+                     if (h.ch == 1) {
+                        fHfineTeN1->Fill(h.fine_ns, h.time_sec);
+                     }
                   } else {
                      fHphaseTe[h.ch]->Fill(50 + h.phase);
                      fHfineTe[h.ch]->Fill(h.fine_ns);
