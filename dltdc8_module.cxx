@@ -181,8 +181,20 @@ public:
    std::vector<TH2D*> fHtpair_w1_ns_cut_w2_twc;
    std::vector<TH2D*> fHtpair_w2_ns_cut_w1_twc;
    std::vector<TH1D*> fHtpair_ns_cut_twc;
-   std::vector<TH2D*> fHpairPP;
+   //std::vector<TH2D*> fHpairPP;
    std::vector<TH2D*> fHpairFF;
+
+   TH1D* fHquad11 = NULL;
+   TH1D* fHquad15 = NULL;
+   TH1D* fHquad16 = NULL;
+   TH1D* fHquad17 = NULL;
+   TH1D* fHquad18 = NULL;
+
+   TH1D* fHquad11AB = NULL;
+   TH1D* fHquad15AB = NULL;
+   TH1D* fHquad16AB = NULL;
+   TH1D* fHquad17AB = NULL;
+   TH1D* fHquad18AB = NULL;
 
 #if 0
    TH1D* fHt12ns = NULL;
@@ -466,7 +478,7 @@ public:
          fHwpair_ns[p] = new TH2D(name, title, 100, 0, 100, 100, 0, 100);
       }
 
-      fHpairPP.resize(fMap8->fPair1.size() + 1);
+      //fHpairPP.resize(fMap8->fPair1.size() + 1);
       fHpairFF.resize(fMap8->fPair1.size() + 1);
 
       for (size_t p=1; p<fMap8->fPair1.size(); p++) {
@@ -479,9 +491,9 @@ public:
          char name[256];
          char title[256];
 
-         sprintf(name, "dltdc8_pair%d_t_%02d_%02d_PP", (int)p, c1, c2);
-         sprintf(title, "pair %d time bin chan %2d vs chan %2d, tdc %2d vs %2d", (int)p, c2, c1, tdc2, tdc1);
-         fHpairPP[p] = new TH2D(name, title, 101, -50.5, 50.5, 101, -50.5, 50.5);
+         //sprintf(name, "dltdc8_pair%d_t_%02d_%02d_PP", (int)p, c1, c2);
+         //sprintf(title, "pair %d time bin chan %2d vs chan %2d, tdc %2d vs %2d", (int)p, c2, c1, tdc2, tdc1);
+         //fHpairPP[p] = new TH2D(name, title, 101, -50.5, 50.5, 101, -50.5, 50.5);
 
          sprintf(name, "dltdc8_pair%d_t_%02d_%02d_FF", (int)p, c1, c2);
          sprintf(title, "pair %d fine time chan %2d vs %2d, tdc %2d vs %2d, ns vs ns", (int)p, c2, c1, tdc2, tdc1);
@@ -586,6 +598,20 @@ public:
          sprintf(title, "pair %d time difference chan %2d minus %2d, ns, with cut on width and time walk correction", (int)p, c2, c1);
          fHtpair_ns_cut_twc[p] = new TH1D(name, title, 200, -10, 10);
       }
+
+      // quad coincidences
+
+      fHquad11 = new TH1D("quad11", "quad11", 200, -10, 10);
+      fHquad15 = new TH1D("quad15", "quad15", 200, -10, 10);
+      fHquad16 = new TH1D("quad16", "quad16", 200, -10, 10);
+      fHquad17 = new TH1D("quad17", "quad17", 200, -10, 10);
+      fHquad18 = new TH1D("quad18", "quad18", 200, -10, 10);
+
+      fHquad11AB = new TH1D("quad11AB", "quad11 A-B, ns", 200, -10, 10);
+      fHquad15AB = new TH1D("quad15AB", "quad15 A-B, ns", 200, -10, 10);
+      fHquad16AB = new TH1D("quad16AB", "quad16 A-B, ns", 200, -10, 10);
+      fHquad17AB = new TH1D("quad17AB", "quad17 A-B, ns", 200, -10, 10);
+      fHquad18AB = new TH1D("quad18AB", "quad18 A-B, ns", 200, -10, 10);
 
 #if 0
       // Gabby
@@ -859,13 +885,24 @@ public:
             printf("nhits %d, le-le %.3f ns, le-te %.3f ns\n", nhits, le_le_ns, le_te_ns);
       }
 
+      int nhits = 0;
+      for (size_t i=1; i<fMap8->fMap.size(); i++) {
+         int tdc_ch = fMap8->fMap[i];
+         if (t.HaveCh(tdc_ch)) {
+            nhits++;
+         }
+      }
+
+      // debug coincidences
+
+      //if (nhits != 4)
+      //   return;
+
       if (fFlags->fDebug) {
-         int nhits = 0;
          std::string s = "";
          for (size_t i=1; i<fMap8->fMap.size(); i++) {
             int tdc_ch = fMap8->fMap[i];
             if (t.HaveCh(tdc_ch)) {
-               nhits++;
                s += "H";
             } else {
                s += ".";
@@ -882,9 +919,11 @@ public:
       }
 
       ///////// plot trigger A-B time ///////////
+
+      double tAB_ns = -9999;
       
       if (t.HaveCh(fMap8->fChanA) && t.HaveCh(fMap8->fChanB)) {
-         double tAB_ns = subtract_ns(t.GetCh(fMap8->fChanA).fLe, t.GetCh(fMap8->fChanB).fLe);
+         tAB_ns = subtract_ns(t.GetCh(fMap8->fChanA).fLe, t.GetCh(fMap8->fChanB).fLe);
          fHtABns->Fill(tAB_ns);
       }
 
@@ -1086,27 +1125,61 @@ public:
 
       ///////// PAIR COINCIDENCES ///////////
 
+      std::vector<bool>   ttpair_hit;
+      std::vector<bool>   ttpair_hit_cut;
       std::vector<double> ttpair_ns;
       std::vector<double> ttpair_ns_twc;
 
+      ttpair_hit.resize(fMap8->fPair1.size() + 1);
+      ttpair_hit_cut.resize(fMap8->fPair1.size() + 1);
       ttpair_ns.resize(fMap8->fPair1.size() + 1);
       ttpair_ns_twc.resize(fMap8->fPair1.size() + 1);
 
       for (size_t p=1; p<fMap8->fPair1.size(); p++) {
          int c1 = fMap8->fPair1[p];
          int c2 = fMap8->fPair2[p];
-
-         int tdc1 = fMap8->fMap[c1];
-         int tdc2 = fMap8->fMap[c2];
-
          if (ww_ns[c1]>0 && ww_ns[c2]>0) {
+            ttpair_hit[p] = true;
+         }
+      }
+
+      int npairhits = 0;
+
+      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
+         if (ttpair_hit[p]) {
+            npairhits++;
+         }
+      }
+
+      if (0) {
+         if (npairhits != 2)
+            return;
+
+         //if (ttpair_hit[8] && (ttpair_hit[1] || ttpair_hit[2] || ttpair_hit[3] || ttpair_hit[4])) {
+         if (ttpair_hit[1] && (ttpair_hit[5] || ttpair_hit[6] || ttpair_hit[7] || ttpair_hit[8])) {
+            //if (ttpair_hit[1] && (ttpair_hit[5] || ttpair_hit[8])) {
+            
+         } else {
+            return;
+         }
+      }
+
+      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
+         if (ttpair_hit[p]) {
+            int c1 = fMap8->fPair1[p];
+            int c2 = fMap8->fPair2[p];
+
+            int tdc1 = fMap8->fMap[c1];
+            int tdc2 = fMap8->fMap[c2];
+
             double tpair_ns = subtract_ns(t.GetCh(tdc2).fLe, t.GetCh(tdc1).fLe);
             double tpair_ns_twc = tpair_ns + (ww_twc / sqrt(ww_ns[c1]) - ww_twc / sqrt(ww_ns[c2]));
 
             //if (fFlags->fPrint) {
             //   printf("new dlsc event 1*4, le %.9f %.9f sec, diff14 %.0f ns, w1 %.0f, w4 %.0f ns!\n", t.GetCh(CHAN1).fLe.time_sec, t.GetCh(CHAN4).fLe.time_sec, t14_ns, w1_ns, w4_ns);
             //}
-            
+
+            ttpair_hit[p] = true;
             ttpair_ns[p] = tpair_ns;
             ttpair_ns_twc[p] = tpair_ns_twc;
             
@@ -1137,7 +1210,7 @@ public:
             if (t.fHits[tdc2].fLe.phase ==  40) continue;
 #endif
 
-            fHpairPP[p]->Fill(t.fHits[tdc1].fLe.phase, t.fHits[tdc2].fLe.phase);
+            //fHpairPP[p]->Fill(t.fHits[tdc1].fLe.phase, t.fHits[tdc2].fLe.phase);
             fHpairFF[p]->Fill(t.fHits[tdc1].fLe.fine_ns, t.fHits[tdc2].fLe.fine_ns);
 
             if (ww_ns[c1] < ww_cut_ns && ww_ns[c2] < ww_cut_ns) {
@@ -1161,6 +1234,87 @@ public:
             if (ww_ns[c1] > ww_cut_ns && ww_ns[c2] > ww_cut_ns) {
                fHtpair_ns_cut[p]->Fill(tpair_ns);
                fHtpair_ns_cut_twc[p]->Fill(tpair_ns_twc);
+               ttpair_hit_cut[p] = true;
+            }
+         }
+      }
+
+      if (fFlags->fDebug) {
+         for (size_t p=1; p<fMap8->fPair1.size(); p++) {
+            if (ttpair_hit[p]) {
+               int c1 = fMap8->fPair1[p];
+               int c2 = fMap8->fPair2[p];
+               printf("pair %02zu chan %02d-%02d ttpair: hit %d, ns_twc %6.3f ns\n", p, c1, c2, (int)ttpair_hit[p], ttpair_ns_twc[p]);
+            }
+         }
+      }
+
+      ///////// QUAD COINCIDENCES ///////////
+
+      if (0) {
+         if (ttpair_hit_cut[5]) {
+            if (drand48() > 38418.0/39118.0)
+               ttpair_hit_cut[5] = false;
+         }
+         if (ttpair_hit_cut[6]) {
+            if (drand48() > 38418.0/41452.0)
+               ttpair_hit_cut[6] = false;
+         }
+         if (ttpair_hit_cut[7]) {
+            if (drand48() > 38418.0/41306.0)
+               ttpair_hit_cut[7] = false;
+         }
+         if (ttpair_hit_cut[8]) {
+            if (drand48() > 38418.0/38418.0)
+               ttpair_hit_cut[8] = false;
+         }
+      }
+
+      if (0) {
+         if (ttpair_hit_cut[5]) {
+            if (drand48() > 0.85)
+               ttpair_hit_cut[5] = false;
+         }
+         if (ttpair_hit_cut[6]) {
+            if (drand48() > 0.95)
+               ttpair_hit_cut[6] = false;
+         }
+         if (ttpair_hit_cut[7]) {
+            if (drand48() > 0.90)
+               ttpair_hit_cut[7] = false;
+         }
+         if (ttpair_hit_cut[8]) {
+            if (drand48() > 0.90)
+               ttpair_hit_cut[8] = false;
+         }
+      }
+
+      if (1) {
+         int p=3;
+         if (ttpair_hit_cut[p]) {
+            if (ttpair_hit_cut[5]) {
+               fHquad11->Fill(ttpair_ns_twc[p]);
+               fHquad15->Fill(ttpair_ns_twc[p]);
+               fHquad11AB->Fill(tAB_ns);
+               fHquad15AB->Fill(tAB_ns);
+            }
+            if (ttpair_hit_cut[6]) {
+               fHquad11->Fill(ttpair_ns_twc[p]);
+               fHquad16->Fill(ttpair_ns_twc[p]);
+               fHquad11AB->Fill(tAB_ns);
+               fHquad16AB->Fill(tAB_ns);
+            }
+            if (ttpair_hit_cut[7]) {
+               fHquad11->Fill(ttpair_ns_twc[p]);
+               fHquad17->Fill(ttpair_ns_twc[p]);
+               fHquad11AB->Fill(tAB_ns);
+               fHquad17AB->Fill(tAB_ns);
+            }
+            if (ttpair_hit_cut[8]) {
+               fHquad11->Fill(ttpair_ns_twc[p]);
+               fHquad18->Fill(ttpair_ns_twc[p]);
+               fHquad11AB->Fill(tAB_ns);
+               fHquad18AB->Fill(tAB_ns);
             }
          }
       }
