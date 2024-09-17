@@ -382,6 +382,10 @@ public:
    bool fTrace = false;
 
    Ncfm* fCfm = NULL;
+
+   int numEvents = 0; // Tracker of what event we are on (what event number we are about to analyze)
+   int minNumEvents = 0; // Earliest event we want to analyze. Set to 0 to analyze from the start
+   int maxNumEvents = 1000000; // Last event number we want to analyze. Set to something super high to analyze all of them
    
    DlTdc8Module(TARunInfo* runinfo, DlTdcFlags* flags)
       : TARunObject(runinfo)
@@ -852,6 +856,9 @@ public:
    void AnalyzeTdcEvent(const DlTdcEvent& t)
    {
       // compute number of fired channels
+      numEvents += 1;
+
+      if ((numEvents < maxNumEvents) && (numEvents > minNumEvents)) {
 
       if (0) {
          int nhits = 0;
@@ -1584,6 +1591,7 @@ public:
          fHt237ns_w7ns_2367_twc->Fill(w7_ns, t237_ns_twc);
       }
 #endif
+      } // Closing the if statement that lets us only look at a chunk of events
    }
 
    TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)

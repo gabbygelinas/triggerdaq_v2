@@ -1,6 +1,6 @@
 # CMakeLists.txt for basic analysis package. It creates a library with dictionary and a main program
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
-project(agana)
+project(dlana)
 
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
@@ -53,7 +53,7 @@ endfunction()
 
 
 # electronics database
-get_submodule( agcfmdb )
+get_submodule( dlcfmdb )
 ##########################################
 
 ##########################################
@@ -75,49 +75,49 @@ else()
 endif()
 
 ##########################################
-message(STATUS "building agana static library")
+message(STATUS "building dlana static library")
 
-# find sources for the agana library
+# find sources for the dlana library
 #file(GLOB Headers ${PROJECT_SOURCE_DIR}/*.h)
-file(GLOB AganaSources ${PROJECT_SOURCE_DIR}/*.cxx)
+file(GLOB DlanaSources ${PROJECT_SOURCE_DIR}/*.cxx)
 ##########################################
 
-list(FILTER AganaSources EXCLUDE REGEX ".*_module.cxx$")
-message(STATUS "from ${AganaSources}")
-add_library(agana STATIC ${AganaSources})
-target_include_directories(agana PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+list(FILTER DlanaSources EXCLUDE REGEX ".*_module.cxx$")
+message(STATUS "from ${DlanaSources}")
+add_library(dlana STATIC ${DlanaSources})
+target_include_directories(dlana PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
   
 if( BUILD_MANALYZER )
-  target_include_directories(agana PUBLIC ${CMAKE_SOURCE_DIR}/manalyzer)
-  target_include_directories(agana PUBLIC ${CMAKE_SOURCE_DIR}/midasio)
-  target_include_directories(agana PUBLIC ${CMAKE_SOURCE_DIR}/mvodb)
+  target_include_directories(dlana PUBLIC ${CMAKE_SOURCE_DIR}/manalyzer)
+  target_include_directories(dlana PUBLIC ${CMAKE_SOURCE_DIR}/midasio)
+  target_include_directories(dlana PUBLIC ${CMAKE_SOURCE_DIR}/mvodb)
 elseif( MIDAS_FOUND )
-  #target_include_directories(agana PUBLIC ${MIDASSYS}/manalyzer)
-  #target_include_directories(agana PUBLIC ${MIDASSYS}/midasio)
-  #target_include_directories(agana PUBLIC ${MIDASSYS}/mvodb)
-  target_link_libraries(agana PRIVATE midas)
+  #target_include_directories(dlana PUBLIC ${MIDASSYS}/manalyzer)
+  #target_include_directories(dlana PUBLIC ${MIDASSYS}/midasio)
+  #target_include_directories(dlana PUBLIC ${MIDASSYS}/mvodb)
+  target_link_libraries(dlana PRIVATE midas)
 else()
-  target_include_directories(agana PUBLIC ${CMAKE_SOURCE_DIR}/midasio)
+  target_include_directories(dlana PUBLIC ${CMAKE_SOURCE_DIR}/midasio)
 endif()
 
 file(GLOB HEADER_FILES ${PROJECT_SOURCE_DIR}/*.h)
 install(FILES ${HEADER_FILES} DESTINATION include)
 
-if( _AGANA_STATIC )
+if( _DLANA_STATIC )
 else()
-  message(STATUS "building agana.exe")
+  message(STATUS "building dlana.exe")
   set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
 
-  set(AganaModules unpack_module unpack_cb_module cbko_module adc_module bsc_module pwb_module feam_module wfsuppress wfsuppress2 wfsuppress_pwb wfsuppress_adc wfexport_module pulser_module final_module coinc_module display_module)
-  set(TestunpackModules testunpack_module)
+  set(DlanaModules unpack_cb_module.cxx cbko_module.cxx coinc_module.cxx dltdc_module.cxx dltdc8_module.cxx dltdc4_module.cxx)
+  #set(TestunpackModules testunpack_module)
 
-  add_executable(agana.exe ${AganaModules})
-  add_executable(testunpack.exe ${TestunpackModules})
+  add_executable(dlana.exe ${DlanaModules})
+  #add_executable(testunpack.exe ${TestunpackModules})
 
   if(MIDAS_FOUND)
     message(STATUS "using manalyzer from MIDAS")
-    target_link_libraries(agana.exe PRIVATE manalyzer_main agana manalyzer midas)
-    target_link_libraries(testunpack.exe PRIVATE manalyzer_main agana manalyzer midas)
+    target_link_libraries(dlana.exe PRIVATE manalyzer_main dlana manalyzer midas)
+    #target_link_libraries(testunpack.exe PRIVATE manalyzer_main dlana manalyzer midas)
   else()
     message(STATUS "building our own manalyzer")
     # get midas-analyzer submodules
@@ -132,13 +132,13 @@ else()
     clone_module(mxml https://bitbucket.org/tmidas/mxml.git)
     clone_module(manalyzer https://bitbucket.org/tmidas/manalyzer.git)
     add_subdirectory(manalyzer)
-    target_link_libraries(agana.exe PRIVATE manalyzer_main agana manalyzer ${ROOT_LIBRARIES})
-    target_link_libraries(testunpack.exe PRIVATE manalyzer_main agana manalyzer ${ROOT_LIBRARIES})
+    target_link_libraries(dlana.exe PRIVATE manalyzer_main dlana manalyzer ${ROOT_LIBRARIES})
+    #target_link_libraries(testunpack.exe PRIVATE manalyzer_main dlana manalyzer ${ROOT_LIBRARIES})
   endif()
    
   install(
-    TARGETS agana.exe
-    TARGETS testunpack.exe
+    TARGETS dlana.exe
+    #TARGETS testunpack.exe #everything testunpack was commented out by Gabby
     DESTINATION ${CMAKE_INSTALL_PREFIX}
     )
 endif()
