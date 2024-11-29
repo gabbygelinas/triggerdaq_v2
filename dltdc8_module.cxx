@@ -385,7 +385,7 @@ public:
 
    int numEvents = 0; // Tracker of what event we are on (what event number we are about to analyze)
    int minNumEvents = 0; // Earliest event we want to analyze. Set to 0 to analyze from the start
-   int maxNumEvents = 1000000; // Last event number we want to analyze. Set to something super high to analyze all of them
+   int maxNumEvents = 10000000; // Last event number we want to analyze. Set to something super high to analyze all events
    
    DlTdc8Module(TARunInfo* runinfo, DlTdcFlags* flags)
       : TARunObject(runinfo)
