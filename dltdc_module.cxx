@@ -660,8 +660,8 @@ public:
          printf("EVENT %s, ABT %d%d%d, %d hits\n", s.c_str(), t.HaveCh(fConf->fChanA), t.HaveCh(fConf->fChanB), t.HaveCh(fConf->fChanT), ntdchits);
       }
 
-      if (ntdchits != 7)
-         return;
+      //if (ntdchits != 7)
+      //   return;
 
       if (0) {
          printf("have %zu hits:\n", t.fTdcHits.size());
