@@ -1,7 +1,5 @@
-// Gabby Gelinas, July 17, 2024
+// Gabby Gelinas
 // Module for producing coincidence plots with 8 paddles (16 scintillators)
-
-// ASK - I INCLUDED ALL OF THE INCLUDES FROM dltdc8_module.cxx BUT IDK IF THEY ARE ALL NEEDED/WHAT EACH IS FOR
 #include <stdio.h>
 #include <assert.h>
 #include <unistd.h>
@@ -25,9 +23,7 @@
 #include "TF1.h"
 #endif
 
-// copied means copied from dltdc8
 
-// copied
 class DlTdcFlags
 {
 public:
@@ -39,7 +35,7 @@ public:
 };
 
 
-//class DlTdcMap8
+
 class DlTdcCoincMap8
 {
 public:
@@ -158,7 +154,7 @@ public:
    // Make a vector of PAIRS (the lower numbered channel) where each pair is one coincidence you want to examine. 
    //We do this so you don't get an overwhelming number of coincidence plots
    //std::vector<std::pair<int, int>> possibleCoinc = {std::make_pair(4, 8), std::make_pair(2, 6)};
-   std::vector<std::pair<int, int>> possibleCoinc = {std::make_pair(1, 7),std::make_pair(1, 8),std::make_pair(2, 7),std::make_pair(2, 8)}; //PUT BACK gg
+   std::vector<std::pair<int, int>> possibleCoinc = {std::make_pair(1, 7),std::make_pair(1, 8),std::make_pair(2, 7),std::make_pair(2, 8)};
    //printf("defined possibleCoinc"); //testGG
 
 
@@ -329,7 +325,7 @@ public:
       dir->cd(); // select correct ROOT directory
 
       //printf("about to create histograms that we can put stuff in later \n");
-
+      std::vector<int> scintsExamined;
       // Initialize histograms for plots with times along scintillators, widths, and single channels
       for (int coincNum=0; coincNum<possibleCoinc.size(); coincNum++){
          //printf("in the loop \n"); // testingGG
@@ -339,6 +335,7 @@ public:
          int coincPair1=possibleCoinc[coincNum].first; // Pair as in "pair" meaning scintillator. So what scintillator
          int coincPair2=possibleCoinc[coincNum].second;
          std::pair<int,int> thisCoincPairs (coincPair1,coincPair2); // the two scintillators we are looking at right now
+         std::pair<int,int> thisCoincPairs_higherFirst (coincPair2,coincPair1);
 
          //printf("got the pairs \n"); // testingGG
 
@@ -366,6 +363,33 @@ public:
          sprintf(title_timeDiff_pa_pb_papb_cut, "Time difference along pair %d vs pair %d (ns) with coinc between pairs %02d %02d cut", coincPair1,coincPair2,coincPair1,coincPair2);
          sprintf(title_timeDiff_pa_pb_papb_cut_twc, "Time difference along pair %d vs pair %d (ns) with coinc between pairs %02d %02d cut twc", coincPair1,coincPair2, coincPair1,coincPair2);
 
+         sprintf(name_timeDiff_pa_papb, "coinc_tpair%d_ns_cpair_%02d_%02d", coincPair1, coincPair1,coincPair2);
+         sprintf(name_timeDiff_pa_papb_cut, "coinc_tpair%d_ns_cpair_%02d_%02d_cut", coincPair1, coincPair1,coincPair2);
+         sprintf(name_timeDiff_pa_papb_cut_twc, "coinc_tpair%d_ns_cpair_%02d_%02d_cut_twc", coincPair1, coincPair1,coincPair2);//
+
+         sprintf(title_timeDiff_pa_papb, "Time difference along pair %d (ns) with coinc between pairs %02d %02d",  coincPair1, coincPair1,coincPair2);
+         sprintf(title_timeDiff_pa_papb_cut, "Time difference along pair %d (ns) with coinc between pairs %02d %02d cut", coincPair1, coincPair1,coincPair2);
+         sprintf(title_timeDiff_pa_papb_cut_twc, "Time difference along pair %d (ns) with coinc between pairs %02d %02d cut twc", coincPair1, coincPair1,coincPair2);
+
+         //std::pair<int,int> scintPair_alongInterest1 (coincPair1,coincPair1+8);
+
+         timeDiff_pa_papb[thisCoincPairs] = new TH1D(name_timeDiff_pa_papb, title_timeDiff_pa_papb, 200, -10, 10);
+         timeDiff_pa_papb_cut[thisCoincPairs] = new TH1D(name_timeDiff_pa_papb_cut, title_timeDiff_pa_papb_cut, 200, -10, 10);
+         timeDiff_pa_papb_cut_twc[thisCoincPairs] = new TH1D(name_timeDiff_pa_papb_cut_twc, title_timeDiff_pa_papb_cut_twc, 200, -10, 10);
+
+         sprintf(name_timeDiff_pa_papb, "coinc_tpair%d_ns_cpair_%02d_%02d", coincPair2, coincPair1,coincPair2);
+         sprintf(name_timeDiff_pa_papb_cut, "coinc_tpair%d_ns_cpair_%02d_%02d_cut", coincPair2, coincPair1,coincPair2);
+         sprintf(name_timeDiff_pa_papb_cut_twc, "coinc_tpair%d_ns_cpair_%02d_%02d_cut_twc", coincPair2, coincPair1,coincPair2);
+
+         sprintf(title_timeDiff_pa_papb, "Time difference along pair %d (ns) with coinc between pairs %02d %02d", coincPair2, coincPair1,coincPair2);
+         sprintf(title_timeDiff_pa_papb_cut, "Time difference along pair %d (ns) with coinc between pairs %02d %02d cut", coincPair2, coincPair1,coincPair2);
+         sprintf(title_timeDiff_pa_papb_cut_twc, "Time difference along pair %d (ns) with coinc between pairs %02d %02d cut twc", coincPair2, coincPair1,coincPair2);
+
+         //std::pair<int,int> scintPair_alongInterest2 (coincPair2,coincPair2+8);
+
+         timeDiff_pa_papb[thisCoincPairs_higherFirst] = new TH1D(name_timeDiff_pa_papb, title_timeDiff_pa_papb, 200, -10, 10);
+         timeDiff_pa_papb_cut[thisCoincPairs_higherFirst] = new TH1D(name_timeDiff_pa_papb_cut, title_timeDiff_pa_papb_cut, 200, -10, 10);
+         timeDiff_pa_papb_cut_twc[thisCoincPairs_higherFirst] = new TH1D(name_timeDiff_pa_papb_cut_twc, title_timeDiff_pa_papb_cut_twc, 200, -10, 10);
 
          timeDiff_pa_pb_papb[thisCoincPairs] = new TH2D(name_timeDiff_pa_pb_papb, title_timeDiff_pa_pb_papb, 200, -10, 10, 200, -10, 10);
          timeDiff_pa_pb_papb_cut[thisCoincPairs] = new TH2D(name_timeDiff_pa_pb_papb_cut, title_timeDiff_pa_pb_papb_cut, 200, -10, 10, 200, -10, 10);
@@ -375,7 +399,43 @@ public:
          tof_papb_cut[thisCoincPairs] = new TH1D(name_tof_papb_cut, title_tof_papb_cut, 200, -10, 10);
          tof_papb_cut_twc[thisCoincPairs] = new TH1D(name_tof_papb_cut_twc, title_tof_papb_cut_twc, 200, -10, 10);
 
- 
+         /*
+         if ((std::find(scintsExamined.begin(),scintsExamined.end(), coincPair1)==scintsExamined.end()) && (std::find(scintsExamined.begin(),scintsExamined.end(), coincPair2)==scintsExamined.end())){
+               std::pair<int,int> scintPair_alongInterest (coincPair1,coincPair1+8);
+               std::pair<int,int> scintPair_alongInterest2 (coincPair2,coincPair2+8);
+               std::pair<int,int> scintPair_lowerFirst (coincPair1,coincPair2); //whatever scint comes first is the one we are doing the time diff of
+               std::pair<int,int> scintPair_higherFirst (coincPair2,coincPair1);
+               std::cout << "scintPair_alongInterest " << scintPair_alongInterest.first << " " << scintPair_alongInterest.second << std::endl;
+               sprintf(name_timeDiff_pa_papb, "coinc_tpair%d_ns_cpair_%02d_%02d", coincPair1, coincPair1,coincPair2);
+               sprintf(name_timeDiff_pa_papb_cut, "coinc_tpair%d_ns_cpair_%02d_%02d_cut", coincPair1, coincPair1,coincPair2);
+               sprintf(name_timeDiff_pa_papb_cut_twc, "coinc_tpair%d_ns_cpair_%02d_%02d_cut_twc", coincPair1, coincPair1,coincPair2);//
+
+               sprintf(title_timeDiff_pa_papb, "Time difference along pair %d (ns) with coinc between pairs %02d %02d",  coincPair1, coincPair1,coincPair2);
+               sprintf(title_timeDiff_pa_papb_cut, "Time difference along pair %d (ns) with coinc between pairs %02d %02d cut", coincPair1, coincPair1,coincPair2);
+               sprintf(title_timeDiff_pa_papb_cut_twc, "Time difference along pair %d (ns) with coinc between pairs %02d %02d cut twc", coincPair1, coincPair1,coincPair2);
+
+               timeDiff_pa_papb[scintPair_alongInterest] = new TH1D(name_timeDiff_pa_papb, title_timeDiff_pa_papb, 200, -10, 10);
+               timeDiff_pa_papb_cut[scintPair_alongInterest] = new TH1D(name_timeDiff_pa_papb_cut, title_timeDiff_pa_papb_cut, 200, -10, 10);
+               timeDiff_pa_papb_cut_twc[scintPair_alongInterest] = new TH1D(name_timeDiff_pa_papb_cut_twc, title_timeDiff_pa_papb_cut_twc, 200, -10, 10);
+
+               sprintf(name_timeDiff_pa_papb, "coinc_tpair%d_ns_cpair_%02d_%02d", coincPair2, coincPair1,coincPair2);
+               sprintf(name_timeDiff_pa_papb_cut, "coinc_tpair%d_ns_cpair_%02d_%02d_cut", coincPair2, coincPair1,coincPair2);
+               sprintf(name_timeDiff_pa_papb_cut_twc, "coinc_tpair%d_ns_cpair_%02d_%02d_cut_twc", coincPair2, coincPair1,coincPair2);//
+
+               sprintf(title_timeDiff_pa_papb, "Time difference along pair %d (ns) with coinc between pairs %02d %02d",  coincPair2, coincPair1,coincPair2);
+               sprintf(title_timeDiff_pa_papb_cut, "Time difference along pair %d (ns) with coinc between pairs %02d %02d cut", coincPair2, coincPair1,coincPair2);
+               sprintf(title_timeDiff_pa_papb_cut_twc, "Time difference along pair %d (ns) with coinc between pairs %02d %02d cut twc", coincPair2, coincPair1,coincPair2);
+
+               timeDiff_pa_papb[scintPair_alongInterest2] = new TH1D(name_timeDiff_pa_papb, title_timeDiff_pa_papb, 200, -10, 10);
+               timeDiff_pa_papb_cut[scintPair_alongInterest2] = new TH1D(name_timeDiff_pa_papb_cut, title_timeDiff_pa_papb_cut, 200, -10, 10);
+               timeDiff_pa_papb_cut_twc[scintPair_alongInterest2] = new TH1D(name_timeDiff_pa_papb_cut_twc, title_timeDiff_pa_papb_cut_twc, 200, -10, 10);
+
+               //scintsExamined.push_back(coincPair1);
+               //scintsExamined.push_back(coincPair2);
+               scintsExamined.push_back(coincPair1);
+               scintsExamined.push_back(coincPair2);
+            }*/
+
 
          // Make the rest of the names and titles then apply them to histograms we will create
          for (int i=0; i<(thisCoincScint.size()); i++){
@@ -399,13 +459,13 @@ public:
             sprintf(name_timeDiff_pa_papb_cut, "coinc_tpair%d_ns_cpair_%02d_%02d_cut", scintOfInterest, coincPair1,coincPair2);
             sprintf(name_timeDiff_pa_papb_cut_twc, "coinc_tpair%d_ns_cpair_%02d_%02d_cut_twc", scintOfInterest, coincPair1,coincPair2);
 
-            sprintf(name_timeDiff_pa_pb_papb, "coinc_tpair%d_%d_ns_cpair_%02d_%02d", scintOfInterest, otherScint, coincPair1,coincPair2);
-            sprintf(name_timeDiff_pa_pb_papb_cut, "coinc_tpair%d_%d_ns_cpair_%02d_%02d_cut", scintOfInterest, otherScint, coincPair1,coincPair2);
-            sprintf(name_timeDiff_pa_pb_papb_cut_twc, "coinc_tpair%d_%d_ns_cpair_%02d_%02d_cut_twc", scintOfInterest, otherScint, coincPair1,coincPair2);
+            //sprintf(name_timeDiff_pa_pb_papb, "coinc_tpair%d_%d_ns_cpair_%02d_%02d", scintOfInterest, otherScint, coincPair1,coincPair2);
+            //sprintf(name_timeDiff_pa_pb_papb_cut, "coinc_tpair%d_%d_ns_cpair_%02d_%02d_cut", scintOfInterest, otherScint, coincPair1,coincPair2);
+            //sprintf(name_timeDiff_pa_pb_papb_cut_twc, "coinc_tpair%d_%d_ns_cpair_%02d_%02d_cut_twc", scintOfInterest, otherScint, coincPair1,coincPair2);
 
-            sprintf(name_tof_papb, "coinc_tof_cpair_%02d_%02d", coincPair1,coincPair2);
-            sprintf(name_tof_papb_cut, "coinc_tof_cpair_%02d_%02d_cut", coincPair1,coincPair2);
-            sprintf(name_tof_papb_cut_twc, "coinc_tof_cpair_%02d_%02d_cut_twc", coincPair1,coincPair2);
+            //sprintf(name_tof_papb, "coinc_tof_cpair_%02d_%02d", coincPair1,coincPair2);
+            //sprintf(name_tof_papb_cut, "coinc_tof_cpair_%02d_%02d_cut", coincPair1,coincPair2);
+            //sprintf(name_tof_papb_cut_twc, "coinc_tof_cpair_%02d_%02d_cut_twc", coincPair1,coincPair2);
 
             sprintf(name_widths_pa_papb, "coinc_width%d_cpair_%02d_%02d", scintOfInterest, coincPair1,coincPair2);
 
@@ -426,13 +486,13 @@ public:
             sprintf(title_timeDiff_pa_papb_cut, "Time difference along pair %d (ns) with coinc between pairs %02d %02d cut", scintOfInterest, coincPair1,coincPair2);
             sprintf(title_timeDiff_pa_papb_cut_twc, "Time difference along pair %d (ns) with coinc between pairs %02d %02d cut twc", scintOfInterest, coincPair1,coincPair2);
 
-            sprintf(title_timeDiff_pa_pb_papb, "Time difference along pair %d vs pair %d (ns) with coinc between pairs %02d %02d", scintOfInterest, otherScint, coincPair1,coincPair2);
-            sprintf(title_timeDiff_pa_pb_papb_cut, "Time difference along pair %d vs pair %d (ns) with coinc between pairs %02d %02d cut", scintOfInterest, otherScint,coincPair1,coincPair2);
-            sprintf(title_timeDiff_pa_pb_papb_cut_twc, "Time difference along pair %d vs pair %d (ns) with coinc between pairs %02d %02d cut twc", scintOfInterest, otherScint, coincPair1,coincPair2);
+            //sprintf(title_timeDiff_pa_pb_papb, "Time difference along pair %d vs pair %d (ns) with coinc between pairs %02d %02d", scintOfInterest, otherScint, coincPair1,coincPair2);
+            //sprintf(title_timeDiff_pa_pb_papb_cut, "Time difference along pair %d vs pair %d (ns) with coinc between pairs %02d %02d cut", scintOfInterest, otherScint,coincPair1,coincPair2);
+            //sprintf(title_timeDiff_pa_pb_papb_cut_twc, "Time difference along pair %d vs pair %d (ns) with coinc between pairs %02d %02d cut twc", scintOfInterest, otherScint, coincPair1,coincPair2);
 
-            sprintf(title_tof_papb, "TOF with coincidence between pairs %02d %02d", coincPair1,coincPair2);
-            sprintf(title_tof_papb_cut, "TOF with coincidence between pairs %02d %02d cut", coincPair1,coincPair2);
-            sprintf(title_tof_papb_cut_twc, "TOF with coincidence between pairs %02d %02d cut twc", coincPair1,coincPair2);
+            //sprintf(title_tof_papb, "TOF with coincidence between pairs %02d %02d", coincPair1,coincPair2);
+            //sprintf(title_tof_papb_cut, "TOF with coincidence between pairs %02d %02d cut", coincPair1,coincPair2);
+            //sprintf(title_tof_papb_cut_twc, "TOF with coincidence between pairs %02d %02d cut twc", coincPair1,coincPair2);
 
             sprintf(title_widths_pa_papb, "Width on channel %d, coinc between pairs %02d %02d", scintOfInterest, coincPair1,coincPair2);
 
@@ -447,13 +507,28 @@ public:
             sprintf(title_absTimeWidth_cha_papb_twc, "TOF vs width%d coinc btwn pairs %02d %02d twc", scintOfInterest, coincPair1,coincPair2);
 
             //std::cout << "Up here scintPair: " << scintPair.first << " " << scintPair.second << std::endl;
-            std::pair<int,int> scintPair_alongInterest (scintOfInterest,scintOfInterest+8);
+            // Don't initialize the same histogram twice if looking at the same scintillator in two coincidences
+            //printf("scintOfInterest: %d \n", scintOfInterest);
+            /*
+            if ((std::find(scintsExamined.begin(),scintsExamined.end(), scintOfInterest)==scintsExamined.end()) || (std::find(scintsExamined.begin(),scintsExamined.end(), otherScint)==scintsExamined.end())){
+               std::pair<int,int> scintPair_alongInterest (scintOfInterest,scintOfInterest+8);
+               std::cout << "scintPair_alongInterest " << scintPair_alongInterest.first << " " << scintPair_alongInterest.second << std::endl;
+               timeDiff_pa_papb[scintPair_alongInterest] = new TH1D(name_timeDiff_pa_papb, title_timeDiff_pa_papb, 200, -10, 10);
+               timeDiff_pa_papb_cut[scintPair_alongInterest] = new TH1D(name_timeDiff_pa_papb_cut, title_timeDiff_pa_papb_cut, 200, -10, 10);
+               timeDiff_pa_papb_cut_twc[scintPair_alongInterest] = new TH1D(name_timeDiff_pa_papb_cut_twc, title_timeDiff_pa_papb_cut_twc, 200, -10, 10);
+
+               //scintsExamined.push_back(coincPair1);
+               //scintsExamined.push_back(coincPair2);
+               scintsExamined.push_back(scintOfInterest);
+               scintsExamined.push_back(otherScint);
+            }*/
             //std::pair<int,int> scintPair_alongOther (otherScint,otherScint+8);
 
             // Initialize histograms for plots that focus on the lower numbered channel of a scintillator
-            timeDiff_pa_papb[scintPair_alongInterest] = new TH1D(name_timeDiff_pa_papb, title_timeDiff_pa_papb, 200, -10, 10);
-            timeDiff_pa_papb_cut[scintPair_alongInterest] = new TH1D(name_timeDiff_pa_papb_cut, title_timeDiff_pa_papb_cut, 200, -10, 10);
-            timeDiff_pa_papb_cut_twc[scintPair_alongInterest] = new TH1D(name_timeDiff_pa_papb_cut_twc, title_timeDiff_pa_papb_cut_twc, 200, -10, 10);
+            //std::cout << "scintPair_alongInterest: " << scintPair_alongInterest.first << ", " << scintPair_alongInterest.second <<std::endl;
+            //timeDiff_pa_papb[scintPair_alongInterest] = new TH1D(name_timeDiff_pa_papb, title_timeDiff_pa_papb, 200, -10, 10);
+            //timeDiff_pa_papb_cut[scintPair_alongInterest] = new TH1D(name_timeDiff_pa_papb_cut, title_timeDiff_pa_papb_cut, 200, -10, 10);
+            //timeDiff_pa_papb_cut_twc[scintPair_alongInterest] = new TH1D(name_timeDiff_pa_papb_cut_twc, title_timeDiff_pa_papb_cut_twc, 200, -10, 10);
 
             widths_pa_papb[scintPair] = new TH2D(name_widths_pa_papb, title_widths_pa_papb, 200, -10, 10, 200, -10, 10);
 
@@ -559,8 +634,8 @@ void PauseRun(TARunInfo* runinfo)
 
 
 // Define function to fill histograms
-//void do_quadcoinc(int scint_a, int scint_b, const DlTdcEvent& t, std::vector<double> ww_ns,TARunInfo* runinfo)
-void do_quadcoinc(int scint_a, int scint_b, const DlTdcEvent& t, std::vector<double> ww_ns)
+void do_quadcoinc(int scint_a, int scint_b, const DlTdcEvent& t, std::vector<double> ww_ns,TARunInfo* runinfo)
+//void do_quadcoinc(int scint_a, int scint_b, const DlTdcEvent& t, std::vector<double> ww_ns)
    {
    //printf("entered do_quadcoinc \n"); //testgg
    //printf("MODULE - coinc, doing quad coinc GABBY\n");  
@@ -622,7 +697,6 @@ void do_quadcoinc(int scint_a, int scint_b, const DlTdcEvent& t, std::vector<dou
                 // twice but reversed (i.e. t9-t1 and t1-t9). Set so index i tracks the higher numbered channel
                 // chan_i < 17 keeps us within the number of scintillator channels we actually have. No fake channels
                 //if ((chan_i==chan_j8) && (chan_j < 17)) {
-                //if ((chan_j==chan_i8) && (chan_j < 9)) { // no segmentation faults but not logical, the two conditions don't work together
                 if ((chan_j==chan_i8) && (chan_j < 17)) {
                 //if ((chan_i==chan_j8) && (chan_j8 < 17)) {
                   //printf("inside loop for chanel numbers that are the same (along one scintillator) \n"); //testgg
@@ -633,36 +707,35 @@ void do_quadcoinc(int scint_a, int scint_b, const DlTdcEvent& t, std::vector<dou
                     //printf("Along a scintillator %d \n", chan_i);
                     //double timeDiff_pair = subtract_ns(t.GetCh(scintPairs[channelNumbers[i]].second).fLe, t.GetCh(scintPairs[channelNumbers[i]].first).fLe);
                     //subtract_alongPair.push_back({(channelNumbers[i], channelNumbers[j]), timeDiff_pair});
-                    timeDiff_pa = subtract_ns(t.GetCh(scintPairs[channelNumbers[i]].second).fLe, t.GetCh(scintPairs[channelNumbers[i]].first).fLe);
+
+                    //timeDiff_pa = subtract_ns(t.GetCh(scintPairs[channelNumbers[i]].second).fLe, t.GetCh(scintPairs[channelNumbers[i]].first).fLe);
+
                     //printf("SAME t.GetCh(scintPairs[channelNumbers[i]].second).fLe: %.16f \n", t.GetCh(scintPairs[channelNumbers[i]].second).fLe);
                     //printf("SAME timeDiff_pa: %f \n", timeDiff_pa);
                     //timeDiff_pb = subtract_ns(t.GetCh(scintPairs[channelNumbers[j]].second).fLe, t.GetCh(scintPairs[channelNumbers[j]].first).fLe);
                     //printf("time diff subtractions done \n");
                     
-                    double timeDiff_pa_twc = timeDiff_pa + (ww_twc / sqrt(ww_ns[channelNumbers[j]]) - ww_twc / sqrt(ww_ns[channelNumbers[i]]));
+                    //double timeDiff_pa_twc = timeDiff_pa + (ww_twc / sqrt(ww_ns[channelNumbers[j]]) - ww_twc / sqrt(ww_ns[channelNumbers[i]]));
+
                     //std:: cout << "chanPair_ij: " << chanPair_ij.first << " " << chanPair_ij.second << std::endl;
                     //std:: cout << "exists? " << timeDiff_pa_papb[chanPair_ij] << std::endl;
-                    //TFile *f = (TFile*)runinfo->fRoot->fOutputFile;
-                    //TDirectory *dir = (TDirectory*)f->Get("coinc")
-                    //dir->cd(); 
-                    timeDiff_pa_papb[chanPair_ij]->Fill(0);//timeDiff_pa); // no width cut
+                    //std::cout << "Down here: " << chanPair_ij.first << ", " << chanPair_ij.second << std::endl;
+
+                  
+                  //timeDiff_pa_papb[chanPair_ij]->Fill(0);//timeDiff_pa); // no width cut // problem line - not filling (no plots of this type are, cut and twc included)
+                    
                     //std::cout << success << std::endl;
                     //double timeDiff_pb_twc = timeDiff_pa + (ww_twc / sqrt(ww_ns[channelNumbers[i]]) - ww_twc / sqrt(ww_ns[channelNumbers[j]])); //check
                     //printf("time diff subtractions done twc \n");
                     //subtract_alongPair_twc.push_back({(channelNumbers[i], channelNumbers[j]), timeDiff_pair_twc});
                      //printf("time diff calculations done \n");
 
-                     //for (const auto & [key, value] : timeDiff_pa_papb){
-                     //      std::cout<<key.first << ' ' <<key.second<<std::endl;
-                     //      std::cout << value << std::endl;
-                     //}
-
                     // Fill histograms that have a width cut
                     if (ww_ns[channelNumbers[i]] > width_cut && ww_ns[channelNumbers[i]+8] > width_cut && ww_ns[channelNumbers[j]] > width_cut && ww_ns[channelNumbers[j]+8] > width_cut) {
                         //printf("about to do width cut along a scintillator \n"); //testgg
-                        timeDiff_pa_papb_cut[chanPair_ij]->Fill(timeDiff_pa);
+                        //timeDiff_pa_papb_cut[chanPair_ij]->Fill(timeDiff_pa);
                         //printf("did width cut along a scintillator 1 \n"); //testgg
-                        timeDiff_pa_papb_cut_twc[chanPair_ij]->Fill(timeDiff_pa_twc);
+                        //timeDiff_pa_papb_cut_twc[chanPair_ij]->Fill(timeDiff_pa_twc);
 
                         //printf("did width cut along a scintillator 2 \n"); //testgg
                         //printf("Filled histograms \n");
@@ -672,7 +745,7 @@ void do_quadcoinc(int scint_a, int scint_b, const DlTdcEvent& t, std::vector<dou
                 //if ((i != j) && (chan_i < 9) && (chan_j < 9) && (chan_i > chan_j) && (chan_i != chan_j+8)){
                 // The graphs in this condition get filled
                 if ((i != j) && (chan_i < 9) && (chan_j < 9) && (chan_i < chan_j) && (chan_i+8 != chan_j)){
-                 //printf("inside loop for chanel numbers that are the different (two scintillator) \n"); //testgg
+                  //printf("inside loop for chanel numbers that are the different (two scintillator) \n"); //testgg
                   //printf("chan_i = %d, chan_j=%d \n", chan_i, chan_j); //testgg
                   // Doing subtractions between different scintillators. Can do non-physical and absoulte time here (do absolute by adding 8 to one)
                   // The last condition is to make sure that we follow Konstantin's convension of doing higher numbered channel minus lower
@@ -717,6 +790,10 @@ void do_quadcoinc(int scint_a, int scint_b, const DlTdcEvent& t, std::vector<dou
                     
                   double timeDiff_pa_twc = timeDiff_pa + (ww_twc / sqrt(ww_ns[channelNumbers[j]]) - ww_twc / sqrt(ww_ns[channelNumbers[i]]));
                   double timeDiff_pb_twc = timeDiff_pa + (ww_twc / sqrt(ww_ns[channelNumbers[i]]) - ww_twc / sqrt(ww_ns[channelNumbers[j]])); //check
+                  
+                  // Laura
+                  timeDiff_pa_papb[chanPair_ij]->Fill(timeDiff_pa);
+                  timeDiff_pa_papb[chanPair_ji]->Fill(timeDiff_pb);
 
                   timeDiff_pa_pb_papb[chanPair_ij]->Fill(timeDiff_pa,timeDiff_pb);
                   //printf("done timeDiff_pa_pb_papb \n");
@@ -739,48 +816,53 @@ void do_quadcoinc(int scint_a, int scint_b, const DlTdcEvent& t, std::vector<dou
 
 
 
-                    // Fill histograms with a width cut
-                    if (ww_ns[channelNumbers[i]] > width_cut && ww_ns[channelNumbers[i]+8] > width_cut && ww_ns[channelNumbers[j]] > width_cut && ww_ns[channelNumbers[j]+8] > width_cut) {
-                        //printf("different scint - doing width cut \n"); //testgg
-                        //printf("Enters different scintillators width cut \n");
+                  // Fill histograms with a width cut
+                  if (ww_ns[channelNumbers[i]] > width_cut && ww_ns[channelNumbers[i]+8] > width_cut && ww_ns[channelNumbers[j]] > width_cut && ww_ns[channelNumbers[j]+8] > width_cut) {
+                     //printf("Enters different scintillators width cut \n");
 
-                        //std::cout << "chanPair_ij " << chanPair_ij.first << " " << chanPair_ij.second << std::endl;
-                        //std::cout << "tof_a0a1b0b1 " << tof_a0a1b0b1 << std::endl;
-                        //std::cout << "tof_a0a1b0b1_twc " << tof_a0a1b0b1_twc << std::endl;
-                        //std::cout << "tof_papb_cut " << tof_papb_cut[chanPair_ij] << std::endl;
-                        //std::cout << "tof_papb_cut_twc " << tof_papb_cut_twc[chanPair_ij] << std::endl;
+                     //std::cout << "chanPair_ij " << chanPair_ij.first << " " << chanPair_ij.second << std::endl;
+                     //std::cout << "tof_a0a1b0b1 " << tof_a0a1b0b1 << std::endl;
+                     //std::cout << "tof_a0a1b0b1_twc " << tof_a0a1b0b1_twc << std::endl;
+                     //std::cout << "tof_papb_cut " << tof_papb_cut[chanPair_ij] << std::endl;
+                     //std::cout << "tof_papb_cut_twc " << tof_papb_cut_twc[chanPair_ij] << std::endl;
 
-                        tof_papb_cut[chanPair_ij]->Fill(tof_a0a1b0b1);
-                        tof_papb_cut_twc[chanPair_ij]->Fill(tof_a0a1b0b1_twc);
-                        //printf("First block width calculations done \n");
+                     timeDiff_pa_papb_cut[chanPair_ij]->Fill(timeDiff_pa);
+                     timeDiff_pa_papb_cut_twc[chanPair_ij]->Fill(timeDiff_pa_twc);
+                     timeDiff_pa_papb_cut[chanPair_ji]->Fill(timeDiff_pb);
+                     timeDiff_pa_papb_cut_twc[chanPair_ji]->Fill(timeDiff_pb_twc);
 
-                        absTime_chapb_cut_twc[chanPair_ij]->Fill(absTime_a0_twc);
-                        absTime_chapb_cut_twc[chanPair_i8j]->Fill(absTime_a1_twc);
-                        absTime_chapb_cut_twc[chanPair_ji]->Fill(absTime_b0_twc);
-                        absTime_chapb_cut_twc[chanPair_j8i]->Fill(absTime_b1_twc);
-                        //printf("Second block width calculations done \n");
+               
 
-                        //std::cout << "timeDiff_pa_pb_papb_cut " << timeDiff_pa_pb_papb_cut[chanPair_ij] << std::endl;
-                        timeDiff_pa_pb_papb_cut[chanPair_ij]->Fill(t_scinta_ns,t_scintb_ns);
-                        timeDiff_pa_pb_papb_cut_twc[chanPair_ij]->Fill(timeDiff_pa_twc,timeDiff_pb_twc);
-                        //printf("Third block width calculations done \n");
+                     tof_papb_cut[chanPair_ij]->Fill(tof_a0a1b0b1);
+                     tof_papb_cut_twc[chanPair_ij]->Fill(tof_a0a1b0b1_twc);
+                     //printf("First block width calculations done \n");
 
-                        tofwidth_cha_papb_cut[chanPair_ij]->Fill(tof_a0a1b0b1, ww_ns[channelNumbers[i]]);
-                        tofwidth_cha_papb_cut[chanPair_i8j]->Fill(tof_a0a1b0b1, ww_ns[channelNumbers[i]+8]);
-                        tofwidth_cha_papb_cut[chanPair_ji]->Fill(tof_a0a1b0b1, ww_ns[channelNumbers[j]]);
-                        tofwidth_cha_papb_cut[chanPair_j8i]->Fill(tof_a0a1b0b1, ww_ns[channelNumbers[j]+8]);
+                     absTime_chapb_cut_twc[chanPair_ij]->Fill(absTime_a0_twc);
+                     absTime_chapb_cut_twc[chanPair_i8j]->Fill(absTime_a1_twc);
+                     absTime_chapb_cut_twc[chanPair_ji]->Fill(absTime_b0_twc);
+                     absTime_chapb_cut_twc[chanPair_j8i]->Fill(absTime_b1_twc);
+                     //printf("Second block width calculations done \n");
 
-                        tofwidth_cha_papb_cut_twc[chanPair_ij]->Fill(tof_a0a1b0b1_twc, ww_ns[channelNumbers[i]]);
-                        tofwidth_cha_papb_cut_twc[chanPair_i8j]->Fill(tof_a0a1b0b1_twc, ww_ns[channelNumbers[i]+8]);
-                        tofwidth_cha_papb_cut_twc[chanPair_ji]->Fill(tof_a0a1b0b1_twc, ww_ns[channelNumbers[j]]);
-                        tofwidth_cha_papb_cut_twc[chanPair_j8i]->Fill(tof_a0a1b0b1_twc, ww_ns[channelNumbers[j]+8]);
+                     //std::cout << "timeDiff_pa_pb_papb_cut " << timeDiff_pa_pb_papb_cut[chanPair_ij] << std::endl;
+                     timeDiff_pa_pb_papb_cut[chanPair_ij]->Fill(t_scinta_ns,t_scintb_ns);
+                     timeDiff_pa_pb_papb_cut_twc[chanPair_ij]->Fill(timeDiff_pa_twc,timeDiff_pb_twc);
+                     //printf("Third block width calculations done \n");
 
-                        absTimeWidth_cha_papb_twc[chanPair_ij] -> Fill(absTime_a0_twc, ww_ns[channelNumbers[i]]);
-                        absTimeWidth_cha_papb_twc[chanPair_i8j]-> Fill(absTime_a1_twc, ww_ns[channelNumbers[i]+8]);
-                        absTimeWidth_cha_papb_twc[chanPair_ji] -> Fill(absTime_b0_twc, ww_ns[channelNumbers[j]]);
-                        absTimeWidth_cha_papb_twc[chanPair_j8i]-> Fill(absTime_b1_twc, ww_ns[channelNumbers[j]+8]); 
-                        //printf("Fourth block width calculations done \n");
-                     //printf("different scint - done width cut \n"); //testgg
+                     tofwidth_cha_papb_cut[chanPair_ij]->Fill(tof_a0a1b0b1, ww_ns[channelNumbers[i]]);
+                     tofwidth_cha_papb_cut[chanPair_i8j]->Fill(tof_a0a1b0b1, ww_ns[channelNumbers[i]+8]);
+                     tofwidth_cha_papb_cut[chanPair_ji]->Fill(tof_a0a1b0b1, ww_ns[channelNumbers[j]]);
+                     tofwidth_cha_papb_cut[chanPair_j8i]->Fill(tof_a0a1b0b1, ww_ns[channelNumbers[j]+8]);
+
+                     tofwidth_cha_papb_cut_twc[chanPair_ij]->Fill(tof_a0a1b0b1_twc, ww_ns[channelNumbers[i]]);
+                     tofwidth_cha_papb_cut_twc[chanPair_i8j]->Fill(tof_a0a1b0b1_twc, ww_ns[channelNumbers[i]+8]);
+                     tofwidth_cha_papb_cut_twc[chanPair_ji]->Fill(tof_a0a1b0b1_twc, ww_ns[channelNumbers[j]]);
+                     tofwidth_cha_papb_cut_twc[chanPair_j8i]->Fill(tof_a0a1b0b1_twc, ww_ns[channelNumbers[j]+8]);
+
+                     absTimeWidth_cha_papb_twc[chanPair_ij] -> Fill(absTime_a0_twc, ww_ns[channelNumbers[i]]);
+                     absTimeWidth_cha_papb_twc[chanPair_i8j]-> Fill(absTime_a1_twc, ww_ns[channelNumbers[i]+8]);
+                     absTimeWidth_cha_papb_twc[chanPair_ji] -> Fill(absTime_b0_twc, ww_ns[channelNumbers[j]]);
+                     absTimeWidth_cha_papb_twc[chanPair_j8i]-> Fill(absTime_b1_twc, ww_ns[channelNumbers[j]+8]); 
+                     //printf("Fourth block width calculations done \n");
                     }
                 }
             }
@@ -790,7 +872,7 @@ void do_quadcoinc(int scint_a, int scint_b, const DlTdcEvent& t, std::vector<dou
 
 
 // Call function for each possible quad coincidence in this function
-void AnalyzeTdcEvent(const DlTdcEvent& t)
+void AnalyzeTdcEvent(const DlTdcEvent& t, TARunInfo* runinfo)
    {  
       printf("New AnalyzeTDCEvent \n"); //testgg
       if (fFlags->fDebug) {
@@ -845,10 +927,10 @@ void AnalyzeTdcEvent(const DlTdcEvent& t)
 
    // ALL MY COINCIDENCE FUNCTIONS
    //do_quadcoinc(4, 8, t, ww_ns);
-   do_quadcoinc(1, 7, t, ww_ns);
-   do_quadcoinc(1, 8, t, ww_ns);
-   do_quadcoinc(2, 7, t, ww_ns);
-   do_quadcoinc(2, 8, t, ww_ns);
+   do_quadcoinc(1, 7, t, ww_ns, runinfo);
+   do_quadcoinc(1, 8, t, ww_ns, runinfo);
+   do_quadcoinc(2, 7, t, ww_ns, runinfo);
+   do_quadcoinc(2, 8, t, ww_ns, runinfo);
    //printf("did a coincidence analysis \n"); //testgg
 
    }; 
@@ -866,7 +948,7 @@ TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowE
 
       DlTdcEventFlow* f = flow->Find<DlTdcEventFlow>();
       if (f) {
-         AnalyzeTdcEvent(*f->fDlTdcEvent);
+         AnalyzeTdcEvent(*f->fDlTdcEvent, runinfo);
       }
       return flow;
    }
