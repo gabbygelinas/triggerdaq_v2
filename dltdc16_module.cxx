@@ -81,37 +81,72 @@ bool DlTdcMap16::Init(int runno)
 {
    printf("DlTdcMap16 for run %d!\n", runno);
 
-   fMap.resize(16+1);
+   fMap.resize(32+1);
+
+   // TDC connector P1, A-side
    
-   fMap[1]  =  0; // chan1
-   fMap[2]  =  1; // chan2
-   fMap[3]  = 10; // chan3
-   fMap[4]  = 11; // chan4
-   fMap[5]  =  2 + 16; // chan5
-   fMap[6]  =  3 + 16; // chan6
-   fMap[7]  =  8 + 16; // chan7
-   fMap[8]  =  9 + 16; // chan8
+   fMap[1]  =  0;
+   fMap[2]  =  1;
+   fMap[3]  = 10;
+   fMap[4]  = 11;
+   fMap[5]  =  2;
+   fMap[6]  =  3;
+   fMap[7]  =  8;
+   fMap[8]  =  9;
    
    fMap[9]  = 15;
    fMap[10] = 14;
    fMap[11] =  7;
    fMap[12] =  6;
-   fMap[13] = 13 + 16;
-   fMap[14] = 12 + 16;
-   fMap[15] =  5 + 16;
-   fMap[16] =  4 + 16;
+   fMap[13] = 13;
+   fMap[14] = 12;
+   fMap[15] =  5;
+   fMap[16] =  4;
+
+   // TDC connector P2, B-side
    
-   fPair1.resize(8+1);
-   fPair2.resize(8+1);
+   fMap[17] =  0 + 16;
+   fMap[18] =  1 + 16;
+   fMap[19] = 10 + 16;
+   fMap[20] = 11 + 16;
+   fMap[21] =  2 + 16;
+   fMap[22] =  3 + 16;
+   fMap[23] =  8 + 16;
+   fMap[24] =  9 + 16;
    
-   fPair1[1] =  1; fPair2[1] =  9; // chan14
-   fPair1[2] =  2; fPair2[2] = 10; // chan23
-   fPair1[3] =  3; fPair2[3] = 11; // chan58
-   fPair1[4] =  4; fPair2[4] = 12; // chan67
+   fMap[25] = 15 + 16;
+   fMap[26] = 14 + 16;
+   fMap[27] =  7 + 16;
+   fMap[28] =  6 + 16;
+   fMap[29] = 13 + 16;
+   fMap[30] = 12 + 16;
+   fMap[31] =  5 + 16;
+   fMap[32] =  4 + 16;
+   
+   fPair1.resize(16+1);
+   fPair2.resize(16+1);
+
+   // A-side
+   
+   fPair1[1] =  1; fPair2[1] =  9;
+   fPair1[2] =  2; fPair2[2] = 10;
+   fPair1[3] =  3; fPair2[3] = 11;
+   fPair1[4] =  4; fPair2[4] = 12;
    fPair1[5] =  5; fPair2[5] = 13;
    fPair1[6] =  6; fPair2[6] = 14;
    fPair1[7] =  7; fPair2[7] = 15;
    fPair1[8] =  8; fPair2[8] = 16;
+
+   // B-side
+
+   fPair1[8+1] =  1+16; fPair2[8+1] =  9+16;
+   fPair1[8+2] =  2+16; fPair2[8+2] = 10+16;
+   fPair1[8+3] =  3+16; fPair2[8+3] = 11+16;
+   fPair1[8+4] =  4+16; fPair2[8+4] = 12+16;
+   fPair1[8+5] =  5+16; fPair2[8+5] = 13+16;
+   fPair1[8+6] =  6+16; fPair2[8+6] = 14+16;
+   fPair1[8+7] =  7+16; fPair2[8+7] = 15+16;
+   fPair1[8+8] =  8+16; fPair2[8+8] = 16+16;
 
    return true;
 };
