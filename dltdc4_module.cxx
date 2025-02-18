@@ -1607,7 +1607,7 @@ public:
       printf("--dltdc4-triggered -- analyze only events with hit in channel T (coincidence of A and B)\n");
       printf("--dltdc4-debug -- print detailed information\n");
       printf("--dltdc4-print -- print events\n");
-      printf("--dltdc4-twc -- get twc W parameter");
+      printf("--dltdc4-twc -- get twc W parameter\n");
    }
 
    void Init(const std::vector<std::string> &args)

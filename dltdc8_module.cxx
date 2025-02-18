@@ -1626,7 +1626,7 @@ public:
       printf("--dltdc8-triggered -- analyze only events with hit in channel T (coincidence of A and B)\n");
       printf("--dltdc8-debug -- print detailed information\n");
       printf("--dltdc8-print -- print events\n");
-      printf("--dltdc8-twc -- get twc W parameter");
+      printf("--dltdc8-twc -- get twc W parameter\n");
    }
 
    void Init(const std::vector<std::string> &args)
