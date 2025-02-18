@@ -157,6 +157,11 @@ public:
    DlTdcFlags* fFlags = NULL;
    
 #ifdef HAVE_ROOT
+   TH1D* fH_nhits = NULL;
+   TH1D* fH_tdcmap = NULL;
+   TH1D* fH_chanmap = NULL;
+   TH2D* fH_tdc_chan_map = NULL;
+
    TH1D* fHtABns = NULL;
 
    std::vector<TH1D*> fHw_ns;
@@ -431,7 +436,19 @@ public:
       TDirectory* dir = gDirectory->mkdir("dltdc16");
       dir->cd(); // select correct ROOT directory
 
-      fHtABns = new TH1D("dltdc16_tABns", "time between 1234 trigger and 4567 trigger, A-B, ns", 200, -10, 10);
+      fH_nhits = new TH1D("dltdc16_nhits", "Number of TDC hits per event", 40, -0.5, 40-0.5);
+      fH_tdcmap = new TH1D("dltdc16_tdcmap", "TDC occupancy", fMap16->fMap.size(), 0.5, fMap16->fMap.size()+0.5);
+      fH_chanmap = new TH1D("dltdc16_chanmap", "Channel occupancy", fMap16->fMap.size(), 0.5, fMap16->fMap.size()+0.5);
+      fH_tdc_chan_map = new TH2D("dltdc16_tdc_chan_map", "tdc to channel map", fMap16->fMap.size(), 0.5, fMap16->fMap.size()+0.5, fMap16->fMap.size(), 0.5, fMap16->fMap.size()+0.5);
+
+
+      fHw_ns_chanmap = new TH2D("dltdc16_w_ns_chanmap", "Pulse width, ns, for each channel", fMap16->fMap.size(), 0.5, fMap16->fMap.size()+0.5, 100, 0, 100);
+
+      fHw_ns_chanmap_cut = new TH2D("dltdc16_w_ns_chanmap_cut", "Pulse width, ns, for each channel", fMap16->fMap.size(), 0.5, fMap16->fMap.size()+0.5, 100, 0, 100);
+
+      TDirectory* dir_ph = dir->mkdir("per-channel pulse height plots");
+
+      dir_ph->cd();
 
       fHw_ns.resize(fMap16->fMap.size() + 1);
 
@@ -455,13 +472,17 @@ public:
          fHw_ns_cut[i] = new TH1D(name, title, 100, 0, 100);
       }
 
-      fHw_ns_chanmap = new TH2D("dltdc16_w_ns_chanmap", "Pulse width, ns, for each channel", fMap16->fMap.size(), 0.5, fMap16->fMap.size()+0.5, 100, 0, 100);
-
-      fHw_ns_chanmap_cut = new TH2D("dltdc16_w_ns_chanmap_cut", "Pulse width, ns, for each channel", fMap16->fMap.size(), 0.5, fMap16->fMap.size()+0.5, 100, 0, 100);
+      dir->cd();
 
       fHwAns = new TH1D("dltdc16_wA_ns", "width of A, ns", 100, 0, 100);
       fHwBns = new TH1D("dltdc16_wB_ns", "width of B, ns", 100, 0, 100);
       fHwTns = new TH1D("dltdc16_wT_ns", "width of T, ns", 100, 0, 100);
+
+      fHtABns = new TH1D("dltdc16_t_A_B_ns", "coincidence time, tA-tB, ns", 200, -10, 10);
+
+      TDirectory* dir_sc_ph = dir->mkdir("per-scintillator pulse height plots");
+
+      dir_sc_ph->cd();
 
       fHwpair_ns.resize(fMap16->fPair1.size() + 1);
 
@@ -472,10 +493,12 @@ public:
          char name[256];
          char title[256];
 
-         sprintf(name, "dltdc16_pair%d_w_%02d_%02d_ns", (int)p, c1, c2);
-         sprintf(title, "pair %d pulse width chan %2d vs chan %2d, ns", (int)p, c2, c1);
+         sprintf(name, "dltdc16_sc%02d_w_%02d_%02d_ns", (int)p, c1, c2);
+         sprintf(title, "sc %2d pulse width chan %2d vs chan %2d, ns", (int)p, c2, c1);
          fHwpair_ns[p] = new TH2D(name, title, 100, 0, 100, 100, 0, 100);
       }
+
+      dir->mkdir("per-scintillator fine time plots")->cd();
 
       //fHpairPP.resize(fMap16->fPair1.size() + 1);
       fHpairFF.resize(fMap16->fPair1.size() + 1);
@@ -490,14 +513,16 @@ public:
          char name[256];
          char title[256];
 
-         //sprintf(name, "dltdc16_pair%d_t_%02d_%02d_PP", (int)p, c1, c2);
-         //sprintf(title, "pair %d time bin chan %2d vs chan %2d, tdc %2d vs %2d", (int)p, c2, c1, tdc2, tdc1);
+         //sprintf(name, "dltdc16_sc%02d_t_%02d_%02d_PP", (int)p, c1, c2);
+         //sprintf(title, "sc %2d time bin chan %2d vs chan %2d, tdc %2d vs %2d", (int)p, c2, c1, tdc2, tdc1);
          //fHpairPP[p] = new TH2D(name, title, 101, -50.5, 50.5, 101, -50.5, 50.5);
 
-         sprintf(name, "dltdc16_pair%d_t_%02d_%02d_FF", (int)p, c1, c2);
-         sprintf(title, "pair %d fine time chan %2d vs %2d, tdc %2d vs %2d, ns vs ns", (int)p, c2, c1, tdc2, tdc1);
+         sprintf(name, "dltdc16_sc%02d_t_%02d_%02d_FF", (int)p, c1, c2);
+         sprintf(title, "sc %2d fine time chan %2d vs %2d, tdc %2d vs %2d, ns vs ns", (int)p, c2, c1, tdc2, tdc1);
          fHpairFF[p] = new TH2D(name, title, 200, -5, 15, 200, -5, 15);
       }
+
+      dir->mkdir("per-scintillator raw L-R time plots")->cd();
 
       fHtpair_ns.resize(fMap16->fPair1.size() + 1);
 
@@ -508,10 +533,12 @@ public:
          char name[256];
          char title[256];
 
-         sprintf(name, "dltdc16_pair%d_t_%02d_%02d_ns", (int)p, c1, c2);
-         sprintf(title, "pair %d time difference chan %2d minus %2d, ns", (int)p, c2, c1);
+         sprintf(name, "dltdc16_sc%02d_t_%02d_%02d_ns", (int)p, c1, c2);
+         sprintf(title, "sc %2d time difference chan %2d minus %2d, ns", (int)p, c2, c1);
          fHtpair_ns[p] = new TH1D(name, title, 200, -10, 10);
       }
+
+      dir->mkdir("per-scintillator cut L-R time plots")->cd();
 
       fHtpair_w1_ns.resize(fMap16->fPair1.size() + 1);
       fHtpair_w2_ns.resize(fMap16->fPair1.size() + 1);
@@ -523,12 +550,12 @@ public:
          char name[256];
          char title[256];
 
-         sprintf(name, "dltdc16_pair%d_t_w1_%02d_%02d_ns", (int)p, c1, c2);
-         sprintf(title, "pair %d time difference chan %2d minus %2d, ns vs pulse width chan %2d", (int)p, c2, c1, c1);
+         sprintf(name, "dltdc16_sc%02d_t_w1_%02d_%02d_ns", (int)p, c1, c2);
+         sprintf(title, "sc %2d time difference chan %2d minus %2d, ns vs pulse width chan %2d", (int)p, c2, c1, c1);
          fHtpair_w1_ns[p] = new TH2D(name, title, 100, 0, 100, 200, -10, 10);
 
-         sprintf(name, "dltdc16_pair%d_t_w2_%02d_%02d_ns", (int)p, c1, c2);
-         sprintf(title, "pair %d time difference chan %2d minus %2d, ns vs pulse width chan %2d", (int)p, c2, c1, c2);
+         sprintf(name, "dltdc16_sc%02d_t_w2_%02d_%02d_ns", (int)p, c1, c2);
+         sprintf(title, "sc %2d time difference chan %2d minus %2d, ns vs pulse width chan %2d", (int)p, c2, c1, c2);
          fHtpair_w2_ns[p] = new TH2D(name, title, 100, 0, 100, 200, -10, 10);
       }
 
@@ -542,12 +569,12 @@ public:
          char name[256];
          char title[256];
 
-         sprintf(name, "dltdc16_pair%d_t_w1_%02d_%02d_ns_cut_w2", (int)p, c1, c2);
-         sprintf(title, "pair %d time difference chan %2d minus %2d, ns vs pulse width chan %2d, cut on width of %2d", (int)p, c2, c1, c1, c2);
+         sprintf(name, "dltdc16_sc%02d_t_w1_%02d_%02d_ns_cut_w2", (int)p, c1, c2);
+         sprintf(title, "sc %2d time difference chan %2d minus %2d, ns vs pulse width chan %2d, cut on width of %2d", (int)p, c2, c1, c1, c2);
          fHtpair_w1_ns_cut_w2[p] = new TH2D(name, title, 100, 0, 100, 200, -10, 10);
 
-         sprintf(name, "dltdc16_pair%d_t_w2_%02d_%02d_ns_cut_w1", (int)p, c1, c2);
-         sprintf(title, "pair %d time difference chan %2d minus %2d, ns vs pulse width chan %2d, cut on width of %2d", (int)p, c2, c1, c2, c1);
+         sprintf(name, "dltdc16_sc%02d_t_w2_%02d_%02d_ns_cut_w1", (int)p, c1, c2);
+         sprintf(title, "sc %2d time difference chan %2d minus %2d, ns vs pulse width chan %2d, cut on width of %2d", (int)p, c2, c1, c2, c1);
          fHtpair_w2_ns_cut_w1[p] = new TH2D(name, title, 100, 0, 100, 200, -10, 10);
       }
 
@@ -560,10 +587,12 @@ public:
          char name[256];
          char title[256];
 
-         sprintf(name, "dltdc16_pair%d_t_%02d_%02d_ns_cut", (int)p, c1, c2);
-         sprintf(title, "pair %d time difference chan %2d minus %2d, ns, with cut on width", (int)p, c2, c1);
+         sprintf(name, "dltdc16_sc%02d_t_%02d_%02d_ns_cut", (int)p, c1, c2);
+         sprintf(title, "sc %2d time difference chan %2d minus %2d, ns, with cut on width", (int)p, c2, c1);
          fHtpair_ns_cut[p] = new TH1D(name, title, 200, -10, 10);
       }
+
+      dir->mkdir("per-scintillator time walk correction plots")->cd();
 
       fHtpair_w1_ns_cut_w2_twc.resize(fMap16->fPair1.size() + 1);
       fHtpair_w2_ns_cut_w1_twc.resize(fMap16->fPair1.size() + 1);
@@ -575,14 +604,16 @@ public:
          char name[256];
          char title[256];
 
-         sprintf(name, "dltdc16_pair%d_t_w1_%02d_%02d_ns_twc", (int)p, c1, c2);
-         sprintf(title, "pair %d time difference chan %2d minus %2d, ns vs pulse width chan %2d, cut on width of %2d, with time walk correction", (int)p, c2, c1, c1, c2);
+         sprintf(name, "dltdc16_sc%02d_t_w1_%02d_%02d_ns_twc", (int)p, c1, c2);
+         sprintf(title, "sc %2d time difference chan %2d minus %2d, ns vs pulse width chan %2d, cut on width of %2d, with time walk correction", (int)p, c2, c1, c1, c2);
          fHtpair_w1_ns_cut_w2_twc[p] = new TH2D(name, title, 100, 0, 100, 200, -10, 10);
 
-         sprintf(name, "dltdc16_pair%d_t_w2_%02d_%02d_ns_twc", (int)p, c1, c2);
-         sprintf(title, "pair %d time difference chan %2d minus %2d, ns vs pulse width chan %2d, cut on width of %2d, with time walk correction", (int)p, c2, c1, c2, c1);
+         sprintf(name, "dltdc16_sc%02d_t_w2_%02d_%02d_ns_twc", (int)p, c1, c2);
+         sprintf(title, "sc %2d time difference chan %2d minus %2d, ns vs pulse width chan %2d, cut on width of %2d, with time walk correction", (int)p, c2, c1, c2, c1);
          fHtpair_w2_ns_cut_w1_twc[p] = new TH2D(name, title, 100, 0, 100, 200, -10, 10);
       }
+
+      dir->cd();
 
       fHtpair_ns_cut_twc.resize(fMap16->fPair1.size() + 1);
 
@@ -593,8 +624,8 @@ public:
          char name[256];
          char title[256];
 
-         sprintf(name, "dltdc16_pair%d_t_%02d_%02d_ns_cut_twc", (int)p, c1, c2);
-         sprintf(title, "pair %d time difference chan %2d minus %2d, ns, with cut on width and time walk correction", (int)p, c2, c1);
+         sprintf(name, "dltdc16_sc%02d_t_%02d_%02d_ns_cut_twc", (int)p, c1, c2);
+         sprintf(title, "sc %2d time difference chan %2d minus %2d, ns, with cut on width and time walk correction", (int)p, c2, c1);
          fHtpair_ns_cut_twc[p] = new TH1D(name, title, 200, -10, 10);
       }
 
@@ -915,6 +946,19 @@ public:
          
       if (fFlags->fTriggered && !t.HaveCh(fMap16->fChanT)) {
          return;
+      }
+
+      ///////// TDC QA plots ///////////
+
+      fH_nhits->Fill(nhits);
+
+      for (size_t i=1; i<fMap16->fMap.size(); i++) {
+         int tdc_ch = fMap16->fMap[i];
+         if (t.HaveCh(tdc_ch)) {
+            fH_tdcmap->Fill(tdc_ch);
+            fH_chanmap->Fill(i);
+            fH_tdc_chan_map->Fill(tdc_ch, i);
+         }
       }
 
       ///////// plot trigger A-B time ///////////
@@ -1625,7 +1669,7 @@ public:
       printf("--dltdc16-triggered -- analyze only events with hit in channel T (coincidence of A and B)\n");
       printf("--dltdc16-debug -- print detailed information\n");
       printf("--dltdc16-print -- print events\n");
-      printf("--dltdc16-twc -- get twc W parameter");
+      printf("--dltdc16-twc -- get twc W parameter\n");
    }
 
    void Init(const std::vector<std::string> &args)
