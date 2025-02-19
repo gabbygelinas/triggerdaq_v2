@@ -108,8 +108,8 @@ else()
   message(STATUS "building dlana.exe")
   set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
 
-  #set(DlanaModules unpack_cb_module.cxx cbko_module.cxx coinc_module.cxx dltdc_module.cxx dltdc8_module.cxx dltdc4_module.cxx)
-  set(DlanaModules unpack_cb_module.cxx cbko_module.cxx dltdc_module.cxx dltdc8_module.cxx dltdc4_module.cxx)
+  set(DlanaModules unpack_cb_module.cxx cbko_module.cxx coinc_module.cxx dltdc_module.cxx dltdc8_module.cxx dltdc4_module.cxx)
+  #set(DlanaModules unpack_cb_module.cxx cbko_module.cxx dltdc_module.cxx dltdc8_module.cxx dltdc4_module.cxx)
   #set(TestunpackModules testunpack_module)
 
   add_executable(dlana.exe ${DlanaModules})
