@@ -51,6 +51,7 @@ public:
    void AddHit8(const DlTdcHit& h);
    bool HaveCh(int ch) const;
    const DlTdcHit2& GetCh(int ch) const;
+   void Print() const;
 };
 
 double sec_to_ns(double t);

@@ -127,6 +127,18 @@ void DlTdcEvent::Clear()
    }
 }
 
+void DlTdcEvent::Print() const
+{
+   printf("DlTdcEvent: time: %.9f sec, dt: %.9f sec\n", time_sec, dt);
+
+   for (size_t ch=1; ch<fHits.size(); ch++) {
+      printf("ch %2zu: ", ch);
+      fHits[ch].Print();
+   }
+
+   printf("\n");
+}
+
 void DlTdcEvent::AddHit8(const DlTdcHit& h)
 {
    if (first_time_sec == 0) {

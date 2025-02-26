@@ -16,7 +16,7 @@ struct DlTdcHit
    bool le = false;
    bool te = false;
    bool ts0 = false;
-   uint32_t coarse = 0;
+   uint64_t coarse = 0;
    int phase = 0;
 
    double coarse_epoch = 0;
@@ -42,7 +42,10 @@ struct DlTdcHit
       time_sec = 0;
    }
 
+   void Unpack(uint32_t lo, uint32_t hi);
    void Print() const;
+
+   static const uint64_t kEpoch = 0x40000000;
 };
 
 class DlTdcFineCalib1
@@ -109,7 +112,8 @@ private:
 
 public:
    void Reset();
-   bool Unpack(DlTdcHit* h, uint32_t lo, uint32_t hi);
+   //bool Unpack(DlTdcHit* h, uint32_t lo, uint32_t hi);
+   bool ComputeTimes(DlTdcHit* h);
    void UpdateCalib();
    bool LoadCalib(const char* fname);
    bool LoadOffsets(const char* fname);
@@ -119,7 +123,7 @@ public:
 
 public: // internal state
    double fFirstTimeSec = 0;
-   std::vector<uint32_t> fLastCoarse;
+   std::vector<uint64_t> fLastCoarse;
    std::vector<double>   fEpoch;
    std::vector<double>   fEpochHits;
    std::vector<DlTdcFineCalib> fCalib;

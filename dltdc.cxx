@@ -8,6 +8,47 @@
 #include <assert.h> // assert()
 #include <math.h> // sqrt()
 
+void DlTdcHit::Unpack(uint32_t lo, uint32_t hi)
+{
+   Clear();
+   data_lo = lo;
+   data_hi = hi;
+
+   //printf("Unpack 0x%08x 0x%08x\n", hi, lo);
+
+   le = hi & 0x80000000;
+   te = hi & 0x40000000;
+
+   coarse = (hi-1) & 0x3FFFFFFF;
+
+   ts0 = coarse & 1;
+
+   ch = (lo>>24)&0xFF;
+
+   int ph = (lo>>16)&0xFF;
+
+   //if (ph == 63)
+   //   ph = 9999;
+   //else if (ph & 0x20)
+   //   ph = -(ph&~0x20);
+
+   if (ph == 0xFF) // encoder error
+      ph = 0;
+   else if (ph == 0x7F) // all-1
+      ph = 0;
+   else if (ph == 0x00) // all-0
+      ph = 0;
+   else if (ph & 0x80)
+      ph = -(ph&~0x80);
+
+   //uint32_t sr1 = lo & 0xFFFF;
+   //
+   //if (sr1 & 0x8000)
+   //sr1 |= 0xFFFF0000;
+
+   phase = ph;
+};
+
 void DlTdcHit::Print() const
 {
    printf("data 0x%08x 0x%08x, ch %2d lete %d%d, ts0 %d phase %3d, %5.1f ns, time: %.0f %.9f %.9f sec", data_hi, data_lo, ch, le, te, ts0, phase, fine_ns, coarse_epoch, coarse_sec, time_sec);
@@ -551,31 +592,12 @@ int DlTdcUnpack::FindEdge10(uint32_t v)
    return 0;
 }
 
-bool DlTdcUnpack::Unpack(DlTdcHit*h, uint32_t lo, uint32_t hi)
+bool DlTdcUnpack::ComputeTimes(DlTdcHit*h)
 {
-   h->Clear();
-   h->data_lo = lo;
-   h->data_hi = hi;
-
    //printf("Unpack 0x%08x 0x%08x\n", hi, lo);
 
-   h->le = hi & 0x80000000;
-   h->te = hi & 0x40000000;
-
-   h->coarse = (hi-1) & 0x3FFFFFFF;
-
-   h->ts0 = h->coarse & 1;
-
-   int ch = (lo>>24)&0xFF;
-   //int ch = (lo>>28)&0xF;
-   h->ch = ch;
-
-   int ph = (lo>>16)&0xFF;
-
-   //if (ph == 63)
-   //   ph = 9999;
-   //else if (ph & 0x20)
-   //   ph = -(ph&~0x20);
+   int ch = h->ch;
+   int ph = (h->data_lo>>16)&0xFF;
 
    if (ph == 0xFF) // encoder error
       ph = 0;
@@ -614,10 +636,10 @@ bool DlTdcUnpack::Unpack(DlTdcHit*h, uint32_t lo, uint32_t hi)
    fEpochHits[ch] += 1;
    h->coarse_epoch = fEpoch[ch];
 
-   uint32_t sr1 = lo & 0xFFFF;
+   //uint32_t sr1 = lo & 0xFFFF;
 
-   if (sr1 & 0x8000)
-      sr1 |= 0xFFFF0000;
+   //if (sr1 & 0x8000)
+   //   sr1 |= 0xFFFF0000;
 
    //uint32_t sr1 = FixHoles(sr);
 
