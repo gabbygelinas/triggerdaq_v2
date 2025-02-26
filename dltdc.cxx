@@ -51,7 +51,7 @@ void DlTdcHit::Unpack(uint32_t lo, uint32_t hi)
 
 void DlTdcHit::Print() const
 {
-   printf("data 0x%08x 0x%08x, ch %2d lete %d%d, ts0 %d phase %3d, %5.1f ns, time: %.0f %.9f %.9f sec", data_hi, data_lo, ch, le, te, ts0, phase, fine_ns, coarse_epoch, coarse_sec, time_sec);
+   printf("data 0x%08x 0x%08x, ch %2d lete %d%d, ts0 %d phase %3d, %5.1f ns, time: %.9f %.9f sec", data_hi, data_lo, ch, le, te, ts0, phase, fine_ns, coarse_sec, time_sec);
 }
 
 DlTdcFineCalib1::DlTdcFineCalib1() // ctor
@@ -447,9 +447,6 @@ void DlTdcFineCalib::Update()
 
 DlTdcUnpack::DlTdcUnpack(int nchan) // ctor
 {
-   fLastCoarse.resize(nchan);
-   fEpoch.resize(nchan);
-   fEpochHits.resize(nchan);
    fCalib.resize(nchan);
 };
 
@@ -460,12 +457,6 @@ DlTdcUnpack::~DlTdcUnpack() // dtor
 
 void DlTdcUnpack::Reset()
 {
-   size_t n = fEpoch.size();
-   for (size_t i=0; i<n; i++) {
-      fLastCoarse[i] = 0;
-      fEpoch[i] = 0;
-      fEpochHits[i] = 0;
-   }
    fFirstTimeSec = 0;
 
    for (auto& c: fCalib) {
@@ -608,34 +599,6 @@ bool DlTdcUnpack::ComputeTimes(DlTdcHit*h)
    else if (ph & 0x80)
       ph = -(ph&~0x80);
 
-   if (h->coarse < fLastCoarse[ch]) {
-      double max_epoch = 0;
-      for (size_t cc=0; cc<fEpoch.size(); cc++) {
-         if (fEpoch[cc] > max_epoch) {
-            max_epoch = fEpoch[cc];
-         }
-      }
-
-      //printf("ch %d epoch increment %6.0f with %4.0f hits, max epoch %6.0f: 0x%08x -> 0x%08x\n", ch, fEpoch[ch], fEpochHits[ch], max_epoch, fLastCoarse[ch], h->coarse);
-
-      if (fEpoch[ch] == max_epoch) {
-         // we are the first to see epoch increment
-         fEpoch[ch] += 1;
-      } else if (fEpoch[ch] + 1 == max_epoch) {
-         // we will increment epoch and it will be same as others
-         fEpoch[ch] += 1;
-      } else {
-         // we missed an epoch update!
-         printf("missed epoch: ch %d forced update from %.0f to %.0f, have %.0f hits\n", ch, fEpoch[ch], max_epoch, fEpochHits[ch]);
-         fEpoch[ch] = max_epoch;
-      }
-      fEpochHits[ch] = 0;
-   }
-
-   fLastCoarse[ch] = h->coarse;
-   fEpochHits[ch] += 1;
-   h->coarse_epoch = fEpoch[ch];
-
    //uint32_t sr1 = lo & 0xFFFF;
 
    //if (sr1 & 0x8000)
@@ -654,20 +617,12 @@ bool DlTdcUnpack::ComputeTimes(DlTdcHit*h)
    bool calib = true;
    double bits = 40.0;
 
-   h->coarse_sec = fClkPeriodNs*h->coarse*1e-9 + h->coarse_epoch*0x40000000*fClkPeriodNs*1e-9;
+   h->coarse_sec = fClkPeriodNs*h->coarse*1e-9;
    
    if (fFirstTimeSec == 0)
       fFirstTimeSec = h->coarse_sec;
    
    h->coarse_sec -= fFirstTimeSec;
-   
-   if (h->coarse_sec < -1.0 && h->coarse_epoch == 0) {
-      printf("ch %d: correct epoch0\n", ch);
-      fEpoch[ch] = 1;
-      h->coarse_epoch = 1;
-      h->coarse_sec = fClkPeriodNs*h->coarse*1e-9 + h->coarse_epoch*0x40000000*fClkPeriodNs*1e-9;
-      h->coarse_sec -= fFirstTimeSec;
-   }
 
    h->phase = ph; // FindEdge(sr1);
 
