@@ -106,7 +106,11 @@ public:
    TH2D* fHphaseTePerTdcChan = NULL;
 
    TH2D* fHfineLePerTdcChan = NULL;
+   TH2D* fHfineLePPerTdcChan = NULL;
+   TH2D* fHfineLeNPerTdcChan = NULL;
    TH2D* fHfineTePerTdcChan = NULL;
+   TH2D* fHfineTePPerTdcChan = NULL;
+   TH2D* fHfineTeNPerTdcChan = NULL;
 
    TH1D* fHphaseLe[MAX_TDC_CHAN+1];
    TH1D* fHphaseTe[MAX_TDC_CHAN+1];
@@ -350,7 +354,12 @@ public:
       fHphaseTePerTdcChan = new TH2D("tdc_fine_bins_te_vs_tdc_chan", "TDC TE fine bin occupancy;tdc chan;fine bin number", TDC_RANGE, 100, 0-0.5, 100-0.5);
 
       fHfineLePerTdcChan = new TH2D("tdc_fine_time_le_vs_tdc_chan", "TDC LE fine time occupancy;tdc chan;fine time, ns", TDC_RANGE, 200, -5, 15);
+      fHfineLePPerTdcChan = new TH2D("tdc_fine_time_le_pos_vs_tdc_chan", "TDC LE_POS fine time occupancy;tdc chan;fine time, ns", TDC_RANGE, 200, -5, 15);
+      fHfineLeNPerTdcChan = new TH2D("tdc_fine_time_le_neg_vs_tdc_chan", "TDC LE_NEG fine time occupancy;tdc chan;fine time, ns", TDC_RANGE, 200, -5, 15);
+
       fHfineTePerTdcChan = new TH2D("tdc_fine_time_te_vs_tdc_chan", "TDC TE fine time occupancy;tdc chan;fine time, ns", TDC_RANGE, 200, -5, 15);
+      fHfineTePPerTdcChan = new TH2D("tdc_fine_time_te_pos_vs_tdc_chan", "TDC TE_POS fine time occupancy;tdc chan;fine time, ns", TDC_RANGE, 200, -5, 15);
+      fHfineTeNPerTdcChan = new TH2D("tdc_fine_time_te_neg_vs_tdc_chan", "TDC TE_NEG fine time occupancy;tdc chan;fine time, ns", TDC_RANGE, 200, -5, 15);
 
       for (int i=0; i<=MAX_TDC_CHAN; i++) {
          char name[256];
@@ -1025,12 +1034,14 @@ public:
                   fHphaseLePerTdcChan->Fill(h.ch, 0 - h.phase);
                   fHphaseLe[h.ch]->Fill(0 - h.phase);
                   fHfineLePerTdcChan->Fill(h.ch, h.fine_ns);
+                  fHfineLeNPerTdcChan->Fill(h.ch, h.fine_ns);
                   fHfineLe[h.ch]->Fill(h.fine_ns);
                   fHfineLeN[h.ch]->Fill(h.fine_ns);
                } else {
                   fHphaseLePerTdcChan->Fill(h.ch, 50 + h.phase);
                   fHphaseLe[h.ch]->Fill(50 + h.phase);
                   fHfineLePerTdcChan->Fill(h.ch, h.fine_ns);
+                  fHfineLePPerTdcChan->Fill(h.ch, h.fine_ns);
                   fHfineLe[h.ch]->Fill(h.fine_ns);
                   fHfineLeP[h.ch]->Fill(h.fine_ns);
                   if (h.ch == 0) {
@@ -1047,6 +1058,7 @@ public:
                   fHphaseTePerTdcChan->Fill(h.ch, 0 - h.phase);
                   fHphaseTe[h.ch]->Fill(0 - h.phase);
                   fHfineTePerTdcChan->Fill(h.ch, h.fine_ns);
+                  fHfineTeNPerTdcChan->Fill(h.ch, h.fine_ns);
                   fHfineTe[h.ch]->Fill(h.fine_ns);
                   fHfineTeN[h.ch]->Fill(h.fine_ns);
                   if (h.ch == 0) {
@@ -1059,6 +1071,7 @@ public:
                   fHphaseTePerTdcChan->Fill(h.ch, 50 + h.phase);
                   fHphaseTe[h.ch]->Fill(50 + h.phase);
                   fHfineTePerTdcChan->Fill(h.ch, h.fine_ns);
+                  fHfineTePPerTdcChan->Fill(h.ch, h.fine_ns);
                   fHfineTe[h.ch]->Fill(h.fine_ns);
                   fHfineTeP[h.ch]->Fill(h.fine_ns);
                }
