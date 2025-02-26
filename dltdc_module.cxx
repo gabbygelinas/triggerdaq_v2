@@ -138,8 +138,8 @@ public:
    TH1D* fHpulserLe[MAX_TDC_CHAN+1];
    TH1D* fHpulserTe[MAX_TDC_CHAN+1];
    TH1D* fHpulserWi[MAX_TDC_CHAN+1];
-   TH2D* fHpulserWiPP[MAX_TDC_CHAN+1];
-   TH2D* fHpulserWiFF[MAX_TDC_CHAN+1];
+   TH2D* fHpulserPP[MAX_TDC_CHAN+1];
+   TH2D* fHpulserFF[MAX_TDC_CHAN+1];
 
    TH1D* fHhitdt1ns = NULL;
    TH1D* fHhitdt2ns = NULL;
@@ -430,13 +430,13 @@ public:
          sprintf(title, "tdc%02d_pulser_width, ns", i);
          fHpulserWi[i] = new TH1D(name, title, 400, 0, 80);
 
-         sprintf(name,  "tdc%02d_pulser_width_pp", i);
-         sprintf(title, "tdc%02d_pulser_width_pp, phase vs phase", i);
-         fHpulserWiPP[i] = new TH2D(name, title, 101, -50.5, 50.5, 101, -50.5, 50.5);
+         sprintf(name,  "tdc%02d_pulser_pp", i);
+         sprintf(title, "tdc%02d_pulser_pp, phase TE vs phase LE;LE fine bin;TE fine bin", i);
+         fHpulserPP[i] = new TH2D(name, title, 101, -50.5, 50.5, 101, -50.5, 50.5);
 
-         sprintf(name,  "tdc%02d_pulser_width_tt", i);
-         sprintf(title, "tdc%02d_pulser_width_tt, fine time vs fine time", i);
-         fHpulserWiFF[i] = new TH2D(name, title, 200, -5, 15, 200, -5, 15);
+         sprintf(name,  "tdc%02d_pulser_tt", i);
+         sprintf(title, "tdc%02d_pulser_tt, TE fine time vs LE fine time;LE fine time, ns;TE fine time, ns", i);
+         fHpulserFF[i] = new TH2D(name, title, 200, -5, 15, 200, -5, 15);
       }
 
       dir->mkdir("poisson")->cd();
@@ -745,8 +745,8 @@ public:
                fHpulserWiAll->Fill(t.fHits[itdc].fWidthNs);
                fHpulserWi[itdc]->Fill(t.fHits[itdc].fWidthNs);
 
-               fHpulserWiPP[itdc]->Fill(t.fHits[itdc].fLe.phase, t.fHits[itdc].fTe.phase);
-               fHpulserWiFF[itdc]->Fill(t.fHits[itdc].fLe.fine_ns, t.fHits[itdc].fTe.fine_ns);
+               fHpulserPP[itdc]->Fill(t.fHits[itdc].fLe.phase, t.fHits[itdc].fTe.phase);
+               fHpulserFF[itdc]->Fill(t.fHits[itdc].fLe.fine_ns, t.fHits[itdc].fTe.fine_ns);
             }
          }
       }
@@ -809,8 +809,19 @@ public:
    uint32_t fLastCoarse = 0;
    bool     fEpochChanging = false;
 
-   void AddSorted(DlTdcHit& h)
+   void PrintSorted() const
    {
+      printf("Sorted list has %zu entries:\n", fList.size());
+      for (const DlTdcHit& h: fList) {
+         printf("coarse: 0x%016lx, ", h.coarse); h.Print(); printf("\n");
+      }
+      printf("Sorted list end!\n");
+   }
+
+   bool AddSorted(DlTdcHit& h)
+   {
+      bool debug_sort = false;
+
       if (!fEpochChanging) {
          if (h.coarse < h.kEpoch/4 && fLastCoarse > (h.kEpoch/4)*3) {
             printf("EPOCH!\n");
@@ -839,27 +850,62 @@ public:
          h.coarse += fListEpoch;
       }
 
-      //printf("coarse: %016lx, ", h.coarse); h.Print(); printf("\n");
+#if 0
+      if (h.coarse == 0x0000000006ed96c2 && h.ch == 10 && h.le) {
+         printf("HERE LE!!!\n");
+      }
 
+      if (h.coarse == 0x0000000006ed96c1 && h.ch == 10 && h.te) {
+         printf("HERE TE!!!\n");
+      }
+
+      if (h.coarse == 0x0000000006ef4470 && h.ch == 10 && h.le) {
+         printf("HERE LE!!!\n");
+      }
+
+      if (h.coarse == 0x0000000006ef446f && h.ch == 10 && h.te) {
+         printf("HERE TE!!!\n");
+      }
+
+      if (h.ch == 10)
+         debug_sort = true;
+#endif
+
+      if (debug_sort) {
+         printf("coarse: 0x%016lx, ", h.coarse); h.Print(); printf(" ---> insert\n");
+      }
+         
       if (fList.empty()) {
-         //printf("FIRST!\n");
+         if (debug_sort)
+            printf("FIRST!\n");
          fList.push_back(h);
       } else if (h.coarse > fList.back().coarse) {
-         //printf("BACK!\n");
+         if (debug_sort)
+            printf("BACK!\n");
          fList.push_back(h);
-      } else if (h.coarse < fList.front().coarse) {
-         //printf("FRONT!\n");
-         fList.push_front(h);
       } else {
          bool pushed = false;
-         //printf("coarse: 0x%08x, ", h.coarse); h.Print(); printf(" ---> insert\n");
          for (auto r=fList.rbegin(); r!=fList.rend(); r++) {
-            //printf("coarse: 0x%08x, ", r->coarse); r->Print(); printf("\n");
+            if (debug_sort) {
+               printf("coarse: 0x%016lx, ", r->coarse); r->Print(); printf("\n");
+            }
+            if ((h.coarse+1 == r->coarse) && h.te && r->le) {
+               if (debug_sort)
+                  printf("INSERT TE!\n");
+               fList.insert(r.base(), h);
+               pushed = true;
+               break;
+            } else 
             if (h.coarse >= r->coarse) {
                if ((h.coarse == r->coarse) && h.le && r->te) {
-                  //printf("SKIP TE!\n");
+                  if (debug_sort)
+                     printf("SKIP TE!\n");
+               } else if ((h.coarse == r->coarse+1) && h.le && r->te) {
+                  if (debug_sort)
+                     printf("SKIP TE1!\n");
                } else {
-                  //printf("INSERT!\n");
+                  if (debug_sort)
+                     printf("INSERT!\n");
                   fList.insert(r.base(), h);
                   pushed = true;
                   break;
@@ -867,10 +913,12 @@ public:
             }
          }
          if (!pushed) {
-            printf("XXX!!!\n");
+            printf("PUSH FRONT!!!\n");
             fList.push_front(h);
          }
       }
+
+      return debug_sort;
    }
 
    void ProcessSorted(TARunInfo* runinfo, bool flush = false)
@@ -879,14 +927,6 @@ public:
          printf("ProcessSorted: have %zu hits\n", fList.size());
       }
 
-      if (0) {
-         printf("Dump list:\n");
-         for (DlTdcHit& h: fList) {
-            printf("coarse: 0x%016lx, ", h.coarse); h.Print(); printf("\n");
-         }
-         printf("Dump done!\n");
-      }
-      
       while (!fList.empty()) {
          if (!flush) {
             if (fList.size() < 100)
@@ -1062,6 +1102,8 @@ public:
             printf("TDC bank with %d hits\n", tdc_nw64);
          }
 
+         bool debug_sort = false;
+
          DlTdcHit h;
      
 	 for (int i=0; i<tdc_nw64; i++) {
@@ -1083,8 +1125,11 @@ public:
                h.Print(); printf("\n");
             }
 
-            AddSorted(h);
+            debug_sort |= AddSorted(h);
          } // loop over data
+
+         if (debug_sort)
+            PrintSorted();
 
          if (fList.size() > 200) {
             ProcessSorted(runinfo);
