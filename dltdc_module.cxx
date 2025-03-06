@@ -18,6 +18,7 @@
 #include "ncfm.h"
 
 #include <deque>
+#include <list>
 
 #include "TStyle.h"
 #include "TH1D.h"
@@ -56,7 +57,9 @@ public:
    bool fCalibFineTime = false;
    bool fCalibOffsets  = false;
    bool fDebug = false;
-   bool fPrint = false;
+   bool fPrintRawHits    = false;
+   bool fPrintSortedHits = false;
+   bool fPrintEventHits  = false;
    bool fAdd40 = false;
    bool fSub40 = false;
 };
@@ -99,6 +102,16 @@ public:
    DlTdcUnpack* fU = NULL;
    
 #ifdef HAVE_ROOT
+   TH2D* fHphaseLePerTdcChan = NULL;
+   TH2D* fHphaseTePerTdcChan = NULL;
+
+   TH2D* fHfineLePerTdcChan = NULL;
+   TH2D* fHfineLePPerTdcChan = NULL;
+   TH2D* fHfineLeNPerTdcChan = NULL;
+   TH2D* fHfineTePerTdcChan = NULL;
+   TH2D* fHfineTePPerTdcChan = NULL;
+   TH2D* fHfineTeNPerTdcChan = NULL;
+
    TH1D* fHphaseLe[MAX_TDC_CHAN+1];
    TH1D* fHphaseTe[MAX_TDC_CHAN+1];
 
@@ -120,14 +133,17 @@ public:
 
    TH1D* fHwidth[MAX_TDC_CHAN+1];
 
+   TH2D* fHpulserLePerTdcChan = NULL;
+   TH2D* fHpulserTePerTdcChan = NULL;
+   TH2D* fHpulserWiPerTdcChan = NULL;
    TH1D* fHpulserLeAll = NULL;
    TH1D* fHpulserTeAll = NULL;
    TH1D* fHpulserWiAll = NULL;
    TH1D* fHpulserLe[MAX_TDC_CHAN+1];
    TH1D* fHpulserTe[MAX_TDC_CHAN+1];
    TH1D* fHpulserWi[MAX_TDC_CHAN+1];
-   TH2D* fHpulserWiPP[MAX_TDC_CHAN+1];
-   TH2D* fHpulserWiFF[MAX_TDC_CHAN+1];
+   TH2D* fHpulserPP[MAX_TDC_CHAN+1];
+   TH2D* fHpulserFF[MAX_TDC_CHAN+1];
 
    TH1D* fHhitdt1ns = NULL;
    TH1D* fHhitdt2ns = NULL;
@@ -285,6 +301,9 @@ public:
 #endif
       
 #ifdef HAVE_ROOT
+
+#define TDC_RANGE MAX_TDC_CHAN+2, 0-0.5, MAX_TDC_CHAN+1-0.5+1
+
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
       TDirectory* dir = gDirectory->mkdir("dltdc");
       dir->cd(); // select correct ROOT directory
@@ -331,6 +350,17 @@ public:
          fHfineTeN1 = new TH2D(name, title, 100, -5, 15, 50, 0, max_time);
       }
 
+      fHphaseLePerTdcChan = new TH2D("tdc_fine_bins_le_vs_tdc_chan", "TDC LE fine bin occupancy;tdc chan;fine bin number", TDC_RANGE, 100, 0-0.5, 100-0.5);
+      fHphaseTePerTdcChan = new TH2D("tdc_fine_bins_te_vs_tdc_chan", "TDC TE fine bin occupancy;tdc chan;fine bin number", TDC_RANGE, 100, 0-0.5, 100-0.5);
+
+      fHfineLePerTdcChan = new TH2D("tdc_fine_time_le_vs_tdc_chan", "TDC LE fine time occupancy;tdc chan;fine time, ns", TDC_RANGE, 200, -5, 15);
+      fHfineLePPerTdcChan = new TH2D("tdc_fine_time_le_pos_vs_tdc_chan", "TDC LE_POS fine time occupancy;tdc chan;fine time, ns", TDC_RANGE, 200, -5, 15);
+      fHfineLeNPerTdcChan = new TH2D("tdc_fine_time_le_neg_vs_tdc_chan", "TDC LE_NEG fine time occupancy;tdc chan;fine time, ns", TDC_RANGE, 200, -5, 15);
+
+      fHfineTePerTdcChan = new TH2D("tdc_fine_time_te_vs_tdc_chan", "TDC TE fine time occupancy;tdc chan;fine time, ns", TDC_RANGE, 200, -5, 15);
+      fHfineTePPerTdcChan = new TH2D("tdc_fine_time_te_pos_vs_tdc_chan", "TDC TE_POS fine time occupancy;tdc chan;fine time, ns", TDC_RANGE, 200, -5, 15);
+      fHfineTeNPerTdcChan = new TH2D("tdc_fine_time_te_neg_vs_tdc_chan", "TDC TE_NEG fine time occupancy;tdc chan;fine time, ns", TDC_RANGE, 200, -5, 15);
+
       for (int i=0; i<=MAX_TDC_CHAN; i++) {
          char name[256];
          char title[256];
@@ -376,6 +406,10 @@ public:
 
       dir->mkdir("pulser")->cd();
 
+      fHpulserLePerTdcChan = new TH2D("tdc_pulser_le_vs_tdc_chan", "Pulser LE time vs TDC channel;tdc channel;pulse le time, ns", TDC_RANGE, 400, -40, 40);
+      fHpulserTePerTdcChan = new TH2D("tdc_pulser_te_vs_tdc_chan", "Pulser TE time vs TDC channel;tdc channel;pulse te time, ns", TDC_RANGE, 400, -40, 40);
+      fHpulserWiPerTdcChan = new TH2D("tdc_pulser_width_vs_tdc_chan", "Pulser width vs TDC channel;tdc channel;pulse width, ns", TDC_RANGE, 400, 0, 80);
+
       fHpulserLeAll = new TH1D("tdc_pulser_le_all", "tdc pulser le all, ns", 400, -40, 40);
       fHpulserTeAll = new TH1D("tdc_pulser_te_all", "tdc_pulser_te_all, ns", 400, -40, 40);
       fHpulserWiAll = new TH1D("tdc_pulser_width_all", "tdc_pulser_width_all, ns", 400, 0, 80);
@@ -405,13 +439,13 @@ public:
          sprintf(title, "tdc%02d_pulser_width, ns", i);
          fHpulserWi[i] = new TH1D(name, title, 400, 0, 80);
 
-         sprintf(name,  "tdc%02d_pulser_width_pp", i);
-         sprintf(title, "tdc%02d_pulser_width_pp, phase vs phase", i);
-         fHpulserWiPP[i] = new TH2D(name, title, 101, -50.5, 50.5, 101, -50.5, 50.5);
+         sprintf(name,  "tdc%02d_pulser_pp", i);
+         sprintf(title, "tdc%02d_pulser_pp, phase TE vs phase LE;LE fine bin;TE fine bin", i);
+         fHpulserPP[i] = new TH2D(name, title, 101, -50.5, 50.5, 101, -50.5, 50.5);
 
-         sprintf(name,  "tdc%02d_pulser_width_tt", i);
-         sprintf(title, "tdc%02d_pulser_width_tt, fine time vs fine time", i);
-         fHpulserWiFF[i] = new TH2D(name, title, 200, -5, 15, 200, -5, 15);
+         sprintf(name,  "tdc%02d_pulser_tt", i);
+         sprintf(title, "tdc%02d_pulser_tt, TE fine time vs LE fine time;LE fine time, ns;TE fine time, ns", i);
+         fHpulserFF[i] = new TH2D(name, title, 200, -5, 15, 200, -5, 15);
       }
 
       dir->mkdir("poisson")->cd();
@@ -460,8 +494,8 @@ public:
 
       dir->mkdir("unphysical")->cd();
 
-      fHunphysical_map  = new TH1D("tdc_map", " TDC hit map", MAX_TDC_CHAN+1, 0-0.5, MAX_TDC_CHAN+1-0.5);
-      fHunphysical_map2 = new TH2D("tdc_map2", "TDC pairs of hits map", MAX_TDC_CHAN+1, 0-0.5, MAX_TDC_CHAN+1-0.5, MAX_TDC_CHAN+1, 0-0.5, MAX_TDC_CHAN+1-0.5);
+      fHunphysical_map  = new TH1D("tdc_map", " TDC hit map", TDC_RANGE);
+      fHunphysical_map2 = new TH2D("tdc_map2", "TDC pairs of hits map", TDC_RANGE, TDC_RANGE);
 
       fHunphysical_ns_01_14_w01 = new TH2D("tdc01_tdc14_vs_w01", "tdc01_le - tdc14_le, ns vs tdc01_width, ns", 200, -50, 50, 100, 0, 100);
       fHunphysical_ns_01_14_w14 = new TH2D("tdc01_tdc14_vs_w14", "tdc01_le - tdc14_le, ns vs tdc14_width, ns", 200, -50, 50, 100, 0, 100);
@@ -518,6 +552,8 @@ public:
    {
       if (fTrace)
          printf("DlTdcModule::EndRun, run %d\n", runinfo->fRunNo);
+
+      ProcessSorted(runinfo, true); // flush accumulated data
 
       if (fFlags->fCalibFineTime) {
          printf("DlTdcModule::EndRun: Saving TDC fine time calibrations for run %d\n", runinfo->fRunNo);
@@ -704,18 +740,22 @@ public:
             //printf("tdc %d, up down %d %d\n", itdc, t.fHits[itdc].fUp, t.fHits[itdc].fDown);
             if (t.HaveCh(itdc)) {
                if (itdc != fPulserMaster) {
+                  fHpulserLe[itdc]->Fill(subtract_ns(t.GetCh(itdc).fLe, t.GetCh(fPulserMaster).fLe));
+                  fHpulserTe[itdc]->Fill(subtract_ns(t.GetCh(itdc).fTe, t.GetCh(fPulserMaster).fTe));
+
                   fHpulserLeAll->Fill(subtract_ns(t.GetCh(itdc).fLe, t.GetCh(fPulserMaster).fLe));
                   fHpulserTeAll->Fill(subtract_ns(t.GetCh(itdc).fTe, t.GetCh(fPulserMaster).fTe));
 
-                  fHpulserLe[itdc]->Fill(subtract_ns(t.GetCh(itdc).fLe, t.GetCh(fPulserMaster).fLe));
-                  fHpulserTe[itdc]->Fill(subtract_ns(t.GetCh(itdc).fTe, t.GetCh(fPulserMaster).fTe));
+                  fHpulserLePerTdcChan->Fill(itdc, subtract_ns(t.GetCh(itdc).fLe, t.GetCh(fPulserMaster).fLe));
+                  fHpulserTePerTdcChan->Fill(itdc, subtract_ns(t.GetCh(itdc).fTe, t.GetCh(fPulserMaster).fTe));
                }
 
+               fHpulserWiPerTdcChan->Fill(itdc, t.fHits[itdc].fWidthNs);
                fHpulserWiAll->Fill(t.fHits[itdc].fWidthNs);
                fHpulserWi[itdc]->Fill(t.fHits[itdc].fWidthNs);
 
-               fHpulserWiPP[itdc]->Fill(t.fHits[itdc].fLe.phase, t.fHits[itdc].fTe.phase);
-               fHpulserWiFF[itdc]->Fill(t.fHits[itdc].fLe.fine_ns, t.fHits[itdc].fTe.fine_ns);
+               fHpulserPP[itdc]->Fill(t.fHits[itdc].fLe.phase, t.fHits[itdc].fTe.phase);
+               fHpulserFF[itdc]->Fill(t.fHits[itdc].fLe.fine_ns, t.fHits[itdc].fTe.fine_ns);
             }
          }
       }
@@ -773,6 +813,275 @@ public:
 
    std::vector<DlTdcHit> fPrevLe;
 
+   std::list<DlTdcHit> fList;
+   uint64_t fListEpoch = 0;
+   uint32_t fLastCoarse = 0;
+   bool     fEpochChanging = false;
+
+   void PrintSorted() const
+   {
+      printf("Sorted list has %zu entries:\n", fList.size());
+      for (const DlTdcHit& h: fList) {
+         printf("coarse: 0x%016lx, ", h.coarse); h.Print(); printf("\n");
+      }
+      printf("Sorted list end!\n");
+   }
+
+   bool AddSorted(DlTdcHit& h)
+   {
+      bool debug_sort = false;
+
+      if (!fEpochChanging) {
+         if (h.coarse < h.kEpoch/4 && fLastCoarse > (h.kEpoch/4)*3) {
+            printf("EPOCH!\n");
+            fListEpoch += h.kEpoch;
+            fEpochChanging = true;
+         }
+         
+      }
+
+      if (h.coarse > h.kEpoch/4) {
+         fEpochChanging = false;
+      }
+
+      fLastCoarse = h.coarse;
+
+      if (fEpochChanging) {
+         if (h.coarse > (h.kEpoch/4)*3) { // previous epoch
+            //printf("P ");
+            h.coarse += fListEpoch - h.kEpoch;
+         } else {
+            //printf("N ");
+            h.coarse += fListEpoch; // new epoch
+         }
+      } else {
+         //printf("E ");
+         h.coarse += fListEpoch;
+      }
+
+#if 0
+      if (h.coarse == 0x0000000006ed96c2 && h.ch == 10 && h.le) {
+         printf("HERE LE!!!\n");
+      }
+
+      if (h.coarse == 0x0000000006ed96c1 && h.ch == 10 && h.te) {
+         printf("HERE TE!!!\n");
+      }
+
+      if (h.coarse == 0x0000000006ef4470 && h.ch == 10 && h.le) {
+         printf("HERE LE!!!\n");
+      }
+
+      if (h.coarse == 0x0000000006ef446f && h.ch == 10 && h.te) {
+         printf("HERE TE!!!\n");
+      }
+
+      if (h.ch == 10)
+         debug_sort = true;
+#endif
+
+      if (debug_sort) {
+         printf("coarse: 0x%016lx, ", h.coarse); h.Print(); printf(" ---> insert\n");
+      }
+         
+      if (fList.empty()) {
+         if (debug_sort)
+            printf("FIRST!\n");
+         fList.push_back(h);
+      } else if (h.coarse > fList.back().coarse) {
+         if (debug_sort)
+            printf("BACK!\n");
+         fList.push_back(h);
+      } else {
+         bool pushed = false;
+         for (auto r=fList.rbegin(); r!=fList.rend(); r++) {
+            if (debug_sort) {
+               printf("coarse: 0x%016lx, ", r->coarse); r->Print(); printf("\n");
+            }
+            if ((h.coarse+1 == r->coarse) && h.te && r->le) {
+               if (debug_sort)
+                  printf("INSERT TE!\n");
+               fList.insert(r.base(), h);
+               pushed = true;
+               break;
+            } else 
+            if (h.coarse >= r->coarse) {
+               if ((h.coarse == r->coarse) && h.le && r->te) {
+                  if (debug_sort)
+                     printf("SKIP TE!\n");
+               } else if ((h.coarse == r->coarse+1) && h.le && r->te) {
+                  if (debug_sort)
+                     printf("SKIP TE1!\n");
+               } else {
+                  if (debug_sort)
+                     printf("INSERT!\n");
+                  fList.insert(r.base(), h);
+                  pushed = true;
+                  break;
+               }
+            }
+         }
+         if (!pushed) {
+            printf("PUSH FRONT!!!\n");
+            fList.push_front(h);
+         }
+      }
+
+      return debug_sort;
+   }
+
+   void ProcessSorted(TARunInfo* runinfo, bool flush = false)
+   {
+      if (fFlags->fPrintSortedHits) {
+         printf("ProcessSorted: have %zu hits\n", fList.size());
+      }
+
+      while (!fList.empty()) {
+         if (!flush) {
+            if (fList.size() < 100)
+               break;
+         }
+
+         DlTdcHit h = fList.front();
+         fList.pop_front();
+         
+         fU->ComputeTimes(&h);
+
+         if (fFlags->fPrintSortedHits) {
+            h.Print(); printf("\n");
+         }
+         
+         //static double prev_time_sec = 0;
+         //
+         //if (h.le) {
+         //   if (fFlags->fDebug) {h.Print(); printf(", dt %4.0f ns\n", sec_to_ns(h.time_sec - prev_time_sec));}
+         //   prev_time_sec = h.time_sec;
+         //}
+         
+         if (fFlags->fCalibFineTime) {
+            fU->fCalib[h.ch].AddHit(h);
+         }
+         
+         if (h.le) {
+            double dt = subtract_ns(h, fPrevLe[h.ch]);
+            //printf("ch %d: dt %.3f ns\n", h.ch, dt);
+            fHdt1Le[h.ch]->Fill(dt);
+            fHdt2Le[h.ch]->Fill(dt);
+            fHdt3Le[h.ch]->Fill(dt);
+            fHdt4Le[h.ch]->Fill(dt);
+            
+            //fHdt_PP[h.ch]->Fill(h.phase, fPrevLe[h.ch].phase);
+            fHdt_FF[h.ch]->Fill(h.fine_ns, fPrevLe[h.ch].fine_ns);
+            
+            fPrevLe[h.ch] = h;
+         }
+         
+         double hit_dt_ns = sec_to_ns(h.time_sec - fCt->max_time_sec);
+         
+         fHhitdt1ns->Fill(hit_dt_ns);
+         fHhitdt2ns->Fill(hit_dt_ns);
+         fHhitdt3ns->Fill(hit_dt_ns);
+         fHhitdt4ns->Fill(hit_dt_ns);
+         
+         //printf("TTX %.9f %.9f sec, first %.9f, last %.9f sec\n", fCt->min_time_sec, fCt->max_time_sec, fCt->first_time_sec, fCt->last_time_sec);
+         
+         //if (h.le && hit_dt_ns > 80.0) {
+         
+         if (hit_dt_ns > 80.0) {
+            double event_dt_ns = sec_to_ns(h.time_sec - fCt->min_time_sec);
+            
+            if (fFlags->fDebug) {
+               printf("finish event ch %d, lete %d%d, time %.9f sec, max %.9f sec, dt %.3f ns\n", h.ch, h.le, h.te, h.time_sec, fCt->max_time_sec, event_dt_ns);
+               //h.Print();
+               //printf("===\n");
+            }
+            
+            //for (size_t ch=0; ch<MAX_TDC_CHAN; ch++) {
+            //   if (fCt->fHits[ch].fUp) {
+            //      printf("TTT: ch %zu no TE\n", ch);
+            //   }
+            //}
+            
+            if (1) {
+               //printf("TTT %.9f -> %.9f sec, dt %.3f ns\n", fCt->min_time_sec, h.time_sec, event_dt_ns);
+               fHeventdt1ns->Fill(event_dt_ns);
+               fHeventdt2ns->Fill(event_dt_ns);
+               fHeventdt3ns->Fill(event_dt_ns);
+               fHeventdt4ns->Fill(event_dt_ns);
+               
+               //FinishEventT(fPrevEventTimeSec, *fCt);
+
+               if (fFlags->fPrintEventHits) {
+                  printf("Event hits:\n");
+                  fCt->Print();
+               }
+               
+               runinfo->AddToFlowQueue(new DlTdcEventFlow(NULL, fCt));
+               
+               fCt = new DlTdcEvent();
+               fCt->Init(MAX_TDC_CHAN+1);
+               
+               fPrevEventTimeSec = fCt->min_time_sec;
+               
+               fCt->Clear();
+            }
+         }
+         
+#ifdef HAVE_ROOT
+         if (h.ch >= 0 && h.ch <= MAX_TDC_CHAN) {
+            if (h.le) {
+               if (h.phase < 0) {
+                  fHphaseLePerTdcChan->Fill(h.ch, 0 - h.phase);
+                  fHphaseLe[h.ch]->Fill(0 - h.phase);
+                  fHfineLePerTdcChan->Fill(h.ch, h.fine_ns);
+                  fHfineLeNPerTdcChan->Fill(h.ch, h.fine_ns);
+                  fHfineLe[h.ch]->Fill(h.fine_ns);
+                  fHfineLeN[h.ch]->Fill(h.fine_ns);
+               } else {
+                  fHphaseLePerTdcChan->Fill(h.ch, 50 + h.phase);
+                  fHphaseLe[h.ch]->Fill(50 + h.phase);
+                  fHfineLePerTdcChan->Fill(h.ch, h.fine_ns);
+                  fHfineLePPerTdcChan->Fill(h.ch, h.fine_ns);
+                  fHfineLe[h.ch]->Fill(h.fine_ns);
+                  fHfineLeP[h.ch]->Fill(h.fine_ns);
+                  if (h.ch == 0) {
+                     fHfineLeP0->Fill(h.fine_ns, h.time_sec);
+                     //printf("X000 time %.0f\n", h.time_sec);
+                  }
+                  if (h.ch == 1) {
+                     fHfineLeP1->Fill(h.fine_ns, h.time_sec);
+                  }
+               }
+            }
+            if (h.te) {
+               if (h.phase < 0) {
+                  fHphaseTePerTdcChan->Fill(h.ch, 0 - h.phase);
+                  fHphaseTe[h.ch]->Fill(0 - h.phase);
+                  fHfineTePerTdcChan->Fill(h.ch, h.fine_ns);
+                  fHfineTeNPerTdcChan->Fill(h.ch, h.fine_ns);
+                  fHfineTe[h.ch]->Fill(h.fine_ns);
+                  fHfineTeN[h.ch]->Fill(h.fine_ns);
+                  if (h.ch == 0) {
+                     fHfineTeN0->Fill(h.fine_ns, h.time_sec);
+                  }
+                  if (h.ch == 1) {
+                     fHfineTeN1->Fill(h.fine_ns, h.time_sec);
+                  }
+               } else {
+                  fHphaseTePerTdcChan->Fill(h.ch, 50 + h.phase);
+                  fHphaseTe[h.ch]->Fill(50 + h.phase);
+                  fHfineTePerTdcChan->Fill(h.ch, h.fine_ns);
+                  fHfineTePPerTdcChan->Fill(h.ch, h.fine_ns);
+                  fHfineTe[h.ch]->Fill(h.fine_ns);
+                  fHfineTeP[h.ch]->Fill(h.fine_ns);
+               }
+            }
+         }
+#endif
+         fCt->AddHit8(h);
+      }
+   }
+
    TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
    {
       //printf("DlTdcModule::Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
@@ -801,6 +1110,14 @@ public:
             fCt = new DlTdcEvent;
             fCt->Init(MAX_TDC_CHAN+1);
          }
+
+         if (fFlags->fPrintRawHits) {
+            printf("TDC bank with %d hits\n", tdc_nw64);
+         }
+
+         bool debug_sort = false;
+
+         DlTdcHit h;
      
 	 for (int i=0; i<tdc_nw64; i++) {
             uint32_t wlo = tdc_data[i*2+0];
@@ -814,127 +1131,22 @@ public:
 
             //printf("%2d: 0x%08x 0x%08x\n", i, whi, wlo);
 
-            DlTdcHit h;
-            fU->Unpack(&h, wlo, whi);
+            h.Unpack(wlo, whi);
+            //fU->Unpack(&h, wlo, whi);
 
-            if (fFlags->fDebug) {
+            if (fFlags->fPrintRawHits) {
                h.Print(); printf("\n");
             }
 
-            //static double prev_time_sec = 0;
-            //
-            //if (h.le) {
-            //   if (fFlags->fDebug) {h.Print(); printf(", dt %4.0f ns\n", sec_to_ns(h.time_sec - prev_time_sec));}
-            //   prev_time_sec = h.time_sec;
-            //}
-
-            if (calib) {
-               fU->fCalib[h.ch].AddHit(h);
-            }
-
-            if (h.le) {
-               double dt = subtract_ns(h, fPrevLe[h.ch]);
-               //printf("ch %d: dt %.3f ns\n", h.ch, dt);
-               fHdt1Le[h.ch]->Fill(dt);
-               fHdt2Le[h.ch]->Fill(dt);
-               fHdt3Le[h.ch]->Fill(dt);
-               fHdt4Le[h.ch]->Fill(dt);
-
-               //fHdt_PP[h.ch]->Fill(h.phase, fPrevLe[h.ch].phase);
-               fHdt_FF[h.ch]->Fill(h.fine_ns, fPrevLe[h.ch].fine_ns);
-
-               fPrevLe[h.ch] = h;
-            }
-
-            double hit_dt_ns = sec_to_ns(h.time_sec - fCt->max_time_sec);
-
-            fHhitdt1ns->Fill(hit_dt_ns);
-            fHhitdt2ns->Fill(hit_dt_ns);
-            fHhitdt3ns->Fill(hit_dt_ns);
-            fHhitdt4ns->Fill(hit_dt_ns);
-
-            //printf("TTX %.9f %.9f sec, first %.9f, last %.9f sec\n", fCt->min_time_sec, fCt->max_time_sec, fCt->first_time_sec, fCt->last_time_sec);
-
-            //if (h.le && hit_dt_ns > 80.0) {
-
-            if (hit_dt_ns > 80.0) {
-               double event_dt_ns = sec_to_ns(h.time_sec - fCt->min_time_sec);
-
-
-               if (fFlags->fDebug) {
-                  printf("finish event ch %d, lete %d%d, time %.9f sec, max %.9f sec, dt %.3f ns\n", h.ch, h.le, h.te, h.time_sec, fCt->max_time_sec, event_dt_ns);
-                  //h.Print();
-                  //printf("===\n");
-               }
-
-               //for (size_t ch=0; ch<MAX_TDC_CHAN; ch++) {
-               //   if (fCt->fHits[ch].fUp) {
-               //      printf("TTT: ch %zu no TE\n", ch);
-               //   }
-               //}
-
-               if (1) {
-                  //printf("TTT %.9f -> %.9f sec, dt %.3f ns\n", fCt->min_time_sec, h.time_sec, event_dt_ns);
-                  fHeventdt1ns->Fill(event_dt_ns);
-                  fHeventdt2ns->Fill(event_dt_ns);
-                  fHeventdt3ns->Fill(event_dt_ns);
-                  fHeventdt4ns->Fill(event_dt_ns);
-                  
-                  //FinishEventT(fPrevEventTimeSec, *fCt);
-
-                  runinfo->AddToFlowQueue(new DlTdcEventFlow(NULL, fCt));
-
-                  fCt = new DlTdcEvent();
-                  fCt->Init(MAX_TDC_CHAN+1);
-                  
-                  fPrevEventTimeSec = fCt->min_time_sec;
-                  
-                  fCt->Clear();
-               }
-            }
-
-#ifdef HAVE_ROOT
-            if (h.ch >= 0 && h.ch <= MAX_TDC_CHAN) {
-               if (h.le) {
-                  if (h.phase < 0) {
-                     fHphaseLe[h.ch]->Fill(0 - h.phase);
-                     fHfineLe[h.ch]->Fill(h.fine_ns);
-                     fHfineLeN[h.ch]->Fill(h.fine_ns);
-                  } else {
-                     fHphaseLe[h.ch]->Fill(50 + h.phase);
-                     fHfineLe[h.ch]->Fill(h.fine_ns);
-                     fHfineLeP[h.ch]->Fill(h.fine_ns);
-                     if (h.ch == 0) {
-                        fHfineLeP0->Fill(h.fine_ns, h.time_sec);
-                        //printf("X000 time %.0f\n", h.time_sec);
-                     }
-                     if (h.ch == 1) {
-                        fHfineLeP1->Fill(h.fine_ns, h.time_sec);
-                     }
-                  }
-               }
-               if (h.te) {
-                  if (h.phase < 0) {
-                     fHphaseTe[h.ch]->Fill(0 - h.phase);
-                     fHfineTe[h.ch]->Fill(h.fine_ns);
-                     fHfineTeN[h.ch]->Fill(h.fine_ns);
-                     if (h.ch == 0) {
-                        fHfineTeN0->Fill(h.fine_ns, h.time_sec);
-                     }
-                     if (h.ch == 1) {
-                        fHfineTeN1->Fill(h.fine_ns, h.time_sec);
-                     }
-                  } else {
-                     fHphaseTe[h.ch]->Fill(50 + h.phase);
-                     fHfineTe[h.ch]->Fill(h.fine_ns);
-                     fHfineTeP[h.ch]->Fill(h.fine_ns);
-                  }
-               }
-            }
-#endif
-            fCt->AddHit8(h);
-
+            debug_sort |= AddSorted(h);
          } // loop over data
+
+         if (debug_sort)
+            PrintSorted();
+
+         if (fList.size() > 200) {
+            ProcessSorted(runinfo);
+         }
 
          time_t now = time(NULL);
          static time_t last = 0;
@@ -946,10 +1158,9 @@ public:
                   if (fFlags->fDebug) c.Print();
                }
             }
-
+            
             last = time(NULL);
          }
-         
       }
       
       return flow;
@@ -1050,7 +1261,9 @@ public:
       printf("--dltdc-finetime -- calibrate dltdc fine time\n");
       printf("--dltdc-offsets  -- calibrate dltdc offsets\n");
       printf("--dltdc-debug -- print detailed information\n");
-      printf("--dltdc-print -- print events\n");
+      printf("--dltdc-print-raw-hits -- print hits in the TDC bank\n");
+      printf("--dltdc-print-sorted-hits -- print hits sorted by time\n");
+      printf("--dltdc-print-event-hits -- print hits in each event\n");
       printf("--dltdc-add40 -- add 40 ns to B cable\n");
       printf("--dltdc-sub40 -- subtract 40 ns from B cable\n");
    }
@@ -1077,6 +1290,15 @@ public:
          }
          if (args[i] == "--dltdc-debug") {
             fFlags.fDebug = true;
+         }
+         if (args[i] == "--dltdc-print-raw-hits") {
+            fFlags.fPrintRawHits = true;
+         }
+         if (args[i] == "--dltdc-print-sorted-hits") {
+            fFlags.fPrintSortedHits = true;
+         }
+         if (args[i] == "--dltdc-print-event-hits") {
+            fFlags.fPrintEventHits = true;
          }
          if (args[i] == "--dltdc-add40") {
             fFlags.fAdd40 = true;
