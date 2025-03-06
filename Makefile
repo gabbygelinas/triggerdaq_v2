@@ -24,7 +24,7 @@ CXXFLAGS += -DHAVE_ROOT $(shell root-config --cflags)
 RLIBS    += -L$(ROOTSYS)/lib -lCore -lHist -lRIO -lGraf -lGui -lGpad -lRHTTP -lMathCore -lImt -lMatrix -lThread -lMultiProc -lNet
 endif
 
-MODULES += unpack_cb_module.o ncfm.o unpack_cb.o cbko_module.o dltdc_module.o dltdc.o dltdc4_module.o dltdc8_module.o DlTdcEvent.o coinc_module.o
+MODULES += unpack_cb_module.o ncfm.o unpack_cb.o coinc16_module.o coinc_module.o cbko_module.o dltdc_module.o dltdc.o dltdc4_module.o dltdc8_module.o dltdc16_module.o DlTdcEvent.o
 
 ALL     += dlana.exe
 #ALL     += ncfm.exe
@@ -57,6 +57,7 @@ dltdc_module.o: dltdc.h DlTdcEvent.h
 dltdc4_module.o: dltdc.h DlTdcEvent.h
 dltdc8_module.o: dltdc.h DlTdcEvent.h
 coinc_module.o: coinc_module.cxx
+coinc16_module.o: coinc16_module.cxx
 
 #%.o: ../chronobox_software/%.cxx
 #	$(CXX) -o $@ $(CXXFLAGS) -c $<

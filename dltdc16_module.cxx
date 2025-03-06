@@ -1,5 +1,5 @@
 //
-// dltdc8_module.cxx
+// dltdc16_module.cxx
 //
 // K.Olchanski
 //
@@ -61,7 +61,7 @@ public:
    bool fTWC = false;
 };
 
-class DlTdcMap8
+class DlTdcMap16
 {
 public:
    int fChanA = 32;
@@ -77,87 +77,91 @@ public:
    bool Init(int runno);
 };
 
-bool DlTdcMap8::Init(int runno)
+bool DlTdcMap16::Init(int runno)
 {
-   if (runno < 156) {
-      printf("DlTdcMap8 old 1458 map for run %d!\n", runno);
+   printf("DlTdcMap16 for run %d!\n", runno);
 
-      fMap.resize(16+1);
-      
-      fMap[1] = 16; // chan1
-      fMap[2] = 17; // chan2
-      fMap[3] = 22; // chan3
-      fMap[4] = 23; // chan4
-      fMap[5] = 26; // chan5
-      fMap[6] = 27; // chan6
-      fMap[7] = 30; // chan7
-      fMap[8] = 31; // chan8
-      
-      fMap[9]  = 18;
-      fMap[10] = 19;
-      fMap[11] = 20;
-      fMap[12] = 21;
-      fMap[13] = 24;
-      fMap[14] = 25;
-      fMap[15] = 28;
-      fMap[16] = 29;
-      
-      fPair1.resize(8+1);
-      fPair2.resize(8+1);
-      
-      fPair1[1] =  1; fPair2[1] =  4; // chan14
-      fPair1[2] =  2; fPair2[2] =  3; // chan23
-      fPair1[3] =  5; fPair2[3] =  8; // chan58
-      fPair1[4] =  6; fPair2[4] =  7; // chan67
-      fPair1[5] =  9; fPair2[5] = 12;
-      fPair1[6] = 10; fPair2[6] = 11;
-      fPair1[7] = 13; fPair2[7] = 16;
-      fPair1[8] = 14; fPair2[8] = 15;
-   } else {
-      printf("DlTdcMap8 for run %d!\n", runno);
+   fMap.resize(32+1);
 
-      fMap.resize(16+1);
-      
-      fMap[1]  =  0; // chan1
-      fMap[2]  =  1; // chan2
-      fMap[3]  = 10; // chan3
-      fMap[4]  = 11; // chan4
-      fMap[5]  =  2 + 16; // chan5
-      fMap[6]  =  3 + 16; // chan6
-      fMap[7]  =  8 + 16; // chan7
-      fMap[8]  =  9 + 16; // chan8
-      
-      fMap[9]  = 15;
-      fMap[10] = 14;
-      fMap[11] =  7;
-      fMap[12] =  6;
-      fMap[13] = 13 + 16;
-      fMap[14] = 12 + 16;
-      fMap[15] =  5 + 16;
-      fMap[16] =  4 + 16;
-      
-      fPair1.resize(8+1);
-      fPair2.resize(8+1);
-      
-      fPair1[1] =  1; fPair2[1] =  9; // chan14
-      fPair1[2] =  2; fPair2[2] = 10; // chan23
-      fPair1[3] =  3; fPair2[3] = 11; // chan58
-      fPair1[4] =  4; fPair2[4] = 12; // chan67
-      fPair1[5] =  5; fPair2[5] = 13;
-      fPair1[6] =  6; fPair2[6] = 14;
-      fPair1[7] =  7; fPair2[7] = 15;
-      fPair1[8] =  8; fPair2[8] = 16;
-   }
+   // TDC connector P1, A-side
+   
+   fMap[1]  =  0;
+   fMap[2]  =  1;
+   fMap[3]  = 10;
+   fMap[4]  = 11;
+   fMap[5]  =  2;
+   fMap[6]  =  3;
+   fMap[7]  =  8;
+   fMap[8]  =  9;
+   
+   fMap[9]  = 15;
+   fMap[10] = 14;
+   fMap[11] =  7;
+   fMap[12] =  6;
+   fMap[13] = 13;
+   fMap[14] = 12;
+   fMap[15] =  5;
+   fMap[16] =  4;
+
+   // TDC connector P2, B-side
+   
+   fMap[17] =  0 + 16;
+   fMap[18] =  1 + 16;
+   fMap[19] = 10 + 16;
+   fMap[20] = 11 + 16;
+   fMap[21] =  2 + 16;
+   fMap[22] =  3 + 16;
+   fMap[23] =  8 + 16;
+   fMap[24] =  9 + 16;
+   
+   fMap[25] = 15 + 16;
+   fMap[26] = 14 + 16;
+   fMap[27] =  7 + 16;
+   fMap[28] =  6 + 16;
+   fMap[29] = 13 + 16;
+   fMap[30] = 12 + 16;
+   fMap[31] =  5 + 16;
+   fMap[32] =  4 + 16;
+   
+   fPair1.resize(16+1);
+   fPair2.resize(16+1);
+
+   // A-side
+   
+   fPair1[1] =  1; fPair2[1] =  9;
+   fPair1[2] =  2; fPair2[2] = 10;
+   fPair1[3] =  3; fPair2[3] = 11;
+   fPair1[4] =  4; fPair2[4] = 12;
+   fPair1[5] =  5; fPair2[5] = 13;
+   fPair1[6] =  6; fPair2[6] = 14;
+   fPair1[7] =  7; fPair2[7] = 15;
+   fPair1[8] =  8; fPair2[8] = 16;
+
+   // B-side
+
+   fPair1[8+1] =  1+16; fPair2[8+1] =  9+16;
+   fPair1[8+2] =  2+16; fPair2[8+2] = 10+16;
+   fPair1[8+3] =  3+16; fPair2[8+3] = 11+16;
+   fPair1[8+4] =  4+16; fPair2[8+4] = 12+16;
+   fPair1[8+5] =  5+16; fPair2[8+5] = 13+16;
+   fPair1[8+6] =  6+16; fPair2[8+6] = 14+16;
+   fPair1[8+7] =  7+16; fPair2[8+7] = 15+16;
+   fPair1[8+8] =  8+16; fPair2[8+8] = 16+16;
 
    return true;
 };
 
-class DlTdc8Module: public TARunObject
+class Dltdc16Module: public TARunObject
 {
 public:
    DlTdcFlags* fFlags = NULL;
    
 #ifdef HAVE_ROOT
+   TH1D* fH_nhits = NULL;
+   TH1D* fH_tdcmap = NULL;
+   TH1D* fH_chanmap = NULL;
+   TH2D* fH_tdc_chan_map = NULL;
+
    TH1D* fHtABns = NULL;
 
    std::vector<TH1D*> fHw_ns;
@@ -377,38 +381,34 @@ public:
 
    double fPrevEventTimeSec = 0;
 
-   DlTdcMap8 *fMap8 = NULL;
+   DlTdcMap16 *fMap16 = NULL;
 
    bool fTrace = false;
 
    Ncfm* fCfm = NULL;
-
-   int numEvents = 0; // Tracker of what event we are on (what event number we are about to analyze)
-   int minNumEvents = 0; // Earliest event we want to analyze. Set to 0 to analyze from the start
-   int maxNumEvents = 10000000; // Last event number we want to analyze. Set to something super high to analyze all events
    
-   DlTdc8Module(TARunInfo* runinfo, DlTdcFlags* flags)
+   Dltdc16Module(TARunInfo* runinfo, DlTdcFlags* flags)
       : TARunObject(runinfo)
    {
       if (fTrace)
-         printf("DlTdc8Module::ctor!\n");
+         printf("Dltdc16Module::ctor!\n");
 
-      fModuleName = "dltdc8_module";
+      fModuleName = "dltdc16_module";
       fFlags   = flags;
 
       fCfm = new Ncfm("dlcfmdb");
 
-      fMap8 = new DlTdcMap8();
+      fMap16 = new DlTdcMap16();
    }
 
-   ~DlTdc8Module()
+   ~Dltdc16Module()
    {
       if (fTrace)
-         printf("DlTdc8Module::dtor!\n");
+         printf("Dltdc16Module::dtor!\n");
 
-      if (fMap8) {
-         delete fMap8;
-         fMap8 = NULL;
+      if (fMap16) {
+         delete fMap16;
+         fMap16 = NULL;
       }
 
       if (fCfm) {
@@ -420,12 +420,12 @@ public:
    void BeginRun(TARunInfo* runinfo)
    {
       if (fTrace)
-         printf("DlTdc8Module::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
+         printf("Dltdc16Module::BeginRun, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
 
       if (!fFlags->fEnabled)
          return;
 
-      bool conf_ok = fMap8->Init(runinfo->fRunNo);
+      bool conf_ok = fMap16->Init(runinfo->fRunNo);
       if (!conf_ok) {
          printf("Cannot load TDC map for run %d\n", runinfo->fRunNo);
          exit(123);
@@ -433,173 +433,199 @@ public:
 
 #ifdef HAVE_ROOT
       runinfo->fRoot->fOutputFile->cd(); // select correct ROOT directory
-      TDirectory* dir = gDirectory->mkdir("dltdc8");
+      TDirectory* dir = gDirectory->mkdir("dltdc16");
       dir->cd(); // select correct ROOT directory
 
-      fHtABns = new TH1D("dltdc8_tABns", "time between 1234 trigger and 4567 trigger, A-B, ns", 200, -10, 10);
+      fH_nhits = new TH1D("dltdc16_nhits", "Number of TDC hits per event", 40, -0.5, 40-0.5);
+      fH_tdcmap = new TH1D("dltdc16_tdcmap", "TDC occupancy", fMap16->fMap.size(), 0.5, fMap16->fMap.size()+0.5);
+      fH_chanmap = new TH1D("dltdc16_chanmap", "Channel occupancy", fMap16->fMap.size(), 0.5, fMap16->fMap.size()+0.5);
+      fH_tdc_chan_map = new TH2D("dltdc16_tdc_chan_map", "tdc to channel map", fMap16->fMap.size(), 0.5, fMap16->fMap.size()+0.5, fMap16->fMap.size(), 0.5, fMap16->fMap.size()+0.5);
 
-      fHw_ns.resize(fMap8->fMap.size() + 1);
 
-      for (size_t i=1; i<fMap8->fMap.size(); i++) {
+      fHw_ns_chanmap = new TH2D("dltdc16_w_ns_chanmap", "Pulse width, ns, for each channel", fMap16->fMap.size(), 0.5, fMap16->fMap.size()+0.5, 100, 0, 100);
+
+      fHw_ns_chanmap_cut = new TH2D("dltdc16_w_ns_chanmap_cut", "Pulse width, ns, for each channel", fMap16->fMap.size(), 0.5, fMap16->fMap.size()+0.5, 100, 0, 100);
+
+      TDirectory* dir_ph = dir->mkdir("per-channel pulse height plots");
+
+      dir_ph->cd();
+
+      fHw_ns.resize(fMap16->fMap.size() + 1);
+
+      for (size_t i=1; i<fMap16->fMap.size(); i++) {
          char name[256];
          char title[256];
 
-         sprintf(name, "dltdc8_w%02d_ns", (int)i);
+         sprintf(name, "dltdc16_w%02d_ns", (int)i);
          sprintf(title, "pulse width chan %2d, ns", (int)i);
          fHw_ns[i] = new TH1D(name, title, 100, 0, 100);
       }
          
-      fHw_ns_cut.resize(fMap8->fMap.size() + 1);
+      fHw_ns_cut.resize(fMap16->fMap.size() + 1);
 
-      for (size_t i=1; i<fMap8->fMap.size(); i++) {
+      for (size_t i=1; i<fMap16->fMap.size(); i++) {
          char name[256];
          char title[256];
 
-         sprintf(name, "dltdc8_w%02d_ns_cut", (int)i);
+         sprintf(name, "dltdc16_w%02d_ns_cut", (int)i);
          sprintf(title, "pulse width chan %2d with pulse height cut, ns", (int)i);
          fHw_ns_cut[i] = new TH1D(name, title, 100, 0, 100);
       }
 
-      fHw_ns_chanmap = new TH2D("dltdc8_w_ns_chanmap", "Pulse width, ns, for each channel", fMap8->fMap.size(), 0.5, fMap8->fMap.size()+0.5, 100, 0, 100);
+      dir->cd();
 
-      fHw_ns_chanmap_cut = new TH2D("dltdc8_w_ns_chanmap_cut", "Pulse width, ns, for each channel", fMap8->fMap.size(), 0.5, fMap8->fMap.size()+0.5, 100, 0, 100);
+      fHwAns = new TH1D("dltdc16_wA_ns", "width of A, ns", 100, 0, 100);
+      fHwBns = new TH1D("dltdc16_wB_ns", "width of B, ns", 100, 0, 100);
+      fHwTns = new TH1D("dltdc16_wT_ns", "width of T, ns", 100, 0, 100);
 
-      fHwAns = new TH1D("dltdc8_wA_ns", "width of A, ns", 100, 0, 100);
-      fHwBns = new TH1D("dltdc8_wB_ns", "width of B, ns", 100, 0, 100);
-      fHwTns = new TH1D("dltdc8_wT_ns", "width of T, ns", 100, 0, 100);
+      fHtABns = new TH1D("dltdc16_t_A_B_ns", "coincidence time, tA-tB, ns", 200, -10, 10);
 
-      fHwpair_ns.resize(fMap8->fPair1.size() + 1);
+      TDirectory* dir_sc_ph = dir->mkdir("per-scintillator pulse height plots");
 
-      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
-         int c1 = fMap8->fPair1[p];
-         int c2 = fMap8->fPair2[p];
+      dir_sc_ph->cd();
+
+      fHwpair_ns.resize(fMap16->fPair1.size() + 1);
+
+      for (size_t p=1; p<fMap16->fPair1.size(); p++) {
+         int c1 = fMap16->fPair1[p];
+         int c2 = fMap16->fPair2[p];
 
          char name[256];
          char title[256];
 
-         sprintf(name, "dltdc8_pair%d_w_%02d_%02d_ns", (int)p, c1, c2);
-         sprintf(title, "pair %d pulse width chan %2d vs chan %2d, ns", (int)p, c2, c1);
+         sprintf(name, "dltdc16_sc%02d_w_%02d_%02d_ns", (int)p, c1, c2);
+         sprintf(title, "sc %2d pulse width chan %2d vs chan %2d, ns", (int)p, c2, c1);
          fHwpair_ns[p] = new TH2D(name, title, 100, 0, 100, 100, 0, 100);
       }
 
-      //fHpairPP.resize(fMap8->fPair1.size() + 1);
-      fHpairFF.resize(fMap8->fPair1.size() + 1);
+      dir->mkdir("per-scintillator fine time plots")->cd();
 
-      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
-         int c1 = fMap8->fPair1[p];
-         int c2 = fMap8->fPair2[p];
+      //fHpairPP.resize(fMap16->fPair1.size() + 1);
+      fHpairFF.resize(fMap16->fPair1.size() + 1);
 
-         int tdc1 = fMap8->fMap[c1];
-         int tdc2 = fMap8->fMap[c2];
+      for (size_t p=1; p<fMap16->fPair1.size(); p++) {
+         int c1 = fMap16->fPair1[p];
+         int c2 = fMap16->fPair2[p];
+
+         int tdc1 = fMap16->fMap[c1];
+         int tdc2 = fMap16->fMap[c2];
 
          char name[256];
          char title[256];
 
-         //sprintf(name, "dltdc8_pair%d_t_%02d_%02d_PP", (int)p, c1, c2);
-         //sprintf(title, "pair %d time bin chan %2d vs chan %2d, tdc %2d vs %2d", (int)p, c2, c1, tdc2, tdc1);
+         //sprintf(name, "dltdc16_sc%02d_t_%02d_%02d_PP", (int)p, c1, c2);
+         //sprintf(title, "sc %2d time bin chan %2d vs chan %2d, tdc %2d vs %2d", (int)p, c2, c1, tdc2, tdc1);
          //fHpairPP[p] = new TH2D(name, title, 101, -50.5, 50.5, 101, -50.5, 50.5);
 
-         sprintf(name, "dltdc8_pair%d_t_%02d_%02d_FF", (int)p, c1, c2);
-         sprintf(title, "pair %d fine time chan %2d vs %2d, tdc %2d vs %2d, ns vs ns", (int)p, c2, c1, tdc2, tdc1);
+         sprintf(name, "dltdc16_sc%02d_t_%02d_%02d_FF", (int)p, c1, c2);
+         sprintf(title, "sc %2d fine time chan %2d vs %2d, tdc %2d vs %2d, ns vs ns", (int)p, c2, c1, tdc2, tdc1);
          fHpairFF[p] = new TH2D(name, title, 200, -5, 15, 200, -5, 15);
       }
 
-      fHtpair_ns.resize(fMap8->fPair1.size() + 1);
+      dir->mkdir("per-scintillator raw L-R time plots")->cd();
 
-      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
-         int c1 = fMap8->fPair1[p];
-         int c2 = fMap8->fPair2[p];
+      fHtpair_ns.resize(fMap16->fPair1.size() + 1);
+
+      for (size_t p=1; p<fMap16->fPair1.size(); p++) {
+         int c1 = fMap16->fPair1[p];
+         int c2 = fMap16->fPair2[p];
 
          char name[256];
          char title[256];
 
-         sprintf(name, "dltdc8_pair%d_t_%02d_%02d_ns", (int)p, c1, c2);
-         sprintf(title, "pair %d time difference chan %2d minus %2d, ns", (int)p, c2, c1);
+         sprintf(name, "dltdc16_sc%02d_t_%02d_%02d_ns", (int)p, c1, c2);
+         sprintf(title, "sc %2d time difference chan %2d minus %2d, ns", (int)p, c2, c1);
          fHtpair_ns[p] = new TH1D(name, title, 200, -10, 10);
       }
 
-      fHtpair_w1_ns.resize(fMap8->fPair1.size() + 1);
-      fHtpair_w2_ns.resize(fMap8->fPair1.size() + 1);
+      dir->mkdir("per-scintillator cut L-R time plots")->cd();
 
-      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
-         int c1 = fMap8->fPair1[p];
-         int c2 = fMap8->fPair2[p];
+      fHtpair_w1_ns.resize(fMap16->fPair1.size() + 1);
+      fHtpair_w2_ns.resize(fMap16->fPair1.size() + 1);
+
+      for (size_t p=1; p<fMap16->fPair1.size(); p++) {
+         int c1 = fMap16->fPair1[p];
+         int c2 = fMap16->fPair2[p];
 
          char name[256];
          char title[256];
 
-         sprintf(name, "dltdc8_pair%d_t_w1_%02d_%02d_ns", (int)p, c1, c2);
-         sprintf(title, "pair %d time difference chan %2d minus %2d, ns vs pulse width chan %2d", (int)p, c2, c1, c1);
+         sprintf(name, "dltdc16_sc%02d_t_w1_%02d_%02d_ns", (int)p, c1, c2);
+         sprintf(title, "sc %2d time difference chan %2d minus %2d, ns vs pulse width chan %2d", (int)p, c2, c1, c1);
          fHtpair_w1_ns[p] = new TH2D(name, title, 100, 0, 100, 200, -10, 10);
 
-         sprintf(name, "dltdc8_pair%d_t_w2_%02d_%02d_ns", (int)p, c1, c2);
-         sprintf(title, "pair %d time difference chan %2d minus %2d, ns vs pulse width chan %2d", (int)p, c2, c1, c2);
+         sprintf(name, "dltdc16_sc%02d_t_w2_%02d_%02d_ns", (int)p, c1, c2);
+         sprintf(title, "sc %2d time difference chan %2d minus %2d, ns vs pulse width chan %2d", (int)p, c2, c1, c2);
          fHtpair_w2_ns[p] = new TH2D(name, title, 100, 0, 100, 200, -10, 10);
       }
 
-      fHtpair_w1_ns_cut_w2.resize(fMap8->fPair1.size() + 1);
-      fHtpair_w2_ns_cut_w1.resize(fMap8->fPair1.size() + 1);
+      fHtpair_w1_ns_cut_w2.resize(fMap16->fPair1.size() + 1);
+      fHtpair_w2_ns_cut_w1.resize(fMap16->fPair1.size() + 1);
 
-      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
-         int c1 = fMap8->fPair1[p];
-         int c2 = fMap8->fPair2[p];
+      for (size_t p=1; p<fMap16->fPair1.size(); p++) {
+         int c1 = fMap16->fPair1[p];
+         int c2 = fMap16->fPair2[p];
 
          char name[256];
          char title[256];
 
-         sprintf(name, "dltdc8_pair%d_t_w1_%02d_%02d_ns_cut_w2", (int)p, c1, c2);
-         sprintf(title, "pair %d time difference chan %2d minus %2d, ns vs pulse width chan %2d, cut on width of %2d", (int)p, c2, c1, c1, c2);
+         sprintf(name, "dltdc16_sc%02d_t_w1_%02d_%02d_ns_cut_w2", (int)p, c1, c2);
+         sprintf(title, "sc %2d time difference chan %2d minus %2d, ns vs pulse width chan %2d, cut on width of %2d", (int)p, c2, c1, c1, c2);
          fHtpair_w1_ns_cut_w2[p] = new TH2D(name, title, 100, 0, 100, 200, -10, 10);
 
-         sprintf(name, "dltdc8_pair%d_t_w2_%02d_%02d_ns_cut_w1", (int)p, c1, c2);
-         sprintf(title, "pair %d time difference chan %2d minus %2d, ns vs pulse width chan %2d, cut on width of %2d", (int)p, c2, c1, c2, c1);
+         sprintf(name, "dltdc16_sc%02d_t_w2_%02d_%02d_ns_cut_w1", (int)p, c1, c2);
+         sprintf(title, "sc %2d time difference chan %2d minus %2d, ns vs pulse width chan %2d, cut on width of %2d", (int)p, c2, c1, c2, c1);
          fHtpair_w2_ns_cut_w1[p] = new TH2D(name, title, 100, 0, 100, 200, -10, 10);
       }
 
-      fHtpair_ns_cut.resize(fMap8->fPair1.size() + 1);
+      fHtpair_ns_cut.resize(fMap16->fPair1.size() + 1);
 
-      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
-         int c1 = fMap8->fPair1[p];
-         int c2 = fMap8->fPair2[p];
+      for (size_t p=1; p<fMap16->fPair1.size(); p++) {
+         int c1 = fMap16->fPair1[p];
+         int c2 = fMap16->fPair2[p];
 
          char name[256];
          char title[256];
 
-         sprintf(name, "dltdc8_pair%d_t_%02d_%02d_ns_cut", (int)p, c1, c2);
-         sprintf(title, "pair %d time difference chan %2d minus %2d, ns, with cut on width", (int)p, c2, c1);
+         sprintf(name, "dltdc16_sc%02d_t_%02d_%02d_ns_cut", (int)p, c1, c2);
+         sprintf(title, "sc %2d time difference chan %2d minus %2d, ns, with cut on width", (int)p, c2, c1);
          fHtpair_ns_cut[p] = new TH1D(name, title, 200, -10, 10);
       }
 
-      fHtpair_w1_ns_cut_w2_twc.resize(fMap8->fPair1.size() + 1);
-      fHtpair_w2_ns_cut_w1_twc.resize(fMap8->fPair1.size() + 1);
+      dir->mkdir("per-scintillator time walk correction plots")->cd();
 
-      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
-         int c1 = fMap8->fPair1[p];
-         int c2 = fMap8->fPair2[p];
+      fHtpair_w1_ns_cut_w2_twc.resize(fMap16->fPair1.size() + 1);
+      fHtpair_w2_ns_cut_w1_twc.resize(fMap16->fPair1.size() + 1);
+
+      for (size_t p=1; p<fMap16->fPair1.size(); p++) {
+         int c1 = fMap16->fPair1[p];
+         int c2 = fMap16->fPair2[p];
 
          char name[256];
          char title[256];
 
-         sprintf(name, "dltdc8_pair%d_t_w1_%02d_%02d_ns_twc", (int)p, c1, c2);
-         sprintf(title, "pair %d time difference chan %2d minus %2d, ns vs pulse width chan %2d, cut on width of %2d, with time walk correction", (int)p, c2, c1, c1, c2);
+         sprintf(name, "dltdc16_sc%02d_t_w1_%02d_%02d_ns_twc", (int)p, c1, c2);
+         sprintf(title, "sc %2d time difference chan %2d minus %2d, ns vs pulse width chan %2d, cut on width of %2d, with time walk correction", (int)p, c2, c1, c1, c2);
          fHtpair_w1_ns_cut_w2_twc[p] = new TH2D(name, title, 100, 0, 100, 200, -10, 10);
 
-         sprintf(name, "dltdc8_pair%d_t_w2_%02d_%02d_ns_twc", (int)p, c1, c2);
-         sprintf(title, "pair %d time difference chan %2d minus %2d, ns vs pulse width chan %2d, cut on width of %2d, with time walk correction", (int)p, c2, c1, c2, c1);
+         sprintf(name, "dltdc16_sc%02d_t_w2_%02d_%02d_ns_twc", (int)p, c1, c2);
+         sprintf(title, "sc %2d time difference chan %2d minus %2d, ns vs pulse width chan %2d, cut on width of %2d, with time walk correction", (int)p, c2, c1, c2, c1);
          fHtpair_w2_ns_cut_w1_twc[p] = new TH2D(name, title, 100, 0, 100, 200, -10, 10);
       }
 
-      fHtpair_ns_cut_twc.resize(fMap8->fPair1.size() + 1);
+      dir->cd();
 
-      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
-         int c1 = fMap8->fPair1[p];
-         int c2 = fMap8->fPair2[p];
+      fHtpair_ns_cut_twc.resize(fMap16->fPair1.size() + 1);
+
+      for (size_t p=1; p<fMap16->fPair1.size(); p++) {
+         int c1 = fMap16->fPair1[p];
+         int c2 = fMap16->fPair2[p];
 
          char name[256];
          char title[256];
 
-         sprintf(name, "dltdc8_pair%d_t_%02d_%02d_ns_cut_twc", (int)p, c1, c2);
-         sprintf(title, "pair %d time difference chan %2d minus %2d, ns, with cut on width and time walk correction", (int)p, c2, c1);
+         sprintf(name, "dltdc16_sc%02d_t_%02d_%02d_ns_cut_twc", (int)p, c1, c2);
+         sprintf(title, "sc %2d time difference chan %2d minus %2d, ns, with cut on width and time walk correction", (int)p, c2, c1);
          fHtpair_ns_cut_twc[p] = new TH1D(name, title, 200, -10, 10);
       }
 
@@ -770,17 +796,16 @@ public:
    void PreEndRun(TARunInfo* runinfo)
    {
       if (fTrace)
-         printf("DlTdc8Module::PreEndRun, run %d\n", runinfo->fRunNo);
+         printf("Dltdc16Module::PreEndRun, run %d\n", runinfo->fRunNo);
    }
    
    void EndRun(TARunInfo* runinfo)
    {
       if (fTrace)
-         printf("DlTdc8Module::EndRun, run %d\n", runinfo->fRunNo);
+         printf("Dltdc16Module::EndRun, run %d\n", runinfo->fRunNo);
 
       if (!fFlags->fEnabled)
          return;
-
 
 #if 0
       printf("Run %d coincidences: 1-4: %d, 2-3: %d, 5-8: %d, 6-7: %d, 14-58: %d, 23-58: %d, 14-67: %d, 23-67: %d, A: %d/%d, B: %d/%d, T: %d/%d\n",
@@ -845,21 +870,18 @@ public:
    void PauseRun(TARunInfo* runinfo)
    {
       if (fTrace)
-         printf("DlTdc8Module::PauseRun, run %d\n", runinfo->fRunNo);
+         printf("Dltdc16Module::PauseRun, run %d\n", runinfo->fRunNo);
    }
 
    void ResumeRun(TARunInfo* runinfo)
    {
       if (fTrace)
-         printf("DlTdc8Module::ResumeRun, run %d\n", runinfo->fRunNo);
+         printf("Dltdc16Module::ResumeRun, run %d\n", runinfo->fRunNo);
    }
 
    void AnalyzeTdcEvent(const DlTdcEvent& t)
    {
       // compute number of fired channels
-      numEvents += 1;
-
-      if ((numEvents < maxNumEvents) && (numEvents > minNumEvents)) {
 
       if (0) {
          int nhits = 0;
@@ -867,8 +889,8 @@ public:
          double last_le_sec = 0;
          double last_te_sec = 0;
          
-         for (size_t i=1; i<fMap8->fMap.size(); i++) {
-            int tdc_ch = fMap8->fMap[i];
+         for (size_t i=1; i<fMap16->fMap.size(); i++) {
+            int tdc_ch = fMap16->fMap[i];
             if (t.HaveCh(tdc_ch)) {
                double le_sec = t.GetCh(tdc_ch).fLe.time_sec;
                double te_sec = t.GetCh(tdc_ch).fTe.time_sec;
@@ -894,8 +916,8 @@ public:
       }
 
       int nhits = 0;
-      for (size_t i=1; i<fMap8->fMap.size(); i++) {
-         int tdc_ch = fMap8->fMap[i];
+      for (size_t i=1; i<fMap16->fMap.size(); i++) {
+         int tdc_ch = fMap16->fMap[i];
          if (t.HaveCh(tdc_ch)) {
             nhits++;
          }
@@ -908,8 +930,8 @@ public:
 
       if (fFlags->fDebug) {
          std::string s = "";
-         for (size_t i=1; i<fMap8->fMap.size(); i++) {
-            int tdc_ch = fMap8->fMap[i];
+         for (size_t i=1; i<fMap16->fMap.size(); i++) {
+            int tdc_ch = fMap16->fMap[i];
             if (t.HaveCh(tdc_ch)) {
                s += "H";
             } else {
@@ -917,25 +939,38 @@ public:
             }
          }
 
-         printf("EVENT %s, ABT %d%d%d, %d hits\n", s.c_str(), t.HaveCh(fMap8->fChanA), t.HaveCh(fMap8->fChanB), t.HaveCh(fMap8->fChanT), nhits);
+         printf("EVENT %s, ABT %d%d%d, %d hits\n", s.c_str(), t.HaveCh(fMap16->fChanA), t.HaveCh(fMap16->fChanB), t.HaveCh(fMap16->fChanT), nhits);
       }
 
       ///////// check for triggered event ///////////
          
-      if (fFlags->fTriggered && !t.HaveCh(fMap8->fChanT)) {
+      if (fFlags->fTriggered && !t.HaveCh(fMap16->fChanT)) {
          return;
+      }
+
+      ///////// TDC QA plots ///////////
+
+      fH_nhits->Fill(nhits);
+
+      for (size_t i=1; i<fMap16->fMap.size(); i++) {
+         int tdc_ch = fMap16->fMap[i];
+         if (t.HaveCh(tdc_ch)) {
+            fH_tdcmap->Fill(tdc_ch);
+            fH_chanmap->Fill(i);
+            fH_tdc_chan_map->Fill(tdc_ch, i);
+         }
       }
 
       ///////// plot trigger A-B time ///////////
 
       double tAB_ns = -9999;
       
-      if (t.HaveCh(fMap8->fChanA) && t.HaveCh(fMap8->fChanB)) {
-         tAB_ns = subtract_ns(t.GetCh(fMap8->fChanA).fLe, t.GetCh(fMap8->fChanB).fLe);
+      if (t.HaveCh(fMap16->fChanA) && t.HaveCh(fMap16->fChanB)) {
+         tAB_ns = subtract_ns(t.GetCh(fMap16->fChanA).fLe, t.GetCh(fMap16->fChanB).fLe);
          fHtABns->Fill(tAB_ns);
       }
 
-      //if (!t.HaveCh(fMap8->fChanB)) return;
+      //if (!t.HaveCh(fMap16->fChanB)) return;
 
       // cut on t6-t7
       
@@ -955,10 +990,10 @@ public:
 
       ///////// COMPUTE WIDTH AND PULSE HEIGHT ///////////
 
-      std::vector<double> ww_ns(fMap8->fMap.size() + 1);
+      std::vector<double> ww_ns(fMap16->fMap.size() + 1);
 
-      for (size_t i=1; i<fMap8->fMap.size(); i++) {
-         int tdc_ch = fMap8->fMap[i];
+      for (size_t i=1; i<fMap16->fMap.size(); i++) {
+         int tdc_ch = fMap16->fMap[i];
 
          double w_ns = -9999;
 
@@ -1001,15 +1036,15 @@ public:
 
       ///////// TRIGGER CHANNALS A, B and T not used yet ///////////
 
-      if (t.fHits[fMap8->fChanA].fDown) {
-         double wA_ns = t.fHits[fMap8->fChanA].fWidthNs;
+      if (t.fHits[fMap16->fChanA].fDown) {
+         double wA_ns = t.fHits[fMap16->fChanA].fWidthNs;
 
          if (wA_ns < -2.0) {
             printf("WWW: BAD WIDTH chanA %f!\n", wA_ns);
          }
 
          if (fFlags->fPrint) {
-            printf("new dlsc event A, le %.9f, w %.0f!\n", t.GetCh(fMap8->fChanA).fLe.time_sec, wA_ns);
+            printf("new dlsc event A, le %.9f, w %.0f!\n", t.GetCh(fMap16->fChanA).fLe.time_sec, wA_ns);
          }
 
          fHwAns->Fill(wA_ns);
@@ -1017,15 +1052,15 @@ public:
          fCountA++;
       }
 
-      if (t.fHits[fMap8->fChanB].fDown) {
-         double wB_ns = t.fHits[fMap8->fChanB].fWidthNs;
+      if (t.fHits[fMap16->fChanB].fDown) {
+         double wB_ns = t.fHits[fMap16->fChanB].fWidthNs;
 
          if (wB_ns < -2.0) {
             printf("WWW: BAD WIDTH chanB %f!\n", wB_ns);
          }
 
          if (fFlags->fPrint) {
-            printf("new dlsc event B, le %.9f, w %.0f!\n", t.GetCh(fMap8->fChanB).fLe.time_sec, wB_ns);
+            printf("new dlsc event B, le %.9f, w %.0f!\n", t.GetCh(fMap16->fChanB).fLe.time_sec, wB_ns);
          }
 
          fHwBns->Fill(wB_ns);
@@ -1033,15 +1068,15 @@ public:
          fCountB++;
       }
 
-      if (t.fHits[fMap8->fChanT].fDown) {
-         double wT_ns = t.fHits[fMap8->fChanT].fWidthNs;
+      if (t.fHits[fMap16->fChanT].fDown) {
+         double wT_ns = t.fHits[fMap16->fChanT].fWidthNs;
 
          if (wT_ns < -2.0) {
             printf("WWW: BAD WIDTH chanT %f!\n", wT_ns);
          }
 
          if (fFlags->fPrint) {
-            printf("new dlsc event T, le %.9f, w %.0f!\n", t.GetCh(fMap8->fChanT).fLe.time_sec, wT_ns);
+            printf("new dlsc event T, le %.9f, w %.0f!\n", t.GetCh(fMap16->fChanT).fLe.time_sec, wT_ns);
          }
 
          fHwTns->Fill(wT_ns);
@@ -1079,7 +1114,7 @@ public:
 
       ///////// SINGLES ///////////
 
-      for (size_t i=1; i<fMap8->fMap.size(); i++) {
+      for (size_t i=1; i<fMap16->fMap.size(); i++) {
          if (ww_ns[i] > 0) {
             fHw_ns[i]->Fill(ww_ns[i]);
             fHw_ns_chanmap->Fill(i, ww_ns[i]);
@@ -1138,14 +1173,14 @@ public:
       std::vector<double> ttpair_ns;
       std::vector<double> ttpair_ns_twc;
 
-      ttpair_hit.resize(fMap8->fPair1.size() + 1);
-      ttpair_hit_cut.resize(fMap8->fPair1.size() + 1);
-      ttpair_ns.resize(fMap8->fPair1.size() + 1);
-      ttpair_ns_twc.resize(fMap8->fPair1.size() + 1);
+      ttpair_hit.resize(fMap16->fPair1.size() + 1);
+      ttpair_hit_cut.resize(fMap16->fPair1.size() + 1);
+      ttpair_ns.resize(fMap16->fPair1.size() + 1);
+      ttpair_ns_twc.resize(fMap16->fPair1.size() + 1);
 
-      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
-         int c1 = fMap8->fPair1[p];
-         int c2 = fMap8->fPair2[p];
+      for (size_t p=1; p<fMap16->fPair1.size(); p++) {
+         int c1 = fMap16->fPair1[p];
+         int c2 = fMap16->fPair2[p];
          if (ww_ns[c1]>0 && ww_ns[c2]>0) {
             ttpair_hit[p] = true;
          }
@@ -1153,7 +1188,7 @@ public:
 
       int npairhits = 0;
 
-      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
+      for (size_t p=1; p<fMap16->fPair1.size(); p++) {
          if (ttpair_hit[p]) {
             npairhits++;
          }
@@ -1172,13 +1207,13 @@ public:
          }
       }
 
-      for (size_t p=1; p<fMap8->fPair1.size(); p++) {
+      for (size_t p=1; p<fMap16->fPair1.size(); p++) {
          if (ttpair_hit[p]) {
-            int c1 = fMap8->fPair1[p];
-            int c2 = fMap8->fPair2[p];
+            int c1 = fMap16->fPair1[p];
+            int c2 = fMap16->fPair2[p];
 
-            int tdc1 = fMap8->fMap[c1];
-            int tdc2 = fMap8->fMap[c2];
+            int tdc1 = fMap16->fMap[c1];
+            int tdc2 = fMap16->fMap[c2];
 
             double tpair_ns = subtract_ns(t.GetCh(tdc2).fLe, t.GetCh(tdc1).fLe);
             double tpair_ns_twc = tpair_ns + (ww_twc / sqrt(ww_ns[c1]) - ww_twc / sqrt(ww_ns[c2]));
@@ -1248,10 +1283,10 @@ public:
       }
 
       if (fFlags->fDebug) {
-         for (size_t p=1; p<fMap8->fPair1.size(); p++) {
+         for (size_t p=1; p<fMap16->fPair1.size(); p++) {
             if (ttpair_hit[p]) {
-               int c1 = fMap8->fPair1[p];
-               int c2 = fMap8->fPair2[p];
+               int c1 = fMap16->fPair1[p];
+               int c2 = fMap16->fPair2[p];
                printf("pair %02zu chan %02d-%02d ttpair: hit %d, ns_twc %6.3f ns\n", p, c1, c2, (int)ttpair_hit[p], ttpair_ns_twc[p]);
             }
          }
@@ -1592,18 +1627,17 @@ public:
          fHt237ns_w7ns_2367_twc->Fill(w7_ns, t237_ns_twc);
       }
 #endif
-      } // Closing the if statement that lets us only look at a chunk of events
    }
 
    TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
    {
-      //printf("DlTdc8Module::Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
+      //printf("Dltdc16Module::Analyze, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
       return flow;
    }
 
    TAFlowEvent* AnalyzeFlowEvent(TARunInfo* runinfo, TAFlags* flags, TAFlowEvent* flow)
    {
-      //printf("DlTdc8Module::AnalyzeFlowEvent, run %d\n", runinfo->fRunNo);
+      //printf("Dltdc16Module::AnalyzeFlowEvent, run %d\n", runinfo->fRunNo);
 
       if (!fFlags->fEnabled)
          return flow;
@@ -1618,11 +1652,11 @@ public:
    void AnalyzeSpecialEvent(TARunInfo* runinfo, TMEvent* event)
    {
       if (fTrace)
-         printf("DlTdc8Module::AnalyzeSpecialEvent, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
+         printf("Dltdc16Module::AnalyzeSpecialEvent, run %d, event serno %d, id 0x%04x, data size %d\n", runinfo->fRunNo, event->serial_number, (int)event->event_id, event->data_size);
    }
 };
 
-class DlTdc8ModuleFactory: public TAFactory
+class Dltdc16ModuleFactory: public TAFactory
 {
 public:
    DlTdcFlags fFlags;
@@ -1630,43 +1664,43 @@ public:
 public:
    void Usage()
    {
-      printf("DlTdc8ModuleFactory flags:\n");
-      printf("--dltdc8 -- enable analysis of 4 paddle data\n");
-      printf("--dltdc8-triggered -- analyze only events with hit in channel T (coincidence of A and B)\n");
-      printf("--dltdc8-debug -- print detailed information\n");
-      printf("--dltdc8-print -- print events\n");
-      printf("--dltdc8-twc -- get twc W parameter\n");
+      printf("Dltdc16ModuleFactory flags:\n");
+      printf("--dltdc16 -- enable analysis of 4 paddle data\n");
+      printf("--dltdc16-triggered -- analyze only events with hit in channel T (coincidence of A and B)\n");
+      printf("--dltdc16-debug -- print detailed information\n");
+      printf("--dltdc16-print -- print events\n");
+      printf("--dltdc16-twc -- get twc W parameter\n");
    }
 
    void Init(const std::vector<std::string> &args)
    {
-      printf("DlTdc8ModuleFactory::Init!\n");
+      printf("Dltdc16ModuleFactory::Init!\n");
 
       //for (unsigned i=0; i<args.size(); i++) {
       //   printf("arg[%d] is [%s]\n", i, args[i].c_str());
       //}
 
-      //printf("test1 %d\n", (std::string("--dltdc8") == "--dltdc8"));
-      //printf("test2 %d\n", (args[1] == "--dltdc8"));
+      //printf("test1 %d\n", (std::string("--dltdc16") == "--dltdc16"));
+      //printf("test2 %d\n", (args[1] == "--dltdc16"));
       //printf("test3 length %zu\n", args[1].length());
       //for (size_t i=0; i<args[1].length(); i++) {
       //   printf("char %zu is %d [%c]\n", i, args[1][i], args[1][i]);
       //}
 
       for (unsigned i=0; i<args.size(); i++) {
-         if (args[i] == "--dltdc8") {
+         if (args[i] == "--dltdc16") {
             fFlags.fEnabled = true;
          }
-         if (args[i] == "--dltdc8-triggered") {
+         if (args[i] == "--dltdc16-triggered") {
             fFlags.fTriggered = true;
          }
-         if (args[i] == "--dltdc8-debug") {
+         if (args[i] == "--dltdc16-debug") {
             fFlags.fDebug = true;
          }
-         if (args[i] == "--dltdc8-print") {
+         if (args[i] == "--dltdc16-print") {
             fFlags.fPrint = true;
          }
-         if (args[i] == "--dltdc8-twc") {
+         if (args[i] == "--dltdc16-twc") {
             fFlags.fTWC = true;
          }
       }
@@ -1674,17 +1708,17 @@ public:
 
    void Finish()
    {
-      printf("DlTdc8ModuleFactory::Finish!\n");
+      printf("Dltdc16ModuleFactory::Finish!\n");
    }
    
    TARunObject* NewRunObject(TARunInfo* runinfo)
    {
-      printf("DlTdc8ModuleFactory::NewRunObject, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
-      return new DlTdc8Module(runinfo, &fFlags);
+      printf("Dltdc16ModuleFactory::NewRunObject, run %d, file %s\n", runinfo->fRunNo, runinfo->fFileName.c_str());
+      return new Dltdc16Module(runinfo, &fFlags);
    }
 };
 
-static TARegister tar(new DlTdc8ModuleFactory);
+static TARegister tar(new Dltdc16ModuleFactory);
 
 /* emacs
  * Local Variables:
