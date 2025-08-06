@@ -25,6 +25,8 @@ RLIBS    += -L$(ROOTSYS)/lib -lCore -lHist -lRIO -lGraf -lGui -lGpad -lRHTTP -lM
 endif
 
 MODULES += unpack_cb_module.o ncfm.o unpack_cb.o coinc16_module.o coinc_module.o cbko_module.o dltdc_module.o dltdc.o dltdc4_module.o dltdc8_module.o dltdc16_module.o DlTdcEvent.o
+#MODULES += coinc16_module.o coinc_module.o cbko_module.o dltdc_module.o dltdc.o dltdc4_module.o dltdc8_module.o dltdc16_module.o DlTdcEvent.o unpack_cb_module.o ncfm.o unpack_cb.o
+
 
 ALL     += dlana.exe
 #ALL     += ncfm.exe

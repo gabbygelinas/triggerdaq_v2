@@ -153,7 +153,14 @@ public:
    //We do this so you don't get an overwhelming number of coincidence plots
    //std::vector<std::pair<int, int>> possibleCoinc = {std::make_pair(1, 7),std::make_pair(1, 8),std::make_pair(2, 7),std::make_pair(2, 8)};
    //printf("defined possibleCoinc"); //testGG
-   std::vector<std::pair<int, int>> possibleCoinc = {std::make_pair(3, 19),std::make_pair(4, 19),std::make_pair(3, 20),std::make_pair(4, 20)};
+   std::vector<std::pair<int, int>> possibleCoinc = {std::make_pair(1, 7),std::make_pair(1, 8),std::make_pair(2, 7),std::make_pair(2, 8), std::make_pair(7, 17),std::make_pair(8, 17),std::make_pair(7, 18),std::make_pair(8, 18), 
+      std::make_pair(1, 17),std::make_pair(1, 18), std::make_pair(2, 17),std::make_pair(2, 18)};
+   //std::vector<std::pair<int, int>> possibleCoinc = {std::make_pair(1, 17),std::make_pair(1,18),std::make_pair(2, 17),std::make_pair(2, 18), std::make_pair(3, 19),std::make_pair(3, 20),std::make_pair(4, 19),std::make_pair(4, 20),
+   //   std::make_pair(5, 21),std::make_pair(5,22),std::make_pair(6, 21),std::make_pair(6, 22), std::make_pair(7, 23),std::make_pair(7, 24),std::make_pair(8, 23),std::make_pair(8, 24)};
+   
+   std::vector<std::pair<int, std::pair<int, int>>> possibleCoinc_eff = {std::make_pair(17, std::make_pair(1,7)), std::make_pair(18, std::make_pair(1,7)), std::make_pair(17, std::make_pair(1,8)), std::make_pair(18, std::make_pair(1,8)),
+      std::make_pair(17, std::make_pair(2,7)), std::make_pair(18, std::make_pair(2,7)), std::make_pair(17, std::make_pair(2,8)), std::make_pair(18, std::make_pair(2,8)), std::make_pair(1, std::make_pair(7,17)), std::make_pair(1, std::make_pair(7,18)), std::make_pair(2, std::make_pair(7,17)), std::make_pair(2, std::make_pair(7,18)),
+      std::make_pair(1, std::make_pair(8,17)), std::make_pair(1, std::make_pair(8,18)), std::make_pair(2, std::make_pair(8,17)), std::make_pair(2, std::make_pair(8,18))};
    
 
 
@@ -188,6 +195,11 @@ public:
    std::map<std::pair<int,int>,TH2D*> absTimeWidth_cha_papb;
    std::map<std::pair<int,int>,TH2D*> absTimeWidth_cha_papb_twc;
 
+   // Time difference along a scintillator, if two other scintillators have a coincidence hit
+   std::map<std::pair<int,std::pair<int,int>>, TH1D*> timeDiff_pa_papb3;
+   std::map<std::pair<int,std::pair<int,int>>, TH1D*> timeDiff_pa_papb3_cut;
+   std::map<std::pair<int,std::pair<int,int>>, TH1D*> timeDiff_pa_papb3_cut_twc;
+
    //printf("initialized maps for storing plots"); //testGG
 
    char name_timeDiff_pa_papb[256];
@@ -218,6 +230,10 @@ public:
    char name_absTimeWidth_cha_papb[256];
    char name_absTimeWidth_cha_papb_twc[256];
 
+   char name_timeDiff_pa_papb3[256];
+   char name_timeDiff_pa_papb3_cut[256];
+   char name_timeDiff_pa_papb3_cut_twc[256];
+
 
    // Declare titles for each plot
    char title_timeDiff_pa_papb[256];
@@ -244,6 +260,10 @@ public:
 
    char title_absTimeWidth_cha_papb[256];
    char title_absTimeWidth_cha_papb_twc[256];
+
+   char title_timeDiff_pa_papb3[256];
+   char title_timeDiff_pa_papb3_cut[256];
+   char title_timeDiff_pa_papb3_cut_twc[256];
 
    double fPrevEventTimeSec = 0;
 
@@ -272,6 +292,10 @@ public:
    // Store the channel reading at the ends of each scintillator (channel pair) together in a map, identified by the pair number
    std::map<int, std::pair<double, double>> scintPairs; // <lower numbered pair, higher numbered pair>
 
+   int numEvents = 0; // Tracker of what event we are on (what event number we are about to analyze)
+   int minNumEvents = 0; // Earliest event we want to analyze. Set to 0 to analyze from the start
+   int maxNumEvents = 100000000; // Last event number we want to analyze. Set to something super high to analyze all events
+   
    //printf("entering Dltdc16CoincModule \n"); //testGG
    DlTdc16CoincModule(TARunInfo* runinfo, DlTdcFlags* flags)
       : TARunObject(runinfo)
@@ -516,6 +540,37 @@ public:
             widths_pa_papb[scintPair_interest8] = new TH2D(name_widths_pa_papb, title_widths_pa_papb, 200, -10, 10, 200, -10, 10);
 
          }
+      } // End of two scintillator coincidences
+
+      dir->mkdir("coinc_eff")->cd(); // Make a new directory for storing the three scintillator coincidence plots
+
+      // Make the rest of the names and titles then apply them to histograms we will create for 3 scint efficiency tests
+      for (int coincNum=0; coincNum<possibleCoinc_eff.size(); coincNum++){
+         int scintOfInterest = possibleCoinc_eff[coincNum].first; // The scintillator we don't put the coincidence requirement on
+         std::pair<int,int> coincPair (possibleCoinc_eff[coincNum].second.first, possibleCoinc_eff[coincNum].second.second);
+         std::pair<int,std::pair<int,int>> coincPair_c (scintOfInterest, coincPair);
+         int coincPair1 = coincPair.first;
+         int coincPair2 = coincPair.second;
+         // Form for coincPair_c: (scintillator you want to see if you have hits in, two scintillators you require the coincidence between)
+         // Scintillator c will be the one you want to see if you have hits in (scintOfInterest)
+
+         //printf("Making historgram names and titles and intitalizing histograms \n");
+         //std::cout << scintOfInterest << " " << coincPair1 << " " << coincPair2 << std::endl;
+         //std::cout << coincPair_c.first << " " << coincPair_c.second.first << " " << coincPair_c.second.second << std::endl;
+         //printf("The above two lines should be the same");
+
+         sprintf(name_timeDiff_pa_papb3, "coinc_tpair%d_ns_cpair_%02d_%02d", scintOfInterest, coincPair1,coincPair2);
+         sprintf(name_timeDiff_pa_papb3_cut, "coinc_tpair%d_ns_cpair_%02d_%02d_cut", scintOfInterest, coincPair1,coincPair2);
+         sprintf(name_timeDiff_pa_papb3_cut_twc, "coinc_tpair%d_ns_cpair_%02d_%02d_cut_twc", scintOfInterest, coincPair1,coincPair2);
+
+         sprintf(title_timeDiff_pa_papb3, "Time difference along pair %d (ns) with coinc between pairs %02d %02d", scintOfInterest, coincPair1,coincPair2);
+         sprintf(title_timeDiff_pa_papb3_cut, "Time difference along pair %d (ns) with coinc between pairs %02d %02d cut", scintOfInterest, coincPair1,coincPair2);
+         sprintf(title_timeDiff_pa_papb3_cut_twc, "Time difference along pair %d (ns) with coinc between pairs %02d %02d cut twc", scintOfInterest, coincPair1,coincPair2);
+
+         timeDiff_pa_papb3[coincPair_c] = new TH1D(name_timeDiff_pa_papb3, title_timeDiff_pa_papb3, 200, -10, 10);
+         timeDiff_pa_papb3_cut[coincPair_c] = new TH1D(name_timeDiff_pa_papb3_cut, title_timeDiff_pa_papb3_cut, 200, -10, 10);
+         timeDiff_pa_papb3_cut_twc[coincPair_c] = new TH1D(name_timeDiff_pa_papb3_cut_twc, title_timeDiff_pa_papb3_cut_twc, 200, -10, 10);
+
       }
 
       for (int i=1; i<(numScints+1); i++){
@@ -565,8 +620,8 @@ void do_quadcoinc(int scint_a, int scint_b, const DlTdcEvent& t, std::vector<dou
    //printf("entered do_quadcoinc \n"); //testgg
    //printf("MODULE - coinc, doing quad coinc GABBY\n");  
     /* Fill histograms for the appropriate quad coincidences
-    scint_a - one scintillator pair number (1-8) you want to examine, int
-    scint_b - the other scintillator pair number (1-8) you want to examine, int
+    scint_a - one scintillator pair number you want to examine, int
+    scint_b - the other scintillator pair number you want to examine, int
 
     NOTE: a and b are different from A and B used to denote the two data cables
     */
@@ -744,9 +799,99 @@ void do_quadcoinc(int scint_a, int scint_b, const DlTdcEvent& t, std::vector<dou
 }
 
 
+void do_quadcoinc3(int scint_c, int scint_a, int scint_b, const DlTdcEvent& t, std::vector<double> ww_ns,TARunInfo* runinfo){
+   // Require a coincidence between two scintillators, and when that is fuliflled, check for a hit on a third scintillator
+   // Coincidence is between scintillators "a" and "b", scintillator "c" is the scintillator of interest
+   
+   // Time difference along each scintillator (channel a+8) - (channel a)
+   double t_scinta_ns = subtract_ns(t.GetCh(scintPairs[scint_a].second).fLe, t.GetCh(scintPairs[scint_a].first).fLe);
+   double t_scintb_ns = subtract_ns(t.GetCh(scintPairs[scint_b].second).fLe, t.GetCh(scintPairs[scint_b].first).fLe);
+   double t_scintc_ns = subtract_ns(t.GetCh(scintPairs[scint_c].second).fLe, t.GetCh(scintPairs[scint_c].first).fLe);
+
+   int scint_c8 = scint_c + 8;
+
+
+   if (t_scinta_ns > -9999 && t_scintb_ns > -9999){
+      // Check if we have signals on the two scintillatos we require the coincidence on (check for coincidence)
+
+      //printf("signals exist \n"); //testgg
+
+      if (t_scintc_ns > -9999){
+
+         // Make a vector with int entries of scint_a, scint_b, and those two +8. We will use this list to fill the above calculation vectors.
+         std::vector<int> channelNumbers;
+         channelNumbers.push_back(scint_a);
+         channelNumbers.push_back(scint_a+8);
+         channelNumbers.push_back(scint_b);
+         channelNumbers.push_back(scint_b+8);
+
+         for (int i=0; i<=3; ++i){
+            for (int j=0; j<=3; ++j){
+               //printf("i=%d, j=%d \n", i, j); //testgg
+               //testing: Making it into this loop correctly
+               int chan_i = channelNumbers[i];
+               //int chan_i8 = channelNumbers[i] + 8;
+               int chan_j = channelNumbers[j];
+               //int chan_j8 = channelNumbers[j] + 8;
+               //int chan_i8 = channelNumbers[i] + 8;
+
+               // Pair of the channels we are examining for this coincidence
+               std::pair<int,int> chanPair_ij (channelNumbers[i],channelNumbers[j]);
+               std::pair<int,int> chanPair_ji (channelNumbers[j],channelNumbers[i]);
+
+               std::pair<int, std::pair<int, int>> chanPair_cij (scint_c,chanPair_ij);
+               std::pair<int, std::pair<int, int>> chanPair_c8ij (scint_c8,chanPair_ij);
+               std::pair<int, std::pair<int, int>> chanPair_cji (scint_c,chanPair_ji);
+               //std::cout << chanPair_cij.first << " " << chanPair_cij.second.first << " " << chanPair_cij.second.second << std::endl;
+               //printf("chanPairs made \n"); //testgg
+               //printf(" At the top: chanPair_ij=%d,%d \n",channelNumbers[i],channelNumbers[j]);
+
+               //std::pair<int,int> chanPair_i8j (channelNumbers[i]+8,channelNumbers[j]);
+               //std::pair<int,int> chanPair_j8i (channelNumbers[j]+8,channelNumbers[i]);
+
+               if ((i != j) && ((chan_i<9)||(16<chan_i && chan_i<25)) && ((chan_j<9)||(16<chan_j && 16<chan_j && chan_j<25)) && (chan_i < chan_j) && (chan_i+8 != chan_j)){
+                  // Looks at scintillators a and b
+                  //std::cout << chanPair_cij.first << " " << chanPair_cij.second.first << " " << chanPair_cij.second.second << std::endl;
+                  //std::cout << "timeDiff_pa_papb3[chanPair_cij] " << timeDiff_pa_papb3[chanPair_cij] << std::endl;
+                  timeDiff_pa_papb3[chanPair_cij]->Fill(t_scintc_ns);
+
+                  if (ww_ns[channelNumbers[i]] > width_cut && ww_ns[channelNumbers[i]+numScints] > width_cut && ww_ns[channelNumbers[j]] > width_cut && ww_ns[channelNumbers[j]+numScints] > width_cut && ww_ns[scint_c] > width_cut && ww_ns[scint_c8] > width_cut){
+                     double t_scintc_ns_twc = t_scintc_ns + (ww_twc / sqrt(ww_ns[channelNumbers[j]]) + ww_twc / sqrt(ww_ns[channelNumbers[i]]) - ww_twc / sqrt(ww_ns[scint_c]));
+                     
+                     timeDiff_pa_papb3_cut[chanPair_cij]->Fill(t_scintc_ns);
+                     timeDiff_pa_papb3_cut_twc[chanPair_cij]->Fill(t_scintc_ns_twc);
+
+                  }
+               } // close if statement with (chan_i < 9) && (chan_j < 9)
+
+            } // end of innter for loop over j
+         } // end of outer for loop over i
+      } // close t_scintc_ns exists if statement
+
+
+      //else { // If t_scintc_ns has no signal 
+         // This is where we will produce plots of hits in scinta and scintb without c. For stacked paddles with c
+         // in the middle, these plots should be empty
+
+         
+      //}
+
+
+   } // Close if statement checking if scint_a and scint_b signals exist
+
+
+} // end of do_quadcoinc3
+
+
+
+
 // Call function for each possible quad coincidence in this function
 void AnalyzeTdcEvent(const DlTdcEvent& t, TARunInfo* runinfo)
    {  
+      numEvents += 1;
+
+      if ((numEvents < maxNumEvents) && (numEvents > minNumEvents)) {
+
       printf("New AnalyzeTDCEvent \n"); //testgg
       if (fFlags->fDebug) {
          std::string s = "";
@@ -799,13 +944,77 @@ void AnalyzeTdcEvent(const DlTdcEvent& t, TARunInfo* runinfo)
       //double ww_twc = 9.0;
 
    // ALL MY COINCIDENCE FUNCTIONS
-   //do_quadcoinc(4, 8, t, ww_ns);
-   do_quadcoinc(3, 19, t, ww_ns, runinfo);
-   do_quadcoinc(4, 19, t, ww_ns, runinfo);
-   do_quadcoinc(3, 20, t, ww_ns, runinfo);
-   do_quadcoinc(4, 20, t, ww_ns, runinfo);
+
+   // Two scintillator coindences
+   
+   // Un-comment out if doing efficiency studies
+   do_quadcoinc(1, 7, t, ww_ns, runinfo);
+   do_quadcoinc(1, 8, t, ww_ns, runinfo);
+   do_quadcoinc(2, 7, t, ww_ns, runinfo);
+   do_quadcoinc(2, 8, t, ww_ns, runinfo);
+   do_quadcoinc(1, 17, t, ww_ns, runinfo);
+   do_quadcoinc(1, 18, t, ww_ns, runinfo);
+   do_quadcoinc(2, 17, t, ww_ns, runinfo);
+   do_quadcoinc(2, 18, t, ww_ns, runinfo);
+//
+   do_quadcoinc(7, 17, t, ww_ns, runinfo);
+   do_quadcoinc(8, 17, t, ww_ns, runinfo);
+   do_quadcoinc(7, 18, t, ww_ns, runinfo);
+   do_quadcoinc(8, 18, t, ww_ns, runinfo);
+
+   // TOF
+   //do_quadcoinc(1, 17, t, ww_ns, runinfo);
+   //do_quadcoinc(1, 18, t, ww_ns, runinfo);
+   //do_quadcoinc(2, 17, t, ww_ns, runinfo);
+   //do_quadcoinc(2, 18, t, ww_ns, runinfo);
+   //do_quadcoinc(3, 19, t, ww_ns, runinfo);
+   //do_quadcoinc(3, 20, t, ww_ns, runinfo);
+   //do_quadcoinc(4, 19, t, ww_ns, runinfo);
+   //do_quadcoinc(4, 20, t, ww_ns, runinfo);
+   //do_quadcoinc(5, 21, t, ww_ns, runinfo);
+   //do_quadcoinc(5, 22, t, ww_ns, runinfo);
+   //do_quadcoinc(6, 21, t, ww_ns, runinfo);
+   //do_quadcoinc(6, 22, t, ww_ns, runinfo);
+   //do_quadcoinc(7, 23, t, ww_ns, runinfo);
+   //do_quadcoinc(7, 24, t, ww_ns, runinfo);
+   //do_quadcoinc(8, 23, t, ww_ns, runinfo);
+   //do_quadcoinc(8, 24, t, ww_ns, runinfo);
+   
+   // Un-comment out if doing TOF studies again
+   //do_quadcoinc(1, 17, t, ww_ns, runinfo);
+   //do_quadcoinc(1, 18, t, ww_ns, runinfo);
+   //do_quadcoinc(2, 17, t, ww_ns, runinfo);
+   //do_quadcoinc(2, 18, t, ww_ns, runinfo);
+//
+   //do_quadcoinc(7, 17, t, ww_ns, runinfo);
+   //do_quadcoinc(8, 17, t, ww_ns, runinfo);
+   //do_quadcoinc(7, 18, t, ww_ns, runinfo);
+   //do_quadcoinc(8, 18, t, ww_ns, runinfo);
+
+   // Two scintillator coincidences then looking at the third for efficiency studies
+   // examine top bar
+   do_quadcoinc3(17, 1, 7, t, ww_ns, runinfo);
+   do_quadcoinc3(18, 1, 7, t, ww_ns, runinfo);
+   do_quadcoinc3(17, 2, 7, t, ww_ns, runinfo);
+   do_quadcoinc3(18, 2, 7, t, ww_ns, runinfo);
+   do_quadcoinc3(17, 1, 8, t, ww_ns, runinfo);
+   do_quadcoinc3(18, 1, 8, t, ww_ns, runinfo);
+   do_quadcoinc3(17, 2, 8, t, ww_ns, runinfo);
+   do_quadcoinc3(18, 2, 8, t, ww_ns, runinfo);
+
+   // examine bottom bar
+   do_quadcoinc3(1, 7, 17, t, ww_ns, runinfo);
+   do_quadcoinc3(1, 7, 18, t, ww_ns, runinfo);
+   do_quadcoinc3(2, 7, 17, t, ww_ns, runinfo);
+   do_quadcoinc3(2, 7, 18, t, ww_ns, runinfo);
+   do_quadcoinc3(1, 8, 17, t, ww_ns, runinfo);
+   do_quadcoinc3(1, 8, 18, t, ww_ns, runinfo);
+   do_quadcoinc3(2, 8, 17, t, ww_ns, runinfo);
+   do_quadcoinc3(2, 8, 18, t, ww_ns, runinfo);
    //printf("did a coincidence analysis \n"); //testgg
 
+
+   } // Closing the if statement that lets us only look at a chunk of events
    }; 
 
 TAFlowEvent* Analyze(TARunInfo* runinfo, TMEvent* event, TAFlags* flags, TAFlowEvent* flow)
